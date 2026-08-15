@@ -4,16 +4,28 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('ebusiness-theme');
+    const saved = localStorage.getItem('karobaar-theme');
     return saved || 'light';
   });
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userRole, setUserRole] = useState('Admin'); // Demo default
+  
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('karobaar-auth') === 'true';
+  });
+  
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('karobaar-user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  // Keep userRole for backwards compatibility with existing components during transition
+  const userRole = currentUser?.role || 'Guest';
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('ebusiness-theme', theme);
+    localStorage.setItem('karobaar-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -24,6 +36,20 @@ export const AppProvider = ({ children }) => {
     setSidebarOpen(prev => !prev);
   };
 
+  const login = (userData) => {
+    setCurrentUser(userData);
+    setIsAuthenticated(true);
+    localStorage.setItem('karobaar-user', JSON.stringify(userData));
+    localStorage.setItem('karobaar-auth', 'true');
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem('karobaar-user');
+    localStorage.removeItem('karobaar-auth');
+  };
+
   return (
     <AppContext.Provider value={{
       theme,
@@ -31,8 +57,11 @@ export const AppProvider = ({ children }) => {
       sidebarOpen,
       setSidebarOpen,
       toggleSidebar,
+      isAuthenticated,
+      currentUser,
       userRole,
-      setUserRole
+      login,
+      logout
     }}>
       {children}
     </AppContext.Provider>

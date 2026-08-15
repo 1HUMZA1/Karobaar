@@ -4,36 +4,43 @@ import {
   LayoutDashboard, ShoppingCart, Calculator, ClipboardList, 
   Users, Package, Box, ShoppingBag, Truck, UserCircle, 
   Clock, CalendarOff, Banknote, Receipt, FileText, 
-  BarChart3, CheckSquare, Bell, Settings, Menu, X
+  BarChart3, CheckSquare, Bell, Settings, X, CreditCard
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import './Sidebar.css';
 
+const ALL_ROLES = ['Owner', 'Admin', 'Manager', 'Sales Staff', 'Cashier', 'Warehouse', 'Accountant', 'HR', 'Employee'];
+const MANAGEMENT = ['Owner', 'Admin', 'Manager'];
+const SALES_POS = ['Owner', 'Admin', 'Manager', 'Sales Staff', 'Cashier'];
+const WAREHOUSE_OPS = ['Owner', 'Admin', 'Manager', 'Warehouse'];
+const FINANCE = ['Owner', 'Admin', 'Accountant'];
+
 const navItems = [
-  { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
-  { name: 'Sales', path: '/sales', icon: <ShoppingCart size={20} /> },
-  { name: 'POS', path: '/pos', icon: <Calculator size={20} /> },
-  { name: 'Orders', path: '/orders', icon: <ClipboardList size={20} /> },
-  { name: 'Customers', path: '/customers', icon: <Users size={20} /> },
-  { name: 'Products', path: '/products', icon: <Package size={20} /> },
-  { name: 'Inventory', path: '/inventory', icon: <Box size={20} /> },
-  { name: 'Purchases', path: '/purchases', icon: <ShoppingBag size={20} /> },
-  { name: 'Suppliers', path: '/suppliers', icon: <Truck size={20} /> },
-  { name: 'Employees', path: '/employees', icon: <UserCircle size={20} /> },
-  { name: 'Attendance', path: '/attendance', icon: <Clock size={20} /> },
-  { name: 'Leave', path: '/leave', icon: <CalendarOff size={20} /> },
-  { name: 'Payroll', path: '/payroll', icon: <Banknote size={20} /> },
-  { name: 'Expenses', path: '/expenses', icon: <Receipt size={20} /> },
-  { name: 'Invoices', path: '/invoices', icon: <FileText size={20} /> },
-  { name: 'Reports', path: '/reports', icon: <BarChart3 size={20} /> },
-  { name: 'Analytics', path: '/analytics', icon: <BarChart3 size={20} /> },
-  { name: 'Tasks', path: '/tasks', icon: <CheckSquare size={20} /> },
-  { name: 'Notifications', path: '/notifications', icon: <Bell size={20} /> },
-  { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
+  { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} />, roles: ALL_ROLES },
+  { name: 'POS', path: '/pos', icon: <Calculator size={20} />, roles: SALES_POS },
+  { name: 'Orders', path: '/orders', icon: <ClipboardList size={20} />, roles: SALES_POS },
+  { name: 'Customers', path: '/customers', icon: <Users size={20} />, roles: ['Owner', 'Admin', 'Manager', 'Sales Staff'] },
+  { name: 'Products', path: '/products', icon: <Package size={20} />, roles: WAREHOUSE_OPS },
+  { name: 'Inventory', path: '/inventory', icon: <Box size={20} />, roles: WAREHOUSE_OPS },
+  { name: 'Purchases', path: '/purchases', icon: <ShoppingBag size={20} />, roles: WAREHOUSE_OPS },
+  { name: 'Suppliers', path: '/suppliers', icon: <Truck size={20} />, roles: WAREHOUSE_OPS },
+  { name: 'Employees', path: '/employees', icon: <UserCircle size={20} />, roles: ['Owner', 'Admin', 'Manager', 'HR'] },
+  { name: 'Attendance', path: '/attendance', icon: <Clock size={20} />, roles: ALL_ROLES },
+  { name: 'Leave', path: '/leave', icon: <CalendarOff size={20} />, roles: ALL_ROLES },
+  { name: 'Payroll', path: '/payroll', icon: <Banknote size={20} />, roles: ['Owner', 'Admin', 'HR', 'Accountant'] },
+  { name: 'Expenses', path: '/expenses', icon: <Receipt size={20} />, roles: FINANCE },
+  { name: 'Invoices', path: '/invoices', icon: <FileText size={20} />, roles: ['Owner', 'Admin', 'Accountant', 'Manager'] },
+  { name: 'Payments', path: '/payments', icon: <CreditCard size={20} />, roles: ['Owner', 'Admin', 'Accountant', 'Cashier'] },
+  { name: 'Tasks', path: '/tasks', icon: <CheckSquare size={20} />, roles: ALL_ROLES },
+  { name: 'Reports', path: '/reports', icon: <BarChart3 size={20} />, roles: ['Owner', 'Admin', 'Manager', 'HR', 'Accountant'] },
+  { name: 'Notifications', path: '/notifications', icon: <Bell size={20} />, roles: ALL_ROLES },
+  { name: 'Settings', path: '/settings', icon: <Settings size={20} />, roles: ['Owner', 'Admin'] },
 ];
 
 const Sidebar = () => {
-  const { sidebarOpen, setSidebarOpen } = useAppContext();
+  const { sidebarOpen, setSidebarOpen, userRole } = useAppContext();
+
+  const filteredNavItems = navItems.filter(item => item.roles.includes(userRole));
 
   return (
     <>
@@ -61,7 +68,7 @@ const Sidebar = () => {
 
         <nav className="sidebar-nav">
           <ul>
-            {navItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <li key={item.name}>
                 <NavLink 
                   to={item.path} 

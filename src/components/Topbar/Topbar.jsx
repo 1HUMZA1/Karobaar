@@ -1,12 +1,12 @@
 import React from 'react';
-import { Menu, Search, Sun, Moon, Bell, User } from 'lucide-react';
+import { Menu, Search, Sun, Moon, Bell, User, LogOut } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../services/databaseService';
 import './Topbar.css';
 
 const Topbar = () => {
-  const { toggleSidebar, theme, toggleTheme, userRole } = useAppContext();
+  const { toggleSidebar, theme, toggleTheme, userRole, currentUser, logout } = useAppContext();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchResults, setSearchResults] = React.useState([]);
   const [isSearching, setIsSearching] = React.useState(false);
@@ -37,6 +37,11 @@ const Topbar = () => {
     setSearchQuery('');
     setSearchResults([]);
     setIsSearching(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -89,13 +94,23 @@ const Topbar = () => {
           <span className="notification-badge">3</span>
         </button>
 
-        <div className="user-profile">
+        <div className="user-profile group relative cursor-pointer">
           <div className="avatar">
             <User size={20} />
           </div>
           <div className="user-info">
-            <span className="user-name">Admin User</span>
+            <span className="user-name">{currentUser?.name || 'Demo User'}</span>
             <span className="user-role">{userRole}</span>
+          </div>
+          
+          <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-dark-card rounded-md shadow-lg py-1 hidden group-hover:block border border-gray-100 dark:border-dark-border z-50">
+            <div 
+              className="px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-dark-bg flex items-center gap-2 cursor-pointer transition-colors"
+              onClick={handleLogout}
+            >
+              <LogOut size={16} />
+              Sign Out
+            </div>
           </div>
         </div>
       </div>

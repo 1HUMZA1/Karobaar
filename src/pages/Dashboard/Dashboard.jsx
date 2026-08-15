@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, ShoppingBag, Users, Package, 
-  TrendingUp, TrendingDown, Clock, AlertCircle
+  TrendingUp, TrendingDown, Clock, AlertCircle, CalendarOff, CheckSquare
 } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -30,9 +30,10 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  const { theme } = useAppContext();
+  const { theme, userRole, currentUser } = useAppContext();
   const [stats, setStats] = useState({
-    sales: 0, orders: 0, customers: 0, lowStock: 0, recentSales: []
+    sales: 0, orders: 0, customers: 0, lowStock: 0, recentSales: [],
+    pendingTasks: 0, leaveBalance: 12
   });
 
   useEffect(() => {
@@ -55,7 +56,9 @@ const Dashboard = () => {
       orders: salesData.length,
       customers: customersData.length,
       lowStock: lowStockCount,
-      recentSales: recent
+      recentSales: recent,
+      pendingTasks: 3,
+      leaveBalance: 12
     });
   };
 
@@ -85,6 +88,67 @@ const Dashboard = () => {
     ]
   };
 
+  const isStaffRole = ['Employee', 'Sales Staff', 'Cashier', 'Warehouse'].includes(userRole);
+
+  if (isStaffRole) {
+    return (
+      <div className="page-container animate-fade-in">
+        <div className="page-header mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Good Morning, {currentUser?.name?.split(' ')[0] || userRole}!</h1>
+            <p className="text-secondary mt-1">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-primary to-primary-dark text-white border-none shadow-md">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+              <Clock size={48} className="mb-4 opacity-80" />
+              <h3 className="text-xl font-semibold mb-2">Today's Attendance</h3>
+              <p className="text-primary-light mb-6">You have not checked in yet today.</p>
+              <Button 
+                className="w-full bg-white text-primary hover:bg-gray-100 font-bold"
+                size="lg"
+                onClick={() => window.location.href='#/attendance'}
+              >
+                CHECK IN NOW
+              </Button>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-col gap-6">
+            <Card className="flex-1">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="p-4 bg-blue-50 dark:bg-slate-800 rounded-full text-blue-500">
+                  <CheckSquare size={32} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Tasks</h3>
+                  <p className="text-secondary">{stats.pendingTasks} pending tasks for today</p>
+                  <Button variant="link" className="p-0 h-auto mt-2 text-primary" onClick={() => window.location.href='#/tasks'}>View Tasks &rarr;</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="flex-1">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="p-4 bg-green-50 dark:bg-slate-800 rounded-full text-green-500">
+                  <CalendarOff size={32} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Leave Balance</h3>
+                  <p className="text-secondary">{stats.leaveBalance} days remaining</p>
+                  <Button variant="link" className="p-0 h-auto mt-2 text-success" onClick={() => window.location.href='#/leave'}>Request Leave &rarr;</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Management / Admin Dashboard
   return (
     <div className="page-container animate-fade-in">
       <div className="page-header">
@@ -97,11 +161,11 @@ const Dashboard = () => {
       <div className="mb-6 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
         <h3 className="text-sm font-semibold text-secondary mb-3">Quick Actions</h3>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => window.location.href='/pos'}>+ New Sale</Button>
-          <Button size="sm" variant="outline" onClick={() => window.location.href='/products'}>+ Add Product</Button>
-          <Button size="sm" variant="outline" onClick={() => window.location.href='/customers'}>+ Add Customer</Button>
-          <Button size="sm" variant="outline" onClick={() => window.location.href='/expenses'}>Record Expense</Button>
-          <Button size="sm" variant="outline" onClick={() => window.location.href='/attendance'}>Mark Attendance</Button>
+          <Button size="sm" onClick={() => window.location.href='#/pos'}>+ New Sale</Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.href='#/products'}>+ Add Product</Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.href='#/customers'}>+ Add Customer</Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.href='#/expenses'}>Record Expense</Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.href='#/attendance'}>Mark Attendance</Button>
         </div>
       </div>
 
