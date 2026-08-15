@@ -48,8 +48,8 @@ const Sidebar = () => {
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="logo-container">
-            <div className="logo-icon">M</div>
-            <span className="logo-text">My Business</span>
+            <div className="logo-icon">K</div>
+            <span className="logo-text">Karobaar</span>
           </div>
           <button 
             className="sidebar-close-btn"
