@@ -1,0 +1,67 @@
+.biz-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.biz-input-wrapper.full-width {
+  width: 100%;
+}
+
+.biz-input-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.biz-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.biz-input-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.biz-input {
+  width: 100%;
+  height: 40px;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.biz-input.has-icon {
+  padding-left: 2.25rem;
+}
+
+.biz-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.biz-input.error {
+  border-color: var(--danger-color);
+}
+.biz-input.error:focus {
+  box-shadow: 0 0 0 2px var(--danger-light);
+}
+
+.biz-input-error-text {
+  font-size: 0.75rem;
+  color: var(--danger-color);
+  margin-top: -0.125rem;
+}
