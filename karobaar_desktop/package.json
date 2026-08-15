@@ -1,0 +1,26 @@
+{
+  "name": "karobaar_desktop",
+  "version": "1.0.0",
+  "description": "Karobaar Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder -w"
+  },
+  "build": {
+    "appId": "com.karobaar.desktop",
+    "productName": "Karobaar Setup",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "author": "Karobaar",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  }
+}

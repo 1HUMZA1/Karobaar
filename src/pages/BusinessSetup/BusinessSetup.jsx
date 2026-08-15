@@ -119,48 +119,45 @@ const BusinessSetup = () => {
   };
 
   const handleBack = () => setStep(s => s - 1);
+  const [submitState, setSubmitState] = useState(''); // '', 'Saving locally...', 'Saved locally', 'Opening your dashboard...'
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitState('Saving locally...');
     setError('');
 
     try {
-      console.log("[SETUP] START");
-      console.log("[SETUP] Before user lookup");
       const user = auth.currentUser;
-      console.log("[SETUP] After user lookup", user?.uid);
+      if (!user) throw new Error("Authentication lost. Please log in again.");
 
-      if (!user) {
-        throw new Error("Your session has expired. Please sign in again.");
-      }
-
-      console.log("[SETUP] Before business save");
+      // 1. Create Business
       const newBusiness = await db.add('businesses', {
-        ...business,
-        size,
-        modules,
-        preferences: {
+        name: business.name,
+        type: business.type,
+        country: business.country,
+        city: business.city,
+        ownerId: user.uid,
+        modules: modules.reduce((acc, mod) => ({ ...acc, [mod]: true }), {}),
+        settings: {
           currency: preferences.currency,
           dateFormat: preferences.dateFormat,
           lowStockThreshold: Number(preferences.lowStockThreshold) || 5
         }
       });
-      console.log("[SETUP] After business save, Business ID:", newBusiness?.id);
 
       if (!newBusiness || !newBusiness.id) {
         throw new Error("Failed to create business profile.");
       }
       
-      console.log("[SETUP] Before membership save");
+      // 2. Add Membership
       await db.add('members', {
         userId: user.uid,
         role: 'OWNER',
         addedAt: new Date().toISOString()
       }, newBusiness.id, user.uid);
-      console.log("[SETUP] After membership save");
 
-      console.log("[SETUP] Before onboarding completion");
+      // 3. Mark Onboarding Complete
       await db.add('users', {
         firebaseUid: user.uid,
         email: user.email,
@@ -170,7 +167,7 @@ const BusinessSetup = () => {
         country: business.country,
         language: personal.language,
         role: 'OWNER', // frontend reference
-        memberships: [newBusiness.id], // New robust architecture
+        memberships: [newBusiness.id],
         accountStatus: 'active',
         personalPreferences: {
           theme: 'light',
@@ -179,28 +176,21 @@ const BusinessSetup = () => {
         },
         onboardingCompleted: true
       }, null, user.uid);
-      console.log("[SETUP] After onboarding completion");
 
-      console.log("[SETUP] Before refreshUserProfile");
-      // Refresh global state so AppContext picks up activeBusinessId
+      setSubmitState('✓ Saved locally');
+
+      // Refresh global state from local cache instantly
       await refreshUserProfile();
-      console.log("[SETUP] After refreshUserProfile");
       
-      console.log("[SETUP] BEFORE DASHBOARD NAVIGATION");
+      setSubmitState('Opening your dashboard...');
+
       // Navigate to dashboard cleanly
       navigate('/dashboard');
     } catch (err) {
-      console.error("[SETUP FIRESTORE ERROR]", err);
-      console.error("code:", err?.code);
-      console.error("message:", err?.message);
-      
-      if (err.message === 'connection-blocked') {
-        setError('Connection to database was blocked. Please disable any ad blockers, Brave Shields, or privacy extensions for this site and try again.');
-      } else {
-        setError(err.message || 'Unable to save your business information. Please try again.');
-      }
-    } finally {
+      console.error("[SETUP ERROR]", err);
+      setError(err.message || 'Unable to save your business information. Please try again.');
       setIsSubmitting(false);
+      setSubmitState('');
     }
   };
 
@@ -316,10 +306,16 @@ const BusinessSetup = () => {
           )}
 
           <div style={{display: 'flex', gap: '1rem', marginTop: '2rem'}}>
-            {step > 1 && <Button type="button" variant="outline" onClick={handleBack} style={{flex: 1}}>Back</Button>}
-            <Button type="submit" className="setup-submit-btn" disabled={isSubmitting} style={{flex: 2}}>
-              {isSubmitting ? 'Saving...' : step === 5 ? (error ? 'Save failed — Try Again' : 'Create Workspace') : 'Continue'}
-            </Button>
+            <div className="setup-footer">
+              {step > 1 && (
+                <Button type="button" variant="outline" onClick={handleBack} disabled={isSubmitting} style={{ padding: '16px 32px' }}>
+                  Back
+                </Button>
+              )}
+              <Button type="submit" disabled={isSubmitting} variant="primary" style={{ flex: 1, padding: '16px', fontSize: '1.1rem' }}>
+                {submitState || (isSubmitting ? 'Saving...' : step === 5 ? 'Finish Setup' : 'Continue')}
+              </Button>
+            </div>
           </div>
         </form>
       </div>

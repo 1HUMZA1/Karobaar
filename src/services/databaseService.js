@@ -1,45 +1,79 @@
 import { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { dbFirestore } from './firebase';
+import { localDb } from './localDb';
+import { v4 as uuidv4 } from 'uuid'; // Need UUID for offline creation
 
 /**
- * Real Database Service wrapping Firestore with strict multi-tenant isolation.
+ * Offline-First Database Service wrapping Firestore with strict multi-tenant isolation.
  */
 class DatabaseService {
+
+  constructor() {
+    this.syncInProgress = false;
+    // Auto-start sync loop
+    this._startSyncLoop();
+  }
+
+  // --- Core Sync Logic ---
   
-  // Internal/Global collections (users, businesses)
-  async getRawCollection(collectionName) {
-    const q = collection(dbFirestore, collectionName);
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  }
-
-  // Get a collection filtered by businessId (Maps to businesses/{businessId}/{collectionName})
-  async getCollection(collectionName, businessId = null) {
-    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
-      return this.getRawCollection(collectionName);
-    }
+  async _startSyncLoop() {
+    setInterval(() => {
+      if (navigator.onLine) {
+        this.syncPendingQueue();
+      }
+    }, 15000); // Check every 15 seconds
     
-    // Multi-tenant isolation: /businesses/{businessId}/{collectionName}
-    const q = collection(dbFirestore, `businesses/${businessId}/${collectionName}`);
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    window.addEventListener('online', () => {
+      this.syncPendingQueue();
+    });
   }
 
-  // Find a single item by ID
-  async getById(collectionName, id, businessId = null) {
-    let docRef;
-    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
-      docRef = doc(dbFirestore, collectionName, id);
-    } else {
-      docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
+  async syncPendingQueue() {
+    if (this.syncInProgress) return;
+    this.syncInProgress = true;
+
+    const queue = localDb.getPendingQueue();
+    if (queue.length === 0) {
+      this.syncInProgress = false;
+      return;
     }
-    
-    const d = await getDoc(docRef);
-    return d.exists() ? { id: d.id, ...d.data() } : null;
+
+    console.log(`[SYNC] Attempting to sync ${queue.length} pending items...`);
+
+    for (const item of queue) {
+      try {
+        let docRef;
+        if (!item.businessId || item.collectionName === 'users' || item.collectionName === 'businesses') {
+          docRef = doc(dbFirestore, item.collectionName, item.id);
+        } else {
+          docRef = doc(dbFirestore, `businesses/${item.businessId}/${item.collectionName}`, item.id);
+        }
+
+        const cleanData = { ...item.data };
+        delete cleanData._businessId;
+        delete cleanData._syncStatus;
+        delete cleanData._localUpdatedAt;
+        delete cleanData.id; // Firestore handles ID in docRef
+
+        if (item.operation === 'SET') {
+          await this._withTimeout(setDoc(docRef, cleanData), 8000);
+        } else if (item.operation === 'DELETE') {
+          await this._withTimeout(deleteDoc(docRef), 8000);
+        }
+
+        localDb.markQueueItemSuccess(item.queueId);
+        console.log(`[SYNC] Successfully synced ${item.collectionName}/${item.id}`);
+      } catch (e) {
+        console.warn(`[SYNC] Failed to sync ${item.collectionName}/${item.id}`, e.message);
+        localDb.markQueueItemFailed(item.queueId, e.message);
+      }
+    }
+
+    this.syncInProgress = false;
   }
 
-  // Helper to prevent hanging promises when ad-blockers intercept Firestore
-  async _withTimeout(promise, ms = 10000) {
+  // Helper to prevent hanging promises
+  async _withTimeout(promise, ms = 5000) {
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
@@ -49,31 +83,82 @@ class DatabaseService {
     return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
   }
 
-  // Add a new item
+  // --- Data Access Methods ---
+  
+  // Internal/Global collections
+  async getRawCollection(collectionName) {
+    try {
+      const q = collection(dbFirestore, collectionName);
+      const snapshot = await this._withTimeout(getDocs(q));
+      const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      localDb.bulkSave(collectionName, records);
+      return records;
+    } catch (e) {
+      console.warn(`[OFFLINE] Using local cache for ${collectionName}`);
+      return localDb.getAll(collectionName);
+    }
+  }
+
+  // Get a collection filtered by businessId
+  async getCollection(collectionName, businessId = null) {
+    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
+      return this.getRawCollection(collectionName);
+    }
+    
+    try {
+      const q = collection(dbFirestore, `businesses/${businessId}/${collectionName}`);
+      const snapshot = await this._withTimeout(getDocs(q));
+      const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      localDb.bulkSave(collectionName, records, businessId);
+      return records;
+    } catch (e) {
+      console.warn(`[OFFLINE] Using local cache for businesses/${businessId}/${collectionName}`);
+      return localDb.getAll(collectionName, businessId);
+    }
+  }
+
+  // Find a single item by ID
+  async getById(collectionName, id, businessId = null) {
+    try {
+      let docRef;
+      if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
+        docRef = doc(dbFirestore, collectionName, id);
+      } else {
+        docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
+      }
+      
+      const d = await this._withTimeout(getDoc(docRef));
+      if (d.exists()) {
+        const record = { id: d.id, ...d.data() };
+        localDb.save(collectionName, d.id, record, false, businessId);
+        return record;
+      }
+      return null;
+    } catch (e) {
+      console.warn(`[OFFLINE] Using local cache for ${collectionName}/${id}`);
+      return localDb.get(collectionName, id);
+    }
+  }
+
+  // Add a new item (Offline-First)
   async add(collectionName, item, businessId = null, customId = null) {
+    const id = customId || uuidv4();
     const newItem = {
       ...item,
       createdAt: new Date().toISOString()
     };
     
-    let docRef;
-    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
-      if (customId) {
-        docRef = doc(dbFirestore, collectionName, customId);
-        await this._withTimeout(setDoc(docRef, newItem));
-      } else {
-        docRef = await this._withTimeout(addDoc(collection(dbFirestore, collectionName), newItem));
-      }
-    } else {
-      newItem.businessId = businessId; // Redundancy
-      if (customId) {
-        docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, customId);
-        await this._withTimeout(setDoc(docRef, newItem));
-      } else {
-        docRef = await this._withTimeout(addDoc(collection(dbFirestore, `businesses/${businessId}/${collectionName}`), newItem));
-      }
+    if (businessId && collectionName !== 'users' && collectionName !== 'businesses') {
+      newItem.businessId = businessId;
     }
-    return { id: docRef.id, ...newItem };
+
+    // 1. Save locally immediately
+    const savedLocal = localDb.save(collectionName, id, newItem, true, businessId);
+
+    // 2. Try Firestore immediately but don't block on error
+    this.syncPendingQueue();
+
+    return savedLocal;
   }
 
   // Update an existing item
@@ -82,42 +167,47 @@ class DatabaseService {
       ...updates,
       updatedAt: new Date().toISOString()
     };
-    
-    let docRef;
-    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
-      docRef = doc(dbFirestore, collectionName, id);
-    } else {
-      docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
-    }
-    
-    await this._withTimeout(updateDoc(docRef, updateData));
-    return { id, ...updateData };
+
+    // Get existing to merge locally
+    const existing = localDb.get(collectionName, id) || {};
+    const merged = { ...existing, ...updateData };
+
+    // 1. Save locally
+    const savedLocal = localDb.save(collectionName, id, merged, true, businessId);
+
+    // 2. Try sync
+    this.syncPendingQueue();
+
+    return savedLocal;
   }
 
   // Delete an item
   async delete(collectionName, id, businessId = null) {
-    let docRef;
-    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
-      docRef = doc(dbFirestore, collectionName, id);
-    } else {
-      docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
-    }
-    await this._withTimeout(deleteDoc(docRef));
+    // 1. Delete locally and queue
+    localDb.remove(collectionName, id, true, businessId);
+
+    // 2. Try sync
+    this.syncPendingQueue();
+
     return true;
   }
 
   // --- Specialized Queries ---
   
-  // Find user by Firebase Auth UID (optimized)
+  // Find user by Firebase Auth UID
   async getUserByFirebaseUid(firebaseUid) {
     try {
       const docRef = doc(dbFirestore, 'users', firebaseUid);
       const d = await this._withTimeout(getDoc(docRef));
-      return d.exists() ? { id: d.id, ...d.data() } : null;
-    } catch (e) {
-      // If permission denied or missing, they don't exist yet
-      console.warn("User profile fetch:", e.message);
+      if (d.exists()) {
+        const record = { id: d.id, ...d.data() };
+        localDb.save('users', d.id, record, false);
+        return record;
+      }
       return null;
+    } catch (e) {
+      console.warn("[OFFLINE] Using local cache for user profile:", e.message);
+      return localDb.get('users', firebaseUid);
     }
   }
 }

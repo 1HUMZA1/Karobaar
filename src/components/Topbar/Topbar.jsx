@@ -3,6 +3,7 @@ import { Menu, Search, Sun, Moon, Bell, User, LogOut } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../services/databaseService';
+import { localDb } from '../../services/localDb';
 import './Topbar.css';
 
 const Topbar = () => {
@@ -10,7 +11,23 @@ const Topbar = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchResults, setSearchResults] = React.useState([]);
   const [isSearching, setIsSearching] = React.useState(false);
+  const [pendingCount, setPendingCount] = React.useState(0);
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const updateCount = () => setPendingCount(localDb.getPendingQueue().length);
+    updateCount(); // Initial count
+    
+    window.addEventListener('karobaar_sync_update', updateCount);
+    window.addEventListener('online', updateCount);
+    window.addEventListener('offline', updateCount);
+    
+    return () => {
+      window.removeEventListener('karobaar_sync_update', updateCount);
+      window.removeEventListener('online', updateCount);
+      window.removeEventListener('offline', updateCount);
+    };
+  }, []);
 
   const handleSearch = async (e) => {
     const query = e.target.value;
@@ -81,6 +98,17 @@ const Topbar = () => {
       </div>
 
       <div className="topbar-right">
+        {/* Sync Indicator */}
+        <div className="sync-indicator mr-4 flex items-center" style={{ fontSize: '0.8rem', color: '#64748b' }}>
+          {!navigator.onLine ? (
+            <span title="Offline" style={{ color: '#ef4444' }}>⚠ Offline</span>
+          ) : pendingCount > 0 ? (
+            <span title="Syncing..." style={{ color: '#eab308' }}>↻ Syncing...</span>
+          ) : (
+            <span title="Saved & Synced" style={{ color: '#22c55e' }}>✓ Synced</span>
+          )}
+        </div>
+
         <button className="icon-btn" onClick={toggleTheme} title="Toggle Theme">
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
         </button>

@@ -89,14 +89,18 @@ export const AppProvider = ({ children }) => {
   // Method to refresh user profile from local database without requiring a hard reload
   const refreshUserProfile = async () => {
     if (auth.currentUser) {
+      console.log("[AUTH] Refreshing user profile...");
       const karobaarUser = await db.getUserByFirebaseUid(auth.currentUser.uid);
-      if (karobaarUser && karobaarUser.memberships && karobaarUser.memberships.length > 0) {
+      
+      if (karobaarUser && karobaarUser.onboardingCompleted) {
+        console.log("[AUTH] User onboarded. Local data found.", karobaarUser);
         setCurrentUser({
           ...karobaarUser,
-          activeBusinessId: karobaarUser.memberships[0]
+          activeBusinessId: karobaarUser.memberships?.[0]
         });
         setAuthStatus('authenticated');
       } else {
+        console.log("[AUTH] User not onboarded.");
         setAuthStatus('pending_onboarding');
       }
     }
