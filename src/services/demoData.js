@@ -114,6 +114,21 @@ export const initializeDemoData = async () => {
     ];
     await db.saveCollection('purchases', demoPurchases);
 
+    // 8. Leave Requests
+    const demoLeave = [
+      {
+        id: 'l1', employeeId: 'e2', employeeName: 'John Doe', type: 'Sick Leave',
+        startDate: formatISO(today), endDate: formatISO(addDays(today, 2)),
+        days: 2, reason: 'Flu', status: 'Pending'
+      },
+      {
+        id: 'l2', employeeId: 'e1', employeeName: 'Admin User', type: 'Annual Leave',
+        startDate: formatISO(subDays(today, 10)), endDate: formatISO(subDays(today, 5)),
+        days: 5, reason: 'Vacation', status: 'Approved'
+      }
+    ];
+    await db.saveCollection('leave', demoLeave);
+
     console.log('Demo data initialized successfully.');
   }
 };
