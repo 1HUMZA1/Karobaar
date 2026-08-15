@@ -1,96 +1,124 @@
-import { v4 as uuidv4 } from 'uuid';
+import { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import { dbFirestore } from './firebase';
 
 /**
- * A simple LocalStorage based mock database service with async simulation
- * to mimic a real API interaction.
+ * Real Database Service wrapping Firestore with strict multi-tenant isolation.
  */
-
-const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
-
 class DatabaseService {
-  constructor() {
-    this.prefix = 'ebusiness_';
-  }
-
-  // Get a raw collection (Unfiltered, for Internal Use like checking invites)
+  
+  // Internal/Global collections (users, businesses)
   async getRawCollection(collectionName) {
-    await delay(100); // reduced delay for snappier feel
-    const data = localStorage.getItem(`${this.prefix}${collectionName}`);
-    return data ? JSON.parse(data) : [];
+    const q = collection(dbFirestore, collectionName);
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
-  // Save a whole collection (Internal Use)
-  async saveCollection(collectionName, data) {
-    localStorage.setItem(`${this.prefix}${collectionName}`, JSON.stringify(data));
-    return data;
-  }
-
-  // Get a collection filtered by businessId
+  // Get a collection filtered by businessId (Maps to businesses/{businessId}/{collectionName})
   async getCollection(collectionName, businessId = null) {
-    const data = await this.getRawCollection(collectionName);
-    
-    // For collections that span across or don't have businessId (like pure Users), return all
-    // But we should enforce businessId for standard data.
-    if (businessId && collectionName !== 'users') {
-      return data.filter(item => item.businessId === businessId);
+    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
+      return this.getRawCollection(collectionName);
     }
-    return data;
+    
+    // Multi-tenant isolation: /businesses/{businessId}/{collectionName}
+    const q = collection(dbFirestore, `businesses/${businessId}/${collectionName}`);
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
   // Find a single item by ID
   async getById(collectionName, id, businessId = null) {
-    const collection = await this.getCollection(collectionName, businessId);
-    return collection.find(item => item.id === id) || null;
+    let docRef;
+    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
+      docRef = doc(dbFirestore, collectionName, id);
+    } else {
+      docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
+    }
+    
+    const d = await getDoc(docRef);
+    return d.exists() ? { id: d.id, ...d.data() } : null;
+  }
+
+  // Helper to prevent hanging promises when ad-blockers intercept Firestore
+  async _withTimeout(promise, ms = 10000) {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('connection-blocked'));
+      }, ms);
+    });
+    return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
   }
 
   // Add a new item
-  async add(collectionName, item, businessId = null) {
-    const collection = await this.getRawCollection(collectionName);
-    const newItem = { 
-      ...item, 
-      id: uuidv4(), 
-      createdAt: new Date().toISOString() 
+  async add(collectionName, item, businessId = null, customId = null) {
+    const newItem = {
+      ...item,
+      createdAt: new Date().toISOString()
     };
     
-    if (businessId && !newItem.businessId) {
-      newItem.businessId = businessId;
+    let docRef;
+    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
+      if (customId) {
+        docRef = doc(dbFirestore, collectionName, customId);
+        await this._withTimeout(setDoc(docRef, newItem));
+      } else {
+        docRef = await this._withTimeout(addDoc(collection(dbFirestore, collectionName), newItem));
+      }
+    } else {
+      newItem.businessId = businessId; // Redundancy
+      if (customId) {
+        docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, customId);
+        await this._withTimeout(setDoc(docRef, newItem));
+      } else {
+        docRef = await this._withTimeout(addDoc(collection(dbFirestore, `businesses/${businessId}/${collectionName}`), newItem));
+      }
     }
-    
-    collection.push(newItem);
-    await this.saveCollection(collectionName, collection);
-    return newItem;
+    return { id: docRef.id, ...newItem };
   }
 
   // Update an existing item
   async update(collectionName, id, updates, businessId = null) {
-    const collection = await this.getRawCollection(collectionName);
-    const index = collection.findIndex(item => item.id === id);
-    if (index === -1) throw new Error(`Item ${id} not found in ${collectionName}`);
+    const updateData = {
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
     
-    // Enforce business isolation
-    if (businessId && collection[index].businessId && collection[index].businessId !== businessId) {
-       throw new Error(`Unauthorized update on item ${id} outside of business ${businessId}`);
+    let docRef;
+    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
+      docRef = doc(dbFirestore, collectionName, id);
+    } else {
+      docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
     }
     
-    collection[index] = { ...collection[index], ...updates, updatedAt: new Date().toISOString() };
-    await this.saveCollection(collectionName, collection);
-    return collection[index];
+    await this._withTimeout(updateDoc(docRef, updateData));
+    return { id, ...updateData };
   }
 
   // Delete an item
   async delete(collectionName, id, businessId = null) {
-    const collection = await this.getRawCollection(collectionName);
-    
-    const index = collection.findIndex(item => item.id === id);
-    if (index === -1) return true; // Already gone
-
-    if (businessId && collection[index].businessId && collection[index].businessId !== businessId) {
-      throw new Error(`Unauthorized delete on item ${id} outside of business ${businessId}`);
+    let docRef;
+    if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
+      docRef = doc(dbFirestore, collectionName, id);
+    } else {
+      docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
     }
-
-    const filtered = collection.filter(item => item.id !== id);
-    await this.saveCollection(collectionName, filtered);
+    await this._withTimeout(deleteDoc(docRef));
     return true;
+  }
+
+  // --- Specialized Queries ---
+  
+  // Find user by Firebase Auth UID (optimized)
+  async getUserByFirebaseUid(firebaseUid) {
+    try {
+      const docRef = doc(dbFirestore, 'users', firebaseUid);
+      const d = await this._withTimeout(getDoc(docRef));
+      return d.exists() ? { id: d.id, ...d.data() } : null;
+    } catch (e) {
+      // If permission denied or missing, they don't exist yet
+      console.warn("User profile fetch:", e.message);
+      return null;
+    }
   }
 }
 

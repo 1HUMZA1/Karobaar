@@ -1,5 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, GithubAuthProvider } from "firebase/auth";
+import { initializeFirestore } from "firebase/firestore";
+import { getStorage as getFirebaseStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -14,13 +16,22 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Authentication and get a reference to the service
+// Initialize Firebase services
 export const auth = getAuth(app);
 
-// Setup Google Provider
+// Force long-polling to bypass aggressive ad blockers / VPNs that block Firestore WebChannels
+export const dbFirestore = initializeFirestore(app, {
+  experimentalForceLongPolling: true
+});
+
+export const storage = getFirebaseStorage(app);
+
+// Setup Auth Providers
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+
+export const githubProvider = new GithubAuthProvider();
 
 export default app;

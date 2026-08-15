@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Function to check if a user belongs to a specific business
+    function isBusinessMember(businessId) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/businesses/$(businessId)/members/$(request.auth.uid));
+    }
+    
+    // Function to get the role of a user in a specific business
+    function getRole(businessId) {
+      return get(/databases/$(database)/documents/businesses/$(businessId)/members/$(request.auth.uid)).data.role;
+    }
+    
+    // Check if the user is an owner or admin
+    function isOwnerOrAdmin(businessId) {
+      let role = getRole(businessId);
+      return role == 'OWNER' || role == 'ADMIN';
+    }
+
+    // USERS COLLECTION
+    // Users can only read/write their own profile data
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // BUSINESSES COLLECTION
+    // - Any authenticated user can create a business (they become OWNER via frontend/cloud function logic)
+    // - Only members can read the core business details
+    // - Only Owners or Admins can update/delete the business details
+    match /businesses/{businessId} {
+      allow create: if isAuthenticated();
+      allow read: if isBusinessMember(businessId);
+      allow update, delete: if isBusinessMember(businessId) && isOwnerOrAdmin(businessId);
+      
+      // MEMBERS SUBCOLLECTION
+      // Defines roles inside a business
+      match /members/{memberId} {
+        // Members can read the member list
+        allow read: if isBusinessMember(businessId);
+        // Only Owners/Admins can add/edit/delete members (except the initial creation which might be batched)
+        allow write: if isBusinessMember(businessId) && isOwnerOrAdmin(businessId) || 
+                     (request.auth.uid == memberId && !exists(/databases/$(database)/documents/businesses/$(businessId))); 
+                     // The second condition allows the creator to add themselves during initial business creation
+      }
+      
+      // GENERAL BUSINESS DATA SUBCOLLECTIONS
+      // (products, customers, employees, sales, inventory_movements, etc.)
+      // Basic rule: Must be a member of the business to read/write its data.
+      // (More granular RBAC will be enforced in the frontend and can be refined here later)
+      
+      match /products/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /customers/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /suppliers/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /employees/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /attendance/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /sales/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /orders/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /expenses/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /purchases/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /inventory_movements/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /tasks/{document=**} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+      match /auditLogs/{document=**} {
+        allow read: if isBusinessMember(businessId) && isOwnerOrAdmin(businessId);
+        allow create: if isBusinessMember(businessId);
+        allow update, delete: if false; // Audit logs can never be modified or deleted
+      }
+    }
+  }
+}

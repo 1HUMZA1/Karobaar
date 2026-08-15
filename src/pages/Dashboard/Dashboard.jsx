@@ -37,29 +37,35 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (currentUser?.activeBusinessId) {
+      loadDashboardData(currentUser.activeBusinessId);
+    }
+  }, [currentUser?.activeBusinessId]);
 
-  const loadDashboardData = async () => {
-    const salesData = await db.getCollection('sales');
-    const customersData = await db.getCollection('customers');
-    const productsData = await db.getCollection('products');
+  const loadDashboardData = async (businessId) => {
+    try {
+      const salesData = await db.getCollection('sales', businessId);
+      const customersData = await db.getCollection('customers', businessId);
+      const productsData = await db.getCollection('products', businessId);
 
-    const totalRevenue = salesData.reduce((sum, s) => sum + s.total, 0);
-    const lowStockCount = productsData.filter(p => p.stockQuantity <= p.minimumStock).length;
-    
-    // Get 5 most recent sales
-    const recent = [...salesData].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+      const totalRevenue = salesData.reduce((sum, s) => sum + s.total, 0);
+      const lowStockCount = productsData.filter(p => p.stockQuantity <= p.minimumStock).length;
+      
+      // Get 5 most recent sales
+      const recent = [...salesData].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
-    setStats({
-      sales: totalRevenue,
-      orders: salesData.length,
-      customers: customersData.length,
-      lowStock: lowStockCount,
-      recentSales: recent,
-      pendingTasks: 3,
-      leaveBalance: 12
-    });
+      setStats({
+        sales: totalRevenue,
+        orders: salesData.length,
+        customers: customersData.length,
+        lowStock: lowStockCount,
+        recentSales: recent,
+        pendingTasks: 0,
+        leaveBalance: 0
+      });
+    } catch (err) {
+      console.error("Dashboard Error:", err);
+    }
   };
 
   const chartOptions = {

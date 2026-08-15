@@ -14,8 +14,8 @@ export const AppProvider = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Authentication & Global State
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Authentication & Global State
+  const [authStatus, setAuthStatus] = useState('loading'); // 'loading', 'authenticated', 'unauthenticated', 'pending_onboarding'
   const [currentUser, setCurrentUser] = useState(null);
 
   const userRole = currentUser?.role || 'Guest';
@@ -28,40 +28,56 @@ export const AppProvider = ({ children }) => {
 
   // Firebase Auth Listener
   useEffect(() => {
+    console.log("[AUTH] Firebase initializing");
+    console.log("[AUTH] Loading...");
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // User is logged into Google. Now check Karobaar profile.
+        console.log(`[AUTH] Authenticated UID: ${firebaseUser.uid}`);
+        
+        // User is authenticated via Google/GitHub/Email
         try {
-          const users = await db.getRawCollection('users');
-          const karobaarUser = users.find(u => u.firebaseUid === firebaseUser.uid);
-
+          const karobaarUser = await db.getUserByFirebaseUid(firebaseUser.uid);
+          
           if (karobaarUser) {
-            // Existing user
-            setCurrentUser(karobaarUser);
-            setIsAuthenticated(true);
+            console.log("[AUTH] User profile loaded");
           } else {
-            // Authenticated via Google, but NO Karobaar profile yet.
-            // We set a temporary currentUser without a businessId to force them to /setup
+            console.log("[AUTH] No existing user profile found");
+          }
+
+          if (karobaarUser && karobaarUser.memberships && karobaarUser.memberships.length > 0) {
+            console.log("[AUTH] Business membership loaded");
+            console.log(`[AUTH] Active business: ${karobaarUser.memberships[0]}`);
+            console.log("[AUTH] Navigating to dashboard (Setting authenticated state)");
+            
+            // Fully set up user with at least one business
             setCurrentUser({
-              firebaseUid: firebaseUser.uid,
-              name: firebaseUser.displayName,
-              email: firebaseUser.email,
-              photoURL: firebaseUser.photoURL,
-              isPendingSetup: true
+              ...karobaarUser,
+              activeBusinessId: karobaarUser.memberships[0] // Default to first for now
             });
-            setIsAuthenticated(true);
+            setAuthStatus('authenticated');
+          } else {
+            console.log("[AUTH] No business memberships found. Navigating to onboarding.");
+            // User exists but has no business memberships, or user doesn't exist yet
+            setCurrentUser({
+              ...karobaarUser,
+              firebaseUid: firebaseUser.uid,
+              name: firebaseUser.displayName || karobaarUser?.name,
+              email: firebaseUser.email || karobaarUser?.email,
+              photoURL: firebaseUser.photoURL || karobaarUser?.photoURL
+            });
+            setAuthStatus('pending_onboarding');
           }
         } catch (error) {
-          console.error("Error loading Karobaar profile:", error);
-          setIsAuthenticated(false);
+          console.error("[AUTH] Error loading Karobaar profile:", error);
           setCurrentUser(null);
+          setAuthStatus('unauthenticated');
         }
       } else {
-        // User is logged out
-        setIsAuthenticated(false);
+        console.log("[AUTH] Unauthenticated user");
         setCurrentUser(null);
+        setAuthStatus('unauthenticated');
       }
-      setIsAuthLoading(false);
     });
 
     return () => unsubscribe();
@@ -73,24 +89,28 @@ export const AppProvider = ({ children }) => {
   // Method to refresh user profile from local database without requiring a hard reload
   const refreshUserProfile = async () => {
     if (auth.currentUser) {
-      const users = await db.getRawCollection('users');
-      const karobaarUser = users.find(u => u.firebaseUid === auth.currentUser.uid);
-      if (karobaarUser) {
-        setCurrentUser(karobaarUser);
+      const karobaarUser = await db.getUserByFirebaseUid(auth.currentUser.uid);
+      if (karobaarUser && karobaarUser.memberships && karobaarUser.memberships.length > 0) {
+        setCurrentUser({
+          ...karobaarUser,
+          activeBusinessId: karobaarUser.memberships[0]
+        });
+        setAuthStatus('authenticated');
+      } else {
+        setAuthStatus('pending_onboarding');
       }
     }
   };
 
   const logout = async () => {
-    setIsAuthLoading(true);
+    setAuthStatus('loading');
     try {
       await firebaseSignOut(auth);
       setCurrentUser(null);
-      setIsAuthenticated(false);
+      setAuthStatus('unauthenticated');
     } catch (error) {
       console.error("Logout Error:", error);
-    } finally {
-      setIsAuthLoading(false);
+      setAuthStatus('unauthenticated');
     }
   };
 
@@ -101,8 +121,7 @@ export const AppProvider = ({ children }) => {
       sidebarOpen,
       setSidebarOpen,
       toggleSidebar,
-      isAuthLoading,
-      isAuthenticated,
+      authStatus,
       currentUser,
       userRole,
       refreshUserProfile,
