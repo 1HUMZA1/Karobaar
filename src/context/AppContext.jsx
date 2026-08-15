@@ -4,7 +4,7 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('bizflow-theme');
+    const saved = localStorage.getItem('ebusiness-theme');
     return saved || 'light';
   });
 
@@ -13,7 +13,7 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('bizflow-theme', theme);
+    localStorage.setItem('ebusiness-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {

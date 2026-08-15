@@ -44,11 +44,11 @@ export const initializeDemoData = async () => {
     const demoEmployees = [
       {
         id: 'e1', name: 'Admin User', role: 'Admin', department: 'Management',
-        email: 'admin@bizflow.com', salary: 8000, status: 'Active'
+        email: 'admin@ebusiness.com', salary: 8000, status: 'Active'
       },
       {
         id: 'e2', name: 'John Doe', role: 'Salesperson', department: 'Sales',
-        email: 'john@bizflow.com', salary: 4000, status: 'Active'
+        email: 'john@ebusiness.com', salary: 4000, status: 'Active'
       }
     ];
     await db.saveCollection('employees', demoEmployees);

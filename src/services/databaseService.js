@@ -9,7 +9,7 @@ const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
 class DatabaseService {
   constructor() {
-    this.prefix = 'bizflow_';
+    this.prefix = 'ebusiness_';
   }
 
   // Get a whole collection
