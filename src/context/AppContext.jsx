@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../services/databaseService';
+import { auth } from '../services/firebase';
+import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 
 const AppContext = createContext();
 
@@ -11,108 +13,85 @@ export const AppProvider = ({ children }) => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('karobaar-auth') === 'true';
-  });
-  
-  const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = localStorage.getItem('karobaar-user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  // Authentication & Global State
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const userRole = currentUser?.role || 'Guest';
 
+  // Apply Theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('karobaar-theme', theme);
   }, [theme]);
 
-  // Ensure default admin exists
+  // Firebase Auth Listener
   useEffect(() => {
-    const initializeAdmin = async () => {
-      const users = await db.getCollection('users');
-      if (users.length === 0) {
-        await db.add('users', {
-          email: 'admin@karobaar.com',
-          password: 'admin', // Very simple default
-          name: 'Super Admin',
-          role: 'Owner'
-        });
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // User is logged into Google. Now check Karobaar profile.
+        try {
+          const users = await db.getRawCollection('users');
+          const karobaarUser = users.find(u => u.firebaseUid === firebaseUser.uid);
+
+          if (karobaarUser) {
+            // Existing user
+            setCurrentUser(karobaarUser);
+            setIsAuthenticated(true);
+          } else {
+            // Authenticated via Google, but NO Karobaar profile yet.
+            // We set a temporary currentUser without a businessId to force them to /setup
+            setCurrentUser({
+              firebaseUid: firebaseUser.uid,
+              name: firebaseUser.displayName,
+              email: firebaseUser.email,
+              photoURL: firebaseUser.photoURL,
+              isPendingSetup: true
+            });
+            setIsAuthenticated(true);
+          }
+        } catch (error) {
+          console.error("Error loading Karobaar profile:", error);
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+        }
+      } else {
+        // User is logged out
+        setIsAuthenticated(false);
+        setCurrentUser(null);
       }
-    };
-    initializeAdmin();
+      setIsAuthLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(prev => !prev);
-  };
-
-  const authenticate = async (email, password, rememberMe) => {
-    const users = await db.getCollection('users');
-    const user = users.find(u => u.email === email && u.password === password);
-    
-    if (user) {
-      // Don't store password in session state
-      const { password: _, ...userData } = user;
-      setCurrentUser(userData);
-      setIsAuthenticated(true);
-      
-      if (rememberMe) {
-        localStorage.setItem('karobaar-user', JSON.stringify(userData));
-        localStorage.setItem('karobaar-auth', 'true');
-      } else {
-        sessionStorage.setItem('karobaar-user', JSON.stringify(userData));
-        sessionStorage.setItem('karobaar-auth', 'true');
+  // Method to refresh user profile from local database without requiring a hard reload
+  const refreshUserProfile = async () => {
+    if (auth.currentUser) {
+      const users = await db.getRawCollection('users');
+      const karobaarUser = users.find(u => u.firebaseUid === auth.currentUser.uid);
+      if (karobaarUser) {
+        setCurrentUser(karobaarUser);
       }
-      return { success: true };
     }
-    return { success: false, message: 'Invalid email or password' };
   };
 
-  const register = async (email, password, name) => {
-    const users = await db.getCollection('users');
-    if (users.some(u => u.email === email)) {
-      return { success: false, message: 'Email already exists' };
+  const logout = async () => {
+    setIsAuthLoading(true);
+    try {
+      await firebaseSignOut(auth);
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error("Logout Error:", error);
+    } finally {
+      setIsAuthLoading(false);
     }
-    
-    // Default new registrations to Employee to prevent unauthorized Owner access
-    const newUser = await db.add('users', {
-      email,
-      password,
-      name,
-      role: 'Employee' 
-    });
-    
-    const { password: _, ...userData } = newUser;
-    setCurrentUser(userData);
-    setIsAuthenticated(true);
-    
-    localStorage.setItem('karobaar-user', JSON.stringify(userData));
-    localStorage.setItem('karobaar-auth', 'true');
-    
-    return { success: true };
-  };
-
-  const login = (userData) => {
-    // For manual override or Google Login
-    setCurrentUser(userData);
-    setIsAuthenticated(true);
-    localStorage.setItem('karobaar-user', JSON.stringify(userData));
-    localStorage.setItem('karobaar-auth', 'true');
-  };
-
-  const logout = () => {
-    setCurrentUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('karobaar-user');
-    localStorage.removeItem('karobaar-auth');
-    sessionStorage.removeItem('karobaar-user');
-    sessionStorage.removeItem('karobaar-auth');
   };
 
   return (
@@ -122,12 +101,11 @@ export const AppProvider = ({ children }) => {
       sidebarOpen,
       setSidebarOpen,
       toggleSidebar,
+      isAuthLoading,
       isAuthenticated,
       currentUser,
       userRole,
-      authenticate,
-      register,
-      login,
+      refreshUserProfile,
       logout
     }}>
       {children}

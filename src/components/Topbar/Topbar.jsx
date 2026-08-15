@@ -81,10 +81,6 @@ const Topbar = () => {
       </div>
 
       <div className="topbar-right">
-        <div className="hidden md:flex items-center gap-2 bg-warning-light text-warning px-3 py-1 rounded-full text-xs font-bold mr-2">
-          Demo Mode
-        </div>
-
         <button className="icon-btn" onClick={toggleTheme} title="Toggle Theme">
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
         </button>
@@ -96,10 +92,14 @@ const Topbar = () => {
 
         <div className="user-profile group relative cursor-pointer">
           <div className="avatar">
-            <User size={20} />
+            {currentUser?.photoURL ? (
+              <img src={currentUser.photoURL} alt="User" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+            ) : (
+              <User size={20} />
+            )}
           </div>
           <div className="user-info">
-            <span className="user-name">{currentUser?.name || 'Demo User'}</span>
+            <span className="user-name">{currentUser?.name || 'User'}</span>
             <span className="user-role">{userRole}</span>
           </div>
           
