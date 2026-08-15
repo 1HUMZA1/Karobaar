@@ -17,6 +17,10 @@ import Suppliers from './pages/Suppliers/Suppliers';
 import Purchases from './pages/Purchases/Purchases';
 import Leave from './pages/Leave/Leave';
 import Payroll from './pages/Payroll/Payroll';
+import Tasks from './pages/Tasks/Tasks';
+import Settings from './pages/Settings/Settings';
+import Reports from './pages/Reports/Reports';
+import Notifications from './pages/Notifications/Notifications';
 
 function App() {
   useEffect(() => {
@@ -42,6 +46,10 @@ function App() {
             <Route path="attendance" element={<Attendance />} />
             <Route path="leave" element={<Leave />} />
             <Route path="payroll" element={<Payroll />} />
+            <Route path="tasks" element={<Tasks />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="notifications" element={<Notifications />} />
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
