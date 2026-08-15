@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { Table, TableBody, TableRow, TableCell } from '../../components/ui/Table';
 import {
   Chart as ChartJS,
