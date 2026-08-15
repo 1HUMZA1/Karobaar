@@ -253,6 +253,35 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.05);
 }
 
+.google-auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem;
+  background-color: #ffffff;
+  color: #333333;
+  border: 1px solid #dcdcdc;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.google-auth-btn:hover {
+  background-color: #fcfcfc;
+  border-color: #cccccc;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
+
 /* Dark mode overrides (keeping it strictly black/white) */
 :root[data-theme='dark'] .login-container {
   background-color: #0a0a0a;
@@ -310,6 +339,17 @@
 :root[data-theme='dark'] .demo-btn:hover {
   background-color: #222222 !important;
   border-color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .google-auth-btn {
+  background-color: #111111;
+  color: #ffffff;
+  border-color: #333333;
+}
+
+:root[data-theme='dark'] .google-auth-btn:hover {
+  background-color: #222222;
+  border-color: #555555;
 }
 
 :root[data-theme='dark'] .divider::before {
