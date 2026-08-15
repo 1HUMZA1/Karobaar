@@ -86,6 +86,34 @@ export const initializeDemoData = async () => {
     ];
     await db.saveCollection('expenses', demoExpenses);
 
+    // 6. Suppliers
+    const demoSuppliers = [
+      {
+        id: 'sup1', company: 'TechSource Inc', name: 'David Lee', email: 'david@techsource.com',
+        phone: '+1 555 019 8372', outstandingBalance: 1500, status: 'Active'
+      },
+      {
+        id: 'sup2', company: 'Global Parts', name: 'Sarah Chen', email: 'sarah@globalparts.com',
+        phone: '+1 555 928 3746', outstandingBalance: 0, status: 'Active'
+      }
+    ];
+    await db.saveCollection('suppliers', demoSuppliers);
+
+    // 7. Purchases
+    const demoPurchases = [
+      {
+        id: 'po1', poNumber: 'PO-2023-001', supplierId: 'sup1', supplierName: 'TechSource Inc',
+        date: formatISO(subDays(today, 3)), total: 3500, status: 'Pending',
+        items: [{ productId: 'p1', quantity: 10, purchasePrice: 850 }]
+      },
+      {
+        id: 'po2', poNumber: 'PO-2023-002', supplierId: 'sup2', supplierName: 'Global Parts',
+        date: formatISO(subDays(today, 10)), total: 1200, status: 'Received',
+        items: [{ productId: 'p2', quantity: 2, purchasePrice: 1000 }]
+      }
+    ];
+    await db.saveCollection('purchases', demoPurchases);
+
     console.log('Demo data initialized successfully.');
   }
 };

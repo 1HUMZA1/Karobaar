@@ -13,6 +13,8 @@ import Attendance from './pages/Attendance/Attendance';
 import Customers from './pages/Customers/Customers';
 import Orders from './pages/Orders/Orders';
 import Expenses from './pages/Expenses/Expenses';
+import Suppliers from './pages/Suppliers/Suppliers';
+import Purchases from './pages/Purchases/Purchases';
 
 function App() {
   useEffect(() => {
@@ -29,6 +31,8 @@ function App() {
             <Route path="orders" element={<Orders />} />
             <Route path="customers" element={<Customers />} />
             <Route path="expenses" element={<Expenses />} />
+            <Route path="suppliers" element={<Suppliers />} />
+            <Route path="purchases" element={<Purchases />} />
             <Route path="pos" element={<POS />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="products" element={<Products />} />
