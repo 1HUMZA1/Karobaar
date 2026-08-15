@@ -1,0 +1,19 @@
+.expense-search {
+  max-width: 400px;
+  margin-bottom: 0 !important;
+}
+
+.expense-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.category-badge {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}

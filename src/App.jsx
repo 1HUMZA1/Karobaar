@@ -10,10 +10,9 @@ import POS from './pages/POS/POS';
 import Inventory from './pages/Inventory/Inventory';
 import Employees from './pages/Employees/Employees';
 import Attendance from './pages/Attendance/Attendance';
-
-// Placeholder Pages
-const Sales = () => <div className="animate-fade-in page-container"><h1 className="text-2xl font-bold mb-4">Sales & Orders</h1><p>Module coming soon.</p></div>;
-
+import Customers from './pages/Customers/Customers';
+import Orders from './pages/Orders/Orders';
+import Expenses from './pages/Expenses/Expenses';
 
 function App() {
   useEffect(() => {
@@ -26,7 +25,10 @@ function App() {
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
-            <Route path="sales" element={<Sales />} />
+            <Route path="sales" element={<Navigate to="/pos" replace />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="expenses" element={<Expenses />} />
             <Route path="pos" element={<POS />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="products" element={<Products />} />

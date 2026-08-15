@@ -69,9 +69,23 @@ export const initializeDemoData = async () => {
     ];
     await db.saveCollection('sales', demoSales);
 
-    // 5. Analytics snapshot (for dashboard)
-    // In a real app this is calculated on the fly, but we'll mock some historical data
-    
+    // 5. Expenses
+    const demoExpenses = [
+      {
+        id: 'ex1', description: 'Monthly Rent', category: 'Rent',
+        amount: 2500, date: formatISO(subDays(today, 5)), paymentMethod: 'Bank Transfer'
+      },
+      {
+        id: 'ex2', description: 'Electricity Bill', category: 'Electricity',
+        amount: 350, date: formatISO(subDays(today, 2)), paymentMethod: 'Card'
+      },
+      {
+        id: 'ex3', description: 'Facebook Ads', category: 'Marketing',
+        amount: 500, date: formatISO(today), paymentMethod: 'Credit Card'
+      }
+    ];
+    await db.saveCollection('expenses', demoExpenses);
+
     console.log('Demo data initialized successfully.');
   }
 };
