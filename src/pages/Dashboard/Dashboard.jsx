@@ -20,7 +20,7 @@ import {
   Filler
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-import { format } from 'date-fns';
+import { format, subDays, startOfDay } from 'date-fns';
 import { useAppContext } from '../../context/AppContext';
 import './Dashboard.css';
 
@@ -30,11 +30,15 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  const { theme, userRole, currentUser } = useAppContext();
+  const { theme, userRole, currentUser, currentBusiness } = useAppContext();
   const [stats, setStats] = useState({
     sales: 0, orders: 0, customers: 0, lowStock: 0, recentSales: [],
     pendingTasks: 0, leaveBalance: 12
   });
+  
+  const [chartData, setChartData] = useState({ labels: [], data: [] });
+
+  const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
   useEffect(() => {
     if (currentUser?.activeBusinessId) {
@@ -48,8 +52,12 @@ const Dashboard = () => {
       const customersData = await db.getCollection('customers', businessId);
       const productsData = await db.getCollection('products', businessId);
 
+      // Filter for today
+      const today = startOfDay(new Date());
+      const todaysSales = salesData.filter(s => startOfDay(new Date(s.date)).getTime() === today.getTime());
+      
       const totalRevenue = salesData.reduce((sum, s) => sum + s.total, 0);
-      const lowStockCount = productsData.filter(p => p.stockQuantity <= p.minimumStock).length;
+      const lowStockCount = productsData.filter(p => p.stockQuantity <= (p.minimumStock || 0)).length;
       
       // Get 5 most recent sales
       const recent = [...salesData].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
@@ -63,6 +71,20 @@ const Dashboard = () => {
         pendingTasks: 0,
         leaveBalance: 0
       });
+
+      // Chart Data for last 7 days
+      const labels = [];
+      const data = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = startOfDay(subDays(today, i));
+        labels.push(format(d, 'EEE'));
+        const dayRevenue = salesData
+          .filter(s => startOfDay(new Date(s.date)).getTime() === d.getTime())
+          .reduce((sum, s) => sum + s.total, 0);
+        data.push(dayRevenue);
+      }
+      setChartData({ labels, data });
+
     } catch (err) {
       console.error("Dashboard Error:", err);
     }
@@ -81,11 +103,11 @@ const Dashboard = () => {
   };
 
   const revenueData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    labels: chartData.labels,
     datasets: [
       {
         label: 'Revenue',
-        data: [1200, 1900, 1500, 2200, 1800, 2800, 2400],
+        data: chartData.data,
         borderColor: '#2563eb',
         backgroundColor: 'rgba(37, 99, 235, 0.1)',
         fill: true,
@@ -181,8 +203,7 @@ const Dashboard = () => {
           <CardContent className="kpi-card">
             <div className="kpi-info">
               <p className="kpi-label">Total Revenue</p>
-              <h3 className="kpi-value">${stats.sales.toFixed(2)}</h3>
-              <p className="kpi-trend positive"><TrendingUp size={14}/> +12.5% from last month</p>
+              <h3 className="kpi-value">{currencySymbol}{stats.sales.toFixed(2)}</h3>
             </div>
             <div className="kpi-icon bg-primary-light text-primary">
               <DollarSign size={24} />
@@ -195,7 +216,6 @@ const Dashboard = () => {
             <div className="kpi-info">
               <p className="kpi-label">Total Orders</p>
               <h3 className="kpi-value">{stats.orders}</h3>
-              <p className="kpi-trend positive"><TrendingUp size={14}/> +5.2% from last month</p>
             </div>
             <div className="kpi-icon bg-success-light text-success">
               <ShoppingBag size={24} />
@@ -208,7 +228,6 @@ const Dashboard = () => {
             <div className="kpi-info">
               <p className="kpi-label">Total Customers</p>
               <h3 className="kpi-value">{stats.customers}</h3>
-              <p className="kpi-trend"><TrendingUp size={14} className="text-success"/> +2 new this week</p>
             </div>
             <div className="kpi-icon bg-info-light text-info">
               <Users size={24} />
@@ -221,7 +240,7 @@ const Dashboard = () => {
             <div className="kpi-info">
               <p className="kpi-label">Low Stock Alerts</p>
               <h3 className="kpi-value">{stats.lowStock}</h3>
-              <p className="kpi-trend negative"><AlertCircle size={14}/> Requires attention</p>
+              {stats.lowStock > 0 && <p className="kpi-trend negative"><AlertCircle size={14}/> Requires attention</p>}
             </div>
             <div className="kpi-icon bg-warning-light text-warning">
               <Package size={24} />
@@ -233,7 +252,7 @@ const Dashboard = () => {
       <div className="dashboard-charts-grid">
         <Card className="chart-card">
           <CardHeader>
-            <CardTitle>Revenue Overview</CardTitle>
+            <CardTitle>Revenue (Last 7 Days)</CardTitle>
           </CardHeader>
           <CardContent className="chart-container">
             <Line data={revenueData} options={chartOptions} />
@@ -251,7 +270,7 @@ const Dashboard = () => {
                   <TableRow key={sale.id}>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium">{sale.invoiceNumber}</span>
+                        <span className="font-medium">{sale.invoiceNumber || sale.id.substring(0, 8)}</span>
                         <span className="text-xs text-secondary flex items-center gap-1">
                           <Clock size={12}/> {format(new Date(sale.date), 'MMM dd, hh:mm a')}
                         </span>
@@ -259,8 +278,8 @@ const Dashboard = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-col items-end">
-                        <span className="font-bold text-primary">${sale.total.toFixed(2)}</span>
-                        <span className="text-xs text-success">{sale.status}</span>
+                        <span className="font-bold text-primary">{currencySymbol}{sale.total.toFixed(2)}</span>
+                        <span className="text-xs text-success">{sale.status || 'Completed'}</span>
                       </div>
                     </TableCell>
                   </TableRow>

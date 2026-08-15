@@ -5,9 +5,11 @@ import { salesService } from '../../services/salesService';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { useAppContext } from '../../context/AppContext';
 import './POS.css';
 
 const POS = () => {
+  const { currentUser, currentBusiness } = useAppContext();
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,21 +23,25 @@ const POS = () => {
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
-  const loadData = async () => {
-    const p = await db.getCollection('products');
-    const c = await db.getCollection('customers');
+  useEffect(() => {
+    if (currentUser?.activeBusinessId) {
+      loadData(currentUser.activeBusinessId);
+    }
+  }, [currentUser?.activeBusinessId]);
+
+  const loadData = async (businessId) => {
+    const p = await db.getCollection('products', businessId);
+    const c = await db.getCollection('customers', businessId);
     setProducts(p.filter(prod => prod.status === 'Active'));
     setCustomers(c);
   };
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.barcode.includes(searchTerm)
+    (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (p.barcode && p.barcode.includes(searchTerm))
   );
 
   const addToCart = (product) => {
@@ -73,7 +79,7 @@ const POS = () => {
   const total = subtotal + taxAmount - discount;
 
   const handleCheckout = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !currentUser?.activeBusinessId) return;
     setProcessing(true);
     try {
       await salesService.createSale({
@@ -83,13 +89,14 @@ const POS = () => {
         subtotal,
         tax: taxAmount,
         discount,
-        total
+        total,
+        businessId: currentUser.activeBusinessId
       });
       setSuccess(true);
       setCart([]);
       setSelectedCustomer('');
       setDiscount(0);
-      loadData(); // refresh stock
+      loadData(currentUser.activeBusinessId); // refresh stock
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
       console.error(error);
@@ -124,7 +131,7 @@ const POS = () => {
                   <p className="text-xs text-secondary">{product.sku}</p>
                 </div>
                 <div className="flex justify-between items-center mt-2">
-                  <span className="font-bold text-primary">${product.sellingPrice}</span>
+                  <span className="font-bold text-primary">{currencySymbol}{product.sellingPrice}</span>
                   <span className={`text-xs font-medium ${product.stockQuantity > 0 ? 'text-success' : 'text-danger'}`}>
                     {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
                   </span>
@@ -156,7 +163,7 @@ const POS = () => {
                 <div key={item.productId} className="cart-item">
                   <div className="cart-item-info">
                     <h5 className="font-medium text-sm">{item.name}</h5>
-                    <span className="text-xs text-secondary">${item.price}</span>
+                    <span className="text-xs text-secondary">{currencySymbol}{item.price}</span>
                   </div>
                   <div className="cart-item-actions">
                     <div className="qty-controls">
@@ -164,7 +171,7 @@ const POS = () => {
                       <span>{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.productId, 1)}><Plus size={14}/></button>
                     </div>
-                    <span className="font-medium ml-2 w-16 text-right">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-medium ml-2 w-16 text-right">{currencySymbol}{(item.price * item.quantity).toFixed(2)}</span>
                     <button className="remove-btn ml-2" onClick={() => removeFromCart(item.productId)}>
                       <X size={16} />
                     </button>
@@ -191,14 +198,14 @@ const POS = () => {
 
             <div className="summary-row">
               <span className="text-secondary">Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{currencySymbol}{subtotal.toFixed(2)}</span>
             </div>
             <div className="summary-row">
               <span className="text-secondary">Tax ({taxRate}%)</span>
-              <span>${taxAmount.toFixed(2)}</span>
+              <span>{currencySymbol}{taxAmount.toFixed(2)}</span>
             </div>
             <div className="summary-row discount-row">
-              <span className="text-secondary">Discount</span>
+              <span className="text-secondary">Discount ({currencySymbol})</span>
               <input 
                 type="number" 
                 value={discount} 
@@ -211,7 +218,7 @@ const POS = () => {
             
             <div className="summary-total">
               <span>Total</span>
-              <span className="text-2xl">${Math.max(0, total).toFixed(2)}</span>
+              <span className="text-2xl">{currencySymbol}{Math.max(0, total).toFixed(2)}</span>
             </div>
 
             <div className="payment-methods">

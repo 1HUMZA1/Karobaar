@@ -1,15 +1,92 @@
-import React, { useState } from 'react';
-import { Save, Building, Users, BellRing, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Building, Users, BellRing, Shield, LayoutGrid, Settings2 } from 'lucide-react';
+import { db } from '../../services/databaseService';
+import { useAppContext } from '../../context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import './Settings.css';
 
-const Settings = () => {
-  const [activeTab, setActiveTab] = useState('general');
+const MODULES_LIST = [
+  { id: 'sales', label: 'Sales' },
+  { id: 'pos', label: 'POS' },
+  { id: 'inventory', label: 'Inventory' },
+  { id: 'purchases', label: 'Purchases' },
+  { id: 'customers', label: 'Customers' },
+  { id: 'suppliers', label: 'Suppliers' },
+  { id: 'employees', label: 'Employees' },
+  { id: 'attendance', label: 'Attendance' },
+  { id: 'leave', label: 'Leave Management' },
+  { id: 'payroll', label: 'Payroll' },
+  { id: 'expenses', label: 'Expenses' },
+  { id: 'invoices', label: 'Invoices' },
+  { id: 'payments', label: 'Payments' },
+  { id: 'accounting', label: 'Accounting' },
+  { id: 'reports', label: 'Reports' },
+  { id: 'tasks', label: 'Tasks' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'documents', label: 'Business Documents' },
+  { id: 'notifications', label: 'Notifications' }
+];
 
-  const handleSave = () => {
-    alert('Settings saved successfully!');
+const Settings = () => {
+  const { currentBusiness, currentUser, refreshUserProfile } = useAppContext();
+  const [activeTab, setActiveTab] = useState('general');
+  const [saving, setSaving] = useState(false);
+
+  // General Settings State
+  const [businessName, setBusinessName] = useState('');
+  const [businessEmail, setBusinessEmail] = useState('');
+  
+  // Preferences State
+  const [currency, setCurrency] = useState('USD');
+  const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
+  const [lowStockThreshold, setLowStockThreshold] = useState(5);
+
+  // Modules State
+  const [enabledModules, setEnabledModules] = useState({});
+
+  useEffect(() => {
+    if (currentBusiness) {
+      setBusinessName(currentBusiness.name || '');
+      setBusinessEmail(currentBusiness.email || '');
+      setCurrency(currentBusiness.settings?.currency || 'USD');
+      setDateFormat(currentBusiness.settings?.dateFormat || 'DD/MM/YYYY');
+      setLowStockThreshold(currentBusiness.settings?.lowStockThreshold || 5);
+      setEnabledModules(currentBusiness.modules || {});
+    }
+  }, [currentBusiness]);
+
+  const toggleModule = (modId) => {
+    setEnabledModules(prev => ({
+      ...prev,
+      [modId]: !prev[modId]
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!currentUser?.activeBusinessId) return;
+    setSaving(true);
+    try {
+      await db.update('businesses', currentUser.activeBusinessId, {
+        name: businessName,
+        email: businessEmail,
+        settings: {
+          ...currentBusiness.settings,
+          currency,
+          dateFormat,
+          lowStockThreshold: Number(lowStockThreshold)
+        },
+        modules: enabledModules
+      });
+      await refreshUserProfile();
+      alert('Settings saved successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save settings.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleResetData = () => {
@@ -26,7 +103,9 @@ const Settings = () => {
           <h1 className="text-2xl font-bold">Settings</h1>
           <p className="text-secondary">Configure your business preferences</p>
         </div>
-        <Button icon={<Save size={18} />} onClick={handleSave}>Save Changes</Button>
+        <Button icon={<Save size={18} />} onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save Changes'}
+        </Button>
       </div>
 
       <div className="settings-layout">
@@ -36,6 +115,18 @@ const Settings = () => {
             onClick={() => setActiveTab('general')}
           >
             <Building size={18} /> Business Profile
+          </button>
+          <button 
+            className={`settings-tab ${activeTab === 'preferences' ? 'active' : ''}`}
+            onClick={() => setActiveTab('preferences')}
+          >
+            <Settings2 size={18} /> Preferences
+          </button>
+          <button 
+            className={`settings-tab ${activeTab === 'features' ? 'active' : ''}`}
+            onClick={() => setActiveTab('features')}
+          >
+            <LayoutGrid size={18} /> Features & Modules
           </button>
           <button 
             className={`settings-tab ${activeTab === 'users' ? 'active' : ''}`}
@@ -70,11 +161,86 @@ const Settings = () => {
                 <CardTitle>Business Profile</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Input label="Company Name" defaultValue="E Business Inc." />
-                <Input label="Business Email" defaultValue="contact@ebusiness.com" type="email" />
+                <Input 
+                  label="Company Name" 
+                  value={businessName} 
+                  onChange={(e) => setBusinessName(e.target.value)} 
+                />
+                <Input 
+                  label="Business Email" 
+                  type="email" 
+                  value={businessEmail} 
+                  onChange={(e) => setBusinessEmail(e.target.value)} 
+                />
                 <Input label="Phone Number" defaultValue="+1 234 567 8900" />
                 <Input label="Address" defaultValue="123 Commerce St, Business City" />
                 <Input label="Tax ID / VAT" defaultValue="TAX-8923472" />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'preferences' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Global Preferences</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="form-group">
+                  <label>Currency</label>
+                  <select 
+                    className="karobaar-input"
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--bg-input)' }}
+                    value={currency} 
+                    onChange={e => setCurrency(e.target.value)}
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="INR">INR (₹)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Date Format</label>
+                  <select 
+                    className="karobaar-input"
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--bg-input)' }}
+                    value={dateFormat} 
+                    onChange={e => setDateFormat(e.target.value)}
+                  >
+                    <option>DD/MM/YYYY</option>
+                    <option>MM/DD/YYYY</option>
+                    <option>YYYY-MM-DD</option>
+                  </select>
+                </div>
+                <Input 
+                  label="Low Stock Alert Threshold" 
+                  type="number" 
+                  value={lowStockThreshold} 
+                  onChange={(e) => setLowStockThreshold(e.target.value)} 
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'features' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Features & Modules</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-secondary mb-6">Enable or disable modules to customize your application experience. Your navigation menu will update automatically.</p>
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem'}}>
+                  {MODULES_LIST.map(mod => (
+                    <label key={mod.id} style={{display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer', background: 'var(--bg-card)'}}>
+                      <input 
+                        type="checkbox" 
+                        checked={!!enabledModules[mod.id]} 
+                        onChange={() => toggleModule(mod.id)} 
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span className="font-medium">{mod.label}</span>
+                    </label>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}

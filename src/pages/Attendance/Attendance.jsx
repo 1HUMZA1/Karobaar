@@ -5,47 +5,53 @@ import { formatISO, format } from 'date-fns';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { useAppContext } from '../../context/AppContext';
 import './Attendance.css';
 
 const Attendance = () => {
+  const { currentUser } = useAppContext();
   const [employees, setEmployees] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedEmployee, setSelectedEmployee] = useState('');
 
   useEffect(() => {
-    loadData();
+    if (currentUser?.activeBusinessId) {
+      loadData(currentUser.activeBusinessId);
+    }
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [currentUser?.activeBusinessId]);
 
-  const loadData = async () => {
-    const emps = await db.getCollection('employees');
+  const loadData = async (businessId) => {
+    const emps = await db.getCollection('employees', businessId);
     setEmployees(emps);
     // In a real app we fetch today's records. For demo, we just hold them in state or mock DB.
-    const records = await db.getCollection('attendance');
+    const records = await db.getCollection('attendance', businessId);
     setAttendanceRecords(records);
   };
 
   const handleCheckIn = async (employeeId) => {
+    if (!currentUser?.activeBusinessId) return;
     const record = {
       employeeId,
       date: formatISO(new Date(), { representation: 'date' }),
       checkIn: formatISO(new Date()),
       status: 'Present'
     };
-    await db.add('attendance', record);
-    loadData();
+    await db.add('attendance', record, currentUser.activeBusinessId);
+    loadData(currentUser.activeBusinessId);
   };
 
   const handleCheckOut = async (employeeId) => {
+    if (!currentUser?.activeBusinessId) return;
     const today = formatISO(new Date(), { representation: 'date' });
     const record = attendanceRecords.find(r => r.employeeId === employeeId && r.date === today && !r.checkOut);
     if (record) {
       await db.update('attendance', record.id, {
         checkOut: formatISO(new Date())
-      });
-      loadData();
+      }, currentUser.activeBusinessId);
+      loadData(currentUser.activeBusinessId);
     }
   };
 
@@ -113,10 +119,10 @@ const Attendance = () => {
             <Card key={emp.id} className="attendance-card">
               <CardContent className="p-5 flex flex-col items-center text-center">
                 <div className="employee-avatar-lg mb-3">
-                  {emp.name.charAt(0)}
+                  {emp.name.charAt(0).toUpperCase()}
                 </div>
                 <h3 className="font-semibold">{emp.name}</h3>
-                <p className="text-xs text-secondary mb-4">{emp.role}</p>
+                <p className="text-xs text-secondary mb-4">{emp.role || 'Employee'}</p>
 
                 <div className="status-indicator mb-4">
                   {isCheckedOut ? (

@@ -24,8 +24,8 @@ import Login from './pages/Login/Login';
 import BusinessSetup from './pages/BusinessSetup/BusinessSetup';
 
 // Protected Route Component
-const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { authStatus, userRole } = useAppContext();
+const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
+  const { authStatus, userRole, currentBusiness } = useAppContext();
   
   if (authStatus === 'unauthenticated') {
     return <Navigate to="/login" replace />;
@@ -35,9 +35,18 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/setup" replace />;
   }
   
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
-    // If authenticated but unauthorized for this specific route, send to dashboard
+  // Role Check
+  const hasRole = allowedRoles ? (allowedRoles.includes(userRole) || userRole === 'OWNER') : true;
+  if (!hasRole) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Module Check
+  if (moduleId && currentBusiness && currentBusiness.modules) {
+    const isModuleEnabled = currentBusiness.modules[moduleId] === true || currentBusiness.modules[moduleId] === "true";
+    if (!isModuleEnabled) {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
   
   return children;
@@ -129,26 +138,26 @@ const AppContent = () => {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="sales" element={<Navigate to="/pos" replace />} />
           
-          <Route path="pos" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS}><POS /></ProtectedRoute>} />
-          <Route path="orders" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS}><Orders /></ProtectedRoute>} />
-          <Route path="customers" element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'SALES STAFF']}><Customers /></ProtectedRoute>} />
+          <Route path="pos" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS} moduleId="pos"><POS /></ProtectedRoute>} />
+          <Route path="orders" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS} moduleId="sales"><Orders /></ProtectedRoute>} />
+          <Route path="customers" element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'SALES STAFF']} moduleId="customers"><Customers /></ProtectedRoute>} />
           
-          <Route path="products" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS}><Products /></ProtectedRoute>} />
-          <Route path="inventory" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS}><Inventory /></ProtectedRoute>} />
-          <Route path="purchases" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS}><Purchases /></ProtectedRoute>} />
-          <Route path="suppliers" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS}><Suppliers /></ProtectedRoute>} />
+          <Route path="products" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS} moduleId="inventory"><Products /></ProtectedRoute>} />
+          <Route path="inventory" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS} moduleId="inventory"><Inventory /></ProtectedRoute>} />
+          <Route path="purchases" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS} moduleId="purchases"><Purchases /></ProtectedRoute>} />
+          <Route path="suppliers" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS} moduleId="suppliers"><Suppliers /></ProtectedRoute>} />
           
-          <Route path="employees" element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'HR']}><Employees /></ProtectedRoute>} />
-          <Route path="attendance" element={<ProtectedRoute allowedRoles={ROLES.ALL}><Attendance /></ProtectedRoute>} />
-          <Route path="leave" element={<ProtectedRoute allowedRoles={ROLES.ALL}><Leave /></ProtectedRoute>} />
-          <Route path="payroll" element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'HR', 'ACCOUNTANT']}><Payroll /></ProtectedRoute>} />
+          <Route path="employees" element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'HR']} moduleId="employees"><Employees /></ProtectedRoute>} />
+          <Route path="attendance" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="attendance"><Attendance /></ProtectedRoute>} />
+          <Route path="leave" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="leave"><Leave /></ProtectedRoute>} />
+          <Route path="payroll" element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'HR', 'ACCOUNTANT']} moduleId="payroll"><Payroll /></ProtectedRoute>} />
           
-          <Route path="expenses" element={<ProtectedRoute allowedRoles={ROLES.FINANCE}><Expenses /></ProtectedRoute>} />
+          <Route path="expenses" element={<ProtectedRoute allowedRoles={ROLES.FINANCE} moduleId="expenses"><Expenses /></ProtectedRoute>} />
           
-          <Route path="tasks" element={<ProtectedRoute allowedRoles={ROLES.ALL}><Tasks /></ProtectedRoute>} />
-          <Route path="reports" element={<ProtectedRoute allowedRoles={['Owner', 'Admin', 'Manager', 'HR', 'Accountant']}><Reports /></ProtectedRoute>} />
-          <Route path="settings" element={<ProtectedRoute allowedRoles={ROLES.SETTINGS_OPS}><Settings /></ProtectedRoute>} />
-          <Route path="notifications" element={<ProtectedRoute allowedRoles={ROLES.ALL}><Notifications /></ProtectedRoute>} />
+          <Route path="tasks" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="tasks"><Tasks /></ProtectedRoute>} />
+          <Route path="reports" element={<ProtectedRoute allowedRoles={['Owner', 'Admin', 'Manager', 'HR', 'Accountant']} moduleId="reports"><Reports /></ProtectedRoute>} />
+          <Route path="settings" element={<ProtectedRoute allowedRoles={ROLES.SETTINGS_OPS} moduleId="core"><Settings /></ProtectedRoute>} />
+          <Route path="notifications" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="core"><Notifications /></ProtectedRoute>} />
           
           {/* Catch all authenticated routes */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -14,9 +14,9 @@ export const AppProvider = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Authentication & Global State
-  // Authentication & Global State
   const [authStatus, setAuthStatus] = useState('loading'); // 'loading', 'authenticated', 'unauthenticated', 'pending_onboarding'
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentBusiness, setCurrentBusiness] = useState(null);
 
   const userRole = currentUser?.role || 'Guest';
 
@@ -25,6 +25,13 @@ export const AppProvider = ({ children }) => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('karobaar-theme', theme);
   }, [theme]);
+
+  // Apply Business Theme/Settings if available
+  useEffect(() => {
+    if (currentBusiness?.settings?.theme) {
+      setTheme(currentBusiness.settings.theme);
+    }
+  }, [currentBusiness]);
 
   // Firebase Auth Listener
   useEffect(() => {
@@ -35,30 +42,24 @@ export const AppProvider = ({ children }) => {
       if (firebaseUser) {
         console.log(`[AUTH] Authenticated UID: ${firebaseUser.uid}`);
         
-        // User is authenticated via Google/GitHub/Email
         try {
           const karobaarUser = await db.getUserByFirebaseUid(firebaseUser.uid);
           
-          if (karobaarUser) {
-            console.log("[AUTH] User profile loaded");
-          } else {
-            console.log("[AUTH] No existing user profile found");
-          }
-
           if (karobaarUser && karobaarUser.memberships && karobaarUser.memberships.length > 0) {
-            console.log("[AUTH] Business membership loaded");
-            console.log(`[AUTH] Active business: ${karobaarUser.memberships[0]}`);
-            console.log("[AUTH] Navigating to dashboard (Setting authenticated state)");
+            console.log(`[AUTH] Active business ID: ${karobaarUser.memberships[0]}`);
             
-            // Fully set up user with at least one business
+            // Fetch the actual business document
+            const businessData = await db.getById('businesses', karobaarUser.memberships[0]);
+            setCurrentBusiness(businessData);
+            
             setCurrentUser({
               ...karobaarUser,
-              activeBusinessId: karobaarUser.memberships[0] // Default to first for now
+              activeBusinessId: karobaarUser.memberships[0]
             });
             setAuthStatus('authenticated');
           } else {
             console.log("[AUTH] No business memberships found. Navigating to onboarding.");
-            // User exists but has no business memberships, or user doesn't exist yet
+            setCurrentBusiness(null);
             setCurrentUser({
               ...karobaarUser,
               firebaseUid: firebaseUser.uid,
@@ -71,11 +72,13 @@ export const AppProvider = ({ children }) => {
         } catch (error) {
           console.error("[AUTH] Error loading Karobaar profile:", error);
           setCurrentUser(null);
+          setCurrentBusiness(null);
           setAuthStatus('unauthenticated');
         }
       } else {
         console.log("[AUTH] Unauthenticated user");
         setCurrentUser(null);
+        setCurrentBusiness(null);
         setAuthStatus('unauthenticated');
       }
     });
@@ -92,11 +95,16 @@ export const AppProvider = ({ children }) => {
       console.log("[AUTH] Refreshing user profile...");
       const karobaarUser = await db.getUserByFirebaseUid(auth.currentUser.uid);
       
-      if (karobaarUser && karobaarUser.onboardingCompleted) {
-        console.log("[AUTH] User onboarded. Local data found.", karobaarUser);
+      if (karobaarUser && karobaarUser.onboardingCompleted && karobaarUser.memberships?.length > 0) {
+        console.log("[AUTH] User onboarded. Local data found.");
+        
+        // Fetch the actual business document
+        const businessData = await db.getById('businesses', karobaarUser.memberships[0]);
+        setCurrentBusiness(businessData);
+
         setCurrentUser({
           ...karobaarUser,
-          activeBusinessId: karobaarUser.memberships?.[0]
+          activeBusinessId: karobaarUser.memberships[0]
         });
         setAuthStatus('authenticated');
       } else {
@@ -111,6 +119,7 @@ export const AppProvider = ({ children }) => {
     try {
       await firebaseSignOut(auth);
       setCurrentUser(null);
+      setCurrentBusiness(null);
       setAuthStatus('unauthenticated');
     } catch (error) {
       console.error("Logout Error:", error);
@@ -127,6 +136,7 @@ export const AppProvider = ({ children }) => {
       toggleSidebar,
       authStatus,
       currentUser,
+      currentBusiness,
       userRole,
       refreshUserProfile,
       logout
