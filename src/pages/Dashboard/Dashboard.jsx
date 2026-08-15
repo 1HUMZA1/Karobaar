@@ -93,6 +93,17 @@ const Dashboard = () => {
         </div>
       </div>
 
+      <div className="mb-6 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+        <h3 className="text-sm font-semibold text-secondary mb-3">Quick Actions</h3>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => window.location.href='/pos'}>+ New Sale</Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.href='/products'}>+ Add Product</Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.href='/customers'}>+ Add Customer</Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.href='/expenses'}>Record Expense</Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.href='/attendance'}>Mark Attendance</Button>
+        </div>
+      </div>
+
       {/* KPI Cards */}
       <div className="dashboard-grid">
         <Card>

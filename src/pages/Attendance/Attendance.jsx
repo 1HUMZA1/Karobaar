@@ -4,12 +4,14 @@ import { db } from '../../services/databaseService';
 import { formatISO, format } from 'date-fns';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import './Attendance.css';
 
 const Attendance = () => {
   const [employees, setEmployees] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedEmployee, setSelectedEmployee] = useState('');
 
   useEffect(() => {
     loadData();
@@ -57,11 +59,48 @@ const Attendance = () => {
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Attendance</h1>
-          <p className="text-secondary">Track employee check-ins and check-outs</p>
+          <p className="text-secondary">Track employee working hours</p>
         </div>
-        <div className="current-time-display text-xl font-mono bg-bg-secondary px-4 py-2 rounded-md shadow-sm border border-border-color">
-          {format(currentTime, 'hh:mm:ss a')}
-        </div>
+      </div>
+
+      <div className="flex gap-6 mb-8 flex-wrap">
+        <Card className="flex-1 bg-primary-light border-primary">
+          <CardContent className="p-8 text-center flex flex-col items-center justify-center">
+            <h2 className="text-xl font-medium text-primary mb-2">Good Morning, {employees.find(e => e.id === selectedEmployee)?.name || 'Employee'}</h2>
+            <p className="text-sm text-secondary mb-6">Today's Schedule: 09:00 AM — 06:00 PM</p>
+            
+            <div className="text-4xl font-bold font-mono text-primary-color mb-8">
+              {format(currentTime, 'hh:mm:ss a')}
+            </div>
+
+            <div className="flex flex-col gap-4 w-full max-w-[250px]">
+              <select 
+                className="biz-input w-full"
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+              >
+                <option value="">Select your profile...</option>
+                {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+              
+              <Input 
+                type="password" 
+                placeholder="Enter 4-digit PIN..." 
+                maxLength="4"
+                className="text-center tracking-widest text-lg"
+              />
+              
+              <Button 
+                fullWidth
+                size="lg"
+                onClick={() => handleCheckIn(selectedEmployee)}
+                disabled={!selectedEmployee}
+              >
+                CHECK IN
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="attendance-grid">

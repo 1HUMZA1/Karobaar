@@ -12,6 +12,13 @@ const Settings = () => {
     alert('Settings saved successfully!');
   };
 
+  const handleResetData = () => {
+    if (window.confirm("Are you sure you want to reset all data? This will erase all your current records and restore the initial demo data.")) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="page-container animate-fade-in">
       <div className="page-header">
@@ -47,6 +54,12 @@ const Settings = () => {
             onClick={() => setActiveTab('security')}
           >
             <Shield size={18} /> Security
+          </button>
+          <button 
+            className={`settings-tab text-danger ${activeTab === 'advanced' ? 'active' : ''}`}
+            onClick={() => setActiveTab('advanced')}
+          >
+            Advanced
           </button>
         </div>
 
@@ -104,6 +117,22 @@ const Settings = () => {
             <Card>
               <CardContent className="p-8 text-center text-secondary">
                 Configuration options for {activeTab} will appear here.
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'advanced' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-danger">Danger Zone</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-secondary">
+                  Resetting the database will permanently delete all local modifications and restore the original demo datasets (Products, Customers, Sales, etc.).
+                </p>
+                <Button variant="outline" className="text-danger border-danger hover:bg-danger hover:text-white" onClick={handleResetData}>
+                  Reset Demo Data
+                </Button>
               </CardContent>
             </Card>
           )}

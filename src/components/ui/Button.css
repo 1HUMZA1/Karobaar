@@ -76,6 +76,12 @@
   opacity: 0.9;
 }
 
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  height: auto;
+}
+
 .biz-btn-ghost {
   background-color: transparent;
   color: var(--text-secondary);

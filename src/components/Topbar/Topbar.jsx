@@ -1,10 +1,43 @@
 import React from 'react';
 import { Menu, Search, Sun, Moon, Bell, User } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
+import { useNavigate } from 'react-router-dom';
+import { db } from '../../services/databaseService';
 import './Topbar.css';
 
 const Topbar = () => {
   const { toggleSidebar, theme, toggleTheme, userRole } = useAppContext();
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchResults, setSearchResults] = React.useState([]);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const navigate = useNavigate();
+
+  const handleSearch = async (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    if (query.length > 2) {
+      setIsSearching(true);
+      // Mock global search across a few collections
+      const products = await db.getCollection('products');
+      const customers = await db.getCollection('customers');
+      
+      const pRes = products.filter(p => p.name.toLowerCase().includes(query.toLowerCase())).map(p => ({...p, _type: 'Product', _path: '/products'}));
+      const cRes = customers.filter(c => c.name.toLowerCase().includes(query.toLowerCase())).map(c => ({...c, _type: 'Customer', _path: '/customers'}));
+      
+      setSearchResults([...pRes, ...cRes].slice(0, 5));
+    } else {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+  };
+
+  const handleResultClick = (path) => {
+    navigate(path);
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearching(false);
+  };
 
   return (
     <header className="topbar">
@@ -13,22 +46,45 @@ const Topbar = () => {
           <Menu size={20} />
         </button>
         
-        <div className="search-container">
+        <div className="search-container relative">
           <Search size={18} className="search-icon" />
           <input 
             type="text" 
-            placeholder="Search products, orders, customers..." 
+            placeholder="Search products, customers..." 
             className="search-input"
+            value={searchQuery}
+            onChange={handleSearch}
           />
+          {searchQuery.length > 2 && (
+            <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg z-50 overflow-hidden">
+              {searchResults.length > 0 ? (
+                searchResults.map(res => (
+                  <div 
+                    key={`${res._type}-${res.id}`} 
+                    className="p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-sm"
+                    onClick={() => handleResultClick(res._path)}
+                  >
+                    <span className="font-semibold text-primary">{res._type}:</span> {res.name}
+                  </div>
+                ))
+              ) : (
+                <div className="p-3 text-sm text-slate-500">No results found.</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="topbar-right">
+        <div className="hidden md:flex items-center gap-2 bg-warning-light text-warning px-3 py-1 rounded-full text-xs font-bold mr-2">
+          Demo Mode
+        </div>
+
         <button className="icon-btn" onClick={toggleTheme} title="Toggle Theme">
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
         </button>
         
-        <button className="icon-btn notification-btn" title="Notifications">
+        <button className="icon-btn notification-btn" title="Notifications" onClick={() => navigate('/notifications')}>
           <Bell size={20} />
           <span className="notification-badge">3</span>
         </button>

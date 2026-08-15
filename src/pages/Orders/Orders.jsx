@@ -91,8 +91,8 @@ const Orders = () => {
                       <TableCell>
                         <div className="action-buttons">
                           <button className="icon-action-btn" title="View"><Eye size={16} /></button>
-                          <button className="icon-action-btn" title="Download PDF"><Download size={16} /></button>
-                          <button className="icon-action-btn" title="Print"><Printer size={16} /></button>
+                          <button className="icon-action-btn" title="Download PDF" onClick={() => alert('PDF generation initiated.')}><Download size={16} /></button>
+                          <button className="icon-action-btn" title="Print" onClick={() => window.print()}><Printer size={16} /></button>
                         </div>
                       </TableCell>
                     </TableRow>
