@@ -54,13 +54,13 @@ const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
 
 // Route Groups for easy maintenance
 const ROLES = {
-  ALL: ['OWNER', 'ADMIN', 'MANAGER', 'SALES STAFF', 'CASHIER', 'WAREHOUSE', 'ACCOUNTANT', 'HR', 'EMPLOYEE'],
-  MANAGEMENT: ['OWNER', 'ADMIN', 'MANAGER'],
-  SALES_POS: ['OWNER', 'ADMIN', 'MANAGER', 'SALES STAFF', 'CASHIER'],
-  WAREHOUSE_OPS: ['OWNER', 'ADMIN', 'MANAGER', 'WAREHOUSE'],
-  FINANCE: ['OWNER', 'ADMIN', 'ACCOUNTANT'],
-  HR_OPS: ['OWNER', 'ADMIN', 'HR'],
-  SETTINGS_OPS: ['OWNER', 'ADMIN']
+  ALL: ['OWNER', 'MANAGER', 'STAFF', 'ACCOUNTANT', 'SALES', 'INVENTORY'],
+  MANAGEMENT: ['OWNER', 'MANAGER'],
+  SALES_POS: ['OWNER', 'MANAGER', 'STAFF', 'SALES'],
+  WAREHOUSE_OPS: ['OWNER', 'MANAGER', 'STAFF', 'INVENTORY'],
+  FINANCE: ['OWNER', 'MANAGER', 'ACCOUNTANT'],
+  HR_OPS: ['OWNER', 'MANAGER'],
+  SETTINGS_OPS: ['OWNER']
 };
 
 const LOADING_QUOTES = [
@@ -86,37 +86,46 @@ const AppContent = () => {
 
   if (authStatus === 'loading') {
     return (
-      <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000000', color: 'white', position: 'fixed', top: 0, left: 0, zIndex: 9999 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
-          <div style={{ position: 'relative', width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)', borderRadius: '16px', boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
-            <span style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-1px', background: 'linear-gradient(to right, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>K</span>
+      <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-body)', color: 'var(--text-main)', position: 'fixed', top: 0, left: 0, zIndex: 9999, transition: 'background-color 0.3s' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px' }}>
+          
+          {/* Logo */}
+          <div style={{ position: 'relative', width: '72px', height: '72px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', color: 'var(--text-main)', border: '2px solid var(--text-main)', borderRadius: '20px', boxShadow: 'var(--shadow-lg)', animation: 'pulse-soft 2.5s infinite ease-in-out' }}>
+            <span style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-1px' }}>K</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-            <p style={{ margin: 0, fontWeight: 500, fontSize: '0.85rem', letterSpacing: '4px', textTransform: 'uppercase', color: '#888' }}>Karobaar OS</p>
-            <div style={{ width: '120px', height: '2px', backgroundColor: '#1a1a1a', borderRadius: '4px', overflow: 'hidden' }}>
-              <div style={{ width: '100%', height: '100%', backgroundColor: '#ffffff', borderRadius: '4px', animation: 'progress-sweep 1s cubic-bezier(0.4, 0, 0.2, 1) infinite' }}></div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+            <h2 style={{ margin: 0, fontWeight: 700, fontSize: '1.25rem', letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--text-main)' }}>Karobaar</h2>
+            
+            {/* Minimalist Spinner & Quote */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '24px', height: '24px', border: '2px solid var(--border-color)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin-fast 0.8s linear infinite' }}></div>
+              <p style={{ 
+                margin: 0,
+                fontSize: '0.9rem', 
+                color: 'var(--text-secondary)', 
+                fontWeight: 500,
+                animation: 'fade-text 2s infinite ease-in-out',
+                textAlign: 'center',
+                maxWidth: '300px'
+              }}>
+                {LOADING_QUOTES[quoteIndex]}
+              </p>
             </div>
-            <p style={{ 
-              marginTop: '16px', 
-              fontSize: '1rem', 
-              color: '#888', 
-              fontStyle: 'italic',
-              animation: 'pulse-opacity 2s infinite ease-in-out',
-              textAlign: 'center',
-              maxWidth: '300px'
-            }}>
-              {LOADING_QUOTES[quoteIndex]}
-            </p>
           </div>
         </div>
         <style>{`
-          @keyframes progress-sweep {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+          @keyframes spin-fast {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
           }
-          @keyframes pulse-opacity {
-            0%, 100% { opacity: 0.4; }
+          @keyframes fade-text {
+            0%, 100% { opacity: 0.5; }
             50% { opacity: 1; }
+          }
+          @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); box-shadow: var(--shadow-md); }
+            50% { transform: scale(1.02); box-shadow: var(--shadow-lg); }
           }
         `}</style>
       </div>
@@ -140,22 +149,22 @@ const AppContent = () => {
           
           <Route path="pos" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS} moduleId="pos"><POS /></ProtectedRoute>} />
           <Route path="orders" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS} moduleId="sales"><Orders /></ProtectedRoute>} />
-          <Route path="customers" element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'SALES STAFF']} moduleId="customers"><Customers /></ProtectedRoute>} />
+          <Route path="customers" element={<ProtectedRoute allowedRoles={['OWNER', 'MANAGER', 'STAFF', 'SALES']} moduleId="customers"><Customers /></ProtectedRoute>} />
           
           <Route path="products" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS} moduleId="inventory"><Products /></ProtectedRoute>} />
           <Route path="inventory" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS} moduleId="inventory"><Inventory /></ProtectedRoute>} />
           <Route path="purchases" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS} moduleId="purchases"><Purchases /></ProtectedRoute>} />
           <Route path="suppliers" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS} moduleId="suppliers"><Suppliers /></ProtectedRoute>} />
           
-          <Route path="employees" element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'HR']} moduleId="employees"><Employees /></ProtectedRoute>} />
+          <Route path="employees" element={<ProtectedRoute allowedRoles={['OWNER', 'MANAGER']} moduleId="employees"><Employees /></ProtectedRoute>} />
           <Route path="attendance" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="attendance"><Attendance /></ProtectedRoute>} />
           <Route path="leave" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="leave"><Leave /></ProtectedRoute>} />
-          <Route path="payroll" element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'HR', 'ACCOUNTANT']} moduleId="payroll"><Payroll /></ProtectedRoute>} />
+          <Route path="payroll" element={<ProtectedRoute allowedRoles={['OWNER', 'MANAGER', 'ACCOUNTANT']} moduleId="payroll"><Payroll /></ProtectedRoute>} />
           
           <Route path="expenses" element={<ProtectedRoute allowedRoles={ROLES.FINANCE} moduleId="expenses"><Expenses /></ProtectedRoute>} />
           
           <Route path="tasks" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="tasks"><Tasks /></ProtectedRoute>} />
-          <Route path="reports" element={<ProtectedRoute allowedRoles={['Owner', 'Admin', 'Manager', 'HR', 'Accountant']} moduleId="reports"><Reports /></ProtectedRoute>} />
+          <Route path="reports" element={<ProtectedRoute allowedRoles={['OWNER', 'MANAGER', 'ACCOUNTANT']} moduleId="reports"><Reports /></ProtectedRoute>} />
           <Route path="settings" element={<ProtectedRoute allowedRoles={ROLES.SETTINGS_OPS} moduleId="core"><Settings /></ProtectedRoute>} />
           <Route path="notifications" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="core"><Notifications /></ProtectedRoute>} />
           

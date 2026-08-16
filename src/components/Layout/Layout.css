@@ -3,7 +3,7 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-body);
 }
 
 .layout-content {
@@ -11,18 +11,17 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: margin-left var(--transition-normal);
+  transition: margin-left 0.3s ease;
 }
 
 .layout-main {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-body);
 }
 
 @media (max-width: 768px) {
   .layout-main {
-    padding: 1rem;
+    padding: 0;
   }
 }

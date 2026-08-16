@@ -1,5 +1,5 @@
-import React from 'react';
-import { Menu, Search, Sun, Moon, Bell, User, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Menu, Search, Sun, Moon, Bell, User, LogOut, HelpCircle, Settings } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../services/databaseService';
@@ -8,13 +8,15 @@ import './Topbar.css';
 
 const Topbar = () => {
   const { toggleSidebar, theme, toggleTheme, userRole, currentUser, logout } = useAppContext();
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [searchResults, setSearchResults] = React.useState([]);
-  const [isSearching, setIsSearching] = React.useState(false);
-  const [pendingCount, setPendingCount] = React.useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef(null);
   const navigate = useNavigate();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const updateCount = () => setPendingCount(localDb.getPendingQueue().length);
     updateCount(); // Initial count
     
@@ -27,6 +29,18 @@ const Topbar = () => {
       window.removeEventListener('online', updateCount);
       window.removeEventListener('offline', updateCount);
     };
+  }, []);
+
+  // Click outside to close profile menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleSearch = async (e) => {
@@ -57,6 +71,7 @@ const Topbar = () => {
   };
 
   const handleLogout = () => {
+    setIsProfileOpen(false);
     logout();
     navigate('/login');
   };
@@ -113,15 +128,19 @@ const Topbar = () => {
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
         </button>
         
+        <button className="icon-btn" title="Help">
+          <HelpCircle size={20} />
+        </button>
+
         <button className="icon-btn notification-btn" title="Notifications" onClick={() => navigate('/notifications')}>
           <Bell size={20} />
           <span className="notification-badge">3</span>
         </button>
 
-        <div className="user-profile group relative cursor-pointer">
+        <div className="user-profile relative cursor-pointer" ref={profileRef} onClick={() => setIsProfileOpen(!isProfileOpen)}>
           <div className="avatar">
             {currentUser?.photoURL ? (
-              <img src={currentUser.photoURL} alt="User" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+              <img src={currentUser.photoURL} alt="User" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
               <User size={20} />
             )}
@@ -131,15 +150,48 @@ const Topbar = () => {
             <span className="user-role">{userRole}</span>
           </div>
           
-          <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-dark-card rounded-md shadow-lg py-1 hidden group-hover:block border border-gray-100 dark:border-dark-border z-50">
+          {isProfileOpen && (
             <div 
-              className="px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-dark-bg flex items-center gap-2 cursor-pointer transition-colors"
-              onClick={handleLogout}
+              className="absolute top-full right-0 mt-3 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl py-2 border border-slate-200 dark:border-slate-700 z-[100]"
+              onClick={(e) => e.stopPropagation()} // Prevent clicking inside from closing it immediately
             >
-              <LogOut size={16} />
-              Sign Out
+              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 mb-1">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{currentUser?.name || 'User'}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{currentUser?.email || ''}</p>
+              </div>
+              
+              <div 
+                className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors flex items-center gap-2"
+                onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
+              >
+                <User size={16} className="text-slate-400"/> Profile
+              </div>
+              
+              <div 
+                className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors flex items-center gap-2"
+                onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
+              >
+                <Settings size={16} className="text-slate-400"/> Business Settings
+              </div>
+              
+              <div 
+                className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors flex items-center gap-2"
+                onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
+              >
+                <HelpCircle size={16} className="text-slate-400"/> Help & Support
+              </div>
+              
+              <div className="border-t border-slate-100 dark:border-slate-700 my-1"></div>
+              
+              <div 
+                className="px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2 cursor-pointer transition-colors"
+                onClick={handleLogout}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </header>
