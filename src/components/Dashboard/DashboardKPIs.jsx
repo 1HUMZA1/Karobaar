@@ -1,100 +1,86 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { DollarSign, ShoppingBag, Users, Package, TrendingUp, AlertCircle, ArrowUpRight, ArrowDownRight, Target } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { DollarSign, ShoppingBag, TrendingUp, CreditCard, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
-export const QuickActions = () => {
-  const navigate = useNavigate();
+const Sparkline = ({ color, trend }) => {
+  // A simple pseudo-sparkline for visual flair
+  const isUp = trend >= 0;
   return (
-    <div className="flex flex-wrap gap-2 mb-6">
-      <Button variant="primary" onClick={() => navigate('/pos')}><DollarSign size={16} className="mr-2"/> New Sale (Ctrl+N)</Button>
-      <Button variant="outline" onClick={() => navigate('/products')}>+ Add Product</Button>
-      <Button variant="outline" onClick={() => navigate('/customers')}>+ Add Customer</Button>
-      <Button variant="outline" onClick={() => navigate('/expenses')}>Record Expense</Button>
-      <Button variant="outline" onClick={() => navigate('/attendance')}>Mark Attendance</Button>
-    </div>
+    <svg width="48" height="24" viewBox="0 0 48 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path 
+        d={isUp ? "M2 20 L14 12 L24 16 L46 4" : "M2 4 L14 12 L24 8 L46 20"} 
+        stroke={color} 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+      />
+      {isUp && (
+        <path d="M46 4 L46 10 M46 4 L40 4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      )}
+      {!isUp && (
+        <path d="M46 20 L46 14 M46 20 L40 20" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      )}
+    </svg>
   );
 };
 
-export const KPIBar = ({ stats, trends, currencySymbol }) => {
+export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {/* Revenue */}
-      <Card className="border-none shadow-sm hover:shadow-md transition-shadow" style={{ background: 'var(--bg-card)' }}>
-        <CardContent className="p-5">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-sm font-medium text-text-secondary">Today's Revenue</p>
-            <div className="p-2 rounded-lg bg-primary-bg text-primary"><DollarSign size={18}/></div>
-          </div>
-          <h3 className="text-2xl font-bold mb-2">{currencySymbol}{(stats.todayRevenue || 0).toFixed(2)}</h3>
-          <div className={`flex items-center text-sm font-medium ${trends.revTrend.isPositive ? 'text-success' : 'text-danger'}`}>
-            {trends.revTrend.isPositive ? <ArrowUpRight size={16} className="mr-1"/> : <ArrowDownRight size={16} className="mr-1"/>}
-            {trends.revTrend.value}% vs yesterday
-          </div>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* 1. Today's Revenue */}
+      <div className="kpi-card bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+        <div className="flex justify-between items-start mb-4">
+          <div className="p-2 rounded-lg bg-[var(--bg-hover)] text-text-main"><DollarSign size={18}/></div>
+          <Sparkline color={trends.revTrend.isPositive ? '#22c55e' : '#ef4444'} trend={trends.revTrend.isPositive ? 1 : -1} />
+        </div>
+        <p className="text-sm font-medium text-text-secondary mb-1">Today's Revenue</p>
+        <h3 className="text-2xl font-bold mb-2 text-text-main">{currencySymbol}{(stats.todayRevenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
+        <div className={`flex items-center text-xs font-semibold ${trends.revTrend.isPositive ? 'text-success' : 'text-danger'}`}>
+          {trends.revTrend.isPositive ? <ArrowUpRight size={14} className="mr-1"/> : <ArrowDownRight size={14} className="mr-1"/>}
+          {trends.revTrend.value}% <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
+        </div>
+      </div>
       
-      {/* Orders */}
-      <Card className="border-none shadow-sm hover:shadow-md transition-shadow" style={{ background: 'var(--bg-card)' }}>
-        <CardContent className="p-5">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-sm font-medium text-text-secondary">Today's Orders</p>
-            <div className="p-2 rounded-lg bg-success-bg text-success"><ShoppingBag size={18}/></div>
-          </div>
-          <h3 className="text-2xl font-bold mb-2">{stats.todayOrders || 0}</h3>
-          <div className={`flex items-center text-sm font-medium ${trends.ordTrend.isPositive ? 'text-success' : 'text-danger'}`}>
-            {trends.ordTrend.isPositive ? <ArrowUpRight size={16} className="mr-1"/> : <ArrowDownRight size={16} className="mr-1"/>}
-            {trends.ordTrend.value}% vs yesterday
-          </div>
-        </CardContent>
-      </Card>
+      {/* 2. Today's Orders */}
+      <div className="kpi-card bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+        <div className="flex justify-between items-start mb-4">
+          <div className="p-2 rounded-lg bg-[var(--bg-hover)] text-text-main"><ShoppingBag size={18}/></div>
+          <Sparkline color={trends.ordTrend.isPositive ? '#22c55e' : '#ef4444'} trend={trends.ordTrend.isPositive ? 1 : -1} />
+        </div>
+        <p className="text-sm font-medium text-text-secondary mb-1">Today's Orders</p>
+        <h3 className="text-2xl font-bold mb-2 text-text-main">{stats.todayOrders || 0}</h3>
+        <div className={`flex items-center text-xs font-semibold ${trends.ordTrend.isPositive ? 'text-success' : 'text-danger'}`}>
+          {trends.ordTrend.isPositive ? <ArrowUpRight size={14} className="mr-1"/> : <ArrowDownRight size={14} className="mr-1"/>}
+          {trends.ordTrend.value}% <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
+        </div>
+      </div>
 
-      {/* Profit */}
-      <Card className="border-none shadow-sm hover:shadow-md transition-shadow" style={{ background: 'var(--bg-card)' }}>
-        <CardContent className="p-5">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-sm font-medium text-text-secondary">Est. Profit</p>
-            <div className="p-2 rounded-lg bg-info-bg text-info"><TrendingUp size={18}/></div>
-          </div>
-          <h3 className="text-2xl font-bold mb-2">{currencySymbol}{(stats.todayProfit || 0).toFixed(2)}</h3>
-          <p className="text-sm text-text-muted">Revenue - Expenses</p>
-        </CardContent>
-      </Card>
+      {/* 3. Estimated Profit */}
+      <div className="kpi-card bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+        <div className="flex justify-between items-start mb-4">
+          <div className="p-2 rounded-lg bg-[var(--bg-hover)] text-text-main"><TrendingUp size={18}/></div>
+          <Sparkline color={trends.profTrend.isPositive ? '#3b82f6' : '#ef4444'} trend={trends.profTrend.isPositive ? 1 : -1} />
+        </div>
+        <p className="text-sm font-medium text-text-secondary mb-1">Estimated Profit</p>
+        <h3 className="text-2xl font-bold mb-2 text-text-main">{currencySymbol}{(stats.todayProfit || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
+        <div className={`flex items-center text-xs font-semibold ${trends.profTrend.isPositive ? 'text-success' : 'text-danger'}`}>
+          {trends.profTrend.isPositive ? <ArrowUpRight size={14} className="mr-1"/> : <ArrowDownRight size={14} className="mr-1"/>}
+          {trends.profTrend.value}% <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
+        </div>
+      </div>
 
-      {/* Action Items */}
-      <Card className="border-none shadow-sm hover:shadow-md transition-shadow" style={{ background: 'var(--bg-card)' }}>
-        <CardContent className="p-5">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-sm font-medium text-text-secondary">Action Items</p>
-            <div className="p-2 rounded-lg bg-danger-bg text-danger"><AlertCircle size={18}/></div>
-          </div>
-          <h3 className="text-2xl font-bold mb-2">{stats.lowStockCount || 0}</h3>
-          <div className={`text-sm font-medium ${stats.lowStockCount > 0 ? 'text-danger' : 'text-success'}`}>
-            {stats.lowStockCount > 0 ? 'Items need restock' : 'Inventory healthy'}
-          </div>
-        </CardContent>
-      </Card>
+      {/* 4. Expenses */}
+      <div className="kpi-card bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+        <div className="flex justify-between items-start mb-4">
+          <div className="p-2 rounded-lg bg-[var(--bg-hover)] text-text-main"><CreditCard size={18}/></div>
+          <Sparkline color={!trends.expTrend.isPositive ? '#22c55e' : '#f59e0b'} trend={!trends.expTrend.isPositive ? 1 : -1} />
+        </div>
+        <p className="text-sm font-medium text-text-secondary mb-1">Expenses</p>
+        <h3 className="text-2xl font-bold mb-2 text-text-main">{currencySymbol}{(stats.todayExpenses || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
+        <div className={`flex items-center text-xs font-semibold ${!trends.expTrend.isPositive ? 'text-success' : 'text-warning'}`}>
+          {!trends.expTrend.isPositive ? <ArrowDownRight size={14} className="mr-1"/> : <ArrowUpRight size={14} className="mr-1"/>}
+          {trends.expTrend.value}% <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
+        </div>
+      </div>
     </div>
-  );
-};
-
-export const SalesGoalWidget = ({ currentSales, target, currencySymbol }) => {
-  const percent = target > 0 ? Math.min(100, Math.round((currentSales / target) * 100)) : 0;
-  return (
-    <Card className="border-none shadow-sm mb-6 flex-1" style={{ background: 'var(--bg-card)' }}>
-      <CardContent className="p-5 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-text-secondary mb-1 flex items-center gap-2"><Target size={16}/> Monthly Goal</p>
-          <h3 className="text-xl font-bold">{currencySymbol}{currentSales.toLocaleString()} <span className="text-sm text-text-muted font-normal">/ {currencySymbol}{target.toLocaleString()}</span></h3>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="text-2xl font-bold text-primary">{percent}%</span>
-          <div className="w-32 h-2 bg-[var(--bg-hover)] rounded-full overflow-hidden mt-1">
-            <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${percent}%` }}></div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 };

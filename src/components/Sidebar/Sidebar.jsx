@@ -5,7 +5,7 @@ import {
   Users, Package, Box, ShoppingBag, Truck, UserCircle, 
   Clock, CalendarOff, Banknote, Receipt, FileText, 
   BarChart3, CheckSquare, Bell, Settings, X, CreditCard,
-  ChevronLeft, ChevronRight
+  Menu
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import './Sidebar.css';
@@ -75,11 +75,13 @@ const navGroups = [
 
 const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen, userRole, currentBusiness } = useAppContext();
-  const [collapsed, setCollapsed] = useState(false);
+  const [isPinned, setIsPinned] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
 
   const enabledModules = currentBusiness?.modules || {};
   
-  const toggleCollapse = () => setCollapsed(!collapsed);
+  const togglePin = () => setIsPinned(!isPinned);
+  const isEffectivelyCollapsed = !isPinned && !isHovered;
 
   return (
     <>
@@ -91,16 +93,22 @@ const Sidebar = () => {
         />
       )}
       
-      <aside className={`sidebar ${sidebarOpen ? 'mobile-open' : ''} ${collapsed ? 'collapsed' : ''}`}>
+      <aside 
+        className={`sidebar ${sidebarOpen ? 'mobile-open' : ''} ${isEffectivelyCollapsed ? 'collapsed' : ''} ${!isPinned && isHovered ? 'hover-expanded' : ''}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <div className="sidebar-header">
           <div className="logo-container">
             <div className="logo-icon">K</div>
-            {!collapsed && <span className="logo-text">Karobaar</span>}
+            {!isEffectivelyCollapsed && <span className="logo-text">Karobaar</span>}
           </div>
           
-          <button className="sidebar-toggle-btn hidden-mobile" onClick={toggleCollapse}>
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
+          {!isEffectivelyCollapsed && (
+            <button className="sidebar-toggle-btn hidden-mobile" onClick={togglePin}>
+              <Menu size={20} />
+            </button>
+          )}
 
           <button 
             className="sidebar-close-btn hidden-desktop"
@@ -111,7 +119,7 @@ const Sidebar = () => {
         </div>
 
         <div className="sidebar-business-info">
-          {!collapsed && (
+          {!isEffectivelyCollapsed && (
             <div className="business-badge">
               {currentBusiness?.businessName || 'My Business'}
             </div>
@@ -131,14 +139,14 @@ const Sidebar = () => {
 
             return (
               <div key={groupIdx} className="nav-group">
-                {!collapsed && <h4 className="nav-group-title">{group.title}</h4>}
+                {!isEffectivelyCollapsed && <h4 className="nav-group-title">{group.title}</h4>}
                 <ul>
                   {visibleItems.map((item) => (
                     <li key={item.name}>
                       <NavLink 
                         to={item.path} 
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                        title={collapsed ? item.name : undefined}
+                        title={isEffectivelyCollapsed ? item.name : undefined}
                         onClick={() => {
                           if (window.innerWidth <= 768) {
                             setSidebarOpen(false);
@@ -146,7 +154,7 @@ const Sidebar = () => {
                         }}
                       >
                         <span className="nav-icon">{item.icon}</span>
-                        {!collapsed && <span className="nav-text">{item.name}</span>}
+                        {!isEffectivelyCollapsed && <span className="nav-text">{item.name}</span>}
                       </NavLink>
                     </li>
                   ))}
@@ -156,10 +164,11 @@ const Sidebar = () => {
           })}
         </nav>
 
-        {!collapsed && (
-          <div className="mt-auto pt-4 px-4 pb-2 border-t border-border-color text-xs text-text-muted text-center flex flex-col items-center justify-center">
-            <p className="font-semibold mb-0.5">Karobaar OS</p>
-            <p>Version 1.0.0</p>
+        {!isEffectivelyCollapsed && (
+          <div className="sidebar-footer">
+            <p className="footer-title">Karobaar OS</p>
+            <p className="footer-version">v2.0.0</p>
+            <p className="footer-status"><span>●</span> All systems operational</p>
           </div>
         )}
       </aside>

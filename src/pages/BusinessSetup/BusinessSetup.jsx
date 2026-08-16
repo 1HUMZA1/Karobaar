@@ -62,7 +62,10 @@ const BusinessSetup = () => {
     language: 'English'
   });
 
-  // Step 2: Business Info
+  // Step 2: App Experience
+  const [appKnowledge, setAppKnowledge] = useState('Newbie'); // 'Newbie', 'Rookie', 'Pro'
+
+  // Step 3: Business Info
   const [business, setBusiness] = useState({
     name: '',
     type: 'Retail',
@@ -81,16 +84,16 @@ const BusinessSetup = () => {
     timezone: 'UTC'
   });
 
-  // Step 3: Business Size
+  // Step 4: Business Size
   const [size, setSize] = useState({
     employees: '1',
     monthlySales: 'Under ₹50,000'
   });
 
-  // Step 4: Modules
+  // Step 5: Modules
   const [modules, setModules] = useState(['sales', 'inventory', 'customers', 'reports']);
 
-  // Step 5: Preferences
+  // Step 6: Preferences
   const [preferences, setPreferences] = useState({
     currency: 'USD',
     dateFormat: 'DD/MM/YYYY',
@@ -114,7 +117,7 @@ const BusinessSetup = () => {
   const handleNext = () => {
     setError('');
     if (step === 1 && !personal.fullName.trim()) return setError('Full name is required.');
-    if (step === 2 && !business.name.trim()) return setError('Business name is required.');
+    if (step === 3 && !business.name.trim()) return setError('Business name is required.');
     setStep(s => s + 1);
   };
 
@@ -169,6 +172,7 @@ const BusinessSetup = () => {
         role: 'OWNER', // frontend reference
         memberships: [newBusiness.id],
         accountStatus: 'active',
+        appKnowledge: appKnowledge, // Newbie, Rookie, Pro
         personalPreferences: {
           theme: 'light',
           density: 'comfortable',
@@ -196,10 +200,11 @@ const BusinessSetup = () => {
 
   const stepsList = [
     { id: 1, title: 'Personal Profile', desc: 'Your contact details' },
-    { id: 2, title: 'Business Details', desc: 'Basic company info' },
-    { id: 3, title: 'Business Size', desc: 'Scale and revenue' },
-    { id: 4, title: 'Select Modules', desc: 'Features you need' },
-    { id: 5, title: 'Preferences', desc: 'Regional settings' }
+    { id: 2, title: 'App Experience', desc: 'Tailor your learning' },
+    { id: 3, title: 'Business Details', desc: 'Basic company info' },
+    { id: 4, title: 'Business Size', desc: 'Scale and revenue' },
+    { id: 5, title: 'Select Modules', desc: 'Features you need' },
+    { id: 6, title: 'Preferences', desc: 'Regional settings' }
   ];
 
   return (
@@ -243,7 +248,7 @@ const BusinessSetup = () => {
 
           {error && <div className="setup-error">{error}</div>}
 
-          <form onSubmit={step === 5 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}>
+          <form onSubmit={step === 6 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}>
             
             {step === 1 && (
               <div className="step-content setup-form-grid">
@@ -259,6 +264,63 @@ const BusinessSetup = () => {
             )}
 
             {step === 2 && (
+              <div className="step-content">
+                <p style={{margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem'}}>
+                  How familiar are you with business management applications? This helps us tailor your experience.
+                </p>
+                <div className="setup-modules-grid" style={{ gridTemplateColumns: '1fr' }}>
+                  <div 
+                    className={`module-card ${appKnowledge === 'Newbie' ? 'selected' : ''}`}
+                    onClick={() => setAppKnowledge('Newbie')}
+                    style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="module-checkbox">
+                        {appKnowledge === 'Newbie' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                      </div>
+                      <span style={{fontWeight: 600, fontSize: '1.05rem'}}>Newbie</span>
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '1.75rem', lineHeight: 1.4 }}>
+                      I'm new to business management apps and need step-by-step guidance.
+                    </span>
+                  </div>
+
+                  <div 
+                    className={`module-card ${appKnowledge === 'Rookie' ? 'selected' : ''}`}
+                    onClick={() => setAppKnowledge('Rookie')}
+                    style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="module-checkbox">
+                        {appKnowledge === 'Rookie' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                      </div>
+                      <span style={{fontWeight: 600, fontSize: '1.05rem'}}>Rookie</span>
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '1.75rem', lineHeight: 1.4 }}>
+                      I have some experience with these tools, but might need occasional help.
+                    </span>
+                  </div>
+
+                  <div 
+                    className={`module-card ${appKnowledge === 'Pro' ? 'selected' : ''}`}
+                    onClick={() => setAppKnowledge('Pro')}
+                    style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="module-checkbox">
+                        {appKnowledge === 'Pro' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                      </div>
+                      <span style={{fontWeight: 600, fontSize: '1.05rem'}}>Pro</span>
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '1.75rem', lineHeight: 1.4 }}>
+                      I'm an experienced user and know exactly what I'm doing. No instructions needed.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
               <div className="step-content setup-form-grid">
                 <div className="setup-form-group full-width">
                   <label>Business Name</label>
@@ -293,7 +355,7 @@ const BusinessSetup = () => {
               </div>
             )}
 
-            {step === 3 && (
+            {step === 4 && (
               <div className="step-content setup-form-grid">
                 <div className="setup-form-group full-width">
                   <label>Number of Employees</label>
@@ -310,7 +372,7 @@ const BusinessSetup = () => {
               </div>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
               <div className="step-content">
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
                   <p style={{margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem'}}>Select features you need. You can always change this later in Settings.</p>
@@ -348,7 +410,7 @@ const BusinessSetup = () => {
               </div>
             )}
 
-            {step === 5 && (
+            {step === 6 && (
               <div className="step-content setup-form-grid">
                 <div className="setup-form-group">
                   <label>Currency</label>
@@ -381,7 +443,7 @@ const BusinessSetup = () => {
               </button>
               
               <button type="submit" className="setup-btn setup-btn-primary" disabled={isSubmitting}>
-                {submitState || (isSubmitting ? 'Saving...' : step === 5 ? 'Finish Setup' : 'Continue')}
+                {submitState || (isSubmitting ? 'Saving...' : step === 6 ? 'Finish Setup' : 'Continue')}
               </button>
             </div>
           </form>

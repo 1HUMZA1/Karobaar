@@ -73,7 +73,10 @@ class DatabaseService {
   }
 
   // Helper to prevent hanging promises
-  async _withTimeout(promise, ms = 5000) {
+  async _withTimeout(promise, ms = 3000) {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return Promise.reject(new Error('offline-fast-fail'));
+    }
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
@@ -133,6 +136,11 @@ class DatabaseService {
         localDb.save(collectionName, d.id, record, false, businessId);
         return record;
       }
+      
+      // If not on server, it might be pending sync
+      const cached = localDb.get(collectionName, id);
+      if (cached) return cached;
+      
       return null;
     } catch (e) {
       console.warn(`[OFFLINE] Using local cache for ${collectionName}/${id}`);
@@ -205,6 +213,13 @@ class DatabaseService {
         localDb.save('users', d.id, record, false);
         return record;
       }
+      
+      // If not on server, check local cache in case they just signed up and it's pending sync
+      const cachedUser = localDb.get('users', firebaseUid);
+      if (cachedUser) {
+        return cachedUser;
+      }
+      
       return null; // Explicitly does not exist
     } catch (e) {
       console.warn("[OFFLINE] Using local cache for user profile:", e.message);

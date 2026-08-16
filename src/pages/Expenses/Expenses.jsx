@@ -7,13 +7,20 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAppContext } from '../../context/AppContext';
+import { useCollection } from '../../hooks/useCollection';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 import './Expenses.css';
 
 const Expenses = () => {
   const { currentUser, currentBusiness } = useAppContext();
-  const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  const { data: expenses, loading, isRevalidating, mutate, refetch } = useCollection('expenses', currentUser?.activeBusinessId, {
+    sortBy: (a, b) => new Date(b.date) - new Date(a.date)
+  });
+
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [displayLimit, setDisplayLimit] = useState(50);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,19 +35,13 @@ const Expenses = () => {
 
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
+  // Debounce search
   useEffect(() => {
-    if (currentUser?.activeBusinessId) {
-      fetchExpenses(currentUser.activeBusinessId);
-    }
-  }, [currentUser?.activeBusinessId]);
-
-  const fetchExpenses = async (businessId) => {
-    setLoading(true);
-    const data = await db.getCollection('expenses', businessId);
-    const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
-    setExpenses(sorted);
-    setLoading(false);
-  };
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timerId);
+  }, [searchTerm]);
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
@@ -53,8 +54,11 @@ const Expenses = () => {
         amount: parseFloat(formData.amount)
       };
 
+      const optimisticExpense = { id: 'temp-' + Date.now(), ...newExpense };
+      mutate([optimisticExpense, ...expenses]);
+
       await db.add('expenses', newExpense, currentUser.activeBusinessId);
-      await fetchExpenses(currentUser.activeBusinessId);
+      
       setIsModalOpen(false);
       setFormData({
         description: '',
@@ -63,9 +67,11 @@ const Expenses = () => {
         paymentMethod: 'Cash',
         date: format(new Date(), 'yyyy-MM-dd')
       });
+      refetch();
     } catch (err) {
       console.error(err);
       alert('Failed to add expense');
+      refetch();
     } finally {
       setSaving(false);
     }
@@ -74,38 +80,50 @@ const Expenses = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this expense?")) return;
     try {
+      mutate(expenses.filter(e => e.id !== id));
       await db.delete('expenses', id, currentUser.activeBusinessId);
-      await fetchExpenses(currentUser.activeBusinessId);
+      refetch();
     } catch (err) {
       console.error(err);
+      refetch();
     }
   };
 
   const filteredExpenses = expenses.filter(e => 
-    e.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    e.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    e.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || 
+    e.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+  ).slice(0, displayLimit);
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  const handleScroll = (e) => {
+    const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 50;
+    if (bottom && displayLimit < expenses.length) {
+      setDisplayLimit(prev => prev + 50);
+    }
+  };
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold">Expenses</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            Expenses
+            {isRevalidating && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
+          </h1>
           <p className="text-secondary">Track operational costs and business expenses</p>
         </div>
         <Button icon={<Plus size={18} />} onClick={() => setIsModalOpen(true)}>Record Expense</Button>
       </div>
 
-      <div className="expense-stats">
+      <div className="expense-stats mb-6">
         <Card className="flex-1">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-secondary text-sm">Total Expenses (All Time)</p>
               <h3 className="text-2xl font-bold text-danger">{currencySymbol}{totalExpenses.toFixed(2)}</h3>
             </div>
-            <div className="w-12 h-12 rounded-full bg-danger-light text-danger flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-danger/10 text-danger flex items-center justify-center">
               <Receipt size={24} />
             </div>
           </CardContent>
@@ -125,7 +143,7 @@ const Expenses = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="loading-state">Loading expenses...</div>
+            <TableSkeleton rows={8} cols={6} />
           ) : (
             <Table>
               <TableHeader>
@@ -148,7 +166,7 @@ const Expenses = () => {
                         <span className="category-badge">{expense.category}</span>
                       </TableCell>
                       <TableCell className="font-bold text-danger">
-                        {currencySymbol}{expense.amount.toFixed(2)}
+                        {currencySymbol}{parseFloat(expense.amount || 0).toFixed(2)}
                       </TableCell>
                       <TableCell>{expense.paymentMethod}</TableCell>
                       <TableCell>
@@ -158,13 +176,18 @@ const Expenses = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan="6" className="text-center py-8">
+                    <TableCell colSpan="6" className="text-center py-12 text-slate-500">
                       No expenses found.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+          )}
+          {displayLimit < expenses.length && (
+            <div className="text-center p-4 text-sm text-slate-500">
+              Scroll down to load more...
+            </div>
           )}
         </CardContent>
       </Card>
@@ -255,3 +278,4 @@ const Expenses = () => {
 };
 
 export default Expenses;
+

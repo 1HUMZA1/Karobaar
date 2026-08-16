@@ -7,7 +7,7 @@ import { localDb } from '../../services/localDb';
 import './Topbar.css';
 
 const Topbar = () => {
-  const { toggleSidebar, theme, toggleTheme, userRole, currentUser, logout } = useAppContext();
+  const { toggleSidebar, theme, toggleTheme, userRole, currentUser, currentBusiness, logout } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -15,6 +15,8 @@ const Topbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef(null);
   const navigate = useNavigate();
+
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     const updateCount = () => setPendingCount(localDb.getPendingQueue().length);
@@ -29,6 +31,17 @@ const Topbar = () => {
       window.removeEventListener('online', updateCount);
       window.removeEventListener('offline', updateCount);
     };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Click outside to close profile menu
@@ -82,30 +95,37 @@ const Topbar = () => {
         <button className="icon-btn mobile-menu-btn" onClick={toggleSidebar}>
           <Menu size={20} />
         </button>
-        
-        <div className="search-container relative">
-          <Search size={18} className="search-icon" />
+      </div>
+
+      <div className="topbar-center hidden-mobile">
+        <div className="global-search-container">
+          <Search size={16} className="global-search-icon" />
           <input 
+            ref={searchInputRef}
             type="text" 
-            placeholder="Search products, customers..." 
-            className="search-input"
+            placeholder="Search products, customers, orders..." 
+            className="global-search-input"
             value={searchQuery}
             onChange={handleSearch}
           />
+          <div className="search-shortcut hidden-mobile">
+            <kbd>Ctrl</kbd> + <kbd>K</kbd>
+          </div>
           {searchQuery.length > 2 && (
-            <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg z-50 overflow-hidden">
+            <div className="search-dropdown-menu">
               {searchResults.length > 0 ? (
                 searchResults.map(res => (
                   <div 
                     key={`${res._type}-${res.id}`} 
-                    className="p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-sm"
+                    className="search-dropdown-item"
                     onClick={() => handleResultClick(res._path)}
                   >
-                    <span className="font-semibold text-primary">{res._type}:</span> {res.name}
+                    <span className="result-type">{res._type}</span>
+                    <span className="result-name">{res.name}</span>
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-sm text-slate-500">No results found.</div>
+                <div className="search-dropdown-empty">No results found.</div>
               )}
             </div>
           )}
@@ -114,40 +134,42 @@ const Topbar = () => {
 
       <div className="topbar-right">
         {/* Sync Indicator */}
-        <div className="sync-indicator mr-4 flex items-center" style={{ fontSize: '0.8rem', color: '#64748b' }}>
+        <div className="topbar-sync-status hidden-mobile">
           {!navigator.onLine ? (
-            <span title="Offline" style={{ color: '#ef4444' }}>⚠ Offline</span>
+            <span className="sync-offline">● Offline</span>
           ) : pendingCount > 0 ? (
-            <span title="Syncing..." style={{ color: '#eab308' }}>↻ Syncing...</span>
+            <span className="sync-syncing">↻ Syncing...</span>
           ) : (
-            <span title="Saved & Synced" style={{ color: '#22c55e' }}>✓ Synced</span>
+            <span className="sync-synced">● Synced just now</span>
           )}
         </div>
 
         <button className="icon-btn" onClick={toggleTheme} title="Toggle Theme">
-          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
         
         <button className="icon-btn" title="Help">
-          <HelpCircle size={20} />
+          <HelpCircle size={18} />
         </button>
 
         <button className="icon-btn notification-btn" title="Notifications" onClick={() => navigate('/notifications')}>
-          <Bell size={20} />
+          <Bell size={18} />
           <span className="notification-badge">3</span>
         </button>
 
-        <div className="user-profile relative cursor-pointer" ref={profileRef} onClick={() => setIsProfileOpen(!isProfileOpen)}>
-          <div className="avatar">
+        <div className="topbar-divider"></div>
+
+        <div className="user-profile-trigger" ref={profileRef} onClick={() => setIsProfileOpen(!isProfileOpen)}>
+          <div className="user-avatar">
             {currentUser?.photoURL ? (
-              <img src={currentUser.photoURL} alt="User" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              <img src={currentUser.photoURL} alt="User" />
             ) : (
-              <User size={20} />
+              <User size={18} />
             )}
           </div>
-          <div className="user-info">
+          <div className="user-info hidden-mobile">
             <span className="user-name">{currentUser?.name || 'User'}</span>
-            <span className="user-role">{userRole}</span>
+            <span className="user-business">{currentBusiness?.businessName || 'Business'}</span>
           </div>
           
           {isProfileOpen && (

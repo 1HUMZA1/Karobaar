@@ -6,38 +6,37 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAppContext } from '../../context/AppContext';
+import { useCollection } from '../../hooks/useCollection';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 import './Customers.css';
 
 const Customers = () => {
   const { currentUser, currentBusiness } = useAppContext();
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  const { data: customers, loading, isRevalidating, mutate, refetch } = useCollection('customers', currentUser?.activeBusinessId, {
+    sortBy: (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+  });
+
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [displayLimit, setDisplayLimit] = useState(50);
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: ''
+    name: '', email: '', phone: '', address: ''
   });
 
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
+  // Debounce search
   useEffect(() => {
-    if (currentUser?.activeBusinessId) {
-      fetchCustomers(currentUser.activeBusinessId);
-    }
-  }, [currentUser?.activeBusinessId]);
-
-  const fetchCustomers = async (businessId) => {
-    setLoading(true);
-    const data = await db.getCollection('customers', businessId);
-    setCustomers(data);
-    setLoading(false);
-  };
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timerId);
+  }, [searchTerm]);
 
   const handleAddCustomer = async (e) => {
     e.preventDefault();
@@ -54,13 +53,18 @@ const Customers = () => {
         createdAt: new Date().toISOString()
       };
       
+      const optimisticCustomer = { id: 'temp-' + Date.now(), ...newCustomer };
+      mutate([optimisticCustomer, ...customers]);
+
       await db.add('customers', newCustomer, currentUser.activeBusinessId);
-      await fetchCustomers(currentUser.activeBusinessId);
+      
       setIsModalOpen(false);
       setFormData({ name: '', email: '', phone: '', address: '' });
+      refetch();
     } catch (err) {
       console.error(err);
       alert('Failed to add customer');
+      refetch();
     } finally {
       setSaving(false);
     }
@@ -69,24 +73,36 @@ const Customers = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this customer?")) return;
     try {
+      mutate(customers.filter(c => c.id !== id));
       await db.delete('customers', id, currentUser.activeBusinessId);
-      await fetchCustomers(currentUser.activeBusinessId);
+      refetch();
     } catch (err) {
       console.error(err);
+      refetch();
     }
   };
 
   const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phone.includes(searchTerm)
-  );
+    c.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || 
+    (c.email && c.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+    (c.phone && c.phone.includes(debouncedSearchTerm))
+  ).slice(0, displayLimit);
+
+  const handleScroll = (e) => {
+    const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 50;
+    if (bottom && displayLimit < customers.length) {
+      setDisplayLimit(prev => prev + 50);
+    }
+  };
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold">Customers</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            Customers
+            {isRevalidating && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
+          </h1>
           <p className="text-secondary">Manage your clients and their purchase history</p>
         </div>
         <Button icon={<UserPlus size={18} />} onClick={() => setIsModalOpen(true)}>Add Customer</Button>
@@ -104,7 +120,7 @@ const Customers = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="loading-state">Loading customers...</div>
+            <TableSkeleton rows={8} cols={6} />
           ) : (
             <Table>
               <TableHeader>
@@ -156,13 +172,18 @@ const Customers = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan="6" className="text-center py-8">
+                    <TableCell colSpan="6" className="text-center py-12 text-slate-500">
                       No customers found.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+          )}
+          {displayLimit < customers.length && (
+            <div className="text-center p-4 text-sm text-slate-500">
+              Scroll down to load more...
+            </div>
           )}
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Search, Mail, Phone, Edit, Trash2, UserPlus, X, 
-  Users, UserCheck, UserX, Clock, CheckCircle, FileText, Briefcase
+  Users, UserCheck, UserX, Clock, CheckCircle, FileText, Briefcase, User
 } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -9,19 +9,26 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAppContext } from '../../context/AppContext';
+import { useCollection } from '../../hooks/useCollection';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 import { format, startOfDay } from 'date-fns';
 import './Employees.css';
 
 const Employees = () => {
   const { currentUser, userRole } = useAppContext();
-  const [employees, setEmployees] = useState([]);
-  const [attendanceList, setAttendanceList] = useState([]);
-  const [loading, setLoading] = useState(true);
   
+  const { data: employees, loading, isRevalidating, mutate, refetch } = useCollection('employees', currentUser?.activeBusinessId, {
+    sortBy: (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+  });
+
+  const { data: attendanceList, refetch: refetchAttendance } = useCollection('attendance', currentUser?.activeBusinessId);
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterDept, setFilterDept] = useState('');
   const [filterRole, setFilterRole] = useState('');
+  const [displayLimit, setDisplayLimit] = useState(50);
 
   // Add/Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,27 +47,13 @@ const Employees = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Debounce search
   useEffect(() => {
-    if (currentUser?.activeBusinessId) {
-      fetchData(currentUser.activeBusinessId);
-    }
-  }, [currentUser?.activeBusinessId]);
-
-  const fetchData = async (businessId) => {
-    setLoading(true);
-    try {
-      const [empData, attData] = await Promise.all([
-        db.getCollection('employees', businessId),
-        db.getCollection('attendance', businessId).catch(() => [])
-      ]);
-      setEmployees(empData || []);
-      setAttendanceList(attData || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timerId);
+  }, [searchTerm]);
 
   const getInitialForm = () => ({
     name: '', email: '', phone: '', dob: '', gender: 'Other', address: '',
@@ -101,17 +94,28 @@ const Employees = () => {
       };
 
       if (isEditing && formData.id) {
+        mutate(employees.map(emp => emp.id === formData.id ? { ...emp, ...employeeData } : emp));
         await db.update('employees', formData.id, employeeData, currentUser.activeBusinessId);
       } else {
         employeeData.createdAt = new Date().toISOString();
+        const optimisticEmp = { id: 'temp-' + Date.now(), ...employeeData };
+        mutate([optimisticEmp, ...employees]);
         await db.add('employees', employeeData, currentUser.activeBusinessId);
+        
+        // If an email is provided, trigger the default mail client to send an invitation
+        if (formData.email) {
+          const subject = encodeURIComponent(`Job Offer: ${formData.role}`);
+          const body = encodeURIComponent(`Hi ${formData.name},\n\nWe are pleased to formally offer you the position of ${formData.role} in the ${formData.department || 'General'} department.\n\nYour joining date is scheduled for ${formData.joiningDate}.\n\nPlease reply to this email to accept the position.\n\nBest regards,\nManagement`);
+          window.location.href = `mailto:${formData.email}?subject=${subject}&body=${body}`;
+        }
       }
       
-      await fetchData(currentUser.activeBusinessId);
       setIsModalOpen(false);
+      refetch();
     } catch (err) {
       console.error(err);
       alert('Failed to save employee');
+      refetch();
     } finally {
       setSaving(false);
     }
@@ -121,24 +125,28 @@ const Employees = () => {
     const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
     if (!window.confirm(`Are you sure you want to mark this employee as ${newStatus}?`)) return;
     try {
+      mutate(employees.map(e => e.id === id ? { ...e, status: newStatus } : e));
       await db.update('employees', id, { status: newStatus }, currentUser.activeBusinessId);
-      await fetchData(currentUser.activeBusinessId);
       if (selectedEmployee?.id === id) {
         setSelectedEmployee({...selectedEmployee, status: newStatus});
       }
+      refetch();
     } catch (err) {
       console.error(err);
+      refetch();
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("WARNING: This will permanently delete the employee. Are you sure?")) return;
     try {
+      mutate(employees.filter(e => e.id !== id));
       await db.delete('employees', id, currentUser.activeBusinessId);
-      await fetchData(currentUser.activeBusinessId);
       setDetailsModalOpen(false);
+      refetch();
     } catch (err) {
       console.error(err);
+      refetch();
     }
   };
 
@@ -157,8 +165,8 @@ const Employees = () => {
         markedBy: currentUser.uid
       };
       await db.add('attendance', attRecord, currentUser.activeBusinessId);
-      await fetchData(currentUser.activeBusinessId);
       alert(`Marked ${status} successfully.`);
+      refetchAttendance();
     } catch (err) {
       console.error(err);
       alert('Failed to mark attendance.');
@@ -173,22 +181,32 @@ const Employees = () => {
   const onLeaveToday = employees.filter(e => e.status === 'On Leave').length + todayAttendance.filter(a => a.status === 'On Leave').length;
 
   const filteredEmployees = employees.filter(e => {
-    const matchSearch = e.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        e.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        e.role?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = e.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || 
+                        e.employeeId?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                        e.role?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
     const matchDept = filterDept ? e.department === filterDept : true;
     const matchRole = filterRole ? e.role === filterRole : true;
     return matchSearch && matchDept && matchRole;
-  });
+  }).slice(0, displayLimit);
 
   const uniqueDepts = [...new Set(employees.map(e => e.department).filter(Boolean))];
   const uniqueRoles = [...new Set(employees.map(e => e.role).filter(Boolean))];
 
+  const handleScroll = (e) => {
+    const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 50;
+    if (bottom && displayLimit < employees.length) {
+      setDisplayLimit(prev => prev + 50);
+    }
+  };
+
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold">Employee Directory</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            Employee Directory
+            {isRevalidating && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
+          </h1>
           <p className="text-secondary">Manage employees, roles, permissions and attendance.</p>
         </div>
         {(userRole === 'OWNER' || userRole === 'MANAGER' || userRole === 'ADMIN') && (
@@ -203,7 +221,7 @@ const Employees = () => {
               <p className="summary-label">Total Employees</p>
               <h3 className="summary-value">{employees.length}</h3>
             </div>
-            <div className="summary-icon bg-primary-bg text-primary"><Users size={24} /></div>
+            <div className="summary-icon bg-primary/10 text-primary p-3 rounded-xl"><Users size={24} /></div>
           </CardContent>
         </Card>
         <Card>
@@ -212,7 +230,7 @@ const Employees = () => {
               <p className="summary-label">Active Staff</p>
               <h3 className="summary-value">{activeEmployees}</h3>
             </div>
-            <div className="summary-icon bg-success-bg text-success"><UserCheck size={24} /></div>
+            <div className="summary-icon bg-success/10 text-success p-3 rounded-xl"><UserCheck size={24} /></div>
           </CardContent>
         </Card>
         <Card>
@@ -221,7 +239,7 @@ const Employees = () => {
               <p className="summary-label">Present Today</p>
               <h3 className="summary-value">{presentToday}</h3>
             </div>
-            <div className="summary-icon bg-info-bg text-info"><CheckCircle size={24} /></div>
+            <div className="summary-icon bg-info/10 text-info p-3 rounded-xl"><CheckCircle size={24} /></div>
           </CardContent>
         </Card>
         <Card>
@@ -230,7 +248,7 @@ const Employees = () => {
               <p className="summary-label">On Leave</p>
               <h3 className="summary-value">{onLeaveToday}</h3>
             </div>
-            <div className="summary-icon bg-warning-bg text-warning"><UserX size={24} /></div>
+            <div className="summary-icon bg-warning/10 text-warning p-3 rounded-xl"><UserX size={24} /></div>
           </CardContent>
         </Card>
       </div>
@@ -261,7 +279,7 @@ const Employees = () => {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
+            <div className="p-4"><TableSkeleton rows={8} cols={7} /></div>
           ) : employees.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-16 text-center">
               <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400">
@@ -325,11 +343,16 @@ const Employees = () => {
                   ))}
                   {filteredEmployees.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan="7" className="text-center py-8 text-secondary">No employees match your search.</TableCell>
+                      <TableCell colSpan="7" className="text-center py-12 text-slate-500">No employees match your search.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
+              {displayLimit < employees.length && (
+                <div className="text-center p-4 text-sm text-slate-500">
+                  Scroll down to load more...
+                </div>
+              )}
             </div>
           )}
         </CardContent>

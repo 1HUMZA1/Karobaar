@@ -11,6 +11,16 @@ export const AppProvider = ({ children }) => {
     return saved || 'light';
   });
 
+  const [accent, setAccent] = useState(() => {
+    const saved = localStorage.getItem('karobaar-accent');
+    return saved || 'default';
+  });
+
+  const [appUiVersion, setAppUiVersion] = useState(() => {
+    const saved = localStorage.getItem('karobaar-ui-version');
+    return saved || 'premium';
+  });
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Authentication & Global State
@@ -27,10 +37,27 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('karobaar-theme', theme);
   }, [theme]);
 
+  // Apply Accent
+  useEffect(() => {
+    document.documentElement.setAttribute('data-accent', accent);
+    localStorage.setItem('karobaar-accent', accent);
+  }, [accent]);
+
+  // Apply UI Version
+  useEffect(() => {
+    localStorage.setItem('karobaar-ui-version', appUiVersion);
+  }, [appUiVersion]);
+
   // Apply Business Theme/Settings if available
   useEffect(() => {
     if (currentBusiness?.settings?.theme) {
       setTheme(currentBusiness.settings.theme);
+    }
+    if (currentBusiness?.settings?.accent) {
+      setAccent(currentBusiness.settings.accent);
+    }
+    if (currentBusiness?.settings?.appUiVersion) {
+      setAppUiVersion(currentBusiness.settings.appUiVersion);
     }
   }, [currentBusiness]);
 
@@ -133,7 +160,12 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider value={{
       theme,
+      setTheme,
+      accent,
+      setAccent,
       toggleTheme,
+      appUiVersion,
+      setAppUiVersion,
       sidebarOpen,
       setSidebarOpen,
       toggleSidebar,

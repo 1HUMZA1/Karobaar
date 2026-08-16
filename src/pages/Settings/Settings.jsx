@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Building, Users, BellRing, Shield, LayoutGrid, Settings2 } from 'lucide-react';
+import { Save, Building, Users, BellRing, Shield, LayoutGrid, Settings2, Palette } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { useAppContext } from '../../context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import '../Dashboard/DashboardPremium.css'; // provides layout utilities
 import './Settings.css';
 
 const MODULES_LIST = [
@@ -30,7 +31,7 @@ const MODULES_LIST = [
 ];
 
 const Settings = () => {
-  const { currentBusiness, currentUser, refreshUserProfile } = useAppContext();
+  const { currentBusiness, currentUser, refreshUserProfile, theme, setTheme, accent, setAccent, appUiVersion, setAppUiVersion } = useAppContext();
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
 
@@ -75,10 +76,14 @@ const Settings = () => {
           ...currentBusiness.settings,
           currency,
           dateFormat,
-          lowStockThreshold: Number(lowStockThreshold)
+          lowStockThreshold: Number(lowStockThreshold),
+          theme: theme,
+          accent: accent,
+          appUiVersion: appUiVersion
         },
         modules: enabledModules
       });
+
       await refreshUserProfile();
       alert('Settings saved successfully!');
     } catch (err) {
@@ -115,6 +120,12 @@ const Settings = () => {
             onClick={() => setActiveTab('general')}
           >
             <Building size={18} /> Business Profile
+          </button>
+          <button 
+            className={`settings-tab ${activeTab === 'appearance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('appearance')}
+          >
+            <Palette size={18} /> Appearance
           </button>
           <button 
             className={`settings-tab ${activeTab === 'preferences' ? 'active' : ''}`}
@@ -175,6 +186,129 @@ const Settings = () => {
                 <Input label="Phone Number" defaultValue="+1 234 567 8900" />
                 <Input label="Address" defaultValue="123 Commerce St, Business City" />
                 <Input label="Tax ID / VAT" defaultValue="TAX-8923472" />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'appearance' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Appearance & Themes</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="form-group">
+                  <label className="text-sm font-semibold mb-2 block" style={{color: 'var(--text-main)'}}>Base Theme</label>
+                  <p className="text-xs text-secondary mb-4">Choose between light and dark mode.</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
+                    {['light', 'dark'].map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setTheme(t)}
+                        className={`capitalize p-4 rounded-2xl transition-all flex flex-col items-center gap-3`}
+                        style={{ 
+                          border: `1px solid ${theme === t ? 'var(--primary-color)' : 'var(--border-color)'}`,
+                          backgroundColor: theme === t ? 'var(--bg-hover)' : 'var(--bg-card)',
+                          padding: '1rem',
+                          borderRadius: '1rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <div style={{ 
+                          width: '32px', 
+                          height: '32px', 
+                          borderRadius: '50%', 
+                          border: '1px solid var(--border-color)', 
+                          boxShadow: 'var(--shadow-sm)', 
+                          display: 'flex', 
+                          overflow: 'hidden' 
+                        }}>
+                          {t === 'light' && <div style={{ width: '100%', height: '100%', backgroundColor: '#ffffff' }}></div>}
+                          {t === 'dark' && <div style={{ width: '100%', height: '100%', backgroundColor: '#000000' }}></div>}
+                        </div>
+                        <span className="font-semibold" style={{ color: 'var(--text-main)', fontSize: '0.875rem' }}>{t}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-[var(--border-color)] form-group">
+                  <label className="text-sm font-semibold mb-2 block" style={{color: 'var(--text-main)'}}>Accent Color</label>
+                  <p className="text-xs text-secondary mb-4">Choose the primary brand color for buttons, active states, and highlights.</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
+                    {[
+                      { id: 'default', label: 'Emerald', hex: '#16a34a' },
+                      { id: 'ocean', label: 'Ocean', hex: '#0ea5e9' },
+                      { id: 'midnight', label: 'Midnight', hex: '#6366f1' },
+                      { id: 'coffee', label: 'Coffee', hex: '#f59e0b' }
+                    ].map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => setAccent(a.id)}
+                        className={`capitalize transition-all flex flex-col items-center gap-3`}
+                        style={{ 
+                          border: `1px solid ${accent === a.id ? 'var(--primary-color)' : 'var(--border-color)'}`,
+                          backgroundColor: accent === a.id ? 'var(--bg-hover)' : 'var(--bg-card)',
+                          padding: '1rem',
+                          borderRadius: '1rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <div 
+                          style={{ 
+                            width: '32px', 
+                            height: '32px', 
+                            borderRadius: '50%', 
+                            backgroundColor: a.hex, 
+                            border: '2px solid var(--bg-card)', 
+                            outline: accent === a.id ? `2px solid ${a.hex}` : '2px solid transparent',
+                            boxShadow: 'var(--shadow-md)'
+                          }}
+                        ></div>
+                        <span className="font-semibold" style={{ color: 'var(--text-main)', fontSize: '0.875rem' }}>{a.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-[var(--border-color)]">
+                  <label className="text-sm font-semibold mb-2 block text-text-main">Application UI Version</label>
+                  <p className="text-xs text-text-secondary mb-3">
+                    Switch between the classic basic dashboard and the new high-density premium command center.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                    <label className={`flex-1 flex items-start p-4 rounded-xl border-2 cursor-pointer transition-colors ${appUiVersion === 'premium' ? 'bg-[var(--bg-hover)]' : ''}`} style={{ borderColor: appUiVersion === 'premium' ? 'var(--primary-color)' : 'var(--border-color)' }}>
+                      <input 
+                        type="radio" 
+                        name="uiVersion" 
+                        className="mt-1 mr-3"
+                        checked={appUiVersion === 'premium'}
+                        onChange={() => setAppUiVersion('premium')}
+                      />
+                      <div>
+                        <span className="font-semibold block text-text-main">Premium Dashboard</span>
+                        <span className="text-xs text-text-secondary">Density-optimized command center.</span>
+                      </div>
+                    </label>
+
+                    <label className={`flex-1 flex items-start p-4 rounded-xl border-2 cursor-pointer transition-colors ${appUiVersion === 'legacy' ? 'bg-[var(--bg-hover)]' : ''}`} style={{ borderColor: appUiVersion === 'legacy' ? 'var(--primary-color)' : 'var(--border-color)' }}>
+                      <input 
+                        type="radio" 
+                        name="uiVersion" 
+                        className="mt-1 mr-3"
+                        checked={appUiVersion === 'legacy'}
+                        onChange={() => {
+                          if (window.confirm("Warning: You are about to change the entire Dashboard layout to the older version. The Legacy UI may lack some modern analytics features. Are you sure?")) {
+                            setAppUiVersion('legacy');
+                          }
+                        }}
+                      />
+                      <div>
+                        <span className="font-semibold block text-text-main">Legacy Dashboard</span>
+                        <span className="text-xs text-text-secondary">Simpler layout with standard grid blocks.</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}

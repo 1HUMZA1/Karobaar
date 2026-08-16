@@ -1,113 +1,203 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
-import { Line, Bar } from 'react-chartjs-2';
-import { Activity, Wallet, TrendingUp, BarChart3, Package, ArrowUpRight } from 'lucide-react';
-import { format } from 'date-fns';
-import { useAppContext } from '../../context/AppContext';
+import { Line } from 'react-chartjs-2';
+import { Activity, Zap, DollarSign, Package, Users, Receipt, FileText, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-export const RevenueAnalytics = ({ chartObj, chartOptions }) => {
+export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, trends = {} }) => {
+  const navigate = useNavigate();
   const [range, setRange] = useState('7D');
+
+  const chartObj = {
+    labels: chartData.labels,
+    datasets: [
+      {
+        label: 'Revenue',
+        data: chartData.revenueData,
+        borderColor: '#22c55e', // Success Green
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+      },
+      {
+        label: 'Expenses',
+        data: chartData.expenseData,
+        borderColor: '#ef4444', // Danger Red
+        backgroundColor: 'transparent',
+        borderDash: [5, 5],
+        fill: false,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+      },
+      {
+        label: 'Profit',
+        data: chartData.profitData,
+        borderColor: '#3b82f6', // Info Blue
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#141414',
+        titleColor: '#F5F5F5',
+        bodyColor: '#a3a3a3',
+        borderColor: '#252525',
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 6,
+        usePointStyle: true,
+        callbacks: {
+          label: (context) => ` ${context.dataset.label}: ${currencySymbol}${context.parsed.y.toLocaleString()}`
+        }
+      }
+    },
+    scales: {
+      x: { 
+        grid: { display: false }, 
+        ticks: { color: '#666666', font: { size: 11, family: 'Inter' } },
+        border: { display: false }
+      },
+      y: { 
+        grid: { color: '#252525', drawBorder: false }, 
+        ticks: { 
+          color: '#666666', 
+          font: { size: 11, family: 'Inter' },
+          callback: (value) => `${currencySymbol}${value >= 1000 ? (value/1000).toFixed(1) + 'k' : value}`
+        },
+        border: { display: false }
+      }
+    }
+  };
+
+  const quickActions = [
+    { label: 'New Sale', icon: <DollarSign size={16} />, path: '/pos', primary: true },
+    { label: 'Add Product', icon: <Package size={16} />, path: '/products', primary: false },
+    { label: 'Add Customer', icon: <Users size={16} />, path: '/customers', primary: false },
+    { label: 'Record Expense', icon: <Receipt size={16} />, path: '/expenses', primary: false },
+    { label: 'Create Invoice', icon: <FileText size={16} />, path: '/invoices', primary: false },
+    { label: 'Settings', icon: <Settings size={16} />, path: '/settings', primary: false },
+  ];
+
   return (
-    <Card className="border-none shadow-sm h-full" style={{ background: 'var(--bg-card)' }}>
-      <CardHeader className="pb-0 pt-6 px-6 border-none">
-        <div className="flex justify-between items-center w-full">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Activity size={18} className="text-primary"/> Revenue Analytics
-          </CardTitle>
-          <div className="flex gap-2">
-            {['7D', '30D', '3M', '1Y'].map(r => (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+      
+      {/* Revenue Overview Chart */}
+      <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] overflow-hidden shadow-sm flex flex-col">
+        <div className="p-5 border-b border-[var(--border-color)] flex justify-between items-center">
+          <h2 className="text-base font-semibold text-text-main flex items-center gap-2">
+            <Activity size={16} className="text-primary"/> Revenue Overview
+          </h2>
+          <div className="flex bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-lg p-0.5">
+            {['7D', '30D', '1Y'].map(r => (
               <button 
                 key={r}
                 onClick={() => setRange(r)}
-                className={`text-xs font-semibold px-2 py-1 rounded ${range === r ? 'bg-primary text-primary-text' : 'text-text-muted hover:bg-[var(--bg-hover)]'}`}
+                className={`text-xs font-semibold px-3 py-1 rounded-md transition-all ${
+                  range === r 
+                    ? 'bg-[var(--bg-hover)] text-text-main shadow-sm' 
+                    : 'text-text-muted hover:text-text-main'
+                }`}
               >
                 {r}
               </button>
             ))}
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="chart-container px-6 pb-6 pt-4 h-64 relative">
-        <Line data={chartObj} options={{...chartOptions, maintainAspectRatio: false}} />
-      </CardContent>
-    </Card>
-  );
-};
-
-export const ProfitCenter = ({ stats, currencySymbol }) => {
-  const cogs = (stats.todayRevenue || 0) * 0.45; // Simulated COGS if not strictly tracked per product yet
-  const grossProfit = (stats.todayRevenue || 0) - cogs;
-  const netProfit = grossProfit - (stats.todayExpenses || 0);
-
-  return (
-    <Card className="border-none shadow-sm flex-1" style={{ background: 'var(--bg-card)' }}>
-      <CardHeader className="pb-4 pt-6 px-6 border-b border-border-color">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Wallet size={18} className="text-success"/> Profit & Loss
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-text-secondary">Revenue</span>
-            <span className="font-semibold">{currencySymbol}{(stats.todayRevenue || 0).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-text-secondary">Cost of Goods (Est.)</span>
-            <span className="font-semibold text-danger">-{currencySymbol}{cogs.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm pt-2 border-t border-border-color">
-            <span className="font-bold">Gross Profit</span>
-            <span className="font-bold text-primary">{currencySymbol}{grossProfit.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm text-text-secondary">
-            <span>Operating Expenses</span>
-            <span className="text-danger">-{currencySymbol}{(stats.todayExpenses || 0).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center pt-3 border-t-2 border-border-color">
-            <span className="font-bold text-lg">Net Profit</span>
-            <span className="font-bold text-success text-xl">{currencySymbol}{netProfit.toFixed(2)}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-export const TopProducts = ({ topProducts = [], currencySymbol }) => {
-  return (
-    <Card className="border-none shadow-sm col-span-1 md:col-span-2 lg:col-span-1" style={{ background: 'var(--bg-card)' }}>
-      <CardHeader className="pb-4 pt-6 px-6 border-b border-border-color">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <TrendingUp size={18} className="text-warning"/> Top Selling Products
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="divide-y divide-[var(--border-color)]">
-          {topProducts.length > 0 ? topProducts.map((p, i) => (
-            <div key={p.id} className="p-4 flex items-center justify-between hover:bg-[var(--bg-hover)] transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-primary-bg text-primary flex items-center justify-center font-bold text-sm">
-                  #{i + 1}
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">{p.name}</p>
-                  <p className="text-xs text-text-muted">{p.soldCount} units sold</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-sm text-success">{currencySymbol}{(p.revenue || 0).toFixed(2)}</p>
-                <p className="text-xs text-text-muted">{p.stockQuantity} in stock</p>
-              </div>
-            </div>
-          )) : (
-            <div className="p-8 text-center text-text-muted flex flex-col items-center">
-              <Package size={24} className="mb-2 opacity-50"/>
-              <p className="text-sm">Not enough sales data yet.</p>
+        
+        <div className="p-5 flex-1 relative min-h-[300px]">
+          {chartData.labels.length > 0 ? (
+            <Line data={chartObj} options={chartOptions} />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-text-muted text-sm">
+              No chart data available.
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="lg:col-span-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] shadow-sm flex flex-col">
+        <div className="p-5 border-b border-[var(--border-color)]">
+          <h2 className="text-base font-semibold text-text-main flex items-center gap-2">
+            <Zap size={16} className="text-warning"/> Quick Actions
+          </h2>
+        </div>
+        <div className="p-5 flex-1 quick-actions-grid">
+          {quickActions.map((action, idx) => (
+            <button
+              key={idx}
+              onClick={() => navigate(action.path)}
+              className={`quick-action-btn ${action.primary ? 'quick-action-primary' : ''}`}
+            >
+              <div className="quick-action-icon">
+                {action.icon}
+              </div>
+              <span className="quick-action-label text-center leading-tight">
+                {action.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Business Insights / Status */}
+      <div className="lg:col-span-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] shadow-sm flex flex-col">
+        <div className="p-5 border-b border-[var(--border-color)]">
+          <h2 className="text-base font-semibold text-text-main flex items-center gap-2">
+            <Activity size={16} className="text-info"/> Business Status
+          </h2>
+        </div>
+        <div className="p-5 flex-1 flex flex-col gap-4">
+          <div className="flex justify-between items-center bg-[var(--bg-elevated)] p-3 rounded-lg border border-[var(--border-color)]">
+            <div>
+              <p className="text-xs text-text-secondary font-medium">Pending Receivables</p>
+              <p className="text-sm font-bold text-text-main mt-0.5">{stats.receivables === '***' ? '***' : `${currencySymbol}${Number(stats.receivables || 0).toLocaleString()}`}</p>
+            </div>
+            <div className="p-2 bg-[var(--warning-light)] text-[var(--warning-color)] rounded-md">
+              <DollarSign size={16} />
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center bg-[var(--bg-elevated)] p-3 rounded-lg border border-[var(--border-color)]">
+            <div>
+              <p className="text-xs text-text-secondary font-medium">Total Customers</p>
+              <p className="text-sm font-bold text-text-main mt-0.5">{stats.totalCustomers || 0}</p>
+            </div>
+            <div className="p-2 bg-[var(--info-light)] text-[var(--info-color)] rounded-md">
+              <Users size={16} />
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center bg-[var(--bg-elevated)] p-3 rounded-lg border border-[var(--border-color)]">
+            <div>
+              <p className="text-xs text-text-secondary font-medium">Low Stock Items</p>
+              <p className={`text-sm font-bold mt-0.5 ${(stats.lowStockCount || 0) > 0 ? 'text-danger' : 'text-success'}`}>
+                {stats.lowStockCount || 0}
+              </p>
+            </div>
+            <div className={`p-2 rounded-md ${(stats.lowStockCount || 0) > 0 ? 'bg-[var(--danger-light)] text-[var(--danger-color)]' : 'bg-[var(--success-light)] text-[var(--success-color)]'}`}>
+              <Package size={16} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   );
 };

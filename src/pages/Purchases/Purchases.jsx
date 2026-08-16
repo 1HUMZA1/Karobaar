@@ -7,14 +7,22 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAppContext } from '../../context/AppContext';
+import { useCollection } from '../../hooks/useCollection';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 import './Purchases.css';
 
 const Purchases = () => {
   const { currentUser, currentBusiness } = useAppContext();
-  const [purchases, setPurchases] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  const { data: purchases, loading: purchasesLoading, isRevalidating, mutate, refetch } = useCollection('purchases', currentUser?.activeBusinessId, {
+    sortBy: (a, b) => new Date(b.date) - new Date(a.date)
+  });
+
+  const { data: suppliers } = useCollection('suppliers', currentUser?.activeBusinessId);
+
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [displayLimit, setDisplayLimit] = useState(50);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,21 +35,13 @@ const Purchases = () => {
 
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
+  // Debounce search
   useEffect(() => {
-    if (currentUser?.activeBusinessId) {
-      fetchPurchases(currentUser.activeBusinessId);
-    }
-  }, [currentUser?.activeBusinessId]);
-
-  const fetchPurchases = async (businessId) => {
-    setLoading(true);
-    const data = await db.getCollection('purchases', businessId);
-    const supps = await db.getCollection('suppliers', businessId);
-    const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
-    setPurchases(sorted);
-    setSuppliers(supps);
-    setLoading(false);
-  };
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timerId);
+  }, [searchTerm]);
 
   const handleReceiveStock = async (purchaseId) => {
     if (!currentUser?.activeBusinessId) return;
@@ -61,9 +61,12 @@ const Purchases = () => {
       }
     }
 
+    // Optimistic Update
+    mutate(purchases.map(p => p.id === purchaseId ? { ...p, status: 'Received' } : p));
+    
     // Update purchase status
     await db.update('purchases', purchaseId, { status: 'Received' }, currentUser.activeBusinessId);
-    fetchPurchases(currentUser.activeBusinessId);
+    refetch();
     alert('Stock received and inventory updated successfully!');
   };
 
@@ -85,28 +88,43 @@ const Purchases = () => {
         items: [] // Empty items for simple demo
       };
 
+      const optimisticPO = { id: 'temp-' + Date.now(), ...newPO };
+      mutate([optimisticPO, ...purchases]);
+
       await db.add('purchases', newPO, currentUser.activeBusinessId);
-      await fetchPurchases(currentUser.activeBusinessId);
+      
       setIsModalOpen(false);
       setFormData({ supplierId: '', total: '', notes: '' });
+      refetch();
     } catch (err) {
       console.error(err);
       alert('Failed to create PO');
+      refetch();
     } finally {
       setSaving(false);
     }
   };
 
   const filteredPurchases = purchases.filter(p => 
-    (p.poNumber && p.poNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (p.supplierName && p.supplierName.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+    (p.poNumber && p.poNumber.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+    (p.supplierName && p.supplierName.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+  ).slice(0, displayLimit);
+
+  const handleScroll = (e) => {
+    const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 50;
+    if (bottom && displayLimit < purchases.length) {
+      setDisplayLimit(prev => prev + 50);
+    }
+  };
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold">Purchase Orders</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            Purchase Orders
+            {isRevalidating && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
+          </h1>
           <p className="text-secondary">Manage supplier orders and receive stock</p>
         </div>
         <Button icon={<Plus size={18} />} onClick={() => setIsModalOpen(true)}>Create PO</Button>
@@ -123,8 +141,8 @@ const Purchases = () => {
           />
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="loading-state">Loading purchases...</div>
+          {purchasesLoading ? (
+            <TableSkeleton rows={8} cols={6} />
           ) : (
             <Table>
               <TableHeader>
@@ -170,13 +188,18 @@ const Purchases = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan="6" className="text-center py-8">
+                    <TableCell colSpan="6" className="text-center py-12 text-slate-500">
                       No purchases found.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+          )}
+          {displayLimit < purchases.length && (
+            <div className="text-center p-4 text-sm text-slate-500">
+              Scroll down to load more...
+            </div>
           )}
         </CardContent>
       </Card>
@@ -200,7 +223,7 @@ const Purchases = () => {
                   onChange={e => setFormData({...formData, supplierId: e.target.value})}
                 >
                   <option value="">Select a supplier...</option>
-                  {suppliers.map(s => (
+                  {suppliers && suppliers.map(s => (
                     <option key={s.id} value={s.id}>{s.name} ({s.company || 'N/A'})</option>
                   ))}
                 </select>

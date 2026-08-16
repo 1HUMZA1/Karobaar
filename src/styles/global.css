@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* Colors - Light Theme */
@@ -72,6 +72,35 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
 }
 
+/* Accent Colors */
+[data-accent="default"] {
+  --primary-color: #16a34a;
+  --primary-hover: #15803d;
+  --primary-light: #dcfce7;
+  --primary-text: #ffffff;
+}
+
+[data-accent="ocean"] {
+  --primary-color: #0ea5e9;
+  --primary-hover: #0369a1;
+  --primary-light: #e0f2fe;
+  --primary-text: #ffffff;
+}
+
+[data-accent="midnight"] {
+  --primary-color: #6366f1;
+  --primary-hover: #4338ca;
+  --primary-light: #e0e7ff;
+  --primary-text: #ffffff;
+}
+
+[data-accent="coffee"] {
+  --primary-color: #f59e0b;
+  --primary-hover: #b45309;
+  --primary-light: #fef3c7;
+  --primary-text: #000000;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -79,7 +108,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.5;
@@ -161,9 +190,32 @@ ul {
   padding: 2rem;
 }
 
+.page-container {
+  padding: 3rem; /* Increased padding for professional airy look */
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2.5rem; /* Increased spacing between header texts and the boxes */
+}
+
 @media (max-width: 768px) {
   .page-content {
-    padding: 1rem;
+    padding: 1.5rem;
+  }
+  .page-container {
+    padding: 1.5rem;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 2rem;
   }
 }
 

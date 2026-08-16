@@ -1,16 +1,22 @@
-# React + Vite
+# Karobaar OS v2.0.0
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The Complete Business Operating System. Manage inventory, sales, payroll, and tasks seamlessly in one unified platform.
 
-Currently, two official plugins are available:
+## Latest Mod / Version
+The latest version is **v2.0.0** (Complete Dashboard Redesign).
+[Release v2.0.0 on GitHub](https://github.com/1HUMZA1/Karobaar/releases/tag/v2.0.0)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
+- **Smart POS**: Fast and reliable point of sale.
+- **Inventory Tracking**: Real-time stock updates and low-stock alerts.
+- **Payroll Management**: Employee attendance, leaves, and salary management.
+- **Comprehensive Reports**: Insights into sales, purchases, and expenses.
 
-## React Compiler
+## Links
+- [Live Preview (GitHub Pages)](https://1humza1.github.io/Karobaar/#/)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Development
+```bash
+npm install
+npm run dev
+```

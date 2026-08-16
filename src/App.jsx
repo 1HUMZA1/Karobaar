@@ -22,6 +22,8 @@ import Reports from './pages/Reports/Reports';
 import Notifications from './pages/Notifications/Notifications';
 import Login from './pages/Login/Login';
 import BusinessSetup from './pages/BusinessSetup/BusinessSetup';
+import Invoices from './pages/Invoices/Invoices';
+import Payments from './pages/Payments/Payments';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
@@ -42,8 +44,10 @@ const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
   }
 
   // Module Check
-  if (moduleId && currentBusiness && currentBusiness.modules) {
-    const isModuleEnabled = currentBusiness.modules[moduleId] === true || currentBusiness.modules[moduleId] === "true";
+  if (moduleId && currentBusiness) {
+    const modules = currentBusiness.modules || {};
+    // If a module is explicitly set to false, block it. Otherwise allow it (default opt-in)
+    const isModuleEnabled = modules[moduleId] !== false && modules[moduleId] !== 'false';
     if (!isModuleEnabled) {
       return <Navigate to="/dashboard" replace />;
     }
@@ -63,7 +67,30 @@ const ROLES = {
   SETTINGS_OPS: ['OWNER']
 };
 
-const LOADING_QUOTES = [
+const SLOGANS = [
+  "Transforming Effort Into Growth.",
+  "Where Effort Becomes Growth.",
+  "Empowering Work. Accelerating Growth.",
+  "Work Smarter. Grow Stronger.",
+  "Turning Vision Into Progress.",
+  "Built to Simplify. Designed to Grow.",
+  "Your Business. Your Growth.",
+  "From Ideas to Impact.",
+  "Powering Smarter Business.",
+  "Elevate Your Work. Accelerate Growth.",
+  "Business, Simplified.",
+  "Plan Better. Work Smarter. Grow Faster.",
+  "Turning Ambition Into Achievement.",
+  "Built for Businesses That Think Bigger.",
+  "Smarter Tools. Stronger Businesses.",
+  "Make Every Move Count.",
+  "Your Growth Starts Here.",
+  "Drive Progress. Build Success.",
+  "Work Better. Achieve More.",
+  "Karobaar — Built to Grow."
+];
+
+const SYSTEM_MESSAGES = [
   "Initializing system architecture...",
   "Syncing business data...",
   "Loading dashboard modules...",
@@ -74,43 +101,84 @@ const LOADING_QUOTES = [
 
 const AppContent = () => {
   const { authStatus } = useAppContext();
-  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [sloganIndex, setSloganIndex] = useState(0);
+  const [sysMsgIndex, setSysMsgIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (authStatus !== 'loading') return;
-    const interval = setInterval(() => {
-      setQuoteIndex(prev => (prev + 1) % LOADING_QUOTES.length);
-    }, 2000);
-    return () => clearInterval(interval);
+    
+    const sloganInterval = setInterval(() => {
+      setSloganIndex(prev => (prev + 1) % SLOGANS.length);
+    }, 2500);
+    
+    const sysMsgInterval = setInterval(() => {
+      setSysMsgIndex(prev => (prev + 1) % SYSTEM_MESSAGES.length);
+    }, 1800);
+    
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const increment = prev < 60 ? Math.random() * 15 : (prev < 90 ? Math.random() * 5 : Math.random() * 1.5);
+        return Math.min(prev + increment, 99);
+      });
+    }, 250);
+    
+    return () => {
+      clearInterval(sloganInterval);
+      clearInterval(sysMsgInterval);
+      clearInterval(progressInterval);
+    };
   }, [authStatus]);
 
   if (authStatus === 'loading') {
     return (
       <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-body)', color: 'var(--text-main)', position: 'fixed', top: 0, left: 0, zIndex: 9999, transition: 'background-color 0.3s' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px', width: '100%', maxWidth: '400px' }}>
           
           {/* Logo */}
-          <div style={{ position: 'relative', width: '72px', height: '72px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', color: 'var(--text-main)', border: '2px solid var(--text-main)', borderRadius: '20px', boxShadow: 'var(--shadow-lg)', animation: 'pulse-soft 2.5s infinite ease-in-out' }}>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-1px' }}>K</span>
+          <div style={{ position: 'relative', width: '84px', height: '84px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', color: 'var(--text-main)', border: '3px solid var(--text-main)', borderRadius: '24px', boxShadow: 'var(--shadow-lg)', animation: 'pulse-soft 2.5s infinite ease-in-out' }}>
+            <span style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-1px' }}>K</span>
           </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <h2 style={{ margin: 0, fontWeight: 700, fontSize: '1.25rem', letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--text-main)' }}>Karobaar</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
+            <h2 style={{ margin: 0, fontWeight: 700, fontSize: '1.5rem', letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-main)' }}>Karobaar</h2>
             
-            {/* Minimalist Spinner & Quote */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '24px', height: '24px', border: '2px solid var(--border-color)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin-fast 0.8s linear infinite' }}></div>
-              <p style={{ 
-                margin: 0,
-                fontSize: '0.9rem', 
-                color: 'var(--text-secondary)', 
-                fontWeight: 500,
-                animation: 'fade-text 2s infinite ease-in-out',
-                textAlign: 'center',
-                maxWidth: '300px'
-              }}>
-                {LOADING_QUOTES[quoteIndex]}
-              </p>
+            {/* Slogan */}
+            <p style={{ 
+              margin: '0 0 24px 0',
+              fontSize: '1rem', 
+              color: 'var(--text-secondary)', 
+              fontWeight: 500,
+              animation: 'fade-text 2.5s infinite ease-in-out',
+              textAlign: 'center'
+            }}>
+              {SLOGANS[sloganIndex]}
+            </p>
+            
+            {/* Progress Bar & System Message */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', padding: '0 32px' }}>
+              <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: `${progress}%`, height: '100%', backgroundColor: 'var(--primary)', borderRadius: '4px', transition: 'width 0.3s ease-out' }}></div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 4px' }}>
+                <p style={{ 
+                  margin: 0,
+                  fontSize: '0.75rem', 
+                  color: 'var(--text-muted)', 
+                  fontWeight: 500
+                }}>
+                  {SYSTEM_MESSAGES[sysMsgIndex]}
+                </p>
+                <p style={{ 
+                  margin: 0,
+                  fontSize: '0.75rem', 
+                  color: 'var(--text-main)', 
+                  fontWeight: 600,
+                  fontVariantNumeric: 'tabular-nums'
+                }}>
+                  {Math.floor(progress)}%
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -120,7 +188,7 @@ const AppContent = () => {
             100% { transform: rotate(360deg); }
           }
           @keyframes fade-text {
-            0%, 100% { opacity: 0.5; }
+            0%, 100% { opacity: 0.3; }
             50% { opacity: 1; }
           }
           @keyframes pulse-soft {
@@ -149,6 +217,7 @@ const AppContent = () => {
           
           <Route path="pos" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS} moduleId="pos"><POS /></ProtectedRoute>} />
           <Route path="orders" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS} moduleId="sales"><Orders /></ProtectedRoute>} />
+          <Route path="invoices" element={<ProtectedRoute allowedRoles={ROLES.FINANCE} moduleId="invoices"><Invoices /></ProtectedRoute>} />
           <Route path="customers" element={<ProtectedRoute allowedRoles={['OWNER', 'MANAGER', 'STAFF', 'SALES']} moduleId="customers"><Customers /></ProtectedRoute>} />
           
           <Route path="products" element={<ProtectedRoute allowedRoles={ROLES.WAREHOUSE_OPS} moduleId="inventory"><Products /></ProtectedRoute>} />
@@ -162,6 +231,7 @@ const AppContent = () => {
           <Route path="payroll" element={<ProtectedRoute allowedRoles={['OWNER', 'MANAGER', 'ACCOUNTANT']} moduleId="payroll"><Payroll /></ProtectedRoute>} />
           
           <Route path="expenses" element={<ProtectedRoute allowedRoles={ROLES.FINANCE} moduleId="expenses"><Expenses /></ProtectedRoute>} />
+          <Route path="payments" element={<ProtectedRoute allowedRoles={ROLES.FINANCE} moduleId="payments"><Payments /></ProtectedRoute>} />
           
           <Route path="tasks" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="tasks"><Tasks /></ProtectedRoute>} />
           <Route path="reports" element={<ProtectedRoute allowedRoles={['OWNER', 'MANAGER', 'ACCOUNTANT']} moduleId="reports"><Reports /></ProtectedRoute>} />

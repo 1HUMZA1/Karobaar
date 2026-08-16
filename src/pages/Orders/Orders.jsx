@@ -1,34 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Eye, Download, Printer } from 'lucide-react';
-import { db } from '../../services/databaseService';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
-import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { useCollection } from '../../hooks/useCollection';
+import { TableSkeleton } from '../../components/ui/Skeleton';
+import { useAppContext } from '../../context/AppContext';
 import './Orders.css';
 
 const Orders = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { currentUser } = useAppContext();
+  
+  // Use SWR Hook instead of blocking fetch
+  const { data: orders, loading, isRevalidating } = useCollection('sales', currentUser?.activeBusinessId, {
+    sortBy: (a, b) => new Date(b.date) - new Date(a.date)
+  });
+
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  
+  // Pagination
+  const [displayLimit, setDisplayLimit] = useState(50);
 
+  // Debounce search
   useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
-    setLoading(true);
-    const data = await db.getCollection('sales');
-    // Sort by newest first
-    const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
-    setOrders(sorted);
-    setLoading(false);
-  };
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timerId);
+  }, [searchTerm]);
 
   const filteredOrders = orders.filter(o => 
-    o.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    o.invoiceNumber.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+  ).slice(0, displayLimit);
 
   const getStatusClass = (status) => {
     switch(status.toLowerCase()) {
@@ -39,11 +44,21 @@ const Orders = () => {
     }
   };
 
+  const handleScroll = (e) => {
+    const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 50;
+    if (bottom && displayLimit < orders.length) {
+      setDisplayLimit(prev => prev + 50);
+    }
+  };
+
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold">Orders & Invoices</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            Orders & Invoices
+            {isRevalidating && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
+          </h1>
           <p className="text-secondary">View and manage all sales transactions</p>
         </div>
       </div>
@@ -60,7 +75,7 @@ const Orders = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="loading-state">Loading orders...</div>
+            <TableSkeleton rows={10} cols={7} />
           ) : (
             <Table>
               <TableHeader>
@@ -99,13 +114,18 @@ const Orders = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan="7" className="text-center py-8">
+                    <TableCell colSpan="7" className="text-center py-12 text-slate-500">
                       No orders found.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+          )}
+          {displayLimit < orders.length && (
+            <div className="text-center p-4 text-sm text-slate-500">
+              Scroll down to load more...
+            </div>
           )}
         </CardContent>
       </Card>
@@ -114,3 +134,4 @@ const Orders = () => {
 };
 
 export default Orders;
+
