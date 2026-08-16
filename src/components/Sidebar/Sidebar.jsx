@@ -155,6 +155,13 @@ const Sidebar = () => {
             );
           })}
         </nav>
+
+        {!collapsed && (
+          <div className="mt-auto pt-4 px-4 pb-2 border-t border-border-color text-xs text-text-muted text-center flex flex-col items-center justify-center">
+            <p className="font-semibold mb-0.5">Karobaar OS</p>
+            <p>Version 1.0.0</p>
+          </div>
+        )}
       </aside>
     </>
   );

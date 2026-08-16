@@ -2,7 +2,7 @@
   "name": "e-business",
   "private": true,
   "homepage": "https://1HUMZA1.github.io/Karobaar",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
