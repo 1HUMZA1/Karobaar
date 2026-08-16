@@ -198,16 +198,23 @@ class DatabaseService {
   async getUserByFirebaseUid(firebaseUid) {
     try {
       const docRef = doc(dbFirestore, 'users', firebaseUid);
-      const d = await this._withTimeout(getDoc(docRef));
+      // Use a longer timeout for this critical auth query
+      const d = await this._withTimeout(getDoc(docRef), 15000);
       if (d.exists()) {
         const record = { id: d.id, ...d.data() };
         localDb.save('users', d.id, record, false);
         return record;
       }
-      return null;
+      return null; // Explicitly does not exist
     } catch (e) {
       console.warn("[OFFLINE] Using local cache for user profile:", e.message);
-      return localDb.get('users', firebaseUid);
+      const cachedUser = localDb.get('users', firebaseUid);
+      if (cachedUser) {
+        return cachedUser;
+      }
+      // CRITICAL FIX: If no cache and network fails, DO NOT return null (which implies new user).
+      // Throw error so AppContext drops them back to login instead of forcing setup.
+      throw new Error("Network error: Could not verify account data. Please check your internet connection.");
     }
   }
 }

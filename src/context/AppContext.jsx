@@ -15,6 +15,7 @@ export const AppProvider = ({ children }) => {
   
   // Authentication & Global State
   const [authStatus, setAuthStatus] = useState('loading'); // 'loading', 'authenticated', 'unauthenticated', 'pending_onboarding'
+  const [authError, setAuthError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const [currentBusiness, setCurrentBusiness] = useState(null);
 
@@ -39,6 +40,7 @@ export const AppProvider = ({ children }) => {
     console.log("[AUTH] Loading...");
     
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setAuthError(''); // Clear previous errors
       if (firebaseUser) {
         console.log(`[AUTH] Authenticated UID: ${firebaseUser.uid}`);
         
@@ -71,6 +73,7 @@ export const AppProvider = ({ children }) => {
           }
         } catch (error) {
           console.error("[AUTH] Error loading Karobaar profile:", error);
+          setAuthError(error.message || "Failed to load account data. Please check your connection.");
           setCurrentUser(null);
           setCurrentBusiness(null);
           setAuthStatus('unauthenticated');
@@ -135,6 +138,7 @@ export const AppProvider = ({ children }) => {
       setSidebarOpen,
       toggleSidebar,
       authStatus,
+      authError,
       currentUser,
       currentBusiness,
       userRole,

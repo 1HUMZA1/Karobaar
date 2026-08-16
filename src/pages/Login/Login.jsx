@@ -15,7 +15,7 @@ const Login = () => {
   const [generalError, setGeneralError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   
-  const { authStatus, currentUser } = useAppContext();
+  const { authStatus, authError } = useAppContext();
   const navigate = useNavigate();
 
   const isAuthLoading = authStatus === 'loading';
@@ -161,9 +161,9 @@ const Login = () => {
           </div>
 
           <div className="login-card">
-            {generalError && (
+            {(generalError || authError) && (
               <div className="error-banner animate-shake">
-                {generalError}
+                {generalError || authError}
               </div>
             )}
 
