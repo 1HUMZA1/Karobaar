@@ -194,130 +194,198 @@ const BusinessSetup = () => {
     }
   };
 
+  const stepsList = [
+    { id: 1, title: 'Personal Profile', desc: 'Your contact details' },
+    { id: 2, title: 'Business Details', desc: 'Basic company info' },
+    { id: 3, title: 'Business Size', desc: 'Scale and revenue' },
+    { id: 4, title: 'Select Modules', desc: 'Features you need' },
+    { id: 5, title: 'Preferences', desc: 'Regional settings' }
+  ];
+
   return (
-    <div className="setup-container">
-      <div className="setup-card" style={{ maxWidth: '600px' }}>
-        <div className="setup-header">
-          <div className="setup-logo">
-            <span className="logo-icon-box">K</span>
-          </div>
-          <h2>{['Personal Profile', 'Business Details', 'Business Size', 'Select Modules', 'Preferences'][step - 1]}</h2>
-          <p>Step {step} of 5</p>
+    <div className="setup-wrapper">
+      {/* Left Panel - Visuals & Stepper */}
+      <div className="setup-visuals">
+        <div className="setup-brand">
+          <div className="logo-icon-box">K</div>
+          Karobaar OS
         </div>
-
-        {error && <div className="setup-error">{error}</div>}
-
-        <form onSubmit={step === 5 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}>
-          
-          {step === 1 && (
-            <div className="step-content">
-              <div className="form-group"><label>Full Name</label><input type="text" className="form-input" value={personal.fullName} onChange={e => setPersonal({...personal, fullName: e.target.value})} required/></div>
-              <div className="form-group"><label>Phone Number</label><input type="tel" className="form-input" value={personal.phone} onChange={e => setPersonal({...personal, phone: e.target.value})} placeholder="+919876543210"/></div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="step-content">
-              <div className="form-group"><label>Business Name</label><input type="text" className="form-input" value={business.name} onChange={e => setBusiness({...business, name: e.target.value})} required/></div>
-              <div className="form-group"><label>Business Type</label>
-                <select className="form-input" value={business.type} onChange={e => setBusiness({...business, type: e.target.value})}>
-                  <option>Retail</option><option>Wholesale</option><option>E-commerce</option><option>Services</option><option>Manufacturing</option><option>Other</option>
-                </select>
+        
+        <div className="setup-progress">
+          {stepsList.map((s) => (
+            <div 
+              key={s.id} 
+              className={`progress-step ${step === s.id ? 'active' : ''} ${step > s.id ? 'completed' : ''}`}
+            >
+              <div className="step-indicator">
+                {step > s.id ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                ) : (
+                  s.id
+                )}
               </div>
-              <div className="form-group"><label>Country</label>
-                <select className="form-input" value={business.country} onChange={e => setBusiness({...business, country: e.target.value, city: ''})}>
-                  <option value="">Select Country</option>
-                  {Object.keys(COUNTRY_CITIES).map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="form-group"><label>City</label>
-                <input type="text" list="city-options" className="form-input" value={business.city} onChange={e => setBusiness({...business, city: e.target.value})} placeholder={business.country ? "Select or type a city" : "Select a country first"} />
-                <datalist id="city-options">
-                  {(COUNTRY_CITIES[business.country] || []).map(city => (
-                    <option key={city} value={city} />
-                  ))}
-                </datalist>
-              </div>
-              <div className="form-group"><label>Tax/GST Number (Optional)</label><input type="text" className="form-input" value={business.gst} onChange={e => setBusiness({...business, gst: e.target.value})}/></div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="step-content">
-              <div className="form-group"><label>Number of Employees</label>
-                <select className="form-input" value={size.employees} onChange={e => setSize({...size, employees: e.target.value})}>
-                  <option>1</option><option>2–5</option><option>6–10</option><option>11–25</option><option>26-50</option><option>100+</option>
-                </select>
-              </div>
-              <div className="form-group"><label>Monthly Sales Range</label>
-                <select className="form-input" value={size.monthlySales} onChange={e => setSize({...size, monthlySales: e.target.value})}>
-                  <option>Under ₹50,000</option><option>₹50,000–₹1 lakh</option><option>₹1–5 lakh</option><option>₹5–10 lakh</option><option>₹50 lakh+</option>
-                </select>
+              <div className="step-text">
+                <h3>{s.title}</h3>
+                <p>{s.desc}</p>
               </div>
             </div>
-          )}
+          ))}
+        </div>
+      </div>
 
-          {step === 4 && (
-            <div className="step-content">
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                <p style={{margin: 0, color: '#666'}}>Select the features you want to use. You can change this later.</p>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    if (modules.length === MODULES_LIST.length) {
-                      setModules([]);
-                    } else {
-                      setModules(MODULES_LIST.map(m => m.id));
-                    }
-                  }}
-                  style={{padding: '0.25rem 0.75rem', fontSize: '0.85rem'}}
-                >
-                  {modules.length === MODULES_LIST.length ? 'Deselect All' : 'Select All'}
-                </Button>
-              </div>
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem'}}>
-                {MODULES_LIST.map(mod => (
-                  <label key={mod.id} style={{display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', border: '1px solid #eee', borderRadius: '8px', cursor: 'pointer'}}>
-                    <input type="checkbox" checked={modules.includes(mod.id)} onChange={() => toggleModule(mod.id)} />
-                    {mod.label}
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 5 && (
-            <div className="step-content">
-              <div className="form-group"><label>Currency</label>
-                <select className="form-input" value={preferences.currency} onChange={e => setPreferences({...preferences, currency: e.target.value})}>
-                  <option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="INR">INR (₹)</option>
-                </select>
-              </div>
-              <div className="form-group"><label>Date Format</label>
-                <select className="form-input" value={preferences.dateFormat} onChange={e => setPreferences({...preferences, dateFormat: e.target.value})}>
-                  <option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option>
-                </select>
-              </div>
-              <div className="form-group"><label>Low Stock Threshold</label>
-                <input type="number" className="form-input" value={preferences.lowStockThreshold} onChange={e => setPreferences({...preferences, lowStockThreshold: Number(e.target.value)})} min="0"/>
-              </div>
-            </div>
-          )}
-
-          <div style={{display: 'flex', gap: '1rem', marginTop: '2rem'}}>
-            <div className="setup-footer">
-              {step > 1 && (
-                <Button type="button" variant="outline" onClick={handleBack} disabled={isSubmitting} style={{ padding: '16px 32px' }}>
-                  Back
-                </Button>
-              )}
-              <Button type="submit" disabled={isSubmitting} variant="primary" style={{ flex: 1, padding: '16px', fontSize: '1.1rem' }}>
-                {submitState || (isSubmitting ? 'Saving...' : step === 5 ? 'Finish Setup' : 'Continue')}
-              </Button>
-            </div>
+      {/* Right Panel - Form content */}
+      <div className="setup-container">
+        <div className="setup-card">
+          <div className="setup-header">
+            <h2>{stepsList[step - 1].title}</h2>
+            <p>{stepsList[step - 1].desc}</p>
           </div>
-        </form>
+
+          {error && <div className="setup-error">{error}</div>}
+
+          <form onSubmit={step === 5 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}>
+            
+            {step === 1 && (
+              <div className="step-content setup-form-grid">
+                <div className="setup-form-group full-width">
+                  <label>Full Name</label>
+                  <input type="text" className="setup-input" value={personal.fullName} onChange={e => setPersonal({...personal, fullName: e.target.value})} required placeholder="Enter your full name"/>
+                </div>
+                <div className="setup-form-group full-width">
+                  <label>Phone Number</label>
+                  <input type="tel" className="setup-input" value={personal.phone} onChange={e => setPersonal({...personal, phone: e.target.value})} placeholder="+1 (555) 000-0000"/>
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="step-content setup-form-grid">
+                <div className="setup-form-group full-width">
+                  <label>Business Name</label>
+                  <input type="text" className="setup-input" value={business.name} onChange={e => setBusiness({...business, name: e.target.value})} required placeholder="Acme Corporation"/>
+                </div>
+                <div className="setup-form-group">
+                  <label>Business Type</label>
+                  <select className="setup-input" value={business.type} onChange={e => setBusiness({...business, type: e.target.value})}>
+                    <option>Retail</option><option>Wholesale</option><option>E-commerce</option><option>Services</option><option>Manufacturing</option><option>Other</option>
+                  </select>
+                </div>
+                <div className="setup-form-group">
+                  <label>Tax/GST Number (Optional)</label>
+                  <input type="text" className="setup-input" value={business.gst} onChange={e => setBusiness({...business, gst: e.target.value})} placeholder="e.g. 22AAAAA0000A1Z5"/>
+                </div>
+                <div className="setup-form-group">
+                  <label>Country</label>
+                  <select className="setup-input" value={business.country} onChange={e => setBusiness({...business, country: e.target.value, city: ''})}>
+                    <option value="">Select Country</option>
+                    {Object.keys(COUNTRY_CITIES).map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="setup-form-group">
+                  <label>City</label>
+                  <input type="text" list="city-options" className="setup-input" value={business.city} onChange={e => setBusiness({...business, city: e.target.value})} placeholder={business.country ? "Select or type a city" : "Select a country first"} />
+                  <datalist id="city-options">
+                    {(COUNTRY_CITIES[business.country] || []).map(city => (
+                      <option key={city} value={city} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="step-content setup-form-grid">
+                <div className="setup-form-group full-width">
+                  <label>Number of Employees</label>
+                  <select className="setup-input" value={size.employees} onChange={e => setSize({...size, employees: e.target.value})}>
+                    <option>Just me (1)</option><option>2–5</option><option>6–10</option><option>11–25</option><option>26-50</option><option>100+</option>
+                  </select>
+                </div>
+                <div className="setup-form-group full-width">
+                  <label>Monthly Sales Range</label>
+                  <select className="setup-input" value={size.monthlySales} onChange={e => setSize({...size, monthlySales: e.target.value})}>
+                    <option>Under ₹50,000</option><option>₹50,000–₹1 lakh</option><option>₹1–5 lakh</option><option>₹5–10 lakh</option><option>₹50 lakh+</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="step-content">
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
+                  <p style={{margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem'}}>Select features you need. You can always change this later in Settings.</p>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      if (modules.length === MODULES_LIST.length) {
+                        setModules([]);
+                      } else {
+                        setModules(MODULES_LIST.map(m => m.id));
+                      }
+                    }}
+                    style={{background: 'none', border: 'none', color: 'var(--text-main)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline'}}
+                  >
+                    {modules.length === MODULES_LIST.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="setup-modules-grid">
+                  {MODULES_LIST.map(mod => {
+                    const isSelected = modules.includes(mod.id);
+                    return (
+                      <div 
+                        key={mod.id} 
+                        className={`module-card ${isSelected ? 'selected' : ''}`}
+                        onClick={() => toggleModule(mod.id)}
+                      >
+                        <div className="module-checkbox">
+                          {isSelected && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                        </div>
+                        <span style={{fontWeight: isSelected ? 600 : 400, fontSize: '0.9rem'}}>{mod.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div className="step-content setup-form-grid">
+                <div className="setup-form-group">
+                  <label>Currency</label>
+                  <select className="setup-input" value={preferences.currency} onChange={e => setPreferences({...preferences, currency: e.target.value})}>
+                    <option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="INR">INR (₹)</option><option value="GBP">GBP (£)</option>
+                  </select>
+                </div>
+                <div className="setup-form-group">
+                  <label>Date Format</label>
+                  <select className="setup-input" value={preferences.dateFormat} onChange={e => setPreferences({...preferences, dateFormat: e.target.value})}>
+                    <option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option>
+                  </select>
+                </div>
+                <div className="setup-form-group full-width">
+                  <label>Low Stock Alert Threshold</label>
+                  <input type="number" className="setup-input" value={preferences.lowStockThreshold} onChange={e => setPreferences({...preferences, lowStockThreshold: Number(e.target.value)})} min="0"/>
+                </div>
+              </div>
+            )}
+
+            <div className="setup-footer">
+              <button 
+                type="button" 
+                className="setup-btn setup-btn-secondary" 
+                onClick={handleBack} 
+                disabled={isSubmitting || step === 1}
+                style={{ visibility: step === 1 ? 'hidden' : 'visible' }}
+              >
+                Previous
+              </button>
+              
+              <button type="submit" className="setup-btn setup-btn-primary" disabled={isSubmitting}>
+                {submitState || (isSubmitting ? 'Saving...' : step === 5 ? 'Finish Setup' : 'Continue')}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
