@@ -16,8 +16,16 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+import { initializeAuth, browserLocalPersistence, indexedDBLocalPersistence, browserPopupRedirectResolver } from "firebase/auth";
+
 // Initialize Firebase services
-export const auth = getAuth(app);
+const isElectron = typeof window !== 'undefined' && window.location.protocol === 'file:';
+const isCapacitor = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform();
+
+export const auth = initializeAuth(app, {
+  persistence: (isElectron || isCapacitor) ? browserLocalPersistence : [indexedDBLocalPersistence, browserLocalPersistence],
+  popupRedirectResolver: browserPopupRedirectResolver,
+});
 
 // Initialize Firestore
 export const dbFirestore = initializeFirestore(app, {});

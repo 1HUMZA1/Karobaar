@@ -17,27 +17,37 @@
   font-weight: 700;
 }
 
-.badge-checkin, .badge-checkout, .badge-absent {
+.badge-checkin, .badge-checkout, .badge-absent, .badge-leave {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--radius-full);
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
+  border: 1px solid transparent;
 }
 
 .badge-checkin {
-  background-color: var(--success-light);
-  color: var(--success-color);
+  background-color: rgba(var(--success-rgb), 0.1);
+  color: var(--success);
+  border-color: rgba(var(--success-rgb), 0.2);
 }
 
 .badge-checkout {
-  background-color: var(--info-light);
-  color: var(--info-color);
+  background-color: var(--bg-elevated);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
 }
 
 .badge-absent {
-  background-color: var(--bg-tertiary);
-  color: var(--text-secondary);
+  background-color: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
+  border-color: rgba(var(--danger-rgb), 0.2);
+}
+
+.badge-leave {
+  background-color: rgba(var(--warning-rgb), 0.1);
+  color: var(--warning);
+  border-color: rgba(var(--warning-rgb), 0.2);
 }
