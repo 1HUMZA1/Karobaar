@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Building, Users, BellRing, Shield, LayoutGrid, Settings2, Palette } from 'lucide-react';
+import { Save, Building, Users, BellRing, Shield, LayoutGrid, Settings2, Palette, Database, User, LogOut } from 'lucide-react';
 import { db } from '../../services/databaseService';
+import { auth } from '../../services/firebase';
+import { signOut } from 'firebase/auth';
 import { useAppContext } from '../../context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -38,11 +40,22 @@ const Settings = () => {
   const [businessName, setBusinessName] = useState('');
   const [businessEmail, setBusinessEmail] = useState('');
   const [businessType, setBusinessType] = useState('Retail');
+  const [taxId, setTaxId] = useState('');
   
   // Preferences State
   const [currency, setCurrency] = useState('USD');
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
+  
+  // Tax & Invoice Settings
+  const [taxRate, setTaxRate] = useState(0);
+  const [invoicePrefix, setInvoicePrefix] = useState('INV-');
+  const [invoiceFooter, setInvoiceFooter] = useState('Thank you for your business!');
+
+  // Notification Settings
+  const [notifyLowStock, setNotifyLowStock] = useState(true);
+  const [notifyNewSale, setNotifyNewSale] = useState(true);
+  const [notifyDailyReport, setNotifyDailyReport] = useState(false);
 
   // Modules State
   const [enabledModules, setEnabledModules] = useState({});
@@ -55,6 +68,15 @@ const Settings = () => {
       setCurrency(currentBusiness.settings?.currency || 'USD');
       setDateFormat(currentBusiness.settings?.dateFormat || 'DD/MM/YYYY');
       setLowStockThreshold(currentBusiness.settings?.lowStockThreshold || 5);
+      setTaxRate(currentBusiness.settings?.taxRate || 0);
+      setTaxId(currentBusiness.settings?.taxId || '');
+      setInvoicePrefix(currentBusiness.settings?.invoicePrefix || 'INV-');
+      setInvoiceFooter(currentBusiness.settings?.invoiceFooter || 'Thank you for your business!');
+      
+      setNotifyLowStock(currentBusiness.settings?.notifyLowStock ?? true);
+      setNotifyNewSale(currentBusiness.settings?.notifyNewSale ?? true);
+      setNotifyDailyReport(currentBusiness.settings?.notifyDailyReport ?? false);
+
       setEnabledModules(currentBusiness.modules || {});
     }
   }, [currentBusiness]);
@@ -79,6 +101,13 @@ const Settings = () => {
           currency,
           dateFormat,
           lowStockThreshold: Number(lowStockThreshold),
+          taxRate: Number(taxRate),
+          taxId,
+          invoicePrefix,
+          invoiceFooter,
+          notifyLowStock,
+          notifyNewSale,
+          notifyDailyReport,
           theme: theme,
           accent: accent,
           appUiVersion: appUiVersion
@@ -102,9 +131,23 @@ const Settings = () => {
       window.location.reload();
     }
   };
+  
+  const handleExportData = () => {
+    alert("Exporting all business data to a secure zip file... (Functionality coming soon)");
+  };
+
+  const handleLogout = async () => {
+    if (window.confirm("Are you sure you want to log out?")) {
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.error("Logout failed", err);
+      }
+    }
+  };
 
   return (
-    <div className="page-container">
+    <div className="page-container" style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Settings</h1>
@@ -115,75 +158,49 @@ const Settings = () => {
         </Button>
       </div>
 
-      <div className="settings-layout">
-        <div className="settings-sidebar">
-          <button 
-            className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`}
-            onClick={() => setActiveTab('general')}
-          >
+      <div className="settings-layout" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        <div className="settings-sidebar" style={{ minWidth: '240px', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <button className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>
             <Building size={18} /> Business Profile
           </button>
-          <button 
-            className={`settings-tab ${activeTab === 'appearance' ? 'active' : ''}`}
-            onClick={() => setActiveTab('appearance')}
-          >
-            <Palette size={18} /> Appearance
+          <button className={`settings-tab ${activeTab === 'appearance' ? 'active' : ''}`} onClick={() => setActiveTab('appearance')}>
+            <Palette size={18} /> Appearance & Theme
           </button>
-          <button 
-            className={`settings-tab ${activeTab === 'preferences' ? 'active' : ''}`}
-            onClick={() => setActiveTab('preferences')}
-          >
-            <Settings2 size={18} /> Preferences
+          <button className={`settings-tab ${activeTab === 'preferences' ? 'active' : ''}`} onClick={() => setActiveTab('preferences')}>
+            <Settings2 size={18} /> Preferences & Tax
           </button>
-          <button 
-            className={`settings-tab ${activeTab === 'features' ? 'active' : ''}`}
-            onClick={() => setActiveTab('features')}
-          >
+          <button className={`settings-tab ${activeTab === 'invoices' ? 'active' : ''}`} onClick={() => setActiveTab('invoices')}>
+            <Settings2 size={18} /> Invoice Settings
+          </button>
+          <button className={`settings-tab ${activeTab === 'features' ? 'active' : ''}`} onClick={() => setActiveTab('features')}>
             <LayoutGrid size={18} /> Features & Modules
           </button>
-          <button 
-            className={`settings-tab ${activeTab === 'users' ? 'active' : ''}`}
-            onClick={() => setActiveTab('users')}
-          >
+          <button className={`settings-tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
             <Users size={18} /> Users & Roles
           </button>
-          <button 
-            className={`settings-tab ${activeTab === 'notifications' ? 'active' : ''}`}
-            onClick={() => setActiveTab('notifications')}
-          >
+          <button className={`settings-tab ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
             <BellRing size={18} /> Notifications
           </button>
-          <button 
-            className={`settings-tab ${activeTab === 'security' ? 'active' : ''}`}
-            onClick={() => setActiveTab('security')}
-          >
-            <Shield size={18} /> Security
+          <button className={`settings-tab ${activeTab === 'backup' ? 'active' : ''}`} onClick={() => setActiveTab('backup')}>
+            <Database size={18} /> Data Backup
           </button>
-          <button 
-            className={`settings-tab text-danger ${activeTab === 'advanced' ? 'active' : ''}`}
-            onClick={() => setActiveTab('advanced')}
-          >
-            Advanced
+          <button className={`settings-tab ${activeTab === 'account' ? 'active' : ''}`} onClick={() => setActiveTab('account')}>
+            <User size={18} /> Account
           </button>
         </div>
 
-        <div className="settings-content">
+        <div className="settings-content" style={{ flex: 1 }}>
           {activeTab === 'general' && (
             <Card>
               <CardHeader>
-                <CardTitle>Business Profile</CardTitle>
+                <CardTitle>Business Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Input 
-                  label="Company Name" 
-                  value={businessName} 
-                  onChange={(e) => setBusinessName(e.target.value)} 
-                />
-                <div className="form-group">
-                  <label className="block text-sm font-medium mb-1">Business Type</label>
+                <Input label="Company Name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label className="block text-sm font-medium">Business Type</label>
                   <select 
-                    className="w-full p-2.5 rounded-lg focus:outline-none transition-colors"
-                    style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                     value={businessType} 
                     onChange={e => setBusinessType(e.target.value)}
                   >
@@ -196,15 +213,9 @@ const Settings = () => {
                     <option>Other</option>
                   </select>
                 </div>
-                <Input 
-                  label="Business Email" 
-                  type="email" 
-                  value={businessEmail} 
-                  onChange={(e) => setBusinessEmail(e.target.value)} 
-                />
+                <Input label="Business Email" type="email" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} />
                 <Input label="Phone Number" defaultValue="+1 234 567 8900" />
                 <Input label="Address" defaultValue="123 Commerce St, Business City" />
-                <Input label="Tax ID / VAT" defaultValue="TAX-8923472" />
               </CardContent>
             </Card>
           )}
@@ -232,15 +243,7 @@ const Settings = () => {
                           cursor: 'pointer'
                         }}
                       >
-                        <div style={{ 
-                          width: '32px', 
-                          height: '32px', 
-                          borderRadius: '50%', 
-                          border: '1px solid var(--border-color)', 
-                          boxShadow: 'var(--shadow-sm)', 
-                          display: 'flex', 
-                          overflow: 'hidden' 
-                        }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid var(--border-color)', display: 'flex', overflow: 'hidden' }}>
                           {t === 'light' && <div style={{ width: '100%', height: '100%', backgroundColor: '#ffffff' }}></div>}
                           {t === 'dark' && <div style={{ width: '100%', height: '100%', backgroundColor: '#000000' }}></div>}
                         </div>
@@ -250,50 +253,8 @@ const Settings = () => {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-[var(--border-color)] form-group">
-                  <label className="text-sm font-semibold mb-2 block" style={{color: 'var(--text-main)'}}>Accent Color</label>
-                  <p className="text-xs text-secondary mb-4">Choose the primary brand color for buttons, active states, and highlights.</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
-                    {[
-                      { id: 'default', label: 'Emerald', hex: '#16a34a' },
-                      { id: 'ocean', label: 'Ocean', hex: '#0ea5e9' },
-                      { id: 'midnight', label: 'Midnight', hex: '#6366f1' },
-                      { id: 'coffee', label: 'Coffee', hex: '#f59e0b' }
-                    ].map((a) => (
-                      <button
-                        key={a.id}
-                        onClick={() => setAccent(a.id)}
-                        className={`capitalize transition-all flex flex-col items-center gap-3`}
-                        style={{ 
-                          border: `1px solid ${accent === a.id ? 'var(--primary-color)' : 'var(--border-color)'}`,
-                          backgroundColor: accent === a.id ? 'var(--bg-hover)' : 'var(--bg-card)',
-                          padding: '1rem',
-                          borderRadius: '1rem',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <div 
-                          style={{ 
-                            width: '32px', 
-                            height: '32px', 
-                            borderRadius: '50%', 
-                            backgroundColor: a.hex, 
-                            border: '2px solid var(--bg-card)', 
-                            outline: accent === a.id ? `2px solid ${a.hex}` : '2px solid transparent',
-                            boxShadow: 'var(--shadow-md)'
-                          }}
-                        ></div>
-                        <span className="font-semibold" style={{ color: 'var(--text-main)', fontSize: '0.875rem' }}>{a.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <div className="pt-4 border-t border-[var(--border-color)]">
                   <label className="text-sm font-semibold mb-2 block text-text-main">Application UI Version</label>
-                  <p className="text-xs text-text-secondary mb-3">
-                    Switch between the classic basic dashboard and the new high-density premium command center.
-                  </p>
                   <div className="flex flex-col sm:flex-row gap-4 mt-2">
                     <label className={`flex-1 flex items-start p-4 rounded-xl border-2 cursor-pointer transition-colors ${appUiVersion === 'premium' ? 'bg-[var(--bg-hover)]' : ''}`} style={{ borderColor: appUiVersion === 'premium' ? 'var(--primary-color)' : 'var(--border-color)' }}>
                       <input 
@@ -316,7 +277,7 @@ const Settings = () => {
                         className="mt-1 mr-3"
                         checked={appUiVersion === 'legacy'}
                         onChange={() => {
-                          if (window.confirm("Warning: You are about to change the entire Dashboard layout to the older version. The Legacy UI may lack some modern analytics features. Are you sure?")) {
+                          if (window.confirm("Warning: You are about to change the entire Dashboard layout to the older version. Are you sure?")) {
                             setAppUiVersion('legacy');
                           }
                         }}
@@ -335,14 +296,13 @@ const Settings = () => {
           {activeTab === 'preferences' && (
             <Card>
               <CardHeader>
-                <CardTitle>Global Preferences</CardTitle>
+                <CardTitle>Global Preferences & Tax/GST</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="form-group">
-                  <label>Currency</label>
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label className="text-sm font-medium">Currency</label>
                   <select 
-                    className="karobaar-input"
-                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--bg-input)' }}
+                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                     value={currency} 
                     onChange={e => setCurrency(e.target.value)}
                   >
@@ -351,11 +311,10 @@ const Settings = () => {
                     <option value="INR">INR (₹)</option>
                   </select>
                 </div>
-                <div className="form-group">
-                  <label>Date Format</label>
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label className="text-sm font-medium">Date Format</label>
                   <select 
-                    className="karobaar-input"
-                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--bg-input)' }}
+                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                     value={dateFormat} 
                     onChange={e => setDateFormat(e.target.value)}
                   >
@@ -364,12 +323,31 @@ const Settings = () => {
                     <option>YYYY-MM-DD</option>
                   </select>
                 </div>
-                <Input 
-                  label="Low Stock Alert Threshold" 
-                  type="number" 
-                  value={lowStockThreshold} 
-                  onChange={(e) => setLowStockThreshold(e.target.value)} 
-                />
+                <Input label="Low Stock Alert Threshold" type="number" value={lowStockThreshold} onChange={(e) => setLowStockThreshold(e.target.value)} />
+                <hr style={{ margin: '1rem 0', borderColor: 'var(--border-color)' }} />
+                <h4 className="font-medium">Tax / GST Settings</h4>
+                <Input label="Tax ID / GST Number" value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="e.g. 27AADCB2230M1Z2" />
+                <Input label="Default Tax Rate (%)" type="number" step="0.1" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'invoices' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Invoice Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input label="Invoice Prefix" value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value)} placeholder="INV-" />
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label className="text-sm font-medium">Invoice Footer Message</label>
+                  <textarea 
+                    rows="3"
+                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                    value={invoiceFooter} 
+                    onChange={e => setInvoiceFooter(e.target.value)}
+                  />
+                </div>
               </CardContent>
             </Card>
           )}
@@ -380,16 +358,11 @@ const Settings = () => {
                 <CardTitle>Features & Modules</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-secondary mb-6">Enable or disable modules to customize your application experience. Your navigation menu will update automatically.</p>
+                <p className="text-secondary mb-6">Enable or disable modules to customize your application experience.</p>
                 <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem'}}>
                   {MODULES_LIST.map(mod => (
-                    <label key={mod.id} style={{display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer', background: 'var(--bg-card)'}}>
-                      <input 
-                        type="checkbox" 
-                        checked={!!enabledModules[mod.id]} 
-                        onChange={() => toggleModule(mod.id)} 
-                        style={{ width: '16px', height: '16px' }}
-                      />
+                    <label key={mod.id} style={{display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', background: 'var(--bg-card)'}}>
+                      <input type="checkbox" checked={!!enabledModules[mod.id]} onChange={() => toggleModule(mod.id)} style={{ width: '16px', height: '16px' }} />
                       <span className="font-medium">{mod.label}</span>
                     </label>
                   ))}
@@ -401,60 +374,112 @@ const Settings = () => {
           {activeTab === 'users' && (
             <Card>
               <CardHeader>
-                <CardTitle>Role Management</CardTitle>
+                <CardTitle>User & Role Management</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-secondary mb-4">Configure access levels for employees.</p>
-                <div className="role-list">
-                  <div className="role-item">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                     <div>
-                      <h4 className="font-medium">Administrator</h4>
-                      <p className="text-xs text-secondary">Full access to all modules</p>
+                      <h4 className="font-medium">Owner (Administrator)</h4>
+                      <p className="text-xs text-secondary">Full access to all modules and settings.</p>
                     </div>
-                    <Button variant="outline" size="sm">Edit</Button>
                   </div>
-                  <div className="role-item">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                     <div>
                       <h4 className="font-medium">Manager</h4>
-                      <p className="text-xs text-secondary">Can approve leave, view reports</p>
+                      <p className="text-xs text-secondary">Can approve leave, view reports, manage inventory.</p>
                     </div>
-                    <Button variant="outline" size="sm">Edit</Button>
                   </div>
-                  <div className="role-item">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                     <div>
-                      <h4 className="font-medium">Cashier</h4>
-                      <p className="text-xs text-secondary">POS and basic inventory access only</p>
+                      <h4 className="font-medium">Staff</h4>
+                      <p className="text-xs text-secondary">POS and basic inventory access only.</p>
                     </div>
-                    <Button variant="outline" size="sm">Edit</Button>
                   </div>
+                  <Button variant="outline" style={{ alignSelf: 'flex-start' }}>+ Create Custom Role</Button>
                 </div>
               </CardContent>
             </Card>
           )}
-          
-          {(activeTab === 'notifications' || activeTab === 'security') && (
+
+          {activeTab === 'notifications' && (
             <Card>
-              <CardContent className="p-8 text-center text-secondary">
-                Configuration options for {activeTab} will appear here.
+              <CardHeader>
+                <CardTitle>Notification Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer'}}>
+                  <input type="checkbox" checked={notifyLowStock} onChange={(e) => setNotifyLowStock(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                  <div>
+                    <span className="font-medium block">Low Stock Alerts</span>
+                    <span className="text-xs text-secondary">Get notified when products drop below threshold.</span>
+                  </div>
+                </label>
+                <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer'}}>
+                  <input type="checkbox" checked={notifyNewSale} onChange={(e) => setNotifyNewSale(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                  <div>
+                    <span className="font-medium block">New Sale Alerts</span>
+                    <span className="text-xs text-secondary">Receive a ping for every successful transaction.</span>
+                  </div>
+                </label>
+                <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer'}}>
+                  <input type="checkbox" checked={notifyDailyReport} onChange={(e) => setNotifyDailyReport(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                  <div>
+                    <span className="font-medium block">Daily Email Reports</span>
+                    <span className="text-xs text-secondary">Receive an end-of-day summary email.</span>
+                  </div>
+                </label>
               </CardContent>
             </Card>
           )}
-
-          {activeTab === 'advanced' && (
+          
+          {activeTab === 'backup' && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-danger">Danger Zone</CardTitle>
+                <CardTitle>Data Backup</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-secondary">
-                  Resetting the database will permanently delete all local modifications and restore the original demo datasets (Products, Customers, Sales, etc.).
+                  Your data is automatically synced securely to the cloud. However, you can export a manual backup of all your raw data to your local machine at any time.
                 </p>
-                <Button variant="outline" className="text-danger border-danger hover:bg-danger hover:text-white" onClick={handleResetData}>
-                  Reset Demo Data
+                <Button onClick={handleExportData}>Export Full Backup (.zip)</Button>
+                
+                <hr style={{ margin: '2rem 0', borderColor: 'var(--border-color)' }} />
+                <h4 className="font-medium text-danger">Danger Zone</h4>
+                <p className="text-sm text-secondary">
+                  Resetting the database will permanently delete all local modifications and restore the original demo datasets.
+                </p>
+                <Button variant="outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)' }} onClick={handleResetData}>
+                  Factory Reset Local Data
                 </Button>
               </CardContent>
             </Card>
           )}
+
+          {activeTab === 'account' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', fontWeight: 'bold' }}>
+                    {currentUser?.name?.charAt(0) || 'U'}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">{currentUser?.name || 'User'}</h4>
+                    <p className="text-sm text-secondary">{currentUser?.email || currentUser?.phone || 'No email provided'}</p>
+                  </div>
+                </div>
+                <hr style={{ borderColor: 'var(--border-color)' }} />
+                <Button variant="outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)' }} onClick={handleLogout}>
+                  Log Out
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
         </div>
       </div>
     </div>
