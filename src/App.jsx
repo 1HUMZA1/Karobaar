@@ -24,6 +24,7 @@ import Login from './pages/Login/Login';
 import BusinessSetup from './pages/BusinessSetup/BusinessSetup';
 import Invoices from './pages/Invoices/Invoices';
 import Payments from './pages/Payments/Payments';
+import Landing from './pages/Landing/Landing';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
@@ -203,6 +204,7 @@ const AppContent = () => {
   return (
     <HashRouter>
       <Routes>
+        <Route path="/home" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/setup" element={<BusinessSetup />} />
         

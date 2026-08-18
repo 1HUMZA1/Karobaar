@@ -97,8 +97,8 @@ const Sidebar = () => {
         className={`sidebar ${sidebarOpen ? 'mobile-open' : ''} ${isEffectivelyCollapsed ? 'collapsed' : ''}`}
       >
         <div className="sidebar-header">
-          <div className="logo-container">
-            <div className="logo-icon">K</div>
+          <div className="logo-container" onClick={() => window.open('#/home', '_blank')} style={{ cursor: 'pointer' }} title="Visit Karobaar Landing Page">
+            <span className="logo-icon">K</span>
             <span className="logo-text">Karobaar</span>
           </div>
           
