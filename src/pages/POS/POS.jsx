@@ -20,6 +20,9 @@ const POS = () => {
   const [discount, setDiscount] = useState(0);
   const [taxRate] = useState(10); // 10% demo tax
   
+  const [amountPaid, setAmountPaid] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
@@ -85,6 +88,8 @@ const POS = () => {
     if (window.confirm('Clear all items from the cart?')) {
       setCart([]);
       setDiscount(0);
+      setAmountPaid('');
+      setDueDate('');
     }
   };
 
@@ -94,8 +99,17 @@ const POS = () => {
 
   const handleCheckout = async () => {
     if (cart.length === 0 || !currentUser?.activeBusinessId) return;
+    
+    if (paymentMethod === 'Udhaar' && !selectedCustomer) {
+      alert('Please select a customer first to give Udhaar/Credit.');
+      return;
+    }
+    
     setProcessing(true);
     try {
+      const finalAmountPaid = paymentMethod === 'Udhaar' ? (parseFloat(amountPaid) || 0) : total;
+      const balanceDue = paymentMethod === 'Udhaar' ? Math.max(0, total - finalAmountPaid) : 0;
+      
       await salesService.createSale({
         items: cart,
         customerId: selectedCustomer || null,
@@ -104,12 +118,18 @@ const POS = () => {
         tax: taxAmount,
         discount,
         total,
+        amountPaid: finalAmountPaid,
+        balanceDue,
+        dueDate: paymentMethod === 'Udhaar' && dueDate ? dueDate : null,
         businessId: currentUser.activeBusinessId
       });
       setSuccess(true);
       setCart([]);
       setSelectedCustomer('');
       setDiscount(0);
+      setAmountPaid('');
+      setDueDate('');
+      setPaymentMethod('Cash');
       loadData(currentUser.activeBusinessId); // refresh stock
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
@@ -481,7 +501,7 @@ const POS = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
               <button 
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '40px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', border: paymentMethod === 'Cash' ? 'none' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'Cash' ? 'var(--text-main)' : 'var(--bg-card)', color: paymentMethod === 'Cash' ? 'var(--bg-body)' : 'var(--text-secondary)' }}
                 onClick={() => setPaymentMethod('Cash')}
@@ -494,7 +514,47 @@ const POS = () => {
               >
                 <CreditCard size={16} /> Card
               </button>
+              <button 
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '40px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', border: paymentMethod === 'Udhaar' ? 'none' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'Udhaar' ? 'var(--danger)' : 'var(--bg-card)', color: paymentMethod === 'Udhaar' ? 'var(--danger-bg)' : 'var(--text-secondary)' }}
+                onClick={() => setPaymentMethod('Udhaar')}
+              >
+                <User size={16} /> Udhaar
+              </button>
             </div>
+
+            {paymentMethod === 'Udhaar' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: 'var(--bg-elevated)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Advance Paid</span>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', marginRight: '8px', fontSize: '12px' }}>{currencySymbol}</span>
+                    <input 
+                      type="number" 
+                      value={amountPaid} 
+                      onChange={(e) => setAmountPaid(e.target.value)}
+                      placeholder="0.00"
+                      style={{ width: '80px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '4px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--text-main)', outline: 'none', fontSize: '12px' }}
+                      min="0"
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Due Date</span>
+                  <input 
+                    type="date" 
+                    value={dueDate} 
+                    onChange={(e) => setDueDate(e.target.value)}
+                    style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '4px 8px', color: 'var(--text-main)', outline: 'none', fontSize: '12px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border-color)', paddingTop: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--danger)' }}>Balance Pending</span>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--danger)' }}>
+                    {currencySymbol}{Math.max(0, total - (parseFloat(amountPaid) || 0)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button 

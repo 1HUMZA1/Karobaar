@@ -1,9 +1,17 @@
 import { db } from './databaseService';
 
 export const salesService = {
-  async createSale({ items, customerId, paymentMethod, subtotal, tax, discount, total, businessId }) {
+  async createSale({ items, customerId, paymentMethod, subtotal, tax, discount, total, amountPaid, balanceDue, dueDate, businessId }) {
     if (!businessId) throw new Error("businessId is required to create a sale");
     
+    // Default values if not provided (e.g. legacy calls)
+    const finalAmountPaid = amountPaid !== undefined ? amountPaid : total;
+    const finalBalanceDue = balanceDue !== undefined ? balanceDue : 0;
+    
+    let status = 'Completed';
+    if (finalBalanceDue > 0 && finalAmountPaid === 0) status = 'Unpaid';
+    else if (finalBalanceDue > 0 && finalAmountPaid > 0) status = 'Partial';
+
     const sale = {
       invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
       customerId,
@@ -12,9 +20,12 @@ export const salesService = {
       tax,
       discount,
       total,
+      amountPaid: finalAmountPaid,
+      balanceDue: finalBalanceDue,
+      dueDate: dueDate || new Date().toISOString(),
       items,
       date: new Date().toISOString(),
-      status: 'Completed'
+      status
     };
 
     // 1. Save Sale
@@ -32,13 +43,14 @@ export const salesService = {
       }
     }
 
-    // 3. Update Customer History
+    // 3. Update Customer History & Outstanding Balance
     if (customerId) {
       const customer = await db.getById('customers', customerId, businessId);
       if (customer) {
         await db.update('customers', customerId, {
           totalPurchases: (customer.totalPurchases || 0) + 1,
           totalSpending: (customer.totalSpending || 0) + total,
+          outstandingBalance: (customer.outstandingBalance || 0) + finalBalanceDue,
           lastPurchase: new Date().toISOString()
         }, businessId);
       }
@@ -50,9 +62,11 @@ export const salesService = {
       invoiceNumber: sale.invoiceNumber,
       customerId,
       date: sale.date,
-      dueDate: sale.date, // Due immediately for POS
+      dueDate: sale.dueDate,
       amount: total,
-      status: 'Paid',
+      amountPaid: finalAmountPaid,
+      balanceDue: finalBalanceDue,
+      status: finalBalanceDue > 0 ? 'Pending' : 'Paid',
       paymentMethod
     };
     await db.add('invoices', invoice, businessId);
