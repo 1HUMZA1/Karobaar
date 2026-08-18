@@ -22,6 +22,7 @@ const Employees = () => {
   });
 
   const { data: attendanceList, refetch: refetchAttendance } = useCollection('attendance', currentUser?.activeBusinessId);
+  const { data: salesList } = useCollection('sales', currentUser?.activeBusinessId);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +38,8 @@ const Employees = () => {
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', dob: '', gender: 'Other', address: '',
     employeeId: '', department: 'General', jobTitle: '', role: 'STAFF', joiningDate: '', employmentType: 'Full Time',
-    salary: '', salaryType: 'Monthly',
+    salary: '', salaryType: 'Monthly', commissionRate: '', salesTarget: '',
+    shift: 'Morning', leaveBalance: '12',
     emergencyName: '', emergencyRel: '', emergencyPhone: '',
     status: 'Active'
   });
@@ -59,7 +61,8 @@ const Employees = () => {
     name: '', email: '', phone: '', dob: '', gender: 'Other', address: '',
     employeeId: `EMP-${Math.floor(1000 + Math.random() * 9000)}`, department: '', jobTitle: '', role: 'STAFF', 
     joiningDate: format(new Date(), 'yyyy-MM-dd'), employmentType: 'Full Time',
-    salary: '', salaryType: 'Monthly',
+    salary: '', salaryType: 'Monthly', commissionRate: '', salesTarget: '',
+    shift: 'Morning', leaveBalance: '12',
     emergencyName: '', emergencyRel: '', emergencyPhone: '',
     status: 'Active'
   });
@@ -76,6 +79,10 @@ const Employees = () => {
       ...getInitialForm(),
       ...emp,
       salary: emp.salary || '',
+      commissionRate: emp.commissionRate || '',
+      salesTarget: emp.salesTarget || '',
+      shift: emp.shift || 'Morning',
+      leaveBalance: emp.leaveBalance || '12',
       joiningDate: emp.joiningDate ? format(new Date(emp.joiningDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
     });
     setIsModalOpen(true);
@@ -98,6 +105,9 @@ const Employees = () => {
       const employeeData = {
         ...formData,
         salary: parseFloat(formData.salary) || 0,
+        commissionRate: parseFloat(formData.commissionRate) || 0,
+        salesTarget: parseFloat(formData.salesTarget) || 0,
+        leaveBalance: parseInt(formData.leaveBalance, 10) || 0,
         updatedAt: new Date().toISOString()
       };
 
@@ -431,6 +441,19 @@ const Employees = () => {
                       </select>
                     </div>
                     <div className="form-group">
+                      <label>Shift Preference</label>
+                      <select className="karobaar-input" value={formData.shift} onChange={e => setFormData({...formData, shift: e.target.value})} style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', background: 'var(--bg-input)' }}>
+                        <option value="Morning">Morning</option>
+                        <option value="Evening">Evening</option>
+                        <option value="Night">Night</option>
+                        <option value="Flexible">Flexible</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Leave Balance (Days)</label>
+                      <Input type="number" value={formData.leaveBalance} onChange={e => setFormData({...formData, leaveBalance: e.target.value})} placeholder="e.g. 12" />
+                    </div>
+                    <div className="form-group">
                       <label>Joining Date</label>
                       <Input type="date" value={formData.joiningDate} onChange={e => setFormData({...formData, joiningDate: e.target.value})} />
                     </div>
@@ -446,7 +469,7 @@ const Employees = () => {
                 </div>
 
                 <div>
-                  <h3 className="form-section-title"><FileText size={16} className="inline mr-2"/> Salary Information</h3>
+                  <h3 className="form-section-title"><FileText size={16} className="inline mr-2"/> Compensation & Performance</h3>
                   <div className="form-grid">
                     <div className="form-group">
                       <label>Base Salary</label>
@@ -460,6 +483,14 @@ const Employees = () => {
                         <option value="Daily">Daily</option>
                         <option value="Hourly">Hourly</option>
                       </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Commission Rate (%)</label>
+                      <Input type="number" step="0.1" value={formData.commissionRate} onChange={e => setFormData({...formData, commissionRate: e.target.value})} placeholder="e.g. 5" />
+                    </div>
+                    <div className="form-group">
+                      <label>Monthly Sales Target</label>
+                      <Input type="number" step="0.01" value={formData.salesTarget} onChange={e => setFormData({...formData, salesTarget: e.target.value})} placeholder="e.g. 50000" />
                     </div>
                   </div>
                 </div>
@@ -502,7 +533,8 @@ const Employees = () => {
               <div className="tabs-container mb-0 border-none">
                 <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
                 <button className={`tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>Attendance</button>
-                <button className={`tab-btn ${activeTab === 'salary' ? 'active' : ''}`} onClick={() => setActiveTab('salary')}>Salary</button>
+                <button className={`tab-btn ${activeTab === 'salary' ? 'active' : ''}`} onClick={() => setActiveTab('salary')}>Salary & Leaves</button>
+                <button className={`tab-btn ${activeTab === 'performance' ? 'active' : ''}`} onClick={() => setActiveTab('performance')}>Performance & Sales</button>
               </div>
             </div>
 
@@ -567,12 +599,95 @@ const Employees = () => {
               )}
 
               {activeTab === 'salary' && (
-                <div className="p-4 bg-bg-card border border-border-color rounded-lg">
-                  <h4 className="text-sm font-semibold text-secondary mb-3 uppercase tracking-wider">Compensation</h4>
-                  <div className="text-3xl font-bold text-main mb-1">
-                    {selectedEmployee.salary ? Number(selectedEmployee.salary).toLocaleString() : '0'}
+                <div className="space-y-4">
+                  <div className="p-4 bg-bg-card border border-border-color rounded-lg">
+                    <h4 className="text-sm font-semibold text-secondary mb-3 uppercase tracking-wider">Compensation</h4>
+                    <div className="text-3xl font-bold text-main mb-1">
+                      {selectedEmployee.salary ? Number(selectedEmployee.salary).toLocaleString() : '0'}
+                    </div>
+                    <p className="text-secondary mb-4">Paid {selectedEmployee.salaryType || 'Monthly'}</p>
                   </div>
-                  <p className="text-secondary mb-4">Paid {selectedEmployee.salaryType || 'Monthly'}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-bg-card border border-border-color rounded-lg">
+                      <h4 className="text-sm font-semibold text-secondary mb-1">Shift Preference</h4>
+                      <p className="text-lg font-bold">{selectedEmployee.shift || 'Morning'}</p>
+                    </div>
+                    <div className="p-4 bg-bg-card border border-border-color rounded-lg">
+                      <h4 className="text-sm font-semibold text-secondary mb-1">Leave Balance</h4>
+                      <p className="text-lg font-bold">{selectedEmployee.leaveBalance || 0} Days</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'performance' && (
+                <div className="space-y-6">
+                  {(() => {
+                    const employeeSales = salesList?.filter(s => s.employeeId === selectedEmployee.id && s.status !== 'cancelled' && s.status !== 'Refunded') || [];
+                    const revenueGenerated = employeeSales.reduce((sum, s) => sum + (s.total || 0), 0);
+                    const commissionRate = selectedEmployee.commissionRate || 0;
+                    const commissionEarned = (revenueGenerated * commissionRate) / 100;
+                    const target = selectedEmployee.salesTarget || 0;
+                    const progress = target > 0 ? Math.min(100, (revenueGenerated / target) * 100) : 0;
+
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                            <h4 className="text-sm font-semibold text-primary mb-1">Revenue Generated</h4>
+                            <p className="text-2xl font-black text-primary">{revenueGenerated.toLocaleString()}</p>
+                          </div>
+                          <div className="p-4 bg-success/10 border border-success/20 rounded-lg">
+                            <h4 className="text-sm font-semibold text-success mb-1">Commission Earned</h4>
+                            <p className="text-2xl font-black text-success">{commissionEarned.toLocaleString()}</p>
+                            <p className="text-xs text-success/80 mt-1">At {commissionRate}% rate</p>
+                          </div>
+                        </div>
+
+                        {target > 0 && (
+                          <div className="p-4 bg-bg-card border border-border-color rounded-lg">
+                            <div className="flex justify-between items-end mb-2">
+                              <h4 className="text-sm font-semibold text-secondary">Sales Target Progress</h4>
+                              <span className="font-bold">{progress.toFixed(1)}%</span>
+                            </div>
+                            <div className="w-full bg-border-color rounded-full h-2 mb-2">
+                              <div className="bg-primary h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                            </div>
+                            <p className="text-xs text-text-muted">{revenueGenerated.toLocaleString()} / {target.toLocaleString()} generated</p>
+                          </div>
+                        )}
+
+                        <div>
+                          <h4 className="font-semibold mb-3">Recent Sales Activity</h4>
+                          <div className="border border-border-color rounded-lg overflow-hidden">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Date</TableHead>
+                                  <TableHead>Invoice</TableHead>
+                                  <TableHead className="text-right">Amount</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {employeeSales.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 5).map(s => (
+                                  <TableRow key={s.id}>
+                                    <TableCell>{format(new Date(s.date), 'MMM dd, yyyy')}</TableCell>
+                                    <TableCell>{s.invoiceNumber || '-'}</TableCell>
+                                    <TableCell className="text-right font-bold text-success">{s.total?.toLocaleString()}</TableCell>
+                                  </TableRow>
+                                ))}
+                                {employeeSales.length === 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan="3" className="text-center py-4 text-text-muted">No sales generated yet.</TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>

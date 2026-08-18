@@ -12,10 +12,12 @@ const POS = () => {
   const { currentUser, currentBusiness } = useAppContext();
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
   const [cart, setCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [discount, setDiscount] = useState(0);
   const [taxRate] = useState(10); // 10% demo tax
@@ -38,8 +40,10 @@ const POS = () => {
   const loadData = async (businessId) => {
     const p = await db.getCollection('products', businessId);
     const c = await db.getCollection('customers', businessId);
+    const e = await db.getCollection('employees', businessId);
     setProducts(p.filter(prod => prod.status !== 'Inactive'));
     setCustomers(c);
+    setEmployees(e.filter(emp => emp.status === 'Active'));
   };
 
   const filteredProducts = products.filter(p => 
@@ -110,9 +114,12 @@ const POS = () => {
       const finalAmountPaid = paymentMethod === 'Udhaar' ? (parseFloat(amountPaid) || 0) : total;
       const balanceDue = paymentMethod === 'Udhaar' ? Math.max(0, total - finalAmountPaid) : 0;
       
+      const emp = employees.find(e => e.id === selectedEmployee);
       await salesService.createSale({
         items: cart,
         customerId: selectedCustomer || null,
+        employeeId: selectedEmployee || null,
+        employeeName: emp ? emp.name : 'Admin',
         paymentMethod,
         subtotal,
         tax: taxAmount,
@@ -126,6 +133,7 @@ const POS = () => {
       setSuccess(true);
       setCart([]);
       setSelectedCustomer('');
+      setSelectedEmployee('');
       setDiscount(0);
       setAmountPaid('');
       setDueDate('');
@@ -471,6 +479,29 @@ const POS = () => {
           </div>
 
           <div style={{ backgroundColor: 'var(--bg-body)', borderTop: '1px solid var(--border-color)', padding: '20px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ flex: 1 }}>
+                <select 
+                  value={selectedCustomer} 
+                  onChange={(e) => setSelectedCustomer(e.target.value)}
+                  style={{ width: '100%', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px', color: 'var(--text-main)', outline: 'none', fontSize: '12px' }}
+                >
+                  <option value="">Walk-in Customer</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <select 
+                  value={selectedEmployee} 
+                  onChange={(e) => setSelectedEmployee(e.target.value)}
+                  style={{ width: '100%', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px', color: 'var(--text-main)', outline: 'none', fontSize: '12px' }}
+                >
+                  <option value="">Sales Rep (Admin)</option>
+                  {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.role})</option>)}
+                </select>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '14px' }}>
               <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>Subtotal</span>
               <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{currencySymbol}{subtotal.toFixed(2)}</span>
