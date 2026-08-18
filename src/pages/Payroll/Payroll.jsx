@@ -38,7 +38,7 @@ const Payroll = () => {
   const totalPayroll = employees.reduce((sum, emp) => sum + calculateNetPay(emp.salary || 0), 0);
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Payroll</h1>

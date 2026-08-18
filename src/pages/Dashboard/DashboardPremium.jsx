@@ -38,9 +38,9 @@ const Dashboard = () => {
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
   // Role Based Visibility
-  const showFinance = ['Owner', 'Admin', 'Manager', 'Accountant', 'OWNER'].includes(userRole);
-  const showInventory = ['Owner', 'Admin', 'Manager', 'Warehouse', 'OWNER'].includes(userRole);
-  const showHR = ['Owner', 'Admin', 'Manager', 'HR', 'OWNER'].includes(userRole);
+  const showFinance = ['OWNER', 'MANAGER', 'ACCOUNTANT'].includes(userRole);
+  const showInventory = ['OWNER', 'MANAGER', 'INVENTORY'].includes(userRole);
+  const showHR = ['OWNER', 'MANAGER'].includes(userRole);
 
   const calculateAndSetData = useCallback((sales, exp, purchases, customers, products, attendance) => {
     const today = startOfDay(new Date());
@@ -105,7 +105,8 @@ const Dashboard = () => {
 
     // Chart Data
     const labels = []; const revData = []; const expData = []; const profData = [];
-    for (let i = 6; i >= 0; i--) {
+    // Plot from 7 days ago down to yesterday (i=1), so we only show fully completed days (decided at midnight)
+    for (let i = 7; i >= 1; i--) {
       const d = startOfDay(subDays(today, i));
       labels.push(format(d, 'MMM dd'));
       const dayRev = sales.filter(s => startOfDay(new Date(s.date)).getTime() === d.getTime()).reduce((sum, s) => sum + (s.total || 0), 0);
@@ -167,6 +168,30 @@ const Dashboard = () => {
     return 'Good evening';
   };
 
+  const fullGreetingText = `${getGreeting()}, ${currentBusiness?.name || 'Business'}`;
+  const [greetingTyped, setGreetingTyped] = useState('');
+
+  useEffect(() => {
+    const greetedKey = `hasGreeted_${currentBusiness?.id || 'default'}`;
+    if (sessionStorage.getItem(greetedKey)) {
+      setGreetingTyped(fullGreetingText);
+      return;
+    }
+
+    let i = 0;
+    setGreetingTyped('');
+    const intervalId = setInterval(() => {
+      setGreetingTyped(fullGreetingText.substring(0, i + 1));
+      i++;
+      if (i >= fullGreetingText.length) {
+        clearInterval(intervalId);
+        sessionStorage.setItem(greetedKey, 'true');
+      }
+    }, 70);
+
+    return () => clearInterval(intervalId);
+  }, [fullGreetingText, currentBusiness?.id]);
+
   const calculateTrend = (today, yesterday) => {
     if (yesterday === 0) return today > 0 ? { value: 100, isPositive: true } : { value: 0, isPositive: true };
     const diff = today - yesterday;
@@ -198,20 +223,25 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="dashboard-container max-w-[1600px] mx-auto animate-fade-in pb-12 px-6 pt-6">
+    <div className="dashboard-container max-w-[1600px] mx-auto pb-12 px-6 pt-6">
       
       {/* 1. Header Area */}
       <div className="dashboard-header flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
           <p className="text-text-muted font-medium tracking-wide text-xs mb-2">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
-          <h1 className="text-3xl font-bold tracking-tight mb-1 text-text-main">
-            {getGreeting()}, {currentUser?.name?.split(' ')[0] || userRole} 👋
+          <h1 className="text-3xl font-bold tracking-tight mb-1 text-text-main flex items-center">
+            {greetingTyped}
+            {greetingTyped.length === fullGreetingText.length ? (
+              <span className="ml-2">👋</span>
+            ) : (
+              <span className="ml-1 animate-pulse border-r-4 border-text-main h-[0.8em] inline-block align-baseline"></span>
+            )}
           </h1>
-          <p className="text-text-secondary text-sm">Here's what's happening with <strong className="text-text-main">{currentBusiness?.businessName || 'your business'}</strong> today.</p>
+          <p className="text-text-secondary text-sm">Here's what's happening with your operations today.</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="business-health-widget bg-[var(--bg-card)] px-4 py-2.5 rounded-xl border border-[var(--border-color)] flex flex-col items-end shadow-sm">
+          <div className="business-health-widget bg-[var(--bg-card)] px-5 py-3 rounded-xl shadow-md flex flex-col items-end">
             <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold mb-1">Business Health</span>
             <div className="flex items-center gap-3">
               <span className={`text-sm font-bold ${healthScore >= 70 ? 'text-success' : 'text-warning'}`}>
@@ -224,7 +254,7 @@ const Dashboard = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            className="h-[52px] px-4 bg-[var(--bg-card)] border-[var(--border-color)] hover:bg-[var(--bg-hover)] text-text-secondary shadow-sm relative overflow-hidden"
+            className="h-[54px] px-5 bg-[var(--bg-card)] border-transparent hover:bg-[var(--bg-hover)] text-text-secondary shadow-md relative overflow-hidden"
             onClick={() => loadDashboardData(currentUser.activeBusinessId)}
             disabled={isRefreshing}
           >

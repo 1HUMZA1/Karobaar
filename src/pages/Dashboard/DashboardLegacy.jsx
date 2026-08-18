@@ -128,7 +128,7 @@ const DashboardLegacy = () => {
 
   if (isStaffRole) {
     return (
-      <div className="page-container animate-fade-in">
+      <div className="page-container">
         <div className="page-header mb-8">
           <div>
             <h1 className="text-3xl font-bold">Good Morning, {currentUser?.name?.split(' ')[0] || userRole}!</h1>
@@ -186,7 +186,7 @@ const DashboardLegacy = () => {
 
   // Management / Admin Dashboard
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Dashboard (Legacy)</h1>
@@ -198,7 +198,6 @@ const DashboardLegacy = () => {
         <h3 className="text-sm font-semibold text-secondary mb-3">Quick Actions</h3>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => window.location.href='#/pos'}>+ New Sale</Button>
-          <Button size="sm" variant="outline" onClick={() => window.location.href='#/products'}>+ Add Product</Button>
           <Button size="sm" variant="outline" onClick={() => window.location.href='#/customers'}>+ Add Customer</Button>
           <Button size="sm" variant="outline" onClick={() => window.location.href='#/expenses'}>Record Expense</Button>
           <Button size="sm" variant="outline" onClick={() => window.location.href='#/attendance'}>Mark Attendance</Button>

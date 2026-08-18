@@ -88,36 +88,42 @@ class DatabaseService {
 
   // --- Data Access Methods ---
   
-  // Internal/Global collections
   async getRawCollection(collectionName) {
-    try {
-      const q = collection(dbFirestore, collectionName);
-      const snapshot = await this._withTimeout(getDocs(q));
-      const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      localDb.bulkSave(collectionName, records);
-      return records;
-    } catch (e) {
-      console.warn(`[OFFLINE] Using local cache for ${collectionName}`);
-      return localDb.getAll(collectionName);
-    }
+    const cached = localDb.getAll(collectionName);
+    
+    setTimeout(async () => {
+      try {
+        const q = collection(dbFirestore, collectionName);
+        const snapshot = await getDocs(q);
+        const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        localDb.bulkSave(collectionName, records);
+      } catch (e) {
+        // Ignore background fetch errors
+      }
+    }, 0);
+    
+    return cached || [];
   }
 
-  // Get a collection filtered by businessId
   async getCollection(collectionName, businessId = null) {
     if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
       return this.getRawCollection(collectionName);
     }
     
-    try {
-      const q = collection(dbFirestore, `businesses/${businessId}/${collectionName}`);
-      const snapshot = await this._withTimeout(getDocs(q));
-      const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      localDb.bulkSave(collectionName, records, businessId);
-      return records;
-    } catch (e) {
-      console.warn(`[OFFLINE] Using local cache for businesses/${businessId}/${collectionName}`);
-      return localDb.getAll(collectionName, businessId);
-    }
+    const cached = localDb.getAll(collectionName, businessId);
+    
+    setTimeout(async () => {
+      try {
+        const q = collection(dbFirestore, `businesses/${businessId}/${collectionName}`);
+        const snapshot = await getDocs(q);
+        const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        localDb.bulkSave(collectionName, records, businessId);
+      } catch (e) {
+        // Ignore background fetch errors
+      }
+    }, 0);
+    
+    return cached || [];
   }
 
   // Find a single item by ID
@@ -229,7 +235,7 @@ class DatabaseService {
       }
       // CRITICAL FIX: If no cache and network fails, DO NOT return null (which implies new user).
       // Throw error so AppContext drops them back to login instead of forcing setup.
-      throw new Error("Network error: Could not verify account data. Please check your internet connection.");
+      throw new Error("Network error: Could not verify account data. Please check your internet connection. (" + e.message + ")");
     }
   }
 }

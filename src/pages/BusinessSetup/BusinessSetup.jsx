@@ -329,7 +329,7 @@ const BusinessSetup = () => {
                 <div className="setup-form-group">
                   <label>Business Type</label>
                   <select className="setup-input" value={business.type} onChange={e => setBusiness({...business, type: e.target.value})}>
-                    <option>Retail</option><option>Wholesale</option><option>E-commerce</option><option>Services</option><option>Manufacturing</option><option>Other</option>
+                    <option>Retail</option><option>Wholesale</option><option>E-commerce</option><option>Services</option><option>Manufacturing</option><option>Cafeteria / Restaurant</option><option>Other</option>
                   </select>
                 </div>
                 <div className="setup-form-group">

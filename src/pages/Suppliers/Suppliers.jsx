@@ -24,9 +24,22 @@ const Suppliers = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     company: '', name: '', email: '', phone: '', address: ''
   });
+
+  const openEditModal = (supplier) => {
+    setFormData(supplier);
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
+
+  const closeAndResetModal = () => {
+    setIsModalOpen(false);
+    setIsEditing(false);
+    setFormData({ company: '', name: '', email: '', phone: '', address: '' });
+  };
 
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
@@ -44,20 +57,23 @@ const Suppliers = () => {
 
     setSaving(true);
     try {
-      const newSupplier = {
+      const supplierData = {
         ...formData,
-        status: 'Active',
-        outstandingBalance: 0,
-        createdAt: new Date().toISOString()
+        status: formData.status || 'Active',
+        outstandingBalance: formData.outstandingBalance || 0,
+        createdAt: formData.createdAt || new Date().toISOString()
       };
 
-      const optimisticSupplier = { id: 'temp-' + Date.now(), ...newSupplier };
-      mutate([optimisticSupplier, ...suppliers]);
+      if (isEditing) {
+        mutate(suppliers.map(s => s.id === formData.id ? supplierData : s), false);
+        await db.update('suppliers', formData.id, supplierData);
+      } else {
+        const optimisticSupplier = { id: 'temp-' + Date.now(), ...supplierData };
+        mutate([optimisticSupplier, ...suppliers], false);
+        await db.add('suppliers', supplierData, currentUser.activeBusinessId);
+      }
 
-      await db.add('suppliers', newSupplier, currentUser.activeBusinessId);
-      
-      setIsModalOpen(false);
-      setFormData({ company: '', name: '', email: '', phone: '', address: '' });
+      closeAndResetModal();
       refetch();
     } catch (err) {
       console.error(err);
@@ -94,12 +110,12 @@ const Suppliers = () => {
   };
 
   return (
-    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
             Suppliers
-            {isRevalidating && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
+            
           </h1>
           <p className="text-secondary">Manage your vendors and supply chain partners</p>
         </div>
@@ -107,7 +123,7 @@ const Suppliers = () => {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <Input 
             placeholder="Search by name, company, or email..." 
             icon={<Search size={18} />}
@@ -155,8 +171,8 @@ const Suppliers = () => {
                       </TableCell>
                       <TableCell>
                         <div className="action-buttons">
-                          <button className="icon-action-btn"><Edit size={16} /></button>
-                          <button className="icon-action-btn text-danger" onClick={() => handleDelete(supplier.id)}><Trash2 size={16} /></button>
+                          <button className="icon-action-btn" title="Edit" onClick={() => openEditModal(supplier)}><Edit size={16} /></button>
+                          <button className="icon-action-btn text-danger" title="Delete" onClick={() => handleDelete(supplier.id)}><Trash2 size={16} /></button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -179,13 +195,13 @@ const Suppliers = () => {
         </CardContent>
       </Card>
 
-      {/* Add Supplier Modal */}
+      {/* Add/Edit Supplier Modal */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content animate-slide-up">
             <div className="modal-header">
-              <h2>Add New Supplier</h2>
-              <button className="close-btn" onClick={() => setIsModalOpen(false)}><X size={20}/></button>
+              <h2>{isEditing ? 'Edit Supplier' : 'Add New Supplier'}</h2>
+              <button className="close-btn" onClick={closeAndResetModal}><X size={20}/></button>
             </div>
             <form onSubmit={handleAddSupplier} className="modal-form">
               <div className="form-group">
@@ -236,9 +252,9 @@ const Suppliers = () => {
               </div>
               
               <div className="modal-actions">
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={closeAndResetModal}>Cancel</Button>
                 <Button type="submit" disabled={saving}>
-                  {saving ? 'Saving...' : 'Add Supplier'}
+                  {saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Supplier')}
                 </Button>
               </div>
             </form>

@@ -104,7 +104,7 @@ const Expenses = () => {
   };
 
   return (
-    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
@@ -131,7 +131,7 @@ const Expenses = () => {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <Input 
             placeholder="Search by description or category..." 
             icon={<Search size={18} />}

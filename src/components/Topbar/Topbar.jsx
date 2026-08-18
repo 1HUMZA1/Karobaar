@@ -17,6 +17,15 @@ const Topbar = () => {
   const navigate = useNavigate();
 
   const searchInputRef = useRef(null);
+  const searchWords = ['products', 'customers', 'orders', 'invoices'];
+  const [wordIndex, setWordIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWordIndex((prev) => (prev + 1) % searchWords.length);
+    }, 3000); // 3s matches the CSS animation duration
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const updateCount = () => setPendingCount(localDb.getPendingQueue().length);
@@ -98,19 +107,28 @@ const Topbar = () => {
       </div>
 
       <div className="topbar-center hidden-mobile">
-        <div className="global-search-container">
-          <Search size={16} className="global-search-icon" />
+        <div className="global-search-container relative">
+          <Search size={16} className="global-search-icon" style={{ zIndex: 10 }} />
           <input 
             ref={searchInputRef}
             type="text" 
-            placeholder="Search products, customers, orders..." 
             className="global-search-input"
             value={searchQuery}
             onChange={handleSearch}
+            style={{ position: 'relative', zIndex: 5 }}
           />
-          <div className="search-shortcut hidden-mobile">
-            <kbd>Ctrl</kbd> + <kbd>K</kbd>
-          </div>
+          
+          {searchQuery.length === 0 && (
+            <div 
+              style={{ position: 'absolute', left: '42px', top: '0', bottom: '0', display: 'flex', alignItems: 'center', pointerEvents: 'none', zIndex: 10, color: '#94a3b8' }}
+            >
+              <span className="mr-1">Search</span>
+              <span key={wordIndex} className="animate-fade-slide-up font-medium" style={{ color: '#475569' }}>
+                {searchWords[wordIndex]}...
+              </span>
+            </div>
+          )}
+
           {searchQuery.length > 2 && (
             <div className="search-dropdown-menu">
               {searchResults.length > 0 ? (
@@ -174,36 +192,37 @@ const Topbar = () => {
           
           {isProfileOpen && (
             <div 
-              className="absolute top-full right-0 mt-3 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl py-2 border border-slate-200 dark:border-slate-700 z-[100]"
+              className="absolute right-0 w-64 bg-[var(--bg-card)] rounded-xl shadow-xl py-2 border border-[var(--border-color)] z-[100]"
+              style={{ top: 'calc(100% + 8px)' }}
               onClick={(e) => e.stopPropagation()} // Prevent clicking inside from closing it immediately
             >
-              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 mb-1">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{currentUser?.name || 'User'}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{currentUser?.email || ''}</p>
+              <div className="px-4 py-3 border-b border-[var(--border-color)] mb-1 bg-[var(--bg-card)] rounded-t-xl">
+                <p className="text-sm font-semibold text-[var(--text-main)] truncate">{currentUser?.name || 'User'}</p>
+                <p className="text-xs text-[var(--text-secondary)] truncate">{currentUser?.email || ''}</p>
               </div>
               
               <div 
-                className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors flex items-center gap-2"
+                className="px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors flex items-center gap-2 hover:text-[var(--text-main)]"
                 onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
               >
-                <User size={16} className="text-slate-400"/> Profile
+                <User size={16} className="text-[var(--text-muted)]"/> Profile
               </div>
               
               <div 
-                className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors flex items-center gap-2"
+                className="px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors flex items-center gap-2 hover:text-[var(--text-main)]"
                 onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
               >
-                <Settings size={16} className="text-slate-400"/> Business Settings
+                <Settings size={16} className="text-[var(--text-muted)]"/> Business Settings
               </div>
               
               <div 
-                className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors flex items-center gap-2"
+                className="px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors flex items-center gap-2 hover:text-[var(--text-main)]"
                 onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
               >
-                <HelpCircle size={16} className="text-slate-400"/> Help & Support
+                <HelpCircle size={16} className="text-[var(--text-muted)]"/> Help & Support
               </div>
               
-              <div className="border-t border-slate-100 dark:border-slate-700 my-1"></div>
+              <div className="border-t border-[var(--border-color)] my-1"></div>
               
               <div 
                 className="px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2 cursor-pointer transition-colors"

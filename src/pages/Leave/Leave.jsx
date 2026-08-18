@@ -29,13 +29,13 @@ const Leave = () => {
   };
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Leave Management</h1>
           <p className="text-secondary">Track and approve employee time off</p>
         </div>
-        <Button icon={<Plus size={18} />}>Request Leave</Button>
+        <Button icon={<Plus size={18} />} onClick={() => alert('Leave Request module is currently in development.')}>Request Leave</Button>
       </div>
 
       <div className="leave-stats">

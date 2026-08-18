@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, MoreVertical, X } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, MoreVertical, X, Image as ImageIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -11,7 +11,8 @@ import { TableSkeleton } from '../../components/ui/Skeleton';
 import './Products.css';
 
 const Products = () => {
-  const { currentUser } = useAppContext();
+  const { currentUser, userRole } = useAppContext();
+  const canManageProducts = ['OWNER', 'MANAGER', 'INVENTORY'].includes(userRole);
   
   const { data: products, loading, isRevalidating, mutate, refetch } = useCollection('products', currentUser?.activeBusinessId, {
     sortBy: (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
@@ -26,10 +27,37 @@ const Products = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [newProduct, setNewProduct] = useState({
-    name: '', brand: '', sku: '', category: '', sellingPrice: '',
-    stockQuantity: '', minimumStock: '', barcode: '', status: 'Active'
+    name: '', brand: '', sku: '', category: '', purchasePrice: '', sellingPrice: '',
+    stockQuantity: '', minimumStock: '', barcode: '', status: 'Active', imageUrl: ''
   });
+
+  const openEditModal = (product) => {
+    setNewProduct(product);
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
+
+  const closeAndResetModal = () => {
+    setIsModalOpen(false);
+    setIsEditing(false);
+    setNewProduct({
+      name: '', brand: '', sku: '', category: '', purchasePrice: '', sellingPrice: '',
+      stockQuantity: '', minimumStock: '', barcode: '', status: 'Active', imageUrl: ''
+    });
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewProduct(prev => ({ ...prev, imageUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Debounce search
   useEffect(() => {
@@ -55,23 +83,23 @@ const Products = () => {
     try {
       const productToSave = {
         ...newProduct,
+        purchasePrice: parseFloat(newProduct.purchasePrice) || 0,
         sellingPrice: parseFloat(newProduct.sellingPrice),
         stockQuantity: parseInt(newProduct.stockQuantity) || 0,
         minimumStock: parseInt(newProduct.minimumStock) || 0,
-        createdAt: new Date().toISOString()
+        createdAt: newProduct.createdAt || new Date().toISOString()
       };
 
-      // Optimistic UI Update
-      const optimisticProduct = { id: 'temp-' + Date.now(), ...productToSave };
-      mutate([optimisticProduct, ...products]);
-
-      await db.add('products', productToSave, currentUser?.activeBusinessId);
+      if (isEditing) {
+        mutate(products.map(p => p.id === newProduct.id ? productToSave : p), false);
+        await db.update('products', newProduct.id, productToSave);
+      } else {
+        const optimisticProduct = { id: 'temp-' + Date.now(), ...productToSave };
+        mutate([optimisticProduct, ...products], false);
+        await db.add('products', productToSave, currentUser?.activeBusinessId);
+      }
       
-      setIsModalOpen(false);
-      setNewProduct({
-        name: '', brand: '', sku: '', category: '', sellingPrice: '',
-        stockQuantity: '', minimumStock: '', barcode: '', status: 'Active'
-      });
+      closeAndResetModal();
       refetch(); // Ensure background sync is correct
     } catch (error) {
       console.error("Error saving product:", error);
@@ -79,6 +107,18 @@ const Products = () => {
       refetch(); // Revert optimistic UI on failure
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    try {
+      mutate(products.filter(p => p.id !== id), false);
+      await db.delete('products', id, currentUser?.activeBusinessId);
+      refetch();
+    } catch (err) {
+      console.error(err);
+      refetch();
     }
   };
 
@@ -96,20 +136,21 @@ const Products = () => {
   };
 
   return (
-    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
             Products
-            {isRevalidating && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
           </h1>
           <p className="text-secondary">Manage your product catalog and inventory</p>
         </div>
-        <Button icon={<Plus size={18} />} onClick={() => setIsModalOpen(true)}>Add Product</Button>
+        {canManageProducts && (
+          <Button icon={<Plus size={18} />} onClick={() => setIsModalOpen(true)}>Add Product</Button>
+        )}
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <div className="search-filter-container">
             <Input 
               placeholder="Search products by name, SKU, barcode..." 
@@ -131,7 +172,8 @@ const Products = () => {
                   <TableHead>Product</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
+                  <TableHead>Price (Buy/Sell)</TableHead>
+                  <TableHead>Profit</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
@@ -149,7 +191,17 @@ const Products = () => {
                       </TableCell>
                       <TableCell>{product.sku}</TableCell>
                       <TableCell>{product.category}</TableCell>
-                      <TableCell>${parseFloat(product.sellingPrice || 0).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span className="text-xs text-secondary">Buy: ${parseFloat(product.purchasePrice || 0).toFixed(2)}</span>
+                          <span className="font-medium">Sell: ${parseFloat(product.sellingPrice || 0).toFixed(2)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-success font-medium">
+                          +${(parseFloat(product.sellingPrice || 0) - parseFloat(product.purchasePrice || 0)).toFixed(2)}
+                        </span>
+                      </TableCell>
                       <TableCell>
                         <span className={`stock-badge ${product.stockQuantity <= product.minimumStock ? 'low-stock' : 'in-stock'}`}>
                           {product.stockQuantity}
@@ -162,8 +214,12 @@ const Products = () => {
                       </TableCell>
                       <TableCell>
                         <div className="action-buttons">
-                          <button className="icon-action-btn" title="Edit"><Edit size={16} /></button>
-                          <button className="icon-action-btn text-danger" title="Delete"><Trash2 size={16} /></button>
+                          {canManageProducts && (
+                            <>
+                              <button className="icon-action-btn" title="Edit" onClick={() => openEditModal(product)}><Edit size={16} /></button>
+                              <button className="icon-action-btn text-danger" title="Delete" onClick={() => handleDeleteProduct(product.id)}><Trash2 size={16} /></button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -186,20 +242,52 @@ const Products = () => {
         </CardContent>
       </Card>
 
-      {/* Add Product Modal */}
+      {/* Add/Edit Product Modal */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && setIsModalOpen(false)}>
+        <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && closeAndResetModal()}>
           <div className="modal-content">
             <div className="modal-header">
-              <h2 className="modal-title">Add New Product</h2>
-              <button className="modal-close" onClick={() => setIsModalOpen(false)}><X size={24} /></button>
+              <h2 className="modal-title">{isEditing ? 'Edit Product' : 'Add New Product'}</h2>
+              <button className="modal-close" onClick={closeAndResetModal}><X size={24} /></button>
             </div>
             
             <form onSubmit={handleAddProduct}>
               <div className="modal-body">
-                <div className="form-group">
-                  <label>Product Name *</label>
-                  <Input name="name" value={newProduct.name} onChange={handleInputChange} required placeholder="e.g. Wireless Mouse" />
+                <div className="form-row" style={{ alignItems: 'flex-start', display: 'flex', gap: '1rem' }}>
+                  <div className="form-group" style={{ flex: '0 0 auto', margin: 0 }}>
+                    <label>Image</label>
+                    <div 
+                      style={{ 
+                        width: '96px', 
+                        height: '96px', 
+                        borderRadius: '8px', 
+                        border: '2px dashed var(--border-color)', 
+                        backgroundColor: 'var(--bg-tertiary)', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        position: 'relative', 
+                        overflow: 'hidden', 
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {newProduct.imageUrl ? (
+                        <img src={newProduct.imageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                          <ImageIcon size={20} style={{ marginBottom: '4px' }} />
+                          <span style={{ fontSize: '10px', fontWeight: 500 }}>Upload</span>
+                        </div>
+                      )}
+                      <input type="file" accept="image/*" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} onChange={handleImageUpload} />
+                    </div>
+                  </div>
+                  
+                  <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                    <label>Product Name *</label>
+                    <Input name="name" value={newProduct.name} onChange={handleInputChange} required placeholder="e.g. Wireless Mouse" />
+                  </div>
                 </div>
                 
                 <div className="form-row">
@@ -226,8 +314,19 @@ const Products = () => {
 
                 <div className="form-row">
                   <div className="form-group">
+                    <label>Purchase Price ($)</label>
+                    <Input type="number" step="0.01" min="0" name="purchasePrice" value={newProduct.purchasePrice} onChange={handleInputChange} placeholder="0.00" />
+                  </div>
+                  <div className="form-group">
                     <label>Selling Price ($) *</label>
                     <Input type="number" step="0.01" min="0" name="sellingPrice" value={newProduct.sellingPrice} onChange={handleInputChange} required placeholder="0.00" />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Initial Stock Quantity</label>
+                    <Input type="number" min="0" name="stockQuantity" value={newProduct.stockQuantity} onChange={handleInputChange} placeholder="0" />
                   </div>
                   <div className="form-group">
                     <label>Status</label>
@@ -246,10 +345,6 @@ const Products = () => {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Initial Stock Quantity</label>
-                    <Input type="number" min="0" name="stockQuantity" value={newProduct.stockQuantity} onChange={handleInputChange} placeholder="0" />
-                  </div>
-                  <div className="form-group">
                     <label>Low Stock Threshold</label>
                     <Input type="number" min="0" name="minimumStock" value={newProduct.minimumStock} onChange={handleInputChange} placeholder="10" />
                   </div>
@@ -257,8 +352,8 @@ const Products = () => {
               </div>
 
               <div className="modal-footer">
-                <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Product'}</Button>
+                <Button variant="outline" type="button" onClick={closeAndResetModal}>Cancel</Button>
+                <Button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Save Product')}</Button>
               </div>
             </form>
           </div>

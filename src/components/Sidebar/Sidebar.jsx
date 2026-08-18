@@ -5,7 +5,7 @@ import {
   Users, Package, Box, ShoppingBag, Truck, UserCircle, 
   Clock, CalendarOff, Banknote, Receipt, FileText, 
   BarChart3, CheckSquare, Bell, Settings, X, CreditCard,
-  Menu
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import './Sidebar.css';
@@ -81,35 +81,27 @@ const Sidebar = () => {
   const enabledModules = currentBusiness?.modules || {};
   
   const togglePin = () => setIsPinned(!isPinned);
-  const isEffectivelyCollapsed = !isPinned && !isHovered;
+  const isEffectivelyCollapsed = !isPinned;
 
   return (
     <>
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
-          className="sidebar-overlay animate-fade-in"
+          className="sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
         />
       )}
       
       <aside 
-        className={`sidebar ${sidebarOpen ? 'mobile-open' : ''} ${isEffectivelyCollapsed ? 'collapsed' : ''} ${!isPinned && isHovered ? 'hover-expanded' : ''}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        className={`sidebar ${sidebarOpen ? 'mobile-open' : ''} ${isEffectivelyCollapsed ? 'collapsed' : ''}`}
       >
         <div className="sidebar-header">
           <div className="logo-container">
             <div className="logo-icon">K</div>
-            {!isEffectivelyCollapsed && <span className="logo-text">Karobaar</span>}
+            <span className="logo-text">Karobaar</span>
           </div>
           
-          {!isEffectivelyCollapsed && (
-            <button className="sidebar-toggle-btn hidden-mobile" onClick={togglePin}>
-              <Menu size={20} />
-            </button>
-          )}
-
           <button 
             className="sidebar-close-btn hidden-desktop"
             onClick={() => setSidebarOpen(false)}
@@ -118,12 +110,14 @@ const Sidebar = () => {
           </button>
         </div>
 
+        <button className="sidebar-toggle-btn hidden-mobile" onClick={togglePin}>
+          {isEffectivelyCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </button>
+
         <div className="sidebar-business-info">
-          {!isEffectivelyCollapsed && (
-            <div className="business-badge">
-              {currentBusiness?.businessName || 'My Business'}
-            </div>
-          )}
+          <div className="business-badge">
+            {currentBusiness?.name || 'My Business'}
+          </div>
         </div>
 
         <nav className="sidebar-nav custom-scrollbar">
@@ -139,7 +133,7 @@ const Sidebar = () => {
 
             return (
               <div key={groupIdx} className="nav-group">
-                {!isEffectivelyCollapsed && <h4 className="nav-group-title">{group.title}</h4>}
+                <h4 className="nav-group-title">{group.title}</h4>
                 <ul>
                   {visibleItems.map((item) => (
                     <li key={item.name}>
@@ -154,7 +148,7 @@ const Sidebar = () => {
                         }}
                       >
                         <span className="nav-icon">{item.icon}</span>
-                        {!isEffectivelyCollapsed && <span className="nav-text">{item.name}</span>}
+                        <span className="nav-text">{item.name}</span>
                       </NavLink>
                     </li>
                   ))}
@@ -164,13 +158,11 @@ const Sidebar = () => {
           })}
         </nav>
 
-        {!isEffectivelyCollapsed && (
-          <div className="sidebar-footer">
-            <p className="footer-title">Karobaar OS</p>
-            <p className="footer-version">v2.0.0</p>
-            <p className="footer-status"><span>●</span> All systems operational</p>
-          </div>
-        )}
+        <div className="sidebar-footer">
+          <p className="footer-title">Karobaar OS</p>
+          <p className="footer-version">v2.0.0</p>
+          <p className="footer-status"><span>●</span> All systems operational</p>
+        </div>
       </aside>
     </>
   );

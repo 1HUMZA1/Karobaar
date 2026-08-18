@@ -19,10 +19,8 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase services
 export const auth = getAuth(app);
 
-// Force long-polling to bypass aggressive ad blockers / VPNs that block Firestore WebChannels
-export const dbFirestore = initializeFirestore(app, {
-  experimentalForceLongPolling: true
-});
+// Initialize Firestore
+export const dbFirestore = initializeFirestore(app, {});
 
 export const storage = getFirebaseStorage(app);
 

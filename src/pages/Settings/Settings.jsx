@@ -35,9 +35,9 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
 
-  // General Settings State
   const [businessName, setBusinessName] = useState('');
   const [businessEmail, setBusinessEmail] = useState('');
+  const [businessType, setBusinessType] = useState('Retail');
   
   // Preferences State
   const [currency, setCurrency] = useState('USD');
@@ -51,6 +51,7 @@ const Settings = () => {
     if (currentBusiness) {
       setBusinessName(currentBusiness.name || '');
       setBusinessEmail(currentBusiness.email || '');
+      setBusinessType(currentBusiness.type || 'Retail');
       setCurrency(currentBusiness.settings?.currency || 'USD');
       setDateFormat(currentBusiness.settings?.dateFormat || 'DD/MM/YYYY');
       setLowStockThreshold(currentBusiness.settings?.lowStockThreshold || 5);
@@ -72,6 +73,7 @@ const Settings = () => {
       await db.update('businesses', currentUser.activeBusinessId, {
         name: businessName,
         email: businessEmail,
+        type: businessType,
         settings: {
           ...currentBusiness.settings,
           currency,
@@ -102,7 +104,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Settings</h1>
@@ -177,6 +179,23 @@ const Settings = () => {
                   value={businessName} 
                   onChange={(e) => setBusinessName(e.target.value)} 
                 />
+                <div className="form-group">
+                  <label className="block text-sm font-medium mb-1">Business Type</label>
+                  <select 
+                    className="w-full p-2.5 rounded-lg focus:outline-none transition-colors"
+                    style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                    value={businessType} 
+                    onChange={e => setBusinessType(e.target.value)}
+                  >
+                    <option>Retail</option>
+                    <option>Wholesale</option>
+                    <option>E-commerce</option>
+                    <option>Services</option>
+                    <option>Manufacturing</option>
+                    <option>Cafeteria / Restaurant</option>
+                    <option>Other</option>
+                  </select>
+                </div>
                 <Input 
                   label="Business Email" 
                   type="email" 

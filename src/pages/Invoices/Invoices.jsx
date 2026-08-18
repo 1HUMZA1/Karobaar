@@ -7,7 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 
 const Invoices = () => {
   return (
-    <div className="page-container animate-fade-in" style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container" style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
@@ -15,11 +15,11 @@ const Invoices = () => {
           </h1>
           <p className="text-secondary">Generate and manage billing invoices</p>
         </div>
-        <Button icon={<Plus size={18} />}>Create Invoice</Button>
+        <Button icon={<Plus size={18} />} onClick={() => alert('Invoice Generation module is currently in development.')}>Create Invoice</Button>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <Input 
             placeholder="Search invoices..." 
             icon={<Search size={18} />}

@@ -28,37 +28,39 @@ export const DashboardFeed = ({ alerts = [], transactions = [], currencySymbol }
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
       {/* Action Items (Left 1/3) */}
-      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] overflow-hidden shadow-sm flex flex-col h-[400px]">
-        <div className="p-5 border-b border-[var(--border-color)] flex justify-between items-center">
-          <h2 className="text-base font-semibold text-text-main flex items-center gap-2">
-            <Bell size={16} className="text-warning"/> Action Items
+      <div className="bg-[var(--bg-card)] rounded-xl shadow-md flex flex-col h-[400px]">
+        <div className="p-6 flex justify-between items-center">
+          <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
+            <Bell size={18} className="text-warning"/> Action Items
           </h2>
           {alerts.length > 0 && (
-            <span className="bg-warning text-[10px] font-bold text-black px-2 py-0.5 rounded-full">
+            <span className="bg-warning text-[10px] font-bold text-black px-2 py-0.5 rounded-full shadow-sm">
               {alerts.length} NEW
             </span>
           )}
         </div>
         
-        <div className="flex-1 divide-y divide-[var(--border-color)] overflow-y-auto">
+        <div className="flex-1 flex flex-col gap-1 px-4 pb-4 overflow-y-auto">
           {alerts.length > 0 ? (
             alerts.map((alert, i) => (
               <div 
                 key={i} 
                 onClick={() => navigate(alert.link)}
-                className="p-5 flex items-start gap-4 hover:bg-[var(--bg-hover)] cursor-pointer transition-colors"
+                className="p-4 rounded-lg flex items-start gap-4 hover:bg-[var(--bg-hover)] cursor-pointer transition-colors"
               >
-                <div className={`mt-0.5 flex-shrink-0 w-2 h-2 rounded-full ${alert.id === 'stock' ? 'bg-danger' : 'bg-warning'}`}></div>
+                <div className={`mt-1 flex-shrink-0 w-2 h-2 rounded-full shadow-sm ${alert.id === 'stock' ? 'bg-danger' : 'bg-warning'}`}></div>
                 <div>
-                  <p className="text-sm font-semibold text-text-main leading-tight mb-1">{alert.title}</p>
+                  <p className="text-sm font-bold text-text-main leading-tight mb-1">{alert.title}</p>
                   <p className="text-xs text-text-secondary">{alert.description}</p>
                 </div>
               </div>
             ))
           ) : (
-            <div className="p-8 h-full flex flex-col items-center justify-center text-text-muted">
-              <CheckCircle size={32} className="mb-3 text-success opacity-50"/>
-              <p className="text-sm font-medium text-text-main">You're all caught up!</p>
+            <div className="py-12 h-full flex flex-col items-center justify-center text-text-muted">
+              <div className="w-16 h-16 rounded-full bg-[var(--success-light)] text-[var(--success-color)] flex items-center justify-center mb-4">
+                <CheckCircle size={24} />
+              </div>
+              <p className="text-sm font-semibold text-text-main">You're all caught up!</p>
               <p className="text-xs mt-1">No urgent action items.</p>
             </div>
           )}
@@ -66,20 +68,20 @@ export const DashboardFeed = ({ alerts = [], transactions = [], currencySymbol }
       </div>
 
       {/* Activity Feed (Right 2/3) */}
-      <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] overflow-hidden shadow-sm flex flex-col h-[400px]">
-        <div className="p-5 border-b border-[var(--border-color)] flex justify-between items-center">
-          <h2 className="text-base font-semibold text-text-main flex items-center gap-2">
-            <Activity size={16} className="text-primary"/> Activity Feed
+      <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-xl shadow-md flex flex-col h-[400px]">
+        <div className="p-6 flex justify-between items-center">
+          <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
+            <Activity size={18} className="text-primary"/> Activity Feed
           </h2>
           <button 
             onClick={() => navigate('/reports')}
-            className="text-xs font-semibold text-text-secondary hover:text-text-main flex items-center gap-1 transition-colors"
+            className="text-xs font-semibold text-text-secondary hover:text-text-main flex items-center gap-1 transition-colors bg-[var(--bg-elevated)] px-3 py-1.5 rounded-full"
           >
             View Report <ArrowRight size={14}/>
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-2">
           {transactions.length > 0 ? (
             <div className="relative before:absolute before:inset-y-0 before:left-[35px] before:w-px before:bg-[var(--border-color)]">
               {transactions.map((trx, idx) => (
@@ -111,8 +113,12 @@ export const DashboardFeed = ({ alerts = [], transactions = [], currencySymbol }
               ))}
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-text-muted text-sm">
-              No recent activity found.
+            <div className="h-full py-12 flex flex-col items-center justify-center text-text-muted">
+              <div className="w-16 h-16 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center mb-4">
+                <Activity size={24} className="opacity-40" />
+              </div>
+              <p className="text-sm font-semibold text-text-main">No recent activity</p>
+              <p className="text-xs mt-1">Your business activities will show up here.</p>
             </div>
           )}
         </div>

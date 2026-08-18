@@ -158,7 +158,7 @@ const AppContent = () => {
             {/* Progress Bar & System Message */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', padding: '0 32px' }}>
               <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ width: `${progress}%`, height: '100%', backgroundColor: 'var(--primary)', borderRadius: '4px', transition: 'width 0.3s ease-out' }}></div>
+                <div style={{ width: `${progress}%`, height: '100%', backgroundColor: 'var(--text-primary)', borderRadius: '4px', transition: 'width 0.3s ease-out' }}></div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 4px' }}>
                 <p style={{ 

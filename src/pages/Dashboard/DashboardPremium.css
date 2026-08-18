@@ -152,7 +152,9 @@
 .duration-200 { transition-duration: 200ms; }
 
 .hover\:-translate-y-0\.5:hover { transform: translateY(-0.125rem); }
+.hover\:-translate-y-1:hover { transform: translateY(-0.25rem); }
 .hover\:shadow-md:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+.hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
 .hover\:bg-\[var\(--bg-hover\)\]:hover { background-color: var(--bg-hover); }
 .hover\:border-text-muted:hover { border-color: var(--text-muted); }
 
@@ -194,23 +196,21 @@
   gap: 8px;
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-elevated);
+  border: 1px solid transparent;
+  background-color: var(--bg-hover);
   color: var(--text-secondary);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-sm);
 }
 
 .quick-action-btn:hover {
-  background-color: var(--bg-hover);
-  border-color: var(--primary);
-  color: var(--primary);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .quick-action-icon {
-  opacity: 0.8;
+  opacity: 0.9;
   transition: opacity 0.2s;
 }
 
@@ -226,15 +226,14 @@
 /* The Primary Quick Action (New Sale) */
 .quick-action-primary {
   grid-column: span 2;
-  background-color: var(--primary);
-  color: #ffffff; /* Explicit white to ensure legibility on primary color */
-  border-color: var(--primary-dark);
+  background-color: var(--primary-color);
+  color: var(--primary-text);
 }
 
 .quick-action-primary:hover {
-  background-color: var(--primary-light);
-  border-color: var(--primary);
-  color: #ffffff; /* Keep white on hover */
+  background-color: var(--primary-hover);
+  color: var(--primary-text);
+  box-shadow: 0 8px 20px -4px var(--primary-light);
 }
 
 .quick-action-primary .quick-action-icon {

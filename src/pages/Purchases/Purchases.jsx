@@ -118,12 +118,12 @@ const Purchases = () => {
   };
 
   return (
-    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
             Purchase Orders
-            {isRevalidating && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
+            
           </h1>
           <p className="text-secondary">Manage supplier orders and receive stock</p>
         </div>
@@ -131,7 +131,7 @@ const Purchases = () => {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <Input 
             placeholder="Search by PO number or supplier..." 
             icon={<Search size={18} />}

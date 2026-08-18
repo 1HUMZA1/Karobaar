@@ -28,9 +28,9 @@
   --info-light: #eff6ff;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   
   /* Borders */
   --radius-sm: 0.25rem;
@@ -67,9 +67,9 @@
   --info-light: rgba(37, 99, 235, 0.15);
 
   /* Adjust shadows for dark mode */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 /* Accent Colors */
@@ -129,6 +129,15 @@ a:hover {
 button {
   cursor: pointer;
   font-family: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
 }
 
 ul {
@@ -230,5 +239,65 @@ ul {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-in { animation: fadeIn var(--transition-normal); }
+.animate-fade-in { animation: none; }
 .animate-slide-up { animation: slideUp var(--transition-normal); }
+
+/* ==========================================================================
+   Generic Modal Styles
+   ========================================================================== */
+.biz-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.biz-modal-content {
+  background-color: var(--bg-secondary);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  border: none;
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.biz-modal-header {
+  padding: 1.75rem 2rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.biz-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.biz-modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.biz-modal-footer {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  background-color: var(--bg-tertiary);
+}

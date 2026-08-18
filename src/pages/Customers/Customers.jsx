@@ -24,9 +24,22 @@ const Customers = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', address: ''
   });
+
+  const openEditModal = (customer) => {
+    setFormData(customer);
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
+
+  const closeAndResetModal = () => {
+    setIsModalOpen(false);
+    setIsEditing(false);
+    setFormData({ name: '', email: '', phone: '', address: '' });
+  };
 
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
@@ -44,22 +57,25 @@ const Customers = () => {
     
     setSaving(true);
     try {
-      const newCustomer = {
+      const customerData = {
         ...formData,
-        totalPurchases: 0,
-        totalSpending: 0,
-        outstandingBalance: 0,
-        status: 'Active',
-        createdAt: new Date().toISOString()
+        totalPurchases: formData.totalPurchases || 0,
+        totalSpending: formData.totalSpending || 0,
+        outstandingBalance: formData.outstandingBalance || 0,
+        status: formData.status || 'Active',
+        createdAt: formData.createdAt || new Date().toISOString()
       };
       
-      const optimisticCustomer = { id: 'temp-' + Date.now(), ...newCustomer };
-      mutate([optimisticCustomer, ...customers]);
-
-      await db.add('customers', newCustomer, currentUser.activeBusinessId);
+      if (isEditing) {
+        mutate(customers.map(c => c.id === formData.id ? customerData : c), false);
+        await db.update('customers', formData.id, customerData);
+      } else {
+        const optimisticCustomer = { id: 'temp-' + Date.now(), ...customerData };
+        mutate([optimisticCustomer, ...customers], false);
+        await db.add('customers', customerData, currentUser.activeBusinessId);
+      }
       
-      setIsModalOpen(false);
-      setFormData({ name: '', email: '', phone: '', address: '' });
+      closeAndResetModal();
       refetch();
     } catch (err) {
       console.error(err);
@@ -96,12 +112,12 @@ const Customers = () => {
   };
 
   return (
-    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
             Customers
-            {isRevalidating && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>}
+            
           </h1>
           <p className="text-secondary">Manage your clients and their purchase history</p>
         </div>
@@ -109,7 +125,7 @@ const Customers = () => {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <Input 
             placeholder="Search by name, email, or phone..." 
             icon={<Search size={18} />}
@@ -164,7 +180,7 @@ const Customers = () => {
                       </TableCell>
                       <TableCell>
                         <div className="action-buttons">
-                          <button className="icon-action-btn" title="Edit"><Edit size={16} /></button>
+                          <button className="icon-action-btn" title="Edit" onClick={() => openEditModal(customer)}><Edit size={16} /></button>
                           <button className="icon-action-btn text-danger" title="Delete" onClick={() => handleDelete(customer.id)}><Trash2 size={16} /></button>
                         </div>
                       </TableCell>
@@ -188,13 +204,13 @@ const Customers = () => {
         </CardContent>
       </Card>
 
-      {/* Add Customer Modal */}
+      {/* Add/Edit Customer Modal */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content animate-slide-up">
             <div className="modal-header">
-              <h2>Add New Customer</h2>
-              <button className="close-btn" onClick={() => setIsModalOpen(false)}><X size={20}/></button>
+              <h2>{isEditing ? 'Edit Customer' : 'Add New Customer'}</h2>
+              <button className="close-btn" onClick={closeAndResetModal}><X size={20}/></button>
             </div>
             <form onSubmit={handleAddCustomer} className="modal-form">
               <div className="form-group">
@@ -236,9 +252,9 @@ const Customers = () => {
               </div>
               
               <div className="modal-actions">
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={closeAndResetModal}>Cancel</Button>
                 <Button type="submit" disabled={saving}>
-                  {saving ? 'Saving...' : 'Add Customer'}
+                  {saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Customer')}
                 </Button>
               </div>
             </form>

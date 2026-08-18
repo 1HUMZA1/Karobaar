@@ -7,7 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 
 const Payments = () => {
   return (
-    <div className="page-container animate-fade-in" style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container" style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
@@ -15,11 +15,11 @@ const Payments = () => {
           </h1>
           <p className="text-secondary">Track inbound and outbound transactions</p>
         </div>
-        <Button icon={<Plus size={18} />}>Record Payment</Button>
+        <Button icon={<Plus size={18} />} onClick={() => alert('Payment Processing module is currently in development.')}>Record Payment</Button>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <Input 
             placeholder="Search payments..." 
             icon={<Search size={18} />}

@@ -26,7 +26,7 @@ export const CustomizeDashboardModal = ({ isOpen, onClose, layout, onSave }) => 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center animate-fade-in px-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
       <div className="bg-[var(--bg-card)] rounded-xl w-full max-w-md shadow-2xl border border-border-color overflow-hidden">
         <div className="flex justify-between items-center p-5 border-b border-border-color">
           <h2 className="text-xl font-bold text-text-main">Customize Dashboard</h2>

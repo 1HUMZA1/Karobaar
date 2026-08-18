@@ -14,14 +14,14 @@
   padding: 0.75rem 1rem;
   font-weight: 600;
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-hover);
   white-space: nowrap;
+  border: none;
 }
 
 .biz-table-row {
-  border-bottom: 1px solid var(--border-light);
-  transition: background-color var(--transition-fast);
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
 }
 
 .biz-table-row:last-child {
@@ -29,7 +29,7 @@
 }
 
 .biz-table-row:hover {
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-hover);
 }
 
 .biz-table-row.clickable {
@@ -38,6 +38,6 @@
 
 .biz-table-cell {
   padding: 1rem;
-  color: var(--text-primary);
+  color: var(--text-main);
   vertical-align: middle;
 }

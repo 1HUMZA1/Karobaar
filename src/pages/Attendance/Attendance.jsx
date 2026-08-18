@@ -61,7 +61,7 @@ const Attendance = () => {
   };
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Attendance</h1>

@@ -85,6 +85,14 @@ const Employees = () => {
     e.preventDefault();
     if (!currentUser?.activeBusinessId) return;
 
+    if (!formData.name?.trim()) return alert('Name is required');
+    if (!formData.employeeId?.trim()) return alert('Employee ID is required');
+    if (!formData.role?.trim()) return alert('System Role is required');
+    if (!formData.salary) return alert('Salary is required');
+    if (!formData.phone?.trim()) return alert('Contact Number is required');
+    if (!formData.email?.trim()) return alert('Email is required');
+    if (!formData.joiningDate) return alert('Joining Date is required');
+
     setSaving(true);
     try {
       const employeeData = {
@@ -200,7 +208,7 @@ const Employees = () => {
   };
 
   return (
-    <div className="page-container animate-fade-in" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
@@ -254,8 +262,8 @@ const Employees = () => {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col md:flex-row gap-4 items-center justify-between border-b border-border-color pb-4">
-          <div className="flex-1 w-full max-w-md">
+        <CardHeader style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+          <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
             <Input 
               placeholder="Search by name, role, or ID..." 
               icon={<Search size={18} />}
@@ -263,7 +271,7 @@ const Employees = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex gap-2 w-full md:w-auto">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
             <select className="karobaar-input" value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', background: 'var(--bg-card)'}}>
               <option value="">All Departments</option>
               {uniqueDepts.map(d => <option key={d} value={d}>{d}</option>)}
@@ -281,8 +289,8 @@ const Employees = () => {
           {loading ? (
             <div className="p-4"><TableSkeleton rows={8} cols={7} /></div>
           ) : employees.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-16 text-center">
-              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem', textAlign: 'center' }}>
+              <div style={{ width: '4rem', height: '4rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', color: 'var(--text-muted)' }}>
                 <Users size={32} />
               </div>
               <h3 className="text-xl font-bold mb-2">No employees yet</h3>

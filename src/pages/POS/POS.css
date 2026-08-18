@@ -16,8 +16,9 @@
   flex: 1;
   overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.25rem;
+  padding: 1rem 1rem 2rem 1rem;
   align-content: start;
 }
 
@@ -231,4 +232,147 @@
   .pos-cart-section {
     max-width: 100%;
   }
+}
+
+.print-invoice-section {
+  display: none;
+}
+
+@media print {
+  /* Hide the entire app layout by default when printing */
+  .app-container, .app-container * {
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
+  }
+  
+  /* Show only the invoice section */
+  .print-invoice-section {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    background: white;
+    color: black;
+    padding: 20px;
+    margin: 0;
+    z-index: 9999;
+  }
+
+  .print-invoice-section * {
+    visibility: visible !important;
+  }
+
+  @page {
+    margin: 0.5cm;
+  }
+}
+
+/* Add to Cart Enhanced Buttons */
+.pos-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 auto;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.pos-add-btn:hover {
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  border-color: var(--text-main);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.pos-add-btn svg {
+  margin-right: 6px;
+  stroke: currentColor;
+}
+
+.pos-qty-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 120px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  overflow: hidden;
+  margin: 0 auto;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.pos-qty-toggle:hover {
+  border-color: var(--text-secondary);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.pos-qty-btn {
+  width: 38px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: var(--text-main);
+}
+
+.pos-qty-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+.pos-qty-val {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+}
+
+.pos-unavailable-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-body);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 auto;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pos-unavailable-btn svg {
+  margin-right: 6px;
+  stroke: currentColor;
 }
