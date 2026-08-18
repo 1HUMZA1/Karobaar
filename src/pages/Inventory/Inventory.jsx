@@ -25,13 +25,19 @@ const Inventory = () => {
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   
   const [newProduct, setNewProduct] = useState({ 
     name: '', sku: '', stockQuantity: 0, minimumStock: 5, purchasePrice: 0, sellingPrice: 0, imageUrl: '',
-    barcode: '', category: '', brand: '', status: 'Active'
+    barcode: '', category: '', brand: '', status: 'Active',
+    isBundle: false, requiresSerial: false, warrantyPeriod: ''
   });
   const [editingProduct, setEditingProduct] = useState(null);
-  const [receiveItems, setReceiveItems] = useState([{ id: Date.now(), productId: '', quantity: 1, notes: '' }]);
+  const [adjustingProduct, setAdjustingProduct] = useState(null);
+  const [adjustReason, setAdjustReason] = useState('Count Error');
+  const [adjustQuantity, setAdjustQuantity] = useState(0);
+
+  const [receiveItems, setReceiveItems] = useState([{ id: Date.now(), productId: '', quantity: 1, batchNumber: '', expiryDate: '', serialNumbers: '', notes: '' }]);
 
   const handleImageUpload = (e, setter) => {
     const file = e.target.files[0];
@@ -49,6 +55,7 @@ const Inventory = () => {
   });
 
   const totalItems = inventory.reduce((sum, item) => sum + (item.stockQuantity || 0), 0);
+  const stockValuation = inventory.reduce((sum, item) => sum + ((item.stockQuantity || 0) * (item.purchasePrice || 0)), 0);
   const lowStock = inventory.filter(item => (item.stockQuantity || 0) > 0 && (item.stockQuantity || 0) <= (item.minimumStock || 0)).length;
   const outOfStock = inventory.filter(item => (item.stockQuantity || 0) === 0).length;
 
@@ -77,7 +84,7 @@ const Inventory = () => {
         )}
       </div>
 
-      <div className="inventory-stats-grid mb-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="inventory-stats-grid mb-6 grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
             <div className="stat-icon bg-primary/10 text-primary p-3 rounded-xl">
@@ -86,6 +93,17 @@ const Inventory = () => {
             <div>
               <p className="text-sm text-secondary">Total Stock Items</p>
               <h3 className="text-2xl font-bold">{totalItems}</h3>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="stat-icon bg-success/10 text-success p-3 rounded-xl">
+              <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>$</span>
+            </div>
+            <div>
+              <p className="text-sm text-secondary">Stock Valuation</p>
+              <h3 className="text-2xl font-bold">${stockValuation.toFixed(2)}</h3>
             </div>
           </CardContent>
         </Card>
@@ -147,7 +165,13 @@ const Inventory = () => {
                               <Package size={18} />
                             </div>
                           )}
-                          <span>{item.name}</span>
+                          <div className="flex flex-col">
+                            <span>{item.name}</span>
+                            <div className="flex gap-1 mt-1">
+                              {item.isBundle && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-semibold">BUNDLE</span>}
+                              {item.requiresSerial && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold">SERIALIZED</span>}
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-secondary">{item.sku}</TableCell>
@@ -176,7 +200,7 @@ const Inventory = () => {
                               >
                                 Edit
                               </Button>
-                              <Button variant="outline" size="sm" icon={<ArrowUpFromLine size={14} />} onClick={() => alert('Stock adjustment coming soon.')}>
+                              <Button variant="outline" size="sm" icon={<ArrowUpFromLine size={14} />} onClick={() => { setAdjustingProduct(item); setAdjustQuantity(item.stockQuantity || 0); setAdjustReason('Count Error'); setIsAdjustModalOpen(true); }}>
                                 Adjust
                               </Button>
                             </>
@@ -370,6 +394,32 @@ const Inventory = () => {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-1 gap-5 pt-4 border-t border-[var(--border-color)]">
+                <h4 className="text-sm font-semibold text-secondary">Advanced Settings</h4>
+                <div className="flex flex-wrap gap-6">
+                  <label style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={newProduct.isBundle} onChange={(e) => setNewProduct({...newProduct, isBundle: e.target.checked})} style={{ width: '18px', height: '18px' }} />
+                    <span className="font-medium">Is Bundle Product</span>
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={newProduct.requiresSerial} onChange={(e) => setNewProduct({...newProduct, requiresSerial: e.target.checked})} style={{ width: '18px', height: '18px' }} />
+                    <span className="font-medium">Track Serial Numbers</span>
+                  </label>
+                </div>
+                {newProduct.requiresSerial && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Warranty Period (Months)</label>
+                    <input 
+                      type="number" 
+                      className="w-full max-w-[200px] p-2 rounded-lg focus:outline-none transition-colors text-base shadow-sm" 
+                      value={newProduct.warrantyPeriod}
+                      onChange={e => setNewProduct({...newProduct, warrantyPeriod: e.target.value})}
+                      placeholder="e.g. 12"
+                      style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
             <div className="biz-modal-footer">
               <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
@@ -551,6 +601,32 @@ const Inventory = () => {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-1 gap-5 pt-4 border-t border-[var(--border-color)]">
+                <h4 className="text-sm font-semibold text-secondary">Advanced Settings</h4>
+                <div className="flex flex-wrap gap-6">
+                  <label style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={editingProduct.isBundle || false} onChange={(e) => setEditingProduct({...editingProduct, isBundle: e.target.checked})} style={{ width: '18px', height: '18px' }} />
+                    <span className="font-medium">Is Bundle Product</span>
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={editingProduct.requiresSerial || false} onChange={(e) => setEditingProduct({...editingProduct, requiresSerial: e.target.checked})} style={{ width: '18px', height: '18px' }} />
+                    <span className="font-medium">Track Serial Numbers</span>
+                  </label>
+                </div>
+                {editingProduct.requiresSerial && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Warranty Period (Months)</label>
+                    <input 
+                      type="number" 
+                      className="w-full max-w-[200px] p-2 rounded-lg focus:outline-none transition-colors text-base shadow-sm" 
+                      value={editingProduct.warrantyPeriod || ''}
+                      onChange={e => setEditingProduct({...editingProduct, warrantyPeriod: e.target.value})}
+                      placeholder="e.g. 12"
+                      style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
             <div className="biz-modal-footer">
               <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
@@ -592,8 +668,8 @@ const Inventory = () => {
                     </button>
                   )}
                   <h4 className="text-sm font-semibold mb-3 text-secondary">Item #{index + 1}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-4">
-                    <div className="md:col-span-2">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-4">
+                    <div className="md:col-span-3">
                       <label className="block text-sm font-medium mb-1">Select Product</label>
                       <select 
                         className="w-full p-3 rounded-xl focus:outline-none transition-colors text-lg shadow-sm"
@@ -621,6 +697,56 @@ const Inventory = () => {
                         onChange={e => {
                           const newItems = [...receiveItems];
                           newItems[index].quantity = parseInt(e.target.value) || 0;
+                          setReceiveItems(newItems);
+                        }}
+                        style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {item.productId && inventory.find(p => p.id === item.productId)?.requiresSerial ? (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-1">Serial Numbers (comma separated)</label>
+                      <textarea 
+                        className="w-full p-3 rounded-xl focus:outline-none transition-colors text-base shadow-sm" 
+                        rows="2" 
+                        value={item.serialNumbers}
+                        onChange={e => {
+                          const newItems = [...receiveItems];
+                          newItems[index].serialNumbers = e.target.value;
+                          setReceiveItems(newItems);
+                        }}
+                        placeholder="e.g. SN-12345, SN-67890"
+                        style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                      ></textarea>
+                    </div>
+                  ) : null}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Batch Number (Optional)</label>
+                      <input 
+                        type="text" 
+                        className="w-full p-2.5 rounded-lg focus:outline-none transition-colors text-sm shadow-sm" 
+                        value={item.batchNumber}
+                        onChange={e => {
+                          const newItems = [...receiveItems];
+                          newItems[index].batchNumber = e.target.value;
+                          setReceiveItems(newItems);
+                        }}
+                        placeholder="e.g. BATCH-2023-A"
+                        style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Expiry Date (Optional)</label>
+                      <input 
+                        type="date" 
+                        className="w-full p-2.5 rounded-lg focus:outline-none transition-colors text-sm shadow-sm" 
+                        value={item.expiryDate}
+                        onChange={e => {
+                          const newItems = [...receiveItems];
+                          newItems[index].expiryDate = e.target.value;
                           setReceiveItems(newItems);
                         }}
                         style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
@@ -666,13 +792,20 @@ const Inventory = () => {
                   for (const item of validItems) {
                     const prod = inventory.find(p => p.id === item.productId);
                     if (prod) {
-                      await db.update('products', prod.id, {
+                      const updateData = {
                         stockQuantity: (prod.stockQuantity || 0) + item.quantity
-                      });
+                      };
+                      if (item.batchNumber) updateData.batchNumber = item.batchNumber;
+                      if (item.expiryDate) updateData.expiryDate = item.expiryDate;
+                      if (item.serialNumbers) {
+                        const newSerials = item.serialNumbers.split(',').map(s => s.trim()).filter(Boolean);
+                        updateData.serialNumbers = [...(prod.serialNumbers || []), ...newSerials];
+                      }
+                      await db.update('products', prod.id, updateData);
                     }
                   }
                   setIsReceiveModalOpen(false);
-                  setReceiveItems([{ id: Date.now(), productId: '', quantity: 1, notes: '' }]);
+                  setReceiveItems([{ id: Date.now(), productId: '', quantity: 1, batchNumber: '', expiryDate: '', serialNumbers: '', notes: '' }]);
                   refetch();
                 } catch (e) {
                   console.error(e);
@@ -683,6 +816,70 @@ const Inventory = () => {
           </div>
         </div>
       )}
+      {/* Adjust Stock Modal */}
+      {isAdjustModalOpen && adjustingProduct && (
+        <div className="biz-modal-overlay" onClick={() => setIsAdjustModalOpen(false)}>
+          <div className="biz-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <div className="biz-modal-header">
+              <h2>Adjust Stock: {adjustingProduct.name}</h2>
+              <button onClick={() => setIsAdjustModalOpen(false)} className="text-text-muted hover:text-text-main transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="biz-modal-body flex flex-col gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-1">Current Stock</label>
+                <div className="p-3 rounded-xl bg-slate-100 font-bold text-lg text-slate-500">
+                  {adjustingProduct.stockQuantity || 0}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">New Stock Quantity</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  className="w-full p-3 rounded-xl focus:outline-none transition-colors text-lg shadow-sm" 
+                  value={adjustQuantity}
+                  onChange={e => setAdjustQuantity(parseInt(e.target.value) || 0)}
+                  style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Reason for Adjustment</label>
+                <select 
+                  className="w-full p-3 rounded-xl focus:outline-none transition-colors text-lg shadow-sm"
+                  value={adjustReason}
+                  onChange={e => setAdjustReason(e.target.value)}
+                  style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}
+                >
+                  <option value="Count Error">Count Error</option>
+                  <option value="Damaged">Damaged / Broken</option>
+                  <option value="Expired">Expired</option>
+                  <option value="Theft">Theft / Loss</option>
+                  <option value="Internal Use">Internal Use</option>
+                </select>
+              </div>
+            </div>
+            <div className="biz-modal-footer">
+              <Button variant="outline" onClick={() => setIsAdjustModalOpen(false)}>Cancel</Button>
+              <Button onClick={async () => {
+                try {
+                  await db.update('products', adjustingProduct.id, {
+                    stockQuantity: adjustQuantity
+                  });
+                  // Optionally log the adjustment reason somewhere (e.g. an adjustments collection)
+                  setIsAdjustModalOpen(false);
+                  refetch();
+                } catch (e) {
+                  console.error(e);
+                  alert('Failed to adjust stock');
+                }
+              }}>Confirm Adjustment</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

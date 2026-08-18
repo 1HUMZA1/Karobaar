@@ -75,7 +75,7 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
       <div className="bg-[var(--bg-card)] rounded-xl overflow-hidden shadow-md flex flex-col">
         <div className="p-6 flex justify-between items-center">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
-            <AlertCircle size={18} className="text-danger"/> Inventory Alerts
+            <AlertCircle size={18} className="text-warning"/> Reorder Suggestions
           </h2>
           <button 
             onClick={() => navigate('/inventory')}
@@ -87,23 +87,26 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
         
         <div className="flex-1 flex flex-col gap-1 p-4 pt-0 overflow-y-auto max-h-[300px]">
           {lowStockProducts.length > 0 ? (
-            lowStockProducts.map(product => (
-              <div key={product.id} className="p-3 hover:bg-[var(--bg-hover)] rounded-lg transition-colors flex items-center justify-between cursor-pointer">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="w-8 h-8 rounded-lg bg-danger-bg text-danger flex items-center justify-center flex-shrink-0">
-                    <Package size={14}/>
+            lowStockProducts.map(product => {
+              const suggestedQuantity = Math.max(10, (product.minimumStock || 5) * 2 - (product.stockQuantity || 0));
+              return (
+                <div key={product.id} className="p-3 hover:bg-[var(--bg-hover)] rounded-lg transition-colors flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-8 h-8 rounded-lg bg-warning-bg text-warning flex items-center justify-center flex-shrink-0">
+                      <Package size={14}/>
+                    </div>
+                    <div className="truncate">
+                      <p className="text-sm font-medium text-text-main truncate" title={product.name}>{product.name}</p>
+                      <p className="text-xs font-bold text-text-main mt-0.5">Suggest Reorder: {suggestedQuantity}</p>
+                    </div>
                   </div>
-                  <div className="truncate">
-                    <p className="text-sm font-medium text-text-main truncate" title={product.name}>{product.name}</p>
-                    <p className="text-xs text-text-muted mt-0.5">Threshold: {product.minimumStock || 5}</p>
+                  <div className="text-right flex-shrink-0 ml-4">
+                    <p className="text-sm font-bold text-danger">{product.stockQuantity}</p>
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider">In Stock</p>
                   </div>
                 </div>
-                <div className="text-right flex-shrink-0 ml-4">
-                  <p className="text-sm font-bold text-danger">{product.stockQuantity}</p>
-                  <p className="text-[10px] text-text-muted uppercase tracking-wider">In Stock</p>
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="py-12 flex flex-col items-center justify-center text-text-muted h-full">
               <div className="w-16 h-16 rounded-full bg-[var(--success-light)] text-[var(--success-color)] flex items-center justify-center mb-4">
