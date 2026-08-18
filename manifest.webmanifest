@@ -1,1 +1,1 @@
-{"name":"Karobaar","short_name":"Karobaar","description":"Karobaar Business Command Center","start_url":"/Karobaar/","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","lang":"en","scope":"/Karobaar/"}
+{"name":"Karobaar","short_name":"Karobaar","description":"Karobaar Business Command Center","start_url":"./","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","lang":"en","scope":"./"}

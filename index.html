@@ -2,15 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/Karobaar/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Karobaar</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/Karobaar/assets/index-DZx7r09B.js"></script>
-    <link rel="stylesheet" crossorigin href="/Karobaar/assets/index-BdZK4x_t.css">
-  <link rel="manifest" href="/Karobaar/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/Karobaar/registerSW.js"></script></head>
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('karobaar-theme') || 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+          var accent = localStorage.getItem('karobaar-accent') || 'default';
+          document.documentElement.setAttribute('data-accent', accent);
+        } catch(e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-CQ-sGV3g.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BpTcF5LU.css">
+  <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
   <body>
     <div id="root"></div>
   </body>
