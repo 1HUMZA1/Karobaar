@@ -2,8 +2,8 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 jobs:
   build-and-release:
@@ -37,11 +37,11 @@ jobs:
         run: npx cap sync android
 
       - name: Build Windows Executable
-        run: npx electron-builder --win portable --publish never
+        run: npx electron-packager . Karobaar --platform=win32 --arch=x64 --out=desktop-build-latest --overwrite --ignore="^/android|Karobaar_Final_Apps"
         
-      - name: Rename Windows Executable
+      - name: Zip Windows App
         run: |
-          Rename-Item "build-electron\Karobaar*.exe" "Karobaar-Windows-${{ github.ref_name }}.exe"
+          Compress-Archive -Path desktop-build-latest\Karobaar-win32-x64 -DestinationPath Karobaar-Windows-v1.1.0.zip -Force
 
       - name: Build Android APK
         working-directory: ./android
@@ -53,14 +53,15 @@ jobs:
         
       - name: Rename Android APK and AAB
         run: |
-          Move-Item "android\app\build\outputs\apk\debug\app-debug.apk" "Karobaar-Android-${{ github.ref_name }}.apk"
-          Move-Item "android\app\build\outputs\bundle\debug\app-debug.aab" "Karobaar-Android-${{ github.ref_name }}.aab"
+          Move-Item "android\app\build\outputs\apk\debug\app-debug.apk" "Karobaar-Android-v1.1.0.apk"
+          Move-Item "android\app\build\outputs\bundle\debug\app-debug.aab" "Karobaar-Android-v1.1.0.aab"
 
-      - name: Create GitHub Release
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: "v1.1.0"
           files: |
-            Karobaar-Windows-${{ github.ref_name }}.exe
-            Karobaar-Android-${{ github.ref_name }}.apk
-            Karobaar-Android-${{ github.ref_name }}.aab
-          generate_release_notes: true
+            Karobaar-Windows-v1.1.0.zip
+            Karobaar-Android-v1.1.0.apk
+            Karobaar-Android-v1.1.0.aab
+          generate_release_notes: false
