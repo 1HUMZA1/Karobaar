@@ -1,72 +1,68 @@
 import React from 'react';
-import { Download, TrendingUp, Users, Box, Banknote } from 'lucide-react';
+import { Download, TrendingUp, Users, Box, Banknote, Calendar, BarChart2, Briefcase, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
 const Reports = () => {
   const handleExport = (type) => {
-    alert(`Exporting ${type} report to CSV...`);
+    alert(`Generating ${type}... (PDF/Excel export functionality coming soon)`);
   };
 
   return (
-    <div className="page-container">
+    <div className="page-container" style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold">Reports & Analytics</h1>
+          <h1 className="text-2xl font-bold">Reports</h1>
           <p className="text-secondary">Generate and export business insights</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        
+        {/* Sales & Profit */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><TrendingUp size={20} className="text-primary"/> Sales & Revenue</CardTitle>
+            <CardTitle className="flex items-center gap-2"><TrendingUp size={20} className="text-primary"/> Sales & Profit</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-secondary mb-4">Export detailed transaction history, tax reports, and revenue summaries.</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" icon={<Download size={14}/>} onClick={() => handleExport('Sales')}>Sales CSV</Button>
-              <Button variant="outline" size="sm" icon={<Download size={14}/>} onClick={() => handleExport('Tax')}>Tax Report</Button>
+            <p className="text-sm text-secondary mb-4" style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.875rem' }}>Export revenue summaries and profit/loss statements.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <Button variant="outline" size="sm" icon={<Calendar size={14}/>} onClick={() => handleExport('Daily Sales')}>Daily Sales</Button>
+              <Button variant="outline" size="sm" icon={<Calendar size={14}/>} onClick={() => handleExport('Weekly Sales')}>Weekly Sales</Button>
+              <Button variant="outline" size="sm" icon={<Calendar size={14}/>} onClick={() => handleExport('Monthly Sales')}>Monthly Sales</Button>
+              <Button variant="outline" size="sm" icon={<Banknote size={14}/>} onClick={() => handleExport('Profit/Loss')}>Profit/Loss</Button>
             </div>
           </CardContent>
         </Card>
 
+        {/* Performance Insights */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Box size={20} className="text-warning"/> Inventory</CardTitle>
+            <CardTitle className="flex items-center gap-2"><BarChart2 size={20} className="text-info"/> Performance Insights</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-secondary mb-4">Export current stock levels, valuation, and low stock warnings.</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" icon={<Download size={14}/>} onClick={() => handleExport('Inventory')}>Stock Levels CSV</Button>
+            <p className="text-sm text-secondary mb-4" style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.875rem' }}>Analyze product movement and staff productivity.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <Button variant="outline" size="sm" icon={<Box size={14}/>} onClick={() => handleExport('Product Performance')}>Product Performance</Button>
+              <Button variant="outline" size="sm" icon={<Users size={14}/>} onClick={() => handleExport('Employee Performance')}>Employee Performance</Button>
             </div>
           </CardContent>
         </Card>
 
+        {/* Operations & Expenses */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Users size={20} className="text-info"/> Customers & CRM</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Briefcase size={20} className="text-warning"/> Operations</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-secondary mb-4">Export customer directory, purchase history, and outstanding balances.</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" icon={<Download size={14}/>} onClick={() => handleExport('Customers')}>Customer Directory</Button>
+            <p className="text-sm text-secondary mb-4" style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.875rem' }}>Export current stock levels and business expenses.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <Button variant="outline" size="sm" icon={<FileText size={14}/>} onClick={() => handleExport('Inventory Report')}>Inventory Report</Button>
+              <Button variant="outline" size="sm" icon={<FileText size={14}/>} onClick={() => handleExport('Expense Report')}>Expense Report</Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Banknote size={20} className="text-success"/> HR & Payroll</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-secondary mb-4">Export employee list, attendance logs, and payroll summaries.</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" icon={<Download size={14}/>} onClick={() => handleExport('Payroll')}>Payroll Summary</Button>
-              <Button variant="outline" size="sm" icon={<Download size={14}/>} onClick={() => handleExport('Attendance')}>Attendance Log</Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
