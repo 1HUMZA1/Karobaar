@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { useAppContext } from '../../context/AppContext';
 import { useCollection } from '../../hooks/useCollection';
 import { TableSkeleton } from '../../components/ui/Skeleton';
+import { CustomerProfile } from './CustomerProfile';
 import './Customers.css';
 
 const Customers = () => {
@@ -20,17 +21,23 @@ const Customers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [displayLimit, setDisplayLimit] = useState(50);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', address: ''
+    name: '', email: '', phone: '', address: '', customerType: 'Retail', notes: ''
   });
 
-  const openEditModal = (customer) => {
-    setFormData(customer);
+  const openEditModal = (customer, e) => {
+    e.stopPropagation();
+    setFormData({
+      ...customer,
+      customerType: customer.customerType || 'Retail',
+      notes: customer.notes || ''
+    });
     setIsEditing(true);
     setIsModalOpen(true);
   };
@@ -38,7 +45,7 @@ const Customers = () => {
   const closeAndResetModal = () => {
     setIsModalOpen(false);
     setIsEditing(false);
-    setFormData({ name: '', email: '', phone: '', address: '' });
+    setFormData({ name: '', email: '', phone: '', address: '', customerType: 'Retail', notes: '' });
   };
 
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
@@ -69,6 +76,7 @@ const Customers = () => {
       if (isEditing) {
         mutate(customers.map(c => c.id === formData.id ? customerData : c), false);
         await db.update('customers', formData.id, customerData);
+        if (selectedCustomer?.id === formData.id) setSelectedCustomer(customerData);
       } else {
         const optimisticCustomer = { id: 'temp-' + Date.now(), ...customerData };
         mutate([optimisticCustomer, ...customers], false);
@@ -86,7 +94,8 @@ const Customers = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, e) => {
+    e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this customer?")) return;
     try {
       mutate(customers.filter(c => c.id !== id));
@@ -110,6 +119,19 @@ const Customers = () => {
       setDisplayLimit(prev => prev + 50);
     }
   };
+
+  if (selectedCustomer) {
+    return (
+      <div className="page-container" style={{ height: '100%', overflowY: 'auto', paddingBottom: '2rem' }}>
+        <CustomerProfile 
+          customer={selectedCustomer} 
+          onBack={() => setSelectedCustomer(null)}
+          businessId={currentUser.activeBusinessId}
+          currencySymbol={currencySymbol}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
@@ -152,13 +174,22 @@ const Customers = () => {
               <TableBody>
                 {filteredCustomers.length > 0 ? (
                   filteredCustomers.map(customer => (
-                    <TableRow key={customer.id}>
+                    <TableRow 
+                      key={customer.id} 
+                      className="cursor-pointer hover:bg-[var(--bg-hover)] transition-colors"
+                      onClick={() => setSelectedCustomer(customer)}
+                    >
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="customer-avatar">
                             {customer.name.charAt(0).toUpperCase()}
                           </div>
-                          <span className="font-medium">{customer.name}</span>
+                          <div>
+                            <span className="font-medium block">{customer.name}</span>
+                            {customer.customerType && (
+                              <span className="text-[10px] uppercase font-bold text-text-muted mt-0.5 block">{customer.customerType}</span>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -213,45 +244,71 @@ const Customers = () => {
               <button className="close-btn" onClick={closeAndResetModal}><X size={20}/></button>
             </div>
             <form onSubmit={handleAddCustomer} className="modal-form">
-              <div className="form-group">
-                <label>Customer Name *</label>
-                <Input 
-                  required 
-                  value={formData.name} 
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  placeholder="e.g. John Doe"
-                />
-              </div>
-              <div className="form-group">
-                <label>Email Address</label>
-                <Input 
-                  type="email" 
-                  value={formData.email} 
-                  onChange={e => setFormData({...formData, email: e.target.value})}
-                  placeholder="e.g. john@example.com"
-                />
-              </div>
-              <div className="form-group">
-                <label>Phone Number *</label>
-                <Input 
-                  required 
-                  value={formData.phone} 
-                  onChange={e => setFormData({...formData, phone: e.target.value})}
-                  placeholder="e.g. +1 234 567 8900"
-                />
-              </div>
-              <div className="form-group">
-                <label>Address</label>
-                <textarea 
-                  className="karobaar-input"
-                  style={{ width: '100%', minHeight: '80px', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--bg-input)' }}
-                  value={formData.address} 
-                  onChange={e => setFormData({...formData, address: e.target.value})}
-                  placeholder="Full Address"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group md:col-span-2">
+                  <label>Customer Name *</label>
+                  <Input 
+                    required 
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    placeholder="e.g. John Doe"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Phone Number *</label>
+                  <Input 
+                    required 
+                    value={formData.phone} 
+                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                    placeholder="e.g. +1 234 567 8900"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email Address</label>
+                  <Input 
+                    type="email" 
+                    value={formData.email} 
+                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    placeholder="e.g. john@example.com"
+                  />
+                </div>
+                <div className="form-group md:col-span-2">
+                  <label>Customer Type</label>
+                  <select 
+                    className="karobaar-input"
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--bg-elevated)', color: 'var(--text-main)', outline: 'none' }}
+                    value={formData.customerType}
+                    onChange={e => setFormData({...formData, customerType: e.target.value})}
+                  >
+                    <option value="Retail">Retail</option>
+                    <option value="Wholesale">Wholesale</option>
+                    <option value="VIP">VIP</option>
+                    <option value="Corporate">Corporate</option>
+                  </select>
+                </div>
+                <div className="form-group md:col-span-2">
+                  <label>Address</label>
+                  <textarea 
+                    className="karobaar-input"
+                    style={{ width: '100%', minHeight: '60px', padding: '0.5rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--bg-elevated)', color: 'var(--text-main)', outline: 'none' }}
+                    value={formData.address} 
+                    onChange={e => setFormData({...formData, address: e.target.value})}
+                    placeholder="Full Address"
+                  />
+                </div>
+                <div className="form-group md:col-span-2">
+                  <label>CRM Notes (Optional)</label>
+                  <textarea 
+                    className="karobaar-input"
+                    style={{ width: '100%', minHeight: '60px', padding: '0.5rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--bg-elevated)', color: 'var(--text-main)', outline: 'none' }}
+                    value={formData.notes} 
+                    onChange={e => setFormData({...formData, notes: e.target.value})}
+                    placeholder="Internal notes about this customer"
+                  />
+                </div>
               </div>
               
-              <div className="modal-actions">
+              <div className="modal-actions mt-4">
                 <Button type="button" variant="outline" onClick={closeAndResetModal}>Cancel</Button>
                 <Button type="submit" disabled={saving}>
                   {saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Customer')}
