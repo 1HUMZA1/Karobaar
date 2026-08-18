@@ -34,7 +34,7 @@ jobs:
         run: npm run build
 
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: npx cap copy android
 
       - name: Build Windows Executable
         run: npx electron-packager . Karobaar --platform=win32 --arch=x64 --out=desktop-build-latest --overwrite --ignore="^/android|Karobaar_Final_Apps"
