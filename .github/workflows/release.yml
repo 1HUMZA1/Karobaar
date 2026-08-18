@@ -37,7 +37,7 @@ jobs:
         run: Copy-Item -Path "dist\*" -Destination "android\app\src\main\assets\public" -Recurse -Force
 
       - name: Build Windows Executable
-        run: npx electron-packager . Karobaar --platform=win32 --arch=x64 --out=desktop-build-latest --overwrite --ignore="^/android|Karobaar_Final_Apps"
+        run: npx electron-packager . Karobaar --platform=win32 --arch=x64 --out=desktop-build-latest --overwrite --ignore="^/android" --ignore="Karobaar_Final_Apps"
         
       - name: Zip Windows App
         run: |
