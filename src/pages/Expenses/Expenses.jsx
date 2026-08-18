@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Trash2, Receipt, X } from 'lucide-react';
+import { Plus, Search, Filter, Trash2, Receipt, X, TrendingUp, DollarSign } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
@@ -18,6 +18,8 @@ const Expenses = () => {
     sortBy: (a, b) => new Date(b.date) - new Date(a.date)
   });
 
+  const { data: sales } = useCollection('sales', currentUser?.activeBusinessId);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [displayLimit, setDisplayLimit] = useState(50);
@@ -27,7 +29,7 @@ const Expenses = () => {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     description: '',
-    category: 'General',
+    category: 'Other expenses',
     amount: '',
     paymentMethod: 'Cash',
     date: format(new Date(), 'yyyy-MM-dd')
@@ -62,7 +64,7 @@ const Expenses = () => {
       setIsModalOpen(false);
       setFormData({
         description: '',
-        category: 'General',
+        category: 'Other expenses',
         amount: '',
         paymentMethod: 'Cash',
         date: format(new Date(), 'yyyy-MM-dd')
@@ -95,6 +97,10 @@ const Expenses = () => {
   ).slice(0, displayLimit);
 
   const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const totalRevenue = (sales || [])
+    .filter(s => s.status !== 'cancelled' && s.status !== 'refunded' && s.status !== 'Cancelled')
+    .reduce((sum, s) => sum + (s.total || 0), 0);
+  const netProfit = totalRevenue - totalExpenses;
 
   const handleScroll = (e) => {
     const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 50;
@@ -116,15 +122,41 @@ const Expenses = () => {
         <Button icon={<Plus size={18} />} onClick={() => setIsModalOpen(true)}>Record Expense</Button>
       </div>
 
-      <div className="expense-stats mb-6">
-        <Card className="flex-1">
-          <CardContent className="p-5 flex items-center justify-between">
+      <div className="expense-stats mb-6 flex gap-4 overflow-x-auto pb-2" style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+        <Card style={{ flex: '1 1 0%', minWidth: '200px' }}>
+          <CardContent className="p-5 flex items-center justify-between" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <p className="text-secondary text-sm">Total Expenses (All Time)</p>
-              <h3 className="text-2xl font-bold text-danger">{currencySymbol}{totalExpenses.toFixed(2)}</h3>
+              <p className="text-secondary text-sm" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Revenue</p>
+              <h3 className="text-2xl font-bold" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{currencySymbol}{totalRevenue.toFixed(2)}</h3>
             </div>
-            <div className="w-12 h-12 rounded-full bg-danger/10 text-danger flex items-center justify-center">
+            <div style={{ width: '3rem', height: '3rem', borderRadius: '9999px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TrendingUp size={24} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card style={{ flex: '1 1 0%', minWidth: '200px' }}>
+          <CardContent className="p-5 flex items-center justify-between" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p className="text-secondary text-sm" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Expenses</p>
+              <h3 className="text-2xl font-bold text-danger" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--danger)' }}>{currencySymbol}{totalExpenses.toFixed(2)}</h3>
+            </div>
+            <div style={{ width: '3rem', height: '3rem', borderRadius: '9999px', background: 'var(--danger-light, rgba(239, 68, 68, 0.1))', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Receipt size={24} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card style={{ flex: '1 1 0%', minWidth: '200px' }}>
+          <CardContent className="p-5 flex items-center justify-between" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p className="text-secondary text-sm" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Net Profit</p>
+              <h3 className="text-2xl font-bold" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: netProfit >= 0 ? 'var(--text-main)' : 'var(--danger)' }}>
+                {currencySymbol}{netProfit.toFixed(2)}
+              </h3>
+            </div>
+            <div style={{ width: '3rem', height: '3rem', borderRadius: '9999px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: netProfit >= 0 ? 'var(--text-main)' : 'var(--danger)' }}>
+              <DollarSign size={24} />
             </div>
           </CardContent>
         </Card>
@@ -230,13 +262,12 @@ const Expenses = () => {
                   value={formData.category}
                   onChange={e => setFormData({...formData, category: e.target.value})}
                 >
-                  <option value="General">General</option>
-                  <option value="Utilities">Utilities</option>
                   <option value="Rent">Rent</option>
-                  <option value="Supplies">Supplies</option>
-                  <option value="Marketing">Marketing</option>
+                  <option value="Electricity">Electricity</option>
                   <option value="Salaries">Salaries</option>
-                  <option value="Maintenance">Maintenance</option>
+                  <option value="Purchases">Purchases</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Other expenses">Other expenses</option>
                 </select>
               </div>
               <div className="form-group">
