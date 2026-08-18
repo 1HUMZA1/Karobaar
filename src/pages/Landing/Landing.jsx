@@ -1,9 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, BarChart2, Shield, Smartphone, Monitor, Cloud, Users, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Landing = () => {
   const navigate = useNavigate();
+  const fullText = "The Operating System\nFor Your Business.";
+  const [typedText, setTypedText] = useState("");
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    let i = 0;
+    const typingInterval = setInterval(() => {
+      if (i < fullText.length) {
+        setTypedText(fullText.substring(0, i + 1));
+        i++;
+      } else {
+        clearInterval(typingInterval);
+      }
+    }, 60);
+    
+    const cursorInterval = setInterval(() => {
+      setCursorVisible(v => !v);
+    }, 500);
+
+    return () => {
+      clearInterval(typingInterval);
+      clearInterval(cursorInterval);
+    };
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', color: '#000000', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -31,8 +55,14 @@ const Landing = () => {
 
       {/* Hero Section */}
       <header style={{ padding: '6rem 4rem', textAlign: 'center', maxWidth: '1000px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '4.5rem', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-2px', marginBottom: '1.5rem' }}>
-          The Operating System<br />For Your Business.
+        <h1 style={{ fontSize: '4.5rem', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-2px', marginBottom: '1.5rem', minHeight: '160px' }}>
+          {typedText.split('\n').map((line, index) => (
+            <React.Fragment key={index}>
+              {line}
+              {index === 0 && typedText.includes('\n') && <br />}
+            </React.Fragment>
+          ))}
+          <span style={{ opacity: cursorVisible ? 1 : 0, fontWeight: 300 }}>|</span>
         </h1>
         <p style={{ fontSize: '1.25rem', color: '#666', marginBottom: '3rem', maxWidth: '700px', margin: '0 auto 3rem auto', lineHeight: 1.6 }}>
           Manage point-of-sale, inventory, employees, attendance, and financial reports from a single, unified, offline-first platform.
