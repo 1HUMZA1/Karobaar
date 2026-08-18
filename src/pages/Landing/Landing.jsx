@@ -9,6 +9,7 @@ const Landing = () => {
   const [cursorVisible, setCursorVisible] = useState(true);
 
   useEffect(() => {
+    document.title = "Karobaar Website";
     let i = 0;
     const typingInterval = setInterval(() => {
       if (i < fullText.length) {
@@ -26,6 +27,7 @@ const Landing = () => {
     return () => {
       clearInterval(typingInterval);
       clearInterval(cursorInterval);
+      document.title = "Karobaar"; // Restore default
     };
   }, []);
 
