@@ -1,0 +1,66 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-release:
+    name: Build & Release
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java (for Android)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Web App
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build Windows Executable
+        run: npx electron-builder --win portable --publish never
+        
+      - name: Rename Windows Executable
+        run: |
+          Rename-Item "build-electron\Karobaar*.exe" "Karobaar-Windows-${{ github.ref_name }}.exe"
+
+      - name: Build Android APK
+        working-directory: ./android
+        run: .\gradlew assembleDebug
+
+      - name: Build Android AAB
+        working-directory: ./android
+        run: .\gradlew bundleDebug
+        
+      - name: Rename Android APK and AAB
+        run: |
+          Move-Item "android\app\build\outputs\apk\debug\app-debug.apk" "Karobaar-Android-${{ github.ref_name }}.apk"
+          Move-Item "android\app\build\outputs\bundle\debug\app-debug.aab" "Karobaar-Android-${{ github.ref_name }}.aab"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            Karobaar-Windows-${{ github.ref_name }}.exe
+            Karobaar-Android-${{ github.ref_name }}.apk
+            Karobaar-Android-${{ github.ref_name }}.aab
+          generate_release_notes: true
