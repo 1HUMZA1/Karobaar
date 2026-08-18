@@ -115,7 +115,15 @@ const Sidebar = () => {
         </button>
 
         <div className="sidebar-business-info">
-          <div className="business-badge">
+          <div 
+            className="business-badge" 
+            style={{ cursor: 'pointer' }} 
+            onClick={() => {
+              window.location.hash = '#/dashboard';
+              window.location.reload();
+            }}
+            title="Refresh and go to Dashboard"
+          >
             {currentBusiness?.name || 'My Business'}
           </div>
         </div>
