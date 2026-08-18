@@ -28,6 +28,7 @@ export const AppProvider = ({ children }) => {
   const [authError, setAuthError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const [currentBusiness, setCurrentBusiness] = useState(null);
+  const [userBusinesses, setUserBusinesses] = useState([]);
 
   const userRole = currentUser?.role || 'Guest';
 
@@ -77,18 +78,29 @@ export const AppProvider = ({ children }) => {
           if (karobaarUser && karobaarUser.memberships && karobaarUser.memberships.length > 0) {
             console.log(`[AUTH] Active business ID: ${karobaarUser.memberships[0]}`);
             
-            // Fetch the actual business document
-            const businessData = await db.getById('businesses', karobaarUser.memberships[0]);
-            setCurrentBusiness(businessData);
+            // Fetch all businesses user belongs to
+            const bizPromises = karobaarUser.memberships.map(id => db.getById('businesses', id));
+            const businessesData = (await Promise.all(bizPromises)).filter(Boolean);
+            setUserBusinesses(businessesData);
+            
+            // Prefer currently saved active business, else first
+            let activeId = localStorage.getItem('karobaar-active-business') || karobaarUser.memberships[0];
+            if (!karobaarUser.memberships.includes(activeId)) {
+              activeId = karobaarUser.memberships[0];
+            }
+
+            const activeBusinessData = businessesData.find(b => b.id === activeId) || businessesData[0];
+            setCurrentBusiness(activeBusinessData);
             
             setCurrentUser({
               ...karobaarUser,
-              activeBusinessId: karobaarUser.memberships[0]
+              activeBusinessId: activeBusinessData.id
             });
             setAuthStatus('authenticated');
           } else {
             console.log("[AUTH] No business memberships found. Navigating to onboarding.");
             setCurrentBusiness(null);
+            setUserBusinesses([]);
             setCurrentUser({
               ...karobaarUser,
               firebaseUid: firebaseUser.uid,
@@ -103,12 +115,14 @@ export const AppProvider = ({ children }) => {
           setAuthError(error.message || "Failed to load account data. Please check your connection.");
           setCurrentUser(null);
           setCurrentBusiness(null);
+          setUserBusinesses([]);
           setAuthStatus('unauthenticated');
         }
       } else {
         console.log("[AUTH] Unauthenticated user");
         setCurrentUser(null);
         setCurrentBusiness(null);
+        setUserBusinesses([]);
         setAuthStatus('unauthenticated');
       }
     });
@@ -119,6 +133,21 @@ export const AppProvider = ({ children }) => {
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
+  const switchBranch = (businessId) => {
+    const newBiz = userBusinesses.find(b => b.id === businessId);
+    if (newBiz && currentUser) {
+      localStorage.setItem('karobaar-active-business', businessId);
+      setCurrentBusiness(newBiz);
+      setCurrentUser({
+        ...currentUser,
+        activeBusinessId: businessId
+      });
+      // Force reload to completely clear all caches for the new branch context
+      window.location.hash = '#/dashboard';
+      window.location.reload();
+    }
+  };
+
   // Method to refresh user profile from local database without requiring a hard reload
   const refreshUserProfile = async () => {
     if (auth.currentUser) {
@@ -128,13 +157,21 @@ export const AppProvider = ({ children }) => {
       if (karobaarUser && karobaarUser.onboardingCompleted && karobaarUser.memberships?.length > 0) {
         console.log("[AUTH] User onboarded. Local data found.");
         
-        // Fetch the actual business document
-        const businessData = await db.getById('businesses', karobaarUser.memberships[0]);
-        setCurrentBusiness(businessData);
+        const bizPromises = karobaarUser.memberships.map(id => db.getById('businesses', id));
+        const businessesData = (await Promise.all(bizPromises)).filter(Boolean);
+        setUserBusinesses(businessesData);
+
+        let activeId = currentUser?.activeBusinessId || karobaarUser.memberships[0];
+        if (!karobaarUser.memberships.includes(activeId)) {
+          activeId = karobaarUser.memberships[0];
+        }
+
+        const activeBusinessData = businessesData.find(b => b.id === activeId) || businessesData[0];
+        setCurrentBusiness(activeBusinessData);
 
         setCurrentUser({
           ...karobaarUser,
-          activeBusinessId: karobaarUser.memberships[0]
+          activeBusinessId: activeBusinessData.id
         });
         setAuthStatus('authenticated');
       } else {
@@ -173,6 +210,8 @@ export const AppProvider = ({ children }) => {
       authError,
       currentUser,
       currentBusiness,
+      userBusinesses,
+      switchBranch,
       userRole,
       refreshUserProfile,
       logout

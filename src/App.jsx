@@ -25,6 +25,8 @@ import BusinessSetup from './pages/BusinessSetup/BusinessSetup';
 import Invoices from './pages/Invoices/Invoices';
 import Payments from './pages/Payments/Payments';
 import Landing from './pages/Landing/Landing';
+import Branches from './pages/Branches/Branches';
+import HQAnalytics from './pages/Branches/HQAnalytics';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
@@ -239,6 +241,8 @@ const AppContent = () => {
           <Route path="reports" element={<ProtectedRoute allowedRoles={['OWNER', 'MANAGER', 'ACCOUNTANT']} moduleId="reports"><Reports /></ProtectedRoute>} />
           <Route path="settings" element={<ProtectedRoute allowedRoles={ROLES.SETTINGS_OPS} moduleId="core"><Settings /></ProtectedRoute>} />
           <Route path="notifications" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="core"><Notifications /></ProtectedRoute>} />
+          <Route path="branches" element={<ProtectedRoute allowedRoles={['OWNER']} moduleId="core"><Branches /></ProtectedRoute>} />
+          <Route path="hq-analytics" element={<ProtectedRoute allowedRoles={['OWNER']} moduleId="core"><HQAnalytics /></ProtectedRoute>} />
           
           {/* Catch all authenticated routes */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

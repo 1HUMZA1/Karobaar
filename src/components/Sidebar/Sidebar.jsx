@@ -5,7 +5,7 @@ import {
   Users, Package, Box, ShoppingBag, Truck, UserCircle, 
   Clock, CalendarOff, Banknote, Receipt, FileText, 
   BarChart3, CheckSquare, Bell, Settings, X, CreditCard,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Building2
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import './Sidebar.css';
@@ -67,6 +67,8 @@ const navGroups = [
   {
     title: 'BUSINESS',
     items: [
+      { name: 'HQ Analytics', path: '/hq-analytics', icon: <BarChart3 size={20} />, roles: ['Owner', 'OWNER'], moduleId: 'core' },
+      { name: 'Branches', path: '/branches', icon: <Building2 size={20} />, roles: ['Owner', 'OWNER'], moduleId: 'core' },
       { name: 'Tasks', path: '/tasks', icon: <CheckSquare size={20} />, roles: ALL_ROLES, moduleId: 'tasks' },
       { name: 'Settings', path: '/settings', icon: <Settings size={20} />, roles: ['Owner', 'Admin', 'OWNER'], moduleId: 'core' },
     ]
@@ -74,7 +76,7 @@ const navGroups = [
 ];
 
 const Sidebar = () => {
-  const { sidebarOpen, setSidebarOpen, userRole, currentBusiness } = useAppContext();
+  const { sidebarOpen, setSidebarOpen, userRole, currentBusiness, userBusinesses, switchBranch } = useAppContext();
   const [isPinned, setIsPinned] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -114,18 +116,32 @@ const Sidebar = () => {
           {isEffectivelyCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
 
-        <div className="sidebar-business-info">
-          <div 
-            className="business-badge" 
-            style={{ cursor: 'pointer' }} 
-            onClick={() => {
-              window.location.hash = '#/dashboard';
-              window.location.reload();
-            }}
-            title="Refresh and go to Dashboard"
-          >
-            {currentBusiness?.name || 'My Business'}
-          </div>
+        <div className="sidebar-business-info" style={{ padding: '0.5rem 1rem' }}>
+          {userBusinesses && userBusinesses.length > 1 ? (
+            <select 
+              className="business-badge w-full text-center" 
+              style={{ cursor: 'pointer', appearance: 'none', background: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '8px', fontWeight: 'bold' }} 
+              value={currentBusiness?.id || ''}
+              onChange={(e) => switchBranch(e.target.value)}
+              title="Switch Branch"
+            >
+              {userBusinesses.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          ) : (
+            <div 
+              className="business-badge" 
+              style={{ cursor: 'pointer' }} 
+              onClick={() => {
+                window.location.hash = '#/dashboard';
+                window.location.reload();
+              }}
+              title="Refresh and go to Dashboard"
+            >
+              {currentBusiness?.name || 'My Business'}
+            </div>
+          )}
         </div>
 
         <nav className="sidebar-nav custom-scrollbar">
