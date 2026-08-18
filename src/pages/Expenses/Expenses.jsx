@@ -226,75 +226,75 @@ const Expenses = () => {
 
       {/* Add Expense Modal */}
       {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content animate-slide-up">
-            <div className="modal-header">
+        <div className="biz-modal-overlay">
+          <div className="biz-modal-content">
+            <div className="biz-modal-header">
               <h2>Record Expense</h2>
-              <button className="close-btn" onClick={() => setIsModalOpen(false)}><X size={20}/></button>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}><X size={20}/></button>
             </div>
-            <form onSubmit={handleAddExpense} className="modal-form">
-              <div className="form-group">
-                <label>Description *</label>
-                <Input 
-                  required 
-                  value={formData.description} 
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                  placeholder="What was this expense for?"
-                />
-              </div>
-              <div className="form-group">
-                <label>Amount ({currencySymbol}) *</label>
-                <Input 
-                  required 
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.amount} 
-                  onChange={e => setFormData({...formData, amount: e.target.value})}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <select 
-                  className="karobaar-input"
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--bg-input)' }}
-                  value={formData.category}
-                  onChange={e => setFormData({...formData, category: e.target.value})}
-                >
-                  <option value="Rent">Rent</option>
-                  <option value="Electricity">Electricity</option>
-                  <option value="Salaries">Salaries</option>
-                  <option value="Purchases">Purchases</option>
-                  <option value="Transport">Transport</option>
-                  <option value="Other expenses">Other expenses</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Payment Method</label>
-                <select 
-                  className="karobaar-input"
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--bg-input)' }}
-                  value={formData.paymentMethod}
-                  onChange={e => setFormData({...formData, paymentMethod: e.target.value})}
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Check">Check</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Date</label>
-                <Input 
-                  required 
-                  type="date"
-                  value={formData.date} 
-                  onChange={e => setFormData({...formData, date: e.target.value})}
-                />
+            <form onSubmit={handleAddExpense} style={{ display: 'flex', flexDirection: 'column', maxHeight: 'calc(90vh - 70px)' }}>
+              <div className="biz-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label className="text-sm font-medium">Description *</label>
+                  <Input 
+                    required 
+                    value={formData.description} 
+                    onChange={e => setFormData({...formData, description: e.target.value})}
+                    placeholder="What was this expense for?"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label className="text-sm font-medium">Amount ({currencySymbol}) *</label>
+                  <Input 
+                    required 
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.amount} 
+                    onChange={e => setFormData({...formData, amount: e.target.value})}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label className="text-sm font-medium">Category</label>
+                  <select 
+                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none' }}
+                    value={formData.category}
+                    onChange={e => setFormData({...formData, category: e.target.value})}
+                  >
+                    <option value="Rent">Rent</option>
+                    <option value="Electricity">Electricity</option>
+                    <option value="Salaries">Salaries</option>
+                    <option value="Purchases">Purchases</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Other expenses">Other expenses</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label className="text-sm font-medium">Payment Method</label>
+                  <select 
+                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none' }}
+                    value={formData.paymentMethod}
+                    onChange={e => setFormData({...formData, paymentMethod: e.target.value})}
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="Credit Card">Credit Card</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Check">Check</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label className="text-sm font-medium">Date</label>
+                  <Input 
+                    required 
+                    type="date"
+                    value={formData.date} 
+                    onChange={e => setFormData({...formData, date: e.target.value})}
+                  />
+                </div>
               </div>
               
-              <div className="modal-actions">
+              <div className="biz-modal-footer">
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
                 <Button type="submit" disabled={saving}>
                   {saving ? 'Saving...' : 'Record Expense'}

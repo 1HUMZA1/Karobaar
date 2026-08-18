@@ -5,6 +5,7 @@
   font-weight: 500;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
+  box-shadow: var(--shadow-sm);
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   cursor: pointer;
   white-space: nowrap;
@@ -12,7 +13,7 @@
 
 .biz-btn:hover:not(:disabled) {
   transform: translateY(-1.5px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
 }
 
 .biz-btn:disabled {
