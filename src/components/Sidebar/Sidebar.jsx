@@ -59,9 +59,9 @@ const navGroups = [
   {
     title: 'FINANCE',
     items: [
-      { name: 'Expenses', path: '/expenses', icon: <Receipt size={20} />, roles: FINANCE, moduleId: 'expenses' },
-      { name: 'Payments', path: '/payments', icon: <CreditCard size={20} />, roles: FINANCE, moduleId: 'payments' },
-      { name: 'Reports', path: '/reports', icon: <BarChart3 size={20} />, roles: MANAGEMENT, moduleId: 'reports' },
+      { name: 'Finance & Banking', path: '/expenses', icon: <Receipt size={20} />, roles: FINANCE, moduleId: 'expenses' },
+      { name: 'Khata / Udhaar', path: '/payments', icon: <CreditCard size={20} />, roles: FINANCE, moduleId: 'payments' },
+      { name: 'Analytics & Reports', path: '/reports', icon: <BarChart3 size={20} />, roles: MANAGEMENT, moduleId: 'reports' },
     ]
   },
   {
