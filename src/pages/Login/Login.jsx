@@ -2,18 +2,209 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { auth, googleProvider, githubProvider } from '../../services/firebase';
-import { signInWithPopup, getRedirectResult, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, sendPasswordResetEmail } from 'firebase/auth';
 import { Button } from '../../components/ui/Button';
+import { Code, Mail, Lock, User, Eye, EyeOff, Phone } from 'lucide-react';
+import { Country } from 'country-state-city';
 import './Login.css';
 
+const CustomSelect = ({ value, onChange, options, placeholder }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const selectRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = React.useMemo(() => {
+    if (!search) return options;
+    return options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+  }, [options, search]);
+  
+  return (
+    <div ref={selectRef} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 1 }}>
+      <div 
+        className="form-input" 
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(!isOpen); setSearch(""); }}
+        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card, #fff)' }}
+      >
+        <span style={{ opacity: value ? 1 : 0.5, color: 'var(--text-main, #000)' }}>
+          {options.find(o => o.value === value)?.value || placeholder || "Select..."}
+        </span>
+        <svg style={{transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0}} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+      
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, minWidth: '260px',
+          background: 'var(--bg-card, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)',
+          borderRadius: '8px', marginTop: '4px', zIndex: 1001,
+          boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden'
+        }}>
+          {options.length > 10 && (
+            <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color, #e2e8f0)', background: 'var(--bg-card, #fff)' }}>
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)' }}
+                autoFocus
+              />
+            </div>
+          )}
+          
+          <div 
+            style={{ maxHeight: '220px', overflowY: 'auto', overscrollBehavior: 'contain' }} 
+            onWheel={(e) => e.stopPropagation()}
+          >
+            {filteredOptions.length === 0 && (
+              <div style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>No matches found</div>
+            )}
+            {filteredOptions.map((opt, i) => (
+              <div 
+                key={i} 
+                onClick={(e) => { e.stopPropagation(); onChange({ target: { value: opt.value } }); setIsOpen(false); setSearch(""); }}
+                style={{
+                  padding: '0.85rem 1rem', cursor: 'pointer',
+                  background: value === opt.value ? 'var(--bg-hover, #f1f5f9)' : 'transparent',
+                  borderBottom: i < filteredOptions.length - 1 ? '1px solid var(--border-color, #e2e8f0)' : 'none',
+                  color: 'var(--text-main, #000)',
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover, #f1f5f9)'}
+                onMouseLeave={e => e.currentTarget.style.background = value === opt.value ? 'var(--bg-hover, #f1f5f9)' : 'transparent'}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Generate country code options once
+const countryOptions = Country.getAllCountries().map(c => {
+  const cleanCode = '+' + c.phonecode.replace(/[^0-9]/g, '');
+  return {
+    value: cleanCode,
+    label: `${c.isoCode} (${cleanCode}) ${c.name}`
+  };
+});
+
+// Add a few popular ones at the top to make it easier, then the full list
+const topPhoneCodes = ['+1', '+44', '+91', '+92', '+971'].map(code => 
+  countryOptions.find(c => c.value === code)
+).filter(Boolean);
+
+const finalCountryOptions = [...topPhoneCodes, { value: '', label: '--- All Countries ---' }, ...countryOptions];
+
+const PHONE_LENGTHS = {
+  '+1': 10,   // US/Canada
+  '+44': 10,  // UK
+  '+91': 10,  // India
+  '+92': 10,  // Pakistan
+  '+971': 9,  // UAE
+  '+61': 9,   // Australia
+  '+86': 11,  // China
+  '+49': 11,  // Germany
+  '+33': 9,   // France
+  '+81': 10,  // Japan
+};
+
 const Login = () => {
+  const [loginMethod, setLoginMethod] = useState('email');
+  const [countryCode, setCountryCode] = useState('+1');
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationId, setVerificationId] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifierLogin) {
+      window.recaptchaVerifierLogin = new RecaptchaVerifier(auth, 'login-recaptcha-container', {
+        'size': 'invisible'
+      });
+    }
+  };
+
+  const handleSendCode = async () => {
+    setGeneralError('');
+    setSuccessMessage('');
+    if (!phoneNumber) return setErrors({ phone: 'Phone number is required' });
+    
+    let formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+    if (formattedPhone.length < 6) {
+      return setErrors({ phone: 'Phone number is too short. Please enter a valid number.' });
+    }
+    let fullPhone = countryCode + formattedPhone;
+    
+    try {
+      setIsAuthenticating(true);
+      setupRecaptcha();
+      const appVerifier = window.recaptchaVerifierLogin;
+      const confirmationResult = await signInWithPhoneNumber(auth, fullPhone, appVerifier);
+      window.loginConfirmationResult = confirmationResult;
+      setVerificationId(confirmationResult.verificationId);
+      setCodeSent(true);
+      setSuccessMessage('An SMS verification code has been sent to your phone.');
+    } catch (error) {
+      console.error(error);
+      if (error.code === 'auth/invalid-phone-number') {
+        setErrors({ phone: 'Invalid phone number format. Please check your country code and number.' });
+      } else if (error.code === 'auth/billing-not-enabled') {
+        setGeneralError('SMS Verification requires Firebase Billing to be enabled. Please upgrade to the Blaze plan in your Firebase Console.');
+      } else {
+        setGeneralError(error.message);
+      }
+      if (window.recaptchaVerifierLogin) {
+        window.recaptchaVerifierLogin.render().then(widgetId => grecaptcha.reset(widgetId));
+      }
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    setGeneralError('');
+    if (!verificationCode) return setErrors({ code: 'Verification code is required' });
+    
+    try {
+      setIsAuthenticating(true);
+      const result = await window.loginConfirmationResult.confirm(verificationCode);
+      // Success is handled by AppContext
+    } catch (error) {
+      console.error(error);
+      setGeneralError('Invalid verification code. Please try again.');
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
   
   const { authStatus, authError } = useAppContext();
   const navigate = useNavigate();
@@ -82,7 +273,7 @@ const Login = () => {
       if (error.code === 'auth/popup-closed-by-user') {
         setGeneralError('Sign-in cancelled.');
       } else {
-        setGeneralError('Failed to initiate Sign-In.');
+        setGeneralError(`Error: ${error.message}`);
       }
     }
   };
@@ -117,13 +308,39 @@ const Login = () => {
     } catch (error) {
       console.error("Manual Auth Error:", error);
       setIsAuthenticating(false);
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        setGeneralError('Invalid email or password. Please try again.');
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
+        setGeneralError('No Karobaar workspace found for this email address. Please create an account or verify your credentials.');
+      } else if (error.code === 'auth/wrong-password') {
+        setGeneralError('Invalid password. Please try again or reset your password.');
       } else if (error.code === 'auth/email-already-in-use') {
         setGeneralError('An account with this email already exists.');
       } else {
         setGeneralError(error.message || 'Authentication failed.');
       }
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setGeneralError('');
+    setSuccessMessage('');
+    if (!email.trim()) {
+      setErrors({ email: 'Please enter your email address first to reset your password.' });
+      return;
+    }
+    
+    setIsAuthenticating(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMessage('A password reset link has been sent directly to your email address.');
+    } catch (error) {
+      console.error(error);
+      if (error.code === 'auth/user-not-found') {
+        setGeneralError('No Karobaar workspace found for this email address.');
+      } else {
+        setGeneralError(error.message);
+      }
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -170,62 +387,185 @@ const Login = () => {
                 {generalError || authError}
               </div>
             )}
-
-            <form onSubmit={handleManualAuth} className="manual-auth-form">
-              <div className="form-group">
-                <label>Email address</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); if(errors.email) setErrors({...errors, email: null}) }}
-                  className={`form-input ${errors.email ? 'input-error' : ''}`}
-                  placeholder="name@company.com"
-                  disabled={isAuthenticating || authStatus === 'loading'}
-                />
-                {errors.email && <span className="input-error-msg">{errors.email}</span>}
+            
+            {successMessage && (
+              <div className="error-banner" style={{ background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}>
+                {successMessage}
               </div>
+            )}
 
-              <div className="form-group">
-                <label>Password</label>
-                <div className="password-input-wrapper">
+            <div className="login-tabs" style={{ display: 'flex', marginBottom: '1.5rem', gap: '0.5rem' }}>
+              <button 
+                type="button" 
+                onClick={() => {setLoginMethod('email'); setGeneralError(''); setSuccessMessage('');}} 
+                style={{ flex: 1, padding: '0.6rem', background: loginMethod === 'email' ? 'var(--text-main, #000)' : 'transparent', color: loginMethod === 'email' ? '#fff' : '#666', fontWeight: 600, border: '1px solid var(--border-color, #e5e7eb)', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                Email
+              </button>
+              <button 
+                type="button" 
+                onClick={() => {setLoginMethod('phone'); setGeneralError(''); setSuccessMessage('');}} 
+                style={{ flex: 1, padding: '0.6rem', background: loginMethod === 'phone' ? 'var(--text-main, #000)' : 'transparent', color: loginMethod === 'phone' ? '#fff' : '#666', fontWeight: 600, border: '1px solid var(--border-color, #e5e7eb)', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                Phone
+              </button>
+            </div>
+
+            <div id="login-recaptcha-container"></div>
+
+            {loginMethod === 'email' ? (
+              <form onSubmit={handleManualAuth} className={`manual-auth-form form-transition-enter`} key={`email-${isRegistering}`} style={{ position: 'relative', zIndex: 10 }}>
+                <div className="form-group">
+                  <label>Email address</label>
                   <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); if(errors.password) setErrors({...errors, password: null}) }}
-                    className={`form-input ${errors.password ? 'input-error' : ''}`}
-                    placeholder={isRegistering ? 'Create a password (min 6 chars)' : 'Enter your password'}
+                    type="email"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); if(errors.email) setErrors({...errors, email: null}) }}
+                    className={`form-input ${errors.email ? 'input-error' : ''}`}
+                    placeholder="name@company.com"
                     disabled={isAuthenticating || authStatus === 'loading'}
                   />
-                  <button 
-                    type="button" 
-                    className="password-toggle-btn"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex="-1"
-                  >
-                    {showPassword ? (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="eye-icon">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                        <line x1="1" y1="1" x2="23" y2="23"></line>
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="eye-icon">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                    )}
-                  </button>
+                  {errors.email && <span className="input-error-msg">{errors.email}</span>}
                 </div>
-                {errors.password && <span className="input-error-msg">{errors.password}</span>}
-              </div>
 
-              <Button 
-                type="submit" 
-                className={`login-submit-btn ${isAuthenticating || isAuthLoading ? 'loading' : ''}`}
-                disabled={isAuthenticating || isAuthLoading}
-              >
-                {isAuthenticating || isAuthLoading ? 'Please wait...' : (isRegistering ? 'Sign Up' : 'Sign In')}
-              </Button>
-            </form>
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ marginBottom: 0 }}>Password</label>
+                    {!isRegistering && (
+                      <button 
+                        type="button" 
+                        onClick={handleResetPassword} 
+                        style={{ background: 'none', border: 'none', color: 'var(--text-main)', fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+                  <div className="password-input-wrapper" style={{ marginTop: '0.5rem' }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); if(errors.password) setErrors({...errors, password: null}) }}
+                      className={`form-input ${errors.password ? 'input-error' : ''}`}
+                      placeholder={isRegistering ? 'Create a password (min 6 chars)' : 'Enter your password'}
+                      disabled={isAuthenticating || authStatus === 'loading'}
+                    />
+                    <button 
+                      type="button" 
+                      className="password-toggle-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex="-1"
+                    >
+                      {showPassword ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="eye-icon">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                          <line x1="1" y1="1" x2="23" y2="23"></line>
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="eye-icon">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && <span className="input-error-msg">{errors.password}</span>}
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className={`login-submit-btn ${isAuthenticating || isAuthLoading ? 'loading' : ''}`}
+                  disabled={isAuthenticating || isAuthLoading}
+                >
+                  {isAuthenticating ? (
+                    <div className="btn-loader"></div>
+                  ) : (
+                    isRegistering ? 'Create account' : 'Sign in to workspace'
+                  )}
+                </Button>
+              </form>
+            ) : (
+              <div className="manual-auth-form form-transition-enter" key={`phone-${isRegistering}`} style={{ position: 'relative', zIndex: 10 }}>
+                <div className="form-group">
+                  <label>Phone Number</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ width: '120px', flexShrink: 0 }}>
+                      {codeSent ? (
+                        <div className="form-input" style={{ background: '#f5f5f5', color: '#666', border: '1px solid #e5e7eb' }}>
+                          {countryCode}
+                        </div>
+                      ) : (
+                        <CustomSelect 
+                          options={finalCountryOptions} 
+                          value={countryCode} 
+                          onChange={(e) => setCountryCode(e.target.value)}
+                        />
+                      )}
+                    </div>
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => { 
+                        const onlyNums = e.target.value.replace(/[^0-9\s-]/g, '');
+                        const digitCount = onlyNums.replace(/[^0-9]/g, '').length;
+                        const maxLen = PHONE_LENGTHS[countryCode] || 15;
+                        
+                        if (digitCount <= maxLen) {
+                          setPhoneNumber(onlyNums); 
+                          if(errors.phone) setErrors({...errors, phone: null});
+                        }
+                      }}
+                      className={`form-input ${errors.phone ? 'input-error' : ''}`}
+                      placeholder="555 000 0000"
+                      disabled={isAuthenticating || authStatus === 'loading' || codeSent}
+                      style={{ flex: 1 }}
+                    />
+                  </div>
+                  {errors.phone && <span className="input-error-msg">{errors.phone}</span>}
+                </div>
+                
+                {codeSent && (
+                  <div className="form-group">
+                    <label>6-digit OTP</label>
+                    <input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => { 
+                        const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+                        if (onlyNums.length <= 6) {
+                          setVerificationCode(onlyNums); 
+                          if(errors.code) setErrors({...errors, code: null});
+                        }
+                      }}
+                      className={`form-input ${errors.code ? 'input-error' : ''}`}
+                      placeholder="123456"
+                      disabled={isAuthenticating || authStatus === 'loading'}
+                    />
+                    {errors.code && <span className="input-error-msg">{errors.code}</span>}
+                  </div>
+                )}
+                
+                {!codeSent ? (
+                  <Button 
+                    type="button" 
+                    className="login-submit-btn" 
+                    onClick={handleSendCode}
+                    disabled={isAuthenticating || authStatus === 'loading' || !phoneNumber}
+                  >
+                    {isAuthenticating ? <div className="btn-loader"></div> : 'Send Code'}
+                  </Button>
+                ) : (
+                  <Button 
+                    type="button" 
+                    className="login-submit-btn" 
+                    onClick={handleVerifyCode}
+                    disabled={isAuthenticating || authStatus === 'loading' || !verificationCode}
+                  >
+                    {isAuthenticating ? <div className="btn-loader"></div> : 'Verify & Sign In'}
+                  </Button>
+                )}
+              </div>
+            )}
 
             {!isNative && (
               <>
@@ -270,7 +610,7 @@ const Login = () => {
                         <div className="spinner"></div>
                       ) : (
                         <>
-                          <Github className="social-icon" />
+                          <Code className="social-icon" />
                           <span>GitHub</span>
                         </>
                       )}

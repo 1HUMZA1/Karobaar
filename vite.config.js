@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024 // 15MB
+      },
       manifest: {
         name: 'Karobaar',
         short_name: 'Karobaar',

@@ -337,12 +337,24 @@ const POS = () => {
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex flex-col">
-                            <span className="text-[11px] font-bold" style={{ color: availableStock > 0 ? '#000000' : '#888888' }}>
-                              {availableStock > 0 ? 'In Stock' : 'Out of stock'}
-                            </span>
-                            <span className="text-[10px] text-text-tertiary font-bold mt-0.5">
-                              ({availableStock})
-                            </span>
+                            {(() => {
+                              const threshold = currentBusiness?.settings?.lowStockThreshold || 10;
+                              const isLow = availableStock > 0 && availableStock <= threshold;
+                              const isOut = availableStock <= 0;
+                              let stockColor = '#16a34a'; // Green
+                              if (isOut || isLow) stockColor = '#dc2626'; // Red
+                              
+                              return (
+                                <>
+                                  <span className="text-[11px] font-bold" style={{ color: stockColor }}>
+                                    {isOut ? 'Out of stock' : (isLow ? 'Low Stock' : 'In Stock')}
+                                  </span>
+                                  <span className="text-[10px] font-bold mt-0.5" style={{ color: stockColor }}>
+                                    ({availableStock})
+                                  </span>
+                                </>
+                              );
+                            })()}
                           </div>
                         </td>
                         <td className="py-4 px-6">

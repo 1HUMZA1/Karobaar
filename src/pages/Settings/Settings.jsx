@@ -354,11 +354,29 @@ const Settings = () => {
 
           {activeTab === 'features' && (
             <Card>
-              <CardHeader>
-                <CardTitle>Features & Modules</CardTitle>
+              <CardHeader style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                <div>
+                  <CardTitle>Features & Modules</CardTitle>
+                  <p className="text-secondary mt-1">Enable or disable modules to customize your application experience.</p>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const activeCount = Object.values(enabledModules).filter(Boolean).length;
+                    if (activeCount === MODULES_LIST.length) {
+                      setEnabledModules({});
+                    } else {
+                      const all = {};
+                      MODULES_LIST.forEach(m => all[m.id] = true);
+                      setEnabledModules(all);
+                    }
+                  }}
+                  style={{background: 'none', border: 'none', color: 'var(--text-main)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline'}}
+                >
+                  {Object.values(enabledModules).filter(Boolean).length === MODULES_LIST.length ? 'Deselect All' : 'Select All'}
+                </button>
               </CardHeader>
               <CardContent>
-                <p className="text-secondary mb-6">Enable or disable modules to customize your application experience.</p>
                 <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem'}}>
                   {MODULES_LIST.map(mod => (
                     <label key={mod.id} style={{display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', background: 'var(--bg-card)'}}>

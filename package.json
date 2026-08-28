@@ -9,7 +9,7 @@
     "appId": "com.karobaar.app",
     "productName": "Karobaar",
     "directories": {
-      "output": "build-electron"
+      "output": "build-electron-v2"
     },
     "files": [
       "dist/**/*",
@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "chart.js": "^4.5.1",
+    "country-state-city": "^3.2.1",
     "date-fns": "^4.4.0",
     "firebase": "^12.17.1",
     "lucide-react": "^1.31.0",

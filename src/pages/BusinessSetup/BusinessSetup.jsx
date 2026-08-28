@@ -4,6 +4,8 @@ import { useAppContext } from '../../context/AppContext';
 import { db } from '../../services/databaseService';
 import { Button } from '../../components/ui/Button';
 import { auth } from '../../services/firebase';
+import { signOut, RecaptchaVerifier, linkWithPhoneNumber, PhoneAuthProvider } from 'firebase/auth';
+import { Country, City } from 'country-state-city';
 import './BusinessSetup.css';
 
 const MODULES_LIST = [
@@ -28,16 +30,156 @@ const MODULES_LIST = [
   { id: 'notifications', label: 'Notifications' }
 ];
 
-const COUNTRY_CITIES = {
-  "India": ["Mumbai", "Delhi", "Bengaluru", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Surat", "Pune", "Jaipur", "Lucknow"],
+const ALL_COUNTRIES = Country.getAllCountries();
+
+const TOP_CITIES = {
+  "India": ["Mumbai", "Delhi", "Bengaluru", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Surat", "Pune", "Jaipur", "Lucknow", "Kanpur"],
   "Pakistan": ["Karachi", "Lahore", "Faisalabad", "Rawalpindi", "Gujranwala", "Peshawar", "Multan", "Hyderabad", "Islamabad", "Quetta"],
-  "USA": ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas"],
-  "UK": ["London", "Birmingham", "Manchester", "Glasgow", "Newcastle", "Sheffield", "Liverpool", "Leeds", "Bristol"],
-  "UAE": ["Dubai", "Abu Dhabi", "Sharjah", "Al Ain", "Ajman", "Ras Al Khaimah", "Fujairah"],
+  "United States": ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "Austin"],
+  "United Kingdom": ["London", "Birmingham", "Manchester", "Glasgow", "Newcastle", "Sheffield", "Liverpool", "Leeds", "Bristol", "Edinburgh"],
+  "United Arab Emirates": ["Dubai", "Abu Dhabi", "Sharjah", "Al Ain", "Ajman", "Ras Al Khaimah", "Fujairah"],
   "Bangladesh": ["Dhaka", "Chittagong", "Khulna", "Rajshahi", "Sylhet", "Barisal", "Rangpur", "Comilla"],
-  "Canada": ["Toronto", "Montreal", "Vancouver", "Calgary", "Edmonton", "Ottawa", "Winnipeg", "Quebec City"],
+  "Canada": ["Toronto", "Montreal", "Vancouver", "Calgary", "Edmonton", "Ottawa", "Winnipeg", "Quebec City", "Hamilton"],
   "Australia": ["Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide", "Gold Coast", "Canberra", "Hobart"],
-  "Other": []
+  "Saudi Arabia": ["Riyadh", "Jeddah", "Mecca", "Medina", "Dammam", "Ta'if", "Tabuk", "Buraidah"],
+  "South Africa": ["Johannesburg", "Cape Town", "Durban", "Pretoria", "Port Elizabeth", "Bloemfontein"],
+  "Germany": ["Berlin", "Hamburg", "Munich", "Cologne", "Frankfurt", "Stuttgart", "Düsseldorf"],
+  "France": ["Paris", "Marseille", "Lyon", "Toulouse", "Nice", "Nantes", "Strasbourg"]
+};
+
+const getCitiesForCountry = (countryName) => {
+  if (!countryName || countryName === 'Other') return [];
+  
+  // If we have curated top cities for this country, put them at the very top!
+  const recommended = TOP_CITIES[countryName] || [];
+  
+  const country = ALL_COUNTRIES.find(c => c.name === countryName);
+  if (!country) return recommended;
+  
+  const cities = City.getCitiesOfCountry(country.isoCode) || [];
+  const allCityNames = Array.from(new Set(cities.map(c => c.name))).sort();
+  
+  const otherCities = allCityNames.filter(c => !recommended.includes(c));
+  
+  return [...recommended, ...otherCities];
+};
+
+const countryPhoneOptions = ALL_COUNTRIES.map(c => {
+  const cleanCode = '+' + c.phonecode.replace(/[^0-9]/g, '');
+  return {
+    value: cleanCode,
+    label: `${c.isoCode} (${cleanCode}) ${c.name}`
+  };
+});
+
+const topPhoneCodes = ['+1', '+44', '+91', '+92', '+971'].map(code => 
+  countryPhoneOptions.find(c => c.value === code)
+).filter(Boolean);
+
+const finalCountryPhoneOptions = [...topPhoneCodes, { value: '', label: '--- All Countries ---' }, ...countryPhoneOptions];
+
+const PHONE_LENGTHS = {
+  '+1': 10,
+  '+44': 10,
+  '+91': 10,
+  '+92': 10,
+  '+971': 9,
+  '+61': 9,
+  '+86': 11,
+  '+49': 11,
+  '+33': 9,
+  '+81': 10,
+};
+
+const CustomSelect = ({ value, onChange, options, placeholder }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const selectRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = React.useMemo(() => {
+    if (!search) return options;
+    return options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+  }, [options, search]);
+  
+  return (
+    <div ref={selectRef} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 1 }}>
+      <div 
+        className="setup-input" 
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(!isOpen); setSearch(""); }}
+        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card, #fff)' }}
+      >
+        <span style={{ opacity: value ? 1 : 0.5, color: 'var(--text-main, #000)' }}>
+          {options.find(o => o.value === value)?.value || placeholder || "Select..."}
+        </span>
+        <svg style={{transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0}} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+      
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, minWidth: '260px',
+          background: 'var(--bg-card, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)',
+          borderRadius: '8px', marginTop: '4px', zIndex: 1001,
+          boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden'
+        }}>
+          {options.length > 10 && (
+            <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color, #e2e8f0)', background: 'var(--bg-card, #fff)' }}>
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)' }}
+                autoFocus
+              />
+            </div>
+          )}
+          
+          <div 
+            style={{ maxHeight: '220px', overflowY: 'auto', overscrollBehavior: 'contain' }} 
+            onWheel={(e) => e.stopPropagation()}
+          >
+            {filteredOptions.length === 0 && (
+              <div style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>No matches found</div>
+            )}
+            {filteredOptions.map((opt, i) => (
+              <div 
+                key={i} 
+                onClick={(e) => { e.stopPropagation(); onChange({ target: { value: opt.value } }); setIsOpen(false); setSearch(""); }}
+                style={{
+                  padding: '0.85rem 1rem', cursor: 'pointer',
+                  background: value === opt.value ? 'var(--bg-hover, #f1f5f9)' : 'transparent',
+                  borderBottom: i < filteredOptions.length - 1 ? '1px solid var(--border-color, #e2e8f0)' : 'none',
+                  color: 'var(--text-main, #000)',
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover, #f1f5f9)'}
+                onMouseLeave={e => e.currentTarget.style.background = value === opt.value ? 'var(--bg-hover, #f1f5f9)' : 'transparent'}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 const BusinessSetup = () => {
@@ -58,9 +200,95 @@ const BusinessSetup = () => {
   // Step 1: Personal Profile
   const [personal, setPersonal] = useState({
     fullName: currentUser?.name || '',
-    phone: '',
+    countryCode: '+1',
+    phone: auth.currentUser?.phoneNumber || '',
     language: 'English'
   });
+
+  const [isPhoneVerified, setIsPhoneVerified] = useState(!!auth.currentUser?.phoneNumber);
+  const [verificationId, setVerificationId] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState({ type: '', text: '' }); // type: 'error' | 'success'
+
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response) => {
+          // reCAPTCHA solved
+        },
+        'expired-callback': () => {
+          // Response expired.
+        }
+      });
+    }
+  };
+
+  const sendVerificationCode = async () => {
+    setVerificationMessage({ type: '', text: '' });
+    if (!personal.phone) {
+      return setVerificationMessage({ type: 'error', text: 'Please enter a phone number' });
+    }
+    
+    let formattedPhone = personal.phone.replace(/[^0-9]/g, '');
+    if (formattedPhone.length < 6) {
+      return setVerificationMessage({ type: 'error', text: 'Phone number is too short. Please enter a valid number.' });
+    }
+    let fullPhone = personal.countryCode + formattedPhone;
+
+    try {
+      setIsSendingCode(true);
+      setupRecaptcha();
+      const appVerifier = window.recaptchaVerifier;
+      const user = auth.currentUser;
+      
+      const confirmationResult = await linkWithPhoneNumber(user, fullPhone, appVerifier);
+      window.confirmationResult = confirmationResult;
+      setVerificationId(confirmationResult.verificationId);
+      setCodeSent(true);
+      setVerificationMessage({ type: 'success', text: 'Verification code sent via SMS.' });
+    } catch (error) {
+      console.error(error);
+      if (error.code === 'auth/invalid-phone-number') {
+        setVerificationMessage({ type: 'error', text: 'Invalid phone number format. Please check your country code and number.' });
+      } else if (error.code === 'auth/billing-not-enabled') {
+        setVerificationMessage({ type: 'error', text: 'SMS Verification requires Firebase Billing to be enabled. Please upgrade to the Blaze plan in your Firebase Console.' });
+      } else {
+        setVerificationMessage({ type: 'error', text: error.message });
+      }
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.render().then(widgetId => {
+          grecaptcha.reset(widgetId);
+        });
+      }
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const verifyCode = async () => {
+    setVerificationMessage({ type: '', text: '' });
+    if (!verificationCode) return setVerificationMessage({ type: 'error', text: 'Please enter the code' });
+    
+    try {
+      setIsVerifyingCode(true);
+      const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
+      const user = auth.currentUser;
+      await linkWithCredential(user, credential);
+      
+      setIsPhoneVerified(true);
+      setCodeSent(false);
+      setVerificationMessage({ type: 'success', text: 'Phone number successfully linked!' });
+    } catch (error) {
+      console.error(error);
+      setVerificationMessage({ type: 'error', text: 'Invalid verification code.' });
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
 
   // Step 2: App Experience
   const [appKnowledge, setAppKnowledge] = useState('Newbie'); // 'Newbie', 'Rookie', 'Pro'
@@ -116,7 +344,19 @@ const BusinessSetup = () => {
 
   const handleNext = () => {
     setError('');
-    if (step === 1 && !personal.fullName.trim()) return setError('Full name is required.');
+    if (step === 1) {
+      if (!personal.fullName.trim()) return setError('Full name is required.');
+      if (!personal.phone.trim()) return setError('Phone number is required.');
+      
+      const phoneDigits = personal.phone.replace(/[^0-9]/g, '');
+      if (phoneDigits.length < 10) {
+        return setError('Please enter a valid phone number (at least 10 digits).');
+      }
+      
+      if (!isPhoneVerified) {
+        return setError('Please verify your phone number via SMS before continuing.');
+      }
+    }
     if (step === 3 && !business.name.trim()) return setError('Business name is required.');
     setStep(s => s + 1);
   };
@@ -207,6 +447,15 @@ const BusinessSetup = () => {
     { id: 6, title: 'Preferences', desc: 'Regional settings' }
   ];
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+  };
+
   return (
     <div className="setup-wrapper">
       {/* Left Panel - Visuals & Stepper */}
@@ -236,6 +485,37 @@ const BusinessSetup = () => {
             </div>
           ))}
         </div>
+        
+        <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
+          <button 
+            type="button"
+            onClick={handleLogout}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: 'var(--text-secondary)',
+              padding: '0.75rem 1.25rem',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.9rem',
+              transition: 'all 0.2s',
+              width: '100%',
+              justifyContent: 'center'
+            }}
+            onMouseOver={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; }}
+            onMouseOut={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Sign out
+          </button>
+        </div>
       </div>
 
       {/* Right Panel - Form content */}
@@ -252,13 +532,82 @@ const BusinessSetup = () => {
             
             {step === 1 && (
               <div className="step-content setup-form-grid">
+                <div id="recaptcha-container"></div>
                 <div className="setup-form-group full-width">
                   <label>Full Name</label>
                   <input type="text" className="setup-input" value={personal.fullName} onChange={e => setPersonal({...personal, fullName: e.target.value})} required placeholder="Enter your full name"/>
                 </div>
                 <div className="setup-form-group full-width">
                   <label>Phone Number</label>
-                  <input type="tel" className="setup-input" value={personal.phone} onChange={e => setPersonal({...personal, phone: e.target.value})} placeholder="+1 (555) 000-0000"/>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ width: '130px', flexShrink: 0 }}>
+                      {codeSent || isPhoneVerified ? (
+                        <div className="setup-input" style={{ background: '#f5f5f5', color: '#666', border: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center' }}>
+                          {personal.countryCode}
+                        </div>
+                      ) : (
+                        <CustomSelect 
+                          options={finalCountryPhoneOptions} 
+                          value={personal.countryCode} 
+                          onChange={(e) => setPersonal({...personal, countryCode: e.target.value})}
+                        />
+                      )}
+                    </div>
+                    <input 
+                      type="tel" 
+                      className="setup-input" 
+                      value={personal.phone} 
+                      onChange={e => {
+                        const onlyNums = e.target.value.replace(/[^0-9\s-]/g, '');
+                        const digitCount = onlyNums.replace(/[^0-9]/g, '').length;
+                        const maxLen = PHONE_LENGTHS[personal.countryCode] || 15;
+                        
+                        if (digitCount <= maxLen) {
+                          setPersonal({...personal, phone: onlyNums});
+                          if (isPhoneVerified) setIsPhoneVerified(false);
+                        }
+                      }} 
+                      disabled={isPhoneVerified || codeSent}
+                      placeholder="555 000 0000"
+                      style={{ flex: 1 }}
+                    />
+                    {!isPhoneVerified && !codeSent && (
+                      <Button type="button" onClick={sendVerificationCode} disabled={isSendingCode || !personal.phone}>
+                        {isSendingCode ? 'Sending...' : 'Verify'}
+                      </Button>
+                    )}
+                    {isPhoneVerified && (
+                      <div style={{ display: 'flex', alignItems: 'center', color: '#16a34a', padding: '0 0.5rem' }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {codeSent && !isPhoneVerified && (
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <input 
+                        type="text" 
+                        className="setup-input" 
+                        value={verificationCode} 
+                        onChange={e => {
+                          const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+                          if (onlyNums.length <= 6) {
+                            setVerificationCode(onlyNums);
+                          }
+                        }} 
+                        placeholder="6-digit OTP"
+                        style={{ flex: 1 }}
+                      />
+                      <Button type="button" onClick={verifyCode} disabled={isVerifyingCode || !verificationCode}>
+                        {isVerifyingCode ? 'Verifying...' : 'Submit OTP'}
+                      </Button>
+                    </div>
+                  )}
+                  {verificationMessage.text && (
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: verificationMessage.type === 'error' ? 'var(--text-danger, #dc2626)' : 'var(--text-success, #16a34a)' }}>
+                      {verificationMessage.text}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -328,9 +677,20 @@ const BusinessSetup = () => {
                 </div>
                 <div className="setup-form-group">
                   <label>Business Type</label>
-                  <select className="setup-input" value={business.type} onChange={e => setBusiness({...business, type: e.target.value})}>
-                    <option>Retail</option><option>Wholesale</option><option>E-commerce</option><option>Services</option><option>Manufacturing</option><option>Cafeteria / Restaurant</option><option>Other</option>
-                  </select>
+                  <CustomSelect 
+                    value={business.type} 
+                    onChange={e => setBusiness({...business, type: e.target.value})}
+                    placeholder="Select Type"
+                    options={[
+                      {value: 'Retail', label: 'Retail'},
+                      {value: 'Wholesale', label: 'Wholesale'},
+                      {value: 'E-commerce', label: 'E-commerce'},
+                      {value: 'Services', label: 'Services'},
+                      {value: 'Manufacturing', label: 'Manufacturing'},
+                      {value: 'Cafeteria / Restaurant', label: 'Cafeteria / Restaurant'},
+                      {value: 'Other', label: 'Other'}
+                    ]}
+                  />
                 </div>
                 <div className="setup-form-group">
                   <label>Tax/GST Number (Optional)</label>
@@ -338,19 +698,34 @@ const BusinessSetup = () => {
                 </div>
                 <div className="setup-form-group">
                   <label>Country</label>
-                  <select className="setup-input" value={business.country} onChange={e => setBusiness({...business, country: e.target.value, city: ''})}>
-                    <option value="">Select Country</option>
-                    {Object.keys(COUNTRY_CITIES).map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <CustomSelect 
+                    value={business.country} 
+                    onChange={e => setBusiness({...business, country: e.target.value, city: ''})}
+                    placeholder="Select Country"
+                    options={[
+                      ...ALL_COUNTRIES.map(c => ({value: c.name, label: c.name})),
+                      {value: 'Other', label: 'Other'}
+                    ]}
+                  />
                 </div>
                 <div className="setup-form-group">
                   <label>City</label>
-                  <input type="text" list="city-options" className="setup-input" value={business.city} onChange={e => setBusiness({...business, city: e.target.value})} placeholder={business.country ? "Select or type a city" : "Select a country first"} />
-                  <datalist id="city-options">
-                    {(COUNTRY_CITIES[business.country] || []).map(city => (
-                      <option key={city} value={city} />
-                    ))}
-                  </datalist>
+                  {business.country && getCitiesForCountry(business.country).length > 0 ? (
+                    <CustomSelect 
+                      value={business.city} 
+                      onChange={e => setBusiness({...business, city: e.target.value})}
+                      placeholder="Select a city"
+                      options={[
+                        ...getCitiesForCountry(business.country).map(city => ({value: city, label: city})),
+                        {value: 'Other', label: 'Other (Type manually)'}
+                      ]}
+                    />
+                  ) : (
+                    <input type="text" className="setup-input" value={business.city} onChange={e => setBusiness({...business, city: e.target.value})} placeholder={business.country ? "Type your city" : "Select a country first"} />
+                  )}
+                  {business.city === 'Other' && (
+                     <input type="text" className="setup-input" style={{marginTop: '0.5rem'}} onChange={e => setBusiness({...business, city: e.target.value})} placeholder="Enter your city name" autoFocus />
+                  )}
                 </div>
               </div>
             )}
@@ -359,15 +734,34 @@ const BusinessSetup = () => {
               <div className="step-content setup-form-grid">
                 <div className="setup-form-group full-width">
                   <label>Number of Employees</label>
-                  <select className="setup-input" value={size.employees} onChange={e => setSize({...size, employees: e.target.value})}>
-                    <option>Just me (1)</option><option>2–5</option><option>6–10</option><option>11–25</option><option>26-50</option><option>100+</option>
-                  </select>
+                  <CustomSelect 
+                    value={size.employees} 
+                    onChange={e => setSize({...size, employees: e.target.value})}
+                    placeholder="Select employees count"
+                    options={[
+                      {value: 'Just me (1)', label: 'Just me (1)'},
+                      {value: '2–5', label: '2–5'},
+                      {value: '6–10', label: '6–10'},
+                      {value: '11–25', label: '11–25'},
+                      {value: '26-50', label: '26-50'},
+                      {value: '100+', label: '100+'}
+                    ]}
+                  />
                 </div>
                 <div className="setup-form-group full-width">
                   <label>Monthly Sales Range</label>
-                  <select className="setup-input" value={size.monthlySales} onChange={e => setSize({...size, monthlySales: e.target.value})}>
-                    <option>Under ₹50,000</option><option>₹50,000–₹1 lakh</option><option>₹1–5 lakh</option><option>₹5–10 lakh</option><option>₹50 lakh+</option>
-                  </select>
+                  <CustomSelect 
+                    value={size.monthlySales} 
+                    onChange={e => setSize({...size, monthlySales: e.target.value})}
+                    placeholder="Select sales range"
+                    options={[
+                      {value: 'Under ₹50,000', label: 'Under ₹50,000'},
+                      {value: '₹50,000–₹1 lakh', label: '₹50,000–₹1 lakh'},
+                      {value: '₹1–5 lakh', label: '₹1–5 lakh'},
+                      {value: '₹5–10 lakh', label: '₹5–10 lakh'},
+                      {value: '₹50 lakh+', label: '₹50 lakh+'}
+                    ]}
+                  />
                 </div>
               </div>
             )}
@@ -414,15 +808,34 @@ const BusinessSetup = () => {
               <div className="step-content setup-form-grid">
                 <div className="setup-form-group">
                   <label>Currency</label>
-                  <select className="setup-input" value={preferences.currency} onChange={e => setPreferences({...preferences, currency: e.target.value})}>
-                    <option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="INR">INR (₹)</option><option value="GBP">GBP (£)</option>
-                  </select>
+                  <CustomSelect 
+                    value={preferences.currency} 
+                    onChange={e => setPreferences({...preferences, currency: e.target.value})}
+                    placeholder="Select Currency"
+                    options={[
+                      {value: 'USD', label: 'USD ($)'},
+                      {value: 'EUR', label: 'EUR (€)'},
+                      {value: 'INR', label: 'INR (₹)'},
+                      {value: 'GBP', label: 'GBP (£)'},
+                      {value: 'PKR', label: 'PKR (Rs)'},
+                      {value: 'AED', label: 'AED (د.إ)'},
+                      {value: 'CAD', label: 'CAD ($)'},
+                      {value: 'AUD', label: 'AUD ($)'}
+                    ]}
+                  />
                 </div>
                 <div className="setup-form-group">
                   <label>Date Format</label>
-                  <select className="setup-input" value={preferences.dateFormat} onChange={e => setPreferences({...preferences, dateFormat: e.target.value})}>
-                    <option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option>
-                  </select>
+                  <CustomSelect 
+                    value={preferences.dateFormat} 
+                    onChange={e => setPreferences({...preferences, dateFormat: e.target.value})}
+                    placeholder="Select Date Format"
+                    options={[
+                      {value: 'DD/MM/YYYY', label: 'DD/MM/YYYY'},
+                      {value: 'MM/DD/YYYY', label: 'MM/DD/YYYY'},
+                      {value: 'YYYY-MM-DD', label: 'YYYY-MM-DD'}
+                    ]}
+                  />
                 </div>
                 <div className="setup-form-group full-width">
                   <label>Low Stock Alert Threshold</label>
