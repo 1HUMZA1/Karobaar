@@ -265,8 +265,13 @@ const Login = () => {
     setGeneralError('');
     setIsAuthenticating(true);
     try {
-      await signInWithPopup(auth, provider);
-      // Success is handled by onAuthStateChanged in AppContext
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
+      // Success is handled by onAuthStateChanged in AppContext or getRedirectResult
     } catch (error) {
       console.error("Firebase Auth Error:", error);
       setIsAuthenticating(false);
