@@ -211,7 +211,8 @@ const Login = () => {
 
   // Platform Detection
   const isNative = (typeof window !== 'undefined' && window.location.protocol === 'file:') || 
-                   (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform());
+                   (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) ||
+                   (typeof navigator !== 'undefined' && navigator.userAgent.includes('KarobaarApp'));
 
   const isAuthLoading = authStatus === 'loading';
 
@@ -572,6 +573,7 @@ const Login = () => {
               </div>
             )}
 
+            {/* Social Login - Hidden on Native Mobile due to WebView popup restrictions */}
             {!isNative && (
               <>
                 <div className="login-divider">
