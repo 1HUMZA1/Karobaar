@@ -376,3 +376,29 @@
   margin-right: 6px;
   stroke: currentColor;
 }
+
+@media (max-width: 768px) {
+  .pos-container {
+    flex-direction: column-reverse;
+  }
+  .pos-products-grid {
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .pos-container {
+    height: auto;
+    flex-direction: column-reverse;
+  }
+  .pos-products-section {
+    overflow: visible;
+  }
+  .pos-products-grid {
+    min-height: 600px;
+    overflow-y: visible;
+  }
+  .pos-cart-section {
+    min-height: 400px;
+  }
+}

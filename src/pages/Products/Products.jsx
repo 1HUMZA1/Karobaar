@@ -7,11 +7,14 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { db } from '../../services/databaseService';
 import { useAppContext } from '../../context/AppContext';
 import { useCollection } from '../../hooks/useCollection';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileProducts } from './MobileProducts';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import './Products.css';
 
 const Products = () => {
-  const { currentUser, userRole } = useAppContext();
+  const isMobile = useIsMobile();
+  const { currentUser, userRole, currencySymbol } = useAppContext();
   const canManageProducts = ['OWNER', 'MANAGER', 'INVENTORY'].includes(userRole);
   
   const { data: products, loading, isRevalidating, mutate, refetch } = useCollection('products', currentUser?.activeBusinessId, {
@@ -135,8 +138,27 @@ const Products = () => {
     }
   };
 
+  const handleProductClick = (product) => {
+    setEditingProduct(product);
+    setIsModalOpen(true);
+  };
+
+  if (isMobile) {
+    return (
+      <MobileProducts 
+        products={products}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        onAddProduct={() => { setEditingProduct(null); setIsModalOpen(true); }}
+        currencySymbol={currencySymbol}
+        loading={loading}
+        onProductClick={handleProductClick}
+      />
+    );
+  }
+
   return (
-    <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container hidden-mobile" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">

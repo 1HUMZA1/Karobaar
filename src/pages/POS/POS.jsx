@@ -6,9 +6,12 @@ import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAppContext } from '../../context/AppContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobilePOS } from './MobilePOS';
 import './POS.css';
 
 const POS = () => {
+  const isMobile = useIsMobile();
   const { currentUser, currentBusiness } = useAppContext();
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -260,8 +263,28 @@ const POS = () => {
     }, 250);
   };
 
+  if (isMobile) {
+    return (
+      <MobilePOS 
+        products={products}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        cart={cart}
+        addToCart={addToCart}
+        removeFromCart={removeFromCart}
+        updateQuantity={updateQuantity}
+        subtotal={subtotal}
+        total={total}
+        handleCheckout={handleCheckout}
+        processing={processing}
+        currencySymbol={currencySymbol}
+        clearCart={clearCart}
+      />
+    );
+  }
+
   return (
-    <div className="pos-container">
+    <div className="pos-container hidden-mobile">
       {/* Left side: Products Grid */}
       <div className="pos-products-section">
         <div className="pos-search-bar py-4 px-2 mt-2">

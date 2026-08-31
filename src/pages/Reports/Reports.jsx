@@ -5,6 +5,8 @@ import { Button } from '../../components/ui/Button';
 import { db } from '../../services/databaseService';
 import { useAppContext } from '../../context/AppContext';
 import { useCollection } from '../../hooks/useCollection';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileReports } from './MobileReports';
 import { format, subDays, startOfDay, parseISO, isSameDay } from 'date-fns';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -198,9 +200,27 @@ const Reports = () => {
       console.error(err);
       alert('Failed to generate report');
     } finally {
-      setExporting(null);
+      setTimeout(() => setExporting(null), 1500);
     }
   };
+
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <MobileReports 
+        currencySymbol={currencySymbol}
+        totalRevenue={totalRevenue}
+        revenueGrowth={revenueGrowth}
+        totalOrders={validSales.length}
+        averageOrderValue={averageOrderValue}
+        totalCustomers={customers.length}
+        returnOrders={sales.filter(s => s.status === 'Refunded' || s.status === 'Cancelled').length}
+        topSellingProducts={productStats.slice(0, 10)}
+        salesByDayChart={salesByDayChart}
+      />
+    );
+  }
 
   return (
     <div className="page-container" style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>

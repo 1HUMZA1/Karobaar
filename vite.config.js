@@ -21,5 +21,10 @@ export default defineConfig({
       }
     })
   ],
+  server: {
+    watch: {
+      ignored: ['**/karobaar_flutter/**']
+    }
+  },
   base: './'
 })

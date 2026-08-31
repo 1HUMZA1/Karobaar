@@ -10,6 +10,8 @@ import { DashboardFeed } from '../../components/Dashboard/DashboardFeed';
 import { GettingStartedGuide } from '../../components/Dashboard/GettingStartedGuide';
 import { Button } from '../../components/ui/Button';
 import { RefreshCw } from 'lucide-react';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileDashboard } from './MobileDashboard';
 import './DashboardPremium.css';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -19,6 +21,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
 const Dashboard = () => {
+  const isMobile = useIsMobile();
   const { userRole, currentUser, currentBusiness } = useAppContext();
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -214,7 +217,6 @@ const Dashboard = () => {
   else if (healthScore >= 70) healthLabel = 'Good';
   else if (healthScore < 50) healthLabel = 'Needs Attention';
 
-  // Mask sensitive data for non-finance users
   const maskedStats = showFinance ? stats : {
     ...stats,
     todayRevenue: '***', yesterdayRevenue: '***',
@@ -222,8 +224,22 @@ const Dashboard = () => {
     todayExpenses: '***', yesterdayExpenses: '***',
   };
 
+  if (isMobile) {
+    return (
+      <MobileDashboard 
+        currentUser={currentUser}
+        currentBusiness={currentBusiness}
+        stats={maskedStats}
+        trends={trends}
+        currencySymbol={currencySymbol}
+        chartData={chartData}
+        recentOrders={recentOrders}
+      />
+    );
+  }
+
   return (
-    <div className="dashboard-container max-w-[1600px] mx-auto pb-12 px-6 pt-6">
+    <div className="dashboard-container max-w-[1600px] mx-auto hidden-mobile">
       
       {/* 1. Header Area */}
       <div className="dashboard-header flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">

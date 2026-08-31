@@ -192,40 +192,40 @@ const Topbar = () => {
           
           {isProfileOpen && (
             <div 
-              className="absolute right-0 w-64 bg-[var(--bg-card)] rounded-xl shadow-xl py-2 border border-[var(--border-color)] z-[100]"
-              style={{ top: 'calc(100% + 8px)' }}
-              onClick={(e) => e.stopPropagation()} // Prevent clicking inside from closing it immediately
+              className="profile-dropdown"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-4 py-3 border-b border-[var(--border-color)] mb-1 bg-[var(--bg-card)] rounded-t-xl">
-                <p className="text-sm font-semibold text-[var(--text-main)] truncate">{currentUser?.name || 'User'}</p>
-                <p className="text-xs text-[var(--text-secondary)] truncate">{currentUser?.email || ''}</p>
+              <div className="profile-dropdown-header">
+                <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentUser?.name || 'User'}</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentUser?.email || ''}</p>
               </div>
               
               <div 
-                className="px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors flex items-center gap-2 hover:text-[var(--text-main)]"
+                className="profile-dropdown-item"
                 onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
               >
-                <User size={16} className="text-[var(--text-muted)]"/> Profile
+                <User size={16} /> Profile
               </div>
               
               <div 
-                className="px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors flex items-center gap-2 hover:text-[var(--text-main)]"
+                className="profile-dropdown-item"
                 onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
               >
-                <Settings size={16} className="text-[var(--text-muted)]"/> Business Settings
+                <Settings size={16} /> Business Settings
               </div>
               
               <div 
-                className="px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors flex items-center gap-2 hover:text-[var(--text-main)]"
+                className="profile-dropdown-item"
                 onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
               >
-                <HelpCircle size={16} className="text-[var(--text-muted)]"/> Help & Support
+                <HelpCircle size={16} /> Help & Support
               </div>
               
-              <div className="border-t border-[var(--border-color)] my-1"></div>
+              <div className="profile-dropdown-divider"></div>
               
               <div 
-                className="px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2 cursor-pointer transition-colors"
+                className="profile-dropdown-item"
+                style={{ color: 'var(--danger)' }}
                 onClick={handleLogout}
               >
                 <LogOut size={16} />

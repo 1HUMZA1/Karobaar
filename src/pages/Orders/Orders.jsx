@@ -9,9 +9,12 @@ import { useCollection } from '../../hooks/useCollection';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import { useAppContext } from '../../context/AppContext';
 import { salesService } from '../../services/salesService';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileOrders } from './MobileOrders';
 import './Orders.css';
 
 const Orders = () => {
+  const isMobile = useIsMobile();
   const { currentUser, currentBusiness } = useAppContext();
   
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : currentBusiness?.settings?.currency === 'EUR' ? '€' : '$';
@@ -70,8 +73,21 @@ const Orders = () => {
     }
   };
 
+  if (isMobile) {
+    return (
+      <MobileOrders 
+        orders={orders} 
+        searchTerm={searchTerm} 
+        setSearchTerm={setSearchTerm} 
+        currencySymbol={currencySymbol} 
+        loading={loading}
+        onOrderClick={setSelectedOrderForInvoice}
+      />
+    );
+  }
+
   return (
-    <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container hidden-mobile" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">

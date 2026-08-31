@@ -7,6 +7,8 @@ import { useAppContext } from '../../context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileMenu } from './MobileMenu';
 import '../Dashboard/DashboardPremium.css'; // provides layout utilities
 import './Settings.css';
 
@@ -146,8 +148,14 @@ const Settings = () => {
     }
   };
 
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return <MobileMenu />;
+  }
+
   return (
-    <div className="page-container" style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container hidden-mobile" style={{ height: '100%', overflowY: 'auto' }}>
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Settings</h1>

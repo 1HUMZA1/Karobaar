@@ -371,3 +371,13 @@
     display: block;
   }
 }
+
+@media (max-width: 768px) {
+  .sidebar {
+    z-index: 9999;
+    background-color: var(--bg-card);
+  }
+  .sidebar-overlay {
+    z-index: 9998;
+  }
+}
