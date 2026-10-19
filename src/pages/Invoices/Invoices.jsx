@@ -6,9 +6,12 @@ import { Input } from '../../components/ui/Input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
 import { db } from '../../services/databaseService';
 import { useAppContext } from '../../context/AppContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileInvoices } from './MobileInvoices';
 
 const Invoices = () => {
   const { currentUser, currentBusiness } = useAppContext();
+  const isMobile = useIsMobile();
   const [invoices, setInvoices] = useState([]);
   const [customers, setCustomers] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,6 +50,19 @@ const Invoices = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount || 0);
   };
+
+  if (isMobile) {
+    return (
+      <MobileInvoices 
+        invoices={invoices}
+        customers={customers}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        currencySymbol={currency}
+        loading={loading}
+      />
+    );
+  }
 
   return (
     <div className="page-container" style={{ height: '100%', overflowY: 'auto' }}>

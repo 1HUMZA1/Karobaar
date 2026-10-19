@@ -234,6 +234,11 @@ const Dashboard = () => {
         currencySymbol={currencySymbol}
         chartData={chartData}
         recentOrders={recentOrders}
+        lowStockProducts={lowStockProducts}
+        healthScore={healthScore}
+        healthLabel={healthLabel}
+        onRefresh={fetchDashboardData}
+        isRefreshing={isRefreshing}
       />
     );
   }

@@ -72,15 +72,36 @@
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-/* Accent Colors (Forced Black and White as per requirements) */
+/* Accent Colors (Strictly Black & White Monochrome matching Login Theme) */
 [data-accent="default"], 
 [data-accent="ocean"], 
 [data-accent="midnight"], 
-[data-accent="coffee"] {
+[data-accent="coffee"],
+[data-accent="monochrome"] {
   --primary-color: #000000;
-  --primary-hover: #333333;
+  --primary-hover: #262626;
   --primary-light: #f5f5f5;
   --primary-text: #ffffff;
+}
+
+[data-theme="dark"] [data-accent="default"],
+[data-theme="dark"] [data-accent="ocean"],
+[data-theme="dark"] [data-accent="midnight"],
+[data-theme="dark"] [data-accent="coffee"],
+[data-theme="dark"] [data-accent="monochrome"],
+[data-theme="dark"][data-accent="default"],
+[data-theme="dark"][data-accent="ocean"],
+[data-theme="dark"][data-accent="midnight"],
+[data-theme="dark"][data-accent="coffee"],
+[data-theme="dark"][data-accent="monochrome"] {
+  --primary-color: #ffffff;
+  --primary-hover: #e5e5e5;
+  --primary-light: #262626;
+  --primary-text: #000000;
+}
+
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--primary-color, #000000);
 }
 
 * {
@@ -283,3 +304,19 @@ ul {
   gap: 1rem;
   background-color: var(--bg-tertiary);
 }
+
+/* Splash Screen Dual-Tone Theme */
+@media (max-width: 768px) {
+  .login-splash-screen {
+    flex-direction: column !important;
+  }
+  .login-splash-screen > div {
+    padding: 1.5rem !important;
+  }
+}
+
+@keyframes fade-text {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+

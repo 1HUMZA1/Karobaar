@@ -10,12 +10,15 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAppContext } from '../../context/AppContext';
 import { useCollection } from '../../hooks/useCollection';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import { format, startOfDay } from 'date-fns';
+import { MobileEmployees } from './MobileEmployees';
 import './Employees.css';
 
 const Employees = () => {
   const { currentUser, userRole } = useAppContext();
+  const isMobile = useIsMobile();
   
   const { data: employees, loading, isRevalidating, mutate, refetch } = useCollection('employees', currentUser?.activeBusinessId, {
     sortBy: (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
@@ -216,6 +219,22 @@ const Employees = () => {
       setDisplayLimit(prev => prev + 50);
     }
   };
+
+  if (isMobile) {
+    return (
+      <MobileEmployees 
+        employees={employees}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        activeDept={filterDept || 'All'}
+        setActiveDept={setFilterDept}
+        currencySymbol={'₹'}
+        loading={loading}
+        onAddEmployee={openAddModal}
+        onEmployeeClick={emp => { setSelectedEmployee(emp); setDetailsModalOpen(true); }}
+      />
+    );
+  }
 
   return (
     <div className="page-container" onScroll={handleScroll} style={{ height: '100%', overflowY: 'auto' }}>

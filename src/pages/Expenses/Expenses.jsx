@@ -7,6 +7,8 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAppContext } from '../../context/AppContext';
 import { useCollection } from '../../hooks/useCollection';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileExpenses } from './MobileExpenses';
 import './Expenses.css';
 
 const DEFAULT_ACCOUNTS = [
@@ -15,6 +17,7 @@ const DEFAULT_ACCOUNTS = [
 ];
 
 const Expenses = () => {
+  const isMobile = useIsMobile();
   const { currentUser, currentBusiness } = useAppContext();
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
@@ -199,6 +202,24 @@ const Expenses = () => {
       setSaving(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <MobileExpenses 
+        accounts={accounts}
+        expenses={expenses}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        currencySymbol={currencySymbol}
+        loading={loadingAccounts || loadingExpenses}
+        onAddAccount={() => { setAccForm({ name: '', type: 'Bank', initialBalance: '' }); setIsAccountModalOpen(true); }}
+        onTransfer={() => { setTransferForm({ fromId: '', toId: '', amount: '' }); setIsTransferModalOpen(true); }}
+        onAddExpense={() => { setExpenseForm({ description: '', amount: '', category: 'Operations', date: new Date().toISOString().split('T')[0], isRecurring: false, accountId: '' }); setIsExpenseModalOpen(true); }}
+      />
+    );
+  }
 
   return (
     <div className="page-container" style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>

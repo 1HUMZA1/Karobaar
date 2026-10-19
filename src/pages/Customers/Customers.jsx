@@ -9,10 +9,13 @@ import { useAppContext } from '../../context/AppContext';
 import { useCollection } from '../../hooks/useCollection';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import { CustomerProfile } from './CustomerProfile';
+import { MobileCustomers } from './MobileCustomers';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import './Customers.css';
 
 const Customers = () => {
   const { currentUser, currentBusiness } = useAppContext();
+  const isMobile = useIsMobile();
   
   const { data: customers, loading, isRevalidating, mutate, refetch } = useCollection('customers', currentUser?.activeBusinessId, {
     sortBy: (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
@@ -130,6 +133,108 @@ const Customers = () => {
           currencySymbol={currencySymbol}
         />
       </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <>
+        <MobileCustomers 
+          customers={customers}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          onAddCustomer={() => {
+            setFormData({ name: '', email: '', phone: '', address: '', customerType: 'Retail', notes: '' });
+            setIsEditing(false);
+            setIsModalOpen(true);
+          }}
+          currencySymbol={currencySymbol}
+          loading={loading}
+          onCustomerClick={(c) => setSelectedCustomer(c)}
+        />
+        {isModalOpen && (
+          <div className="modal-overlay">
+            <div className="modal-content animate-slide-up">
+              <div className="modal-header">
+                <h2>{isEditing ? 'Edit Customer' : 'Add New Customer'}</h2>
+                <button className="close-btn" onClick={closeAndResetModal}><X size={20}/></button>
+              </div>
+              <form onSubmit={handleAddCustomer} className="modal-form">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group md:col-span-2">
+                    <label>Customer Name *</label>
+                    <Input 
+                      required 
+                      value={formData.name} 
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      placeholder="e.g. John Doe"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone Number *</label>
+                    <Input 
+                      required 
+                      value={formData.phone} 
+                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                      placeholder="e.g. +1 234 567 8900"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Email Address</label>
+                    <Input 
+                      type="email" 
+                      value={formData.email} 
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                      placeholder="e.g. john@example.com"
+                    />
+                  </div>
+                  <div className="form-group md:col-span-2">
+                    <label>Customer Type</label>
+                    <select 
+                      className="karobaar-input"
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--bg-elevated)', color: 'var(--text-main)', outline: 'none' }}
+                      value={formData.customerType}
+                      onChange={e => setFormData({...formData, customerType: e.target.value})}
+                    >
+                      <option value="Retail">Retail</option>
+                      <option value="Wholesale">Wholesale</option>
+                      <option value="VIP">VIP</option>
+                      <option value="Corporate">Corporate</option>
+                    </select>
+                  </div>
+                  <div className="form-group md:col-span-2">
+                    <label>Address</label>
+                    <textarea 
+                      className="karobaar-input"
+                      style={{ width: '100%', minHeight: '60px', padding: '0.5rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--bg-elevated)', color: 'var(--text-main)', outline: 'none' }}
+                      value={formData.address} 
+                      onChange={e => setFormData({...formData, address: e.target.value})}
+                      placeholder="Full Address"
+                    />
+                  </div>
+                  <div className="form-group md:col-span-2">
+                    <label>CRM Notes (Optional)</label>
+                    <textarea 
+                      className="karobaar-input"
+                      style={{ width: '100%', minHeight: '60px', padding: '0.5rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--bg-elevated)', color: 'var(--text-main)', outline: 'none' }}
+                      value={formData.notes} 
+                      onChange={e => setFormData({...formData, notes: e.target.value})}
+                      placeholder="Internal notes about this customer"
+                    />
+                  </div>
+                </div>
+                
+                <div className="modal-actions mt-4">
+                  <Button type="button" variant="outline" onClick={closeAndResetModal}>Cancel</Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Customer')}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 

@@ -45,8 +45,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
             return NavigationDecision.navigate;
           },
         ),
-      )
-      ..loadRequest(Uri.parse('https://1HUMZA1.github.io/Karobaar/'));
+      );
+
+    controller.clearCache();
+    controller.clearLocalStorage();
+    controller.loadRequest(Uri.parse('https://1HUMZA1.github.io/Karobaar/'));
   }
 
   @override

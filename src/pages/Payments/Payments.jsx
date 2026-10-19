@@ -6,9 +6,12 @@ import { Input } from '../../components/ui/Input';
 import { db } from '../../services/databaseService';
 import { useAppContext } from '../../context/AppContext';
 import { format } from 'date-fns';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobilePayments } from './MobilePayments';
 
 const Payments = () => {
   const { currentUser, currentBusiness } = useAppContext();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('customers'); // 'customers' or 'suppliers'
   
   const [customers, setCustomers] = useState([]);
@@ -97,6 +100,23 @@ const Payments = () => {
   );
 
   const totalOutstanding = customers.reduce((sum, c) => sum + (c.outstandingBalance || 0), 0);
+
+  if (isMobile) {
+    return (
+      <MobilePayments 
+        customers={customers}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        currencySymbol={currencySymbol}
+        loading={loading}
+        totalOutstanding={totalOutstanding}
+        onSendReminder={handleSendReminder}
+        onRecordPayment={c => { setSelectedEntity(c); setIsRepayModalOpen(true); }}
+      />
+    );
+  }
 
   return (
     <div className="page-container" style={{ height: '100%', overflowY: 'auto' }}>

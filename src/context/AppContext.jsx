@@ -23,12 +23,34 @@ export const AppProvider = ({ children }) => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Authentication & Global State
-  const [authStatus, setAuthStatus] = useState('loading'); // 'loading', 'authenticated', 'unauthenticated', 'pending_onboarding'
+  // Authentication & Global State with instant offline session hydration
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const u = localStorage.getItem('karobaar_session_user');
+      return u ? JSON.parse(u) : null;
+    } catch (e) { return null; }
+  });
+  const [currentBusiness, setCurrentBusiness] = useState(() => {
+    try {
+      const b = localStorage.getItem('karobaar_session_business');
+      return b ? JSON.parse(b) : null;
+    } catch (e) { return null; }
+  });
+  const [userBusinesses, setUserBusinesses] = useState(() => {
+    try {
+      const bs = localStorage.getItem('karobaar_session_businesses');
+      return bs ? JSON.parse(bs) : [];
+    } catch (e) { return []; }
+  });
+  const [authStatus, setAuthStatus] = useState(() => {
+    try {
+      const u = localStorage.getItem('karobaar_session_user');
+      const b = localStorage.getItem('karobaar_session_business');
+      if (u && b) return 'authenticated';
+    } catch (e) {}
+    return 'loading';
+  });
   const [authError, setAuthError] = useState('');
-  const [currentUser, setCurrentUser] = useState(null);
-  const [currentBusiness, setCurrentBusiness] = useState(null);
-  const [userBusinesses, setUserBusinesses] = useState([]);
 
   const userRole = currentUser?.role || 'Guest';
 
@@ -65,7 +87,6 @@ export const AppProvider = ({ children }) => {
   // Firebase Auth Listener
   useEffect(() => {
     console.log("[AUTH] Firebase initializing");
-    console.log("[AUTH] Loading...");
     
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setAuthError(''); // Clear previous errors
@@ -90,13 +111,25 @@ export const AppProvider = ({ children }) => {
             }
 
             const activeBusinessData = businessesData.find(b => b.id === activeId) || businessesData[0];
-            setCurrentBusiness(activeBusinessData);
-            
-            setCurrentUser({
-              ...karobaarUser,
-              activeBusinessId: activeBusinessData.id
-            });
-            setAuthStatus('authenticated');
+            if (activeBusinessData) {
+              setCurrentBusiness(activeBusinessData);
+              const userObj = {
+                ...karobaarUser,
+                activeBusinessId: activeBusinessData.id
+              };
+              setCurrentUser(userObj);
+
+              // Persist session to local storage for zero-delay instant load on reloads
+              try {
+                localStorage.setItem('karobaar_session_user', JSON.stringify(userObj));
+                localStorage.setItem('karobaar_session_business', JSON.stringify(activeBusinessData));
+                localStorage.setItem('karobaar_session_businesses', JSON.stringify(businessesData));
+              } catch (e) {}
+
+              setAuthStatus('authenticated');
+            } else {
+              setAuthStatus('pending_onboarding');
+            }
           } else {
             console.log("[AUTH] No business memberships found. Navigating to onboarding.");
             setCurrentBusiness(null);
@@ -112,14 +145,24 @@ export const AppProvider = ({ children }) => {
           }
         } catch (error) {
           console.error("[AUTH] Error loading Karobaar profile:", error);
-          setAuthError(error.message || "Failed to load account data. Please check your connection.");
-          setCurrentUser(null);
-          setCurrentBusiness(null);
-          setUserBusinesses([]);
-          setAuthStatus('unauthenticated');
+          // If we already have a hydrated offline session, keep user authenticated
+          if (currentUser && currentBusiness) {
+            console.log("[AUTH] Kept offline session active despite background auth error");
+          } else {
+            setAuthError(error.message || "Failed to load account data. Please check your connection.");
+            setCurrentUser(null);
+            setCurrentBusiness(null);
+            setUserBusinesses([]);
+            setAuthStatus('unauthenticated');
+          }
         }
       } else {
         console.log("[AUTH] Unauthenticated user");
+        try {
+          localStorage.removeItem('karobaar_session_user');
+          localStorage.removeItem('karobaar_session_business');
+          localStorage.removeItem('karobaar_session_businesses');
+        } catch (e) {}
         setCurrentUser(null);
         setCurrentBusiness(null);
         setUserBusinesses([]);
@@ -184,9 +227,13 @@ export const AppProvider = ({ children }) => {
   const logout = async () => {
     setAuthStatus('loading');
     try {
+      localStorage.removeItem('karobaar_session_user');
+      localStorage.removeItem('karobaar_session_business');
+      localStorage.removeItem('karobaar_session_businesses');
       await firebaseSignOut(auth);
       setCurrentUser(null);
       setCurrentBusiness(null);
+      setUserBusinesses([]);
       setAuthStatus('unauthenticated');
     } catch (error) {
       console.error("Logout Error:", error);

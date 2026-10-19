@@ -22,8 +22,19 @@ export default defineConfig({
     })
   ],
   server: {
+    hmr: {
+      overlay: false
+    },
     watch: {
-      ignored: ['**/karobaar_flutter/**']
+      ignored: [
+        '**/karobaar_app/**',
+        '**/karobaar_flutter/**',
+        '**/Karobaar_Final_Apps/**',
+        '**/desktop-build-latest/**',
+        '**/*.apk',
+        '**/*.exe',
+        '**/*.zip'
+      ]
     }
   },
   base: './'

@@ -103,102 +103,181 @@ const SYSTEM_MESSAGES = [
 ];
 
 const AppContent = () => {
-  const { authStatus } = useAppContext();
+  const { authStatus, currentUser, currentBusiness } = useAppContext();
   const [sloganIndex, setSloganIndex] = useState(0);
   const [sysMsgIndex, setSysMsgIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(15);
+  const [isSlow, setIsSlow] = useState(false);
 
   useEffect(() => {
     if (authStatus !== 'loading') return;
     
     const sloganInterval = setInterval(() => {
       setSloganIndex(prev => (prev + 1) % SLOGANS.length);
-    }, 2500);
+    }, 2000);
     
     const sysMsgInterval = setInterval(() => {
       setSysMsgIndex(prev => (prev + 1) % SYSTEM_MESSAGES.length);
-    }, 1800);
+    }, 1200);
     
     const progressInterval = setInterval(() => {
       setProgress(prev => {
-        const increment = prev < 60 ? Math.random() * 15 : (prev < 90 ? Math.random() * 5 : Math.random() * 1.5);
-        return Math.min(prev + increment, 99);
+        if (prev < 80) return prev + 15;
+        if (prev < 95) return prev + 5;
+        return Math.min(prev + 1, 99);
       });
-    }, 250);
+    }, 120);
+
+    const slowTimer = setTimeout(() => {
+      setIsSlow(true);
+    }, 4000);
     
     return () => {
       clearInterval(sloganInterval);
       clearInterval(sysMsgInterval);
       clearInterval(progressInterval);
+      clearTimeout(slowTimer);
     };
   }, [authStatus]);
 
   if (authStatus === 'loading') {
     return (
-      <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-body)', color: 'var(--text-main)', position: 'fixed', top: 0, left: 0, zIndex: 9999, transition: 'background-color 0.3s' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px', width: '100%', maxWidth: '400px' }}>
-          
-          {/* Logo */}
-          <div style={{ position: 'relative', width: '84px', height: '84px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', color: 'var(--text-main)', border: '3px solid var(--text-main)', borderRadius: '24px', boxShadow: 'var(--shadow-lg)', animation: 'pulse-soft 2.5s infinite ease-in-out' }}>
-            <span style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-1px' }}>K</span>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
-            <h2 style={{ margin: 0, fontWeight: 700, fontSize: '1.5rem', letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-main)' }}>Karobaar</h2>
-            
-            {/* Slogan */}
-            <p style={{ 
-              margin: '0 0 24px 0',
-              fontSize: '1rem', 
-              color: 'var(--text-secondary)', 
-              fontWeight: 500,
-              animation: 'fade-text 2.5s infinite ease-in-out',
-              textAlign: 'center'
+      <div className="login-splash-screen" style={{ 
+        height: '100vh', 
+        width: '100vw', 
+        display: 'flex', 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        zIndex: 9999,
+        overflow: 'hidden'
+      }}>
+        {/* LEFT / TOP HALF: DEEP BLACK WITH WHITE DOT GRID */}
+        <div style={{
+          flex: 1,
+          backgroundColor: '#0a0a0a',
+          color: '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative',
+          padding: '2.5rem',
+          backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+          overflow: 'hidden'
+        }}>
+          {/* Subtle soft circular ambient glow */}
+          <div style={{
+            position: 'absolute',
+            top: '-20%',
+            right: '-10%',
+            width: '450px',
+            height: '450px',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 70%)',
+            borderRadius: '50%',
+            pointerEvents: 'none'
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', maxWidth: '360px', gap: '20px' }}>
+            {/* White Icon Box with Black 'K' */}
+            <div style={{ 
+              width: '56px', 
+              height: '56px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              backgroundColor: '#ffffff', 
+              color: '#000000', 
+              borderRadius: '14px', 
+              boxShadow: '0 12px 28px rgba(0, 0, 0, 0.6)',
+              fontSize: '2rem',
+              fontWeight: 800,
+              letterSpacing: '-1px'
             }}>
-              {SLOGANS[sloganIndex]}
-            </p>
-            
-            {/* Progress Bar & System Message */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', padding: '0 32px' }}>
-              <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ width: `${progress}%`, height: '100%', backgroundColor: 'var(--text-primary)', borderRadius: '4px', transition: 'width 0.3s ease-out' }}></div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 4px' }}>
-                <p style={{ 
-                  margin: 0,
-                  fontSize: '0.75rem', 
-                  color: 'var(--text-muted)', 
-                  fontWeight: 500
-                }}>
-                  {SYSTEM_MESSAGES[sysMsgIndex]}
-                </p>
-                <p style={{ 
-                  margin: 0,
-                  fontSize: '0.75rem', 
-                  color: 'var(--text-main)', 
-                  fontWeight: 600,
-                  fontVariantNumeric: 'tabular-nums'
-                }}>
-                  {Math.floor(progress)}%
-                </p>
-              </div>
+              K
+            </div>
+
+            <div>
+              <h2 style={{ margin: 0, fontWeight: 800, fontSize: '1.75rem', letterSpacing: '-0.5px', color: '#ffffff' }}>Karobaar</h2>
+              <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#a0a0a0', fontWeight: 500, animation: 'fade-text 2.5s infinite ease-in-out' }}>
+                {SLOGANS[sloganIndex]}
+              </p>
+            </div>
+
+            {/* Feature Pills matching Login Theme */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '4px' }}>
+              <span style={{ padding: '6px 14px', background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '100px', fontSize: '0.75rem', color: '#e5e5e5', fontWeight: 500 }}>Smart POS</span>
+              <span style={{ padding: '6px 14px', background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '100px', fontSize: '0.75rem', color: '#e5e5e5', fontWeight: 500 }}>Real-time Sync</span>
+              <span style={{ padding: '6px 14px', background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '100px', fontSize: '0.75rem', color: '#e5e5e5', fontWeight: 500 }}>Multi-Branch</span>
             </div>
           </div>
         </div>
-        <style>{`
-          @keyframes spin-fast {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          @keyframes fade-text {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
-          }
-          @keyframes pulse-soft {
-            0%, 100% { transform: scale(1); box-shadow: var(--shadow-md); }
-            50% { transform: scale(1.02); box-shadow: var(--shadow-lg); }
-          }
-        `}</style>
+
+        {/* RIGHT / BOTTOM HALF: CRISP WHITE WITH DARK DOT GRID */}
+        <div style={{
+          flex: 1,
+          backgroundColor: '#fafafa',
+          color: '#000000',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative',
+          padding: '2.5rem',
+          backgroundImage: 'radial-gradient(#e5e5e5 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+          overflow: 'hidden'
+        }}>
+          <div style={{ width: '100%', maxWidth: '340px', position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ textAlign: 'left' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#111111', letterSpacing: '-0.3px' }}>Starting Workspace</h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666666' }}>Preparing your dashboard and modules...</p>
+            </div>
+
+            {/* Black progress bar on crisp white card/track */}
+            <div style={{ width: '100%', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ 
+                width: `${progress}%`, 
+                height: '100%', 
+                backgroundColor: '#000000', 
+                borderRadius: '4px', 
+                transition: 'width 0.25s ease-out'
+              }}></div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: '#666666', fontWeight: 500 }}>
+                {SYSTEM_MESSAGES[sysMsgIndex]}
+              </p>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#000000', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                {Math.floor(progress)}%
+              </p>
+            </div>
+
+            {isSlow && (
+              <div style={{ marginTop: '12px', padding: '12px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '0.75rem', color: '#666666' }}>Connection taking longer than usual...</p>
+                <button 
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  style={{
+                    padding: '8px 18px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#000000',
+                    color: '#ffffff',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Quick Refresh
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   }

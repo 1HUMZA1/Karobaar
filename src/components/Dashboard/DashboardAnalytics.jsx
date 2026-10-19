@@ -59,8 +59,8 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
       {
         label: 'Revenue',
         data: chartData.revenueData,
-        borderColor: '#22c55e', // Success Green
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        borderColor: 'var(--text-main, #000000)',
+        backgroundColor: 'rgba(120, 120, 120, 0.08)',
         fill: true,
         tension: 0.4,
         borderWidth: 2,
@@ -70,7 +70,7 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
       {
         label: 'Expenses',
         data: chartData.expenseData,
-        borderColor: '#ef4444', // Danger Red
+        borderColor: '#71717a',
         backgroundColor: 'transparent',
         borderDash: [5, 5],
         fill: false,
@@ -82,7 +82,7 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
       {
         label: 'Profit',
         data: chartData.profitData,
-        borderColor: '#3b82f6', // Info Blue
+        borderColor: '#a1a1aa',
         backgroundColor: 'transparent',
         fill: false,
         tension: 0.4,

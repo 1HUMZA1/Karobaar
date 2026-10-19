@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Save, Building, Users, BellRing, Shield, LayoutGrid, Settings2, Palette, Database, User, LogOut } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { auth } from '../../services/firebase';
@@ -35,8 +36,18 @@ const MODULES_LIST = [
 ];
 
 const Settings = () => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialTab = queryParams.get('tab') || 'general';
+
   const { currentBusiness, currentUser, refreshUserProfile, theme, setTheme, accent, setAccent, appUiVersion, setAppUiVersion } = useAppContext();
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState(initialTab);
+  
+  useEffect(() => {
+    const tab = new URLSearchParams(location.search).get('tab');
+    if (tab) setActiveTab(tab);
+  }, [location.search]);
+
   const [saving, setSaving] = useState(false);
 
   const [businessName, setBusinessName] = useState('');
@@ -362,36 +373,113 @@ const Settings = () => {
 
           {activeTab === 'features' && (
             <Card>
-              <CardHeader style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
-                <div>
-                  <CardTitle>Features & Modules</CardTitle>
-                  <p className="text-secondary mt-1">Enable or disable modules to customize your application experience.</p>
+              <CardHeader>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <CardTitle>Features & Modules</CardTitle>
+                    <p className="text-secondary mt-1">Enable or disable modules to customize your application experience. Your navigation menu will update automatically.</p>
+                  </div>
                 </div>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    const activeCount = Object.values(enabledModules).filter(Boolean).length;
-                    if (activeCount === MODULES_LIST.length) {
-                      setEnabledModules({});
-                    } else {
-                      const all = {};
-                      MODULES_LIST.forEach(m => all[m.id] = true);
-                      setEnabledModules(all);
-                    }
-                  }}
-                  style={{background: 'none', border: 'none', color: 'var(--text-main)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline'}}
-                >
-                  {Object.values(enabledModules).filter(Boolean).length === MODULES_LIST.length ? 'Deselect All' : 'Select All'}
-                </button>
               </CardHeader>
               <CardContent>
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem'}}>
-                  {MODULES_LIST.map(mod => (
-                    <label key={mod.id} style={{display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', background: 'var(--bg-card)'}}>
-                      <input type="checkbox" checked={!!enabledModules[mod.id]} onChange={() => toggleModule(mod.id)} style={{ width: '16px', height: '16px' }} />
-                      <span className="font-medium">{mod.label}</span>
-                    </label>
-                  ))}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.75rem 1rem',
+                  marginBottom: '1rem',
+                  borderRadius: 'var(--radius-md, 8px)',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-hover, rgba(0,0,0,0.02))',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem'
+                }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', cursor: 'pointer', margin: 0, fontWeight: 600, color: 'var(--text-main)', userSelect: 'none' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={MODULES_LIST.length > 0 && MODULES_LIST.every(m => !!enabledModules[m.id])} 
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          const all = {};
+                          MODULES_LIST.forEach(m => all[m.id] = true);
+                          setEnabledModules(all);
+                        } else {
+                          setEnabledModules({});
+                        }
+                      }} 
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }} 
+                    />
+                    <span>Select All Features ({Object.values(enabledModules).filter(Boolean).length} of {MODULES_LIST.length} enabled)</span>
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const all = {};
+                        MODULES_LIST.forEach(m => all[m.id] = true);
+                        setEnabledModules(all);
+                      }}
+                      style={{
+                        padding: '0.375rem 0.75rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card)',
+                        color: 'var(--text-main)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Select All
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setEnabledModules({})}
+                      style={{
+                        padding: '0.375rem 0.75rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 500,
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card)',
+                        color: 'var(--text-muted, #64748b)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.75rem'}}>
+                  {MODULES_LIST.map(mod => {
+                    const isChecked = !!enabledModules[mod.id];
+                    return (
+                      <label 
+                        key={mod.id} 
+                        style={{
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.625rem', 
+                          padding: '0.75rem 1rem', 
+                          border: `1px solid ${isChecked ? 'var(--primary-color, #2563eb)' : 'var(--border-color)'}`, 
+                          borderRadius: 'var(--radius-md, 8px)', 
+                          cursor: 'pointer', 
+                          background: isChecked ? 'var(--bg-card)' : 'var(--bg-hover)',
+                          transition: 'all 0.15s ease',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={() => toggleModule(mod.id)} 
+                          style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }} 
+                        />
+                        <span className="font-medium" style={{ color: 'var(--text-main)' }}>{mod.label}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

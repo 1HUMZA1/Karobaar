@@ -126,8 +126,32 @@ class DatabaseService {
     return cached || [];
   }
 
-  // Find a single item by ID
+  // Find a single item by ID (Cache-First, background revalidate)
   async getById(collectionName, id, businessId = null) {
+    // 1. Check local cache first for instant response
+    const cached = localDb.get(collectionName, id);
+    if (cached) {
+      // Background revalidation without blocking caller
+      setTimeout(async () => {
+        try {
+          let docRef;
+          if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
+            docRef = doc(dbFirestore, collectionName, id);
+          } else {
+            docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
+          }
+          const d = await this._withTimeout(getDoc(docRef), 4000);
+          if (d && d.exists()) {
+            localDb.save(collectionName, d.id, { id: d.id, ...d.data() }, false, businessId);
+          }
+        } catch (e) {
+          // Background revalidation failures are silent
+        }
+      }, 0);
+      return cached;
+    }
+
+    // 2. Cache miss: fetch from Firestore
     try {
       let docRef;
       if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
@@ -136,21 +160,17 @@ class DatabaseService {
         docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
       }
       
-      const d = await this._withTimeout(getDoc(docRef));
-      if (d.exists()) {
+      const d = await this._withTimeout(getDoc(docRef), 3500);
+      if (d && d.exists()) {
         const record = { id: d.id, ...d.data() };
         localDb.save(collectionName, d.id, record, false, businessId);
         return record;
       }
       
-      // If not on server, it might be pending sync
-      const cached = localDb.get(collectionName, id);
-      if (cached) return cached;
-      
       return null;
     } catch (e) {
       console.warn(`[OFFLINE] Using local cache for ${collectionName}/${id}`);
-      return localDb.get(collectionName, id);
+      return localDb.get(collectionName, id) || null;
     }
   }
 
@@ -208,33 +228,42 @@ class DatabaseService {
 
   // --- Specialized Queries ---
   
-  // Find user by Firebase Auth UID
+  // Find user by Firebase Auth UID (Cache-First, background revalidate)
   async getUserByFirebaseUid(firebaseUid) {
+    // 1. Check local cache first for instant load
+    const cachedUser = localDb.get('users', firebaseUid);
+    if (cachedUser) {
+      // Revalidate in background without blocking screen
+      setTimeout(async () => {
+        try {
+          const docRef = doc(dbFirestore, 'users', firebaseUid);
+          const d = await this._withTimeout(getDoc(docRef), 4000);
+          if (d && d.exists()) {
+            localDb.save('users', d.id, { id: d.id, ...d.data() }, false);
+          }
+        } catch (e) {
+          // Background revalidation failures are silent
+        }
+      }, 0);
+      return cachedUser;
+    }
+
+    // 2. Cache miss (first time login on this machine)
     try {
       const docRef = doc(dbFirestore, 'users', firebaseUid);
-      // Use a longer timeout for this critical auth query
-      const d = await this._withTimeout(getDoc(docRef), 15000);
+      const d = await this._withTimeout(getDoc(docRef), 4000);
       if (d.exists()) {
         const record = { id: d.id, ...d.data() };
         localDb.save('users', d.id, record, false);
         return record;
       }
-      
-      // If not on server, check local cache in case they just signed up and it's pending sync
-      const cachedUser = localDb.get('users', firebaseUid);
-      if (cachedUser) {
-        return cachedUser;
-      }
-      
       return null; // Explicitly does not exist
     } catch (e) {
       console.warn("[OFFLINE] Using local cache for user profile:", e.message);
-      const cachedUser = localDb.get('users', firebaseUid);
-      if (cachedUser) {
-        return cachedUser;
+      const cached = localDb.get('users', firebaseUid);
+      if (cached) {
+        return cached;
       }
-      // CRITICAL FIX: If no cache and network fails, DO NOT return null (which implies new user).
-      // Throw error so AppContext drops them back to login instead of forcing setup.
       throw new Error("Network error: Could not verify account data. Please check your internet connection. (" + e.message + ")");
     }
   }

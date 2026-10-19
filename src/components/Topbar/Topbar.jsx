@@ -202,16 +202,16 @@ const Topbar = () => {
               
               <div 
                 className="profile-dropdown-item"
-                onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
+                onClick={() => { setIsProfileOpen(false); navigate('/settings?tab=account'); }}
               >
                 <User size={16} /> Profile
               </div>
               
               <div 
                 className="profile-dropdown-item"
-                onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
+                onClick={() => { setIsProfileOpen(false); navigate('/settings?tab=general'); }}
               >
-                <Settings size={16} /> Business Settings
+                <Settings size={16} /> Settings
               </div>
               
               <div 
