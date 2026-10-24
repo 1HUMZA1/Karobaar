@@ -279,6 +279,14 @@ const POS = () => {
         processing={processing}
         currencySymbol={currencySymbol}
         clearCart={clearCart}
+        paymentMethod={paymentMethod}
+        setPaymentMethod={setPaymentMethod}
+        customers={customers}
+        selectedCustomer={selectedCustomer}
+        setSelectedCustomer={setSelectedCustomer}
+        discount={discount}
+        setDiscount={setDiscount}
+        success={success}
       />
     );
   }

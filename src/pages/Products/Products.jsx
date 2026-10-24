@@ -77,19 +77,21 @@ const Products = () => {
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    if (!newProduct.name || !newProduct.sku || !newProduct.sellingPrice) {
-      alert("Please fill out Name, SKU, and Price.");
+    if (!newProduct.name || !newProduct.sellingPrice) {
+      alert("Please fill out Product Name and Price.");
       return;
     }
 
     setIsSaving(true);
     try {
+      const autoSku = newProduct.sku?.trim() || `SKU-${Date.now().toString().slice(-5)}`;
       const productToSave = {
         ...newProduct,
-        purchasePrice: parseFloat(newProduct.purchasePrice) || 0,
+        sku: autoSku,
+        purchasePrice: parseFloat(newProduct.purchasePrice) || (parseFloat(newProduct.sellingPrice) * 0.6),
         sellingPrice: parseFloat(newProduct.sellingPrice),
         stockQuantity: parseInt(newProduct.stockQuantity) || 0,
-        minimumStock: parseInt(newProduct.minimumStock) || 0,
+        minimumStock: parseInt(newProduct.minimumStock) || 5,
         createdAt: newProduct.createdAt || new Date().toISOString()
       };
 
@@ -139,8 +141,7 @@ const Products = () => {
   };
 
   const handleProductClick = (product) => {
-    setEditingProduct(product);
-    setIsModalOpen(true);
+    openEditModal(product);
   };
 
   if (isMobile) {
@@ -149,10 +150,19 @@ const Products = () => {
         products={products}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
-        onAddProduct={() => { setEditingProduct(null); setIsModalOpen(true); }}
+        onAddProduct={() => { closeAndResetModal(); setIsModalOpen(true); }}
         currencySymbol={currencySymbol}
         loading={loading}
         onProductClick={handleProductClick}
+        isModalOpen={isModalOpen}
+        isEditing={isEditing}
+        newProduct={newProduct}
+        handleInputChange={handleInputChange}
+        handleImageUpload={handleImageUpload}
+        handleAddProduct={handleAddProduct}
+        closeAndResetModal={closeAndResetModal}
+        handleDeleteProduct={handleDeleteProduct}
+        isSaving={isSaving}
       />
     );
   }

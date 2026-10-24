@@ -75,14 +75,106 @@ const Orders = () => {
 
   if (isMobile) {
     return (
-      <MobileOrders 
-        orders={orders} 
-        searchTerm={searchTerm} 
-        setSearchTerm={setSearchTerm} 
-        currencySymbol={currencySymbol} 
-        loading={loading}
-        onOrderClick={setSelectedOrderForInvoice}
-      />
+      <>
+        <MobileOrders 
+          orders={orders} 
+          searchTerm={searchTerm} 
+          setSearchTerm={setSearchTerm} 
+          currencySymbol={currencySymbol} 
+          loading={loading}
+          onOrderClick={setSelectedOrderForInvoice}
+        />
+        {selectedOrderForInvoice && (
+          <div className="biz-modal-overlay" onClick={() => setSelectedOrderForInvoice(null)}>
+            <div className="biz-modal-content" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+              <div className="biz-modal-header" style={{ borderBottom: 'none', paddingBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 className="text-lg font-bold">Receipt Preview</h2>
+                <button type="button" onClick={() => setSelectedOrderForInvoice(null)} className="p-1 rounded-full text-gray-500 hover:bg-gray-100">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="biz-modal-body flex flex-col gap-4">
+                <div style={{ fontFamily: "'Courier New', Courier, monospace", padding: "16px", color: "#000", background: "#fff", border: "1px solid var(--border-color)", borderRadius: "12px", boxShadow: "var(--shadow-sm)" }}>
+                  <div style={{ textAlign: "center", marginBottom: "12px", borderBottom: "2px dashed #000", paddingBottom: "12px" }}>
+                    <h2 style={{ margin: "0 0 4px 0", fontSize: "20px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }}>{currentBusiness?.name || 'KAROBAAR'}</h2>
+                    <p style={{ margin: 0, fontSize: "11px", color: "#333" }}>Official Receipt</p>
+                    {currentBusiness?.phone || currentUser?.phone ? <p style={{ margin: "4px 0 0 0", fontWeight: "bold", fontSize: "11px" }}>Ph: {currentBusiness?.phone || currentUser?.phone}</p> : null}
+                  </div>
+                  
+                  <div style={{ marginBottom: "12px", fontSize: "11px", borderBottom: "2px dashed #000", paddingBottom: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                      <span><strong>Date:</strong> {new Date(selectedOrderForInvoice.date).toLocaleDateString()}</span>
+                      <span>{new Date(selectedOrderForInvoice.date).toLocaleTimeString()}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                      <span><strong>Pay:</strong> {selectedOrderForInvoice.paymentMethod || 'Cash'}</span>
+                      <span><strong>Receipt #:</strong> {selectedOrderForInvoice.invoiceNumber}</span>
+                    </div>
+                    {selectedOrderForInvoice.customerName || selectedOrderForInvoice.customerId ? (
+                      <div style={{ marginTop: "3px" }}><strong>Customer:</strong> {selectedOrderForInvoice.customerName || selectedOrderForInvoice.customerId}</div>
+                    ) : null}
+                  </div>
+
+                  <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "12px" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: "left", padding: "4px 0", borderBottom: "1px solid #000", fontSize: "11px", textTransform: "uppercase" }}>Item</th>
+                        <th style={{ textAlign: "left", padding: "4px 0", borderBottom: "1px solid #000", fontSize: "11px", textTransform: "uppercase" }}>Qty</th>
+                        <th style={{ textAlign: "right", padding: "4px 0", borderBottom: "1px solid #000", fontSize: "11px", textTransform: "uppercase" }}>Price</th>
+                        <th style={{ textAlign: "right", padding: "4px 0", borderBottom: "1px solid #000", fontSize: "11px", textTransform: "uppercase" }}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selectedOrderForInvoice.items || []).map((item, idx) => (
+                        <tr key={idx}>
+                          <td style={{ padding: "6px 0", fontSize: "11px", borderBottom: "1px dashed #eee", verticalAlign: "top" }}>{item.name}</td>
+                          <td style={{ padding: "6px 0", fontSize: "11px", borderBottom: "1px dashed #eee", verticalAlign: "top" }}>{item.quantity}</td>
+                          <td style={{ padding: "6px 0", fontSize: "11px", borderBottom: "1px dashed #eee", verticalAlign: "top", textAlign: "right" }}>{currencySymbol}{Number(item.price).toFixed(2)}</td>
+                          <td style={{ padding: "6px 0", fontSize: "11px", borderBottom: "1px dashed #eee", verticalAlign: "top", textAlign: "right" }}>{currencySymbol}{(Number(item.price) * item.quantity).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <div style={{ borderTop: "2px solid #000", paddingTop: "8px", margin: "8px 0" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "11px", fontWeight: "bold" }}>
+                      <span>Subtotal</span>
+                      <span>{currencySymbol}{(selectedOrderForInvoice.subtotal || 0).toFixed(2)}</span>
+                    </div>
+                    {selectedOrderForInvoice.discount > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "11px", fontWeight: "bold" }}>
+                        <span>Discount</span>
+                        <span>-{currencySymbol}{selectedOrderForInvoice.discount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "16px", marginTop: "8px", paddingTop: "8px", borderTop: "2px dashed #000", fontWeight: "bold" }}>
+                      <span>TOTAL</span>
+                      <span>{currencySymbol}{(selectedOrderForInvoice.total || 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: "center", marginTop: "14px", fontSize: "11px", borderTop: "2px dashed #000", paddingTop: "10px", fontWeight: "bold" }}>
+                    <p style={{ margin: "0 0 3px 0" }}>Thank you for buying</p>
+                    <p style={{ margin: 0 }}>Visit again..!!</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#09090b] text-white py-3 rounded-xl font-bold text-sm"
+                    onClick={() => {
+                      setSelectedOrderForInvoice(null);
+                      window.print();
+                    }}
+                  >
+                    <Printer size={16} /> Print Receipt
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 

@@ -1,0 +1,92 @@
+/* Karobaar Brand Logo Styles */
+
+.karobaar-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
+}
+
+.karobaar-brand-logo.horizontal {
+  flex-direction: row;
+  gap: 10px;
+}
+
+.karobaar-brand-logo.vertical {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+/* Sizing variations */
+.karobaar-brand-logo.sm .karobaar-bars-icon {
+  width: 20px;
+  height: 20px;
+}
+.karobaar-brand-logo.sm .karobaar-brand-name {
+  font-size: 1.1rem;
+}
+.karobaar-brand-logo.sm .karobaar-brand-tagline {
+  font-size: 0.7rem;
+}
+
+.karobaar-brand-logo.md .karobaar-bars-icon {
+  width: 26px;
+  height: 26px;
+}
+.karobaar-brand-logo.md .karobaar-brand-name {
+  font-size: 1.35rem;
+}
+.karobaar-brand-logo.md .karobaar-brand-tagline {
+  font-size: 0.78rem;
+}
+
+.karobaar-brand-logo.lg .karobaar-bars-icon {
+  width: 36px;
+  height: 36px;
+}
+.karobaar-brand-logo.lg .karobaar-brand-name {
+  font-size: 1.75rem;
+}
+.karobaar-brand-logo.lg .karobaar-brand-tagline {
+  font-size: 0.9rem;
+}
+
+.karobaar-brand-logo.xl .karobaar-bars-icon {
+  width: 52px;
+  height: 52px;
+}
+.karobaar-brand-logo.xl .karobaar-brand-name {
+  font-size: 2.35rem;
+}
+.karobaar-brand-logo.xl .karobaar-brand-tagline {
+  font-size: 1.05rem;
+}
+
+.karobaar-bars-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.karobaar-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.karobaar-brand-logo.vertical .karobaar-text-group {
+  align-items: center;
+}
+
+.karobaar-brand-name {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-family: inherit;
+}
+
+.karobaar-brand-tagline {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  margin-top: 4px;
+  line-height: 1.2;
+}

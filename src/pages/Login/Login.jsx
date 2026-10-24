@@ -15,8 +15,10 @@ import {
 } from 'firebase/auth';
 import { localDb } from '../../services/localDb';
 import { Button } from '../../components/ui/Button';
-import { Eye, EyeOff, Sparkles, ArrowLeft, CheckCircle, ShieldCheck, Lock } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, ArrowLeft, CheckCircle, ShieldCheck, Lock, Mail } from 'lucide-react';
 import { Country } from 'country-state-city';
+import { KarobaarLogo } from '../../components/KarobaarLogo/KarobaarLogo';
+import { initializeDemoData } from '../../services/demoData';
 import './Login.css';
 
 // Custom searchable country code selector for Phone login
@@ -404,23 +406,34 @@ const Login = () => {
   };
 
   // --- 1-Click Instant Demo / Guest Workspace Access ---
-  const handleExploreDemoStore = () => {
+  const handleExploreDemoStore = async () => {
     const demoUser = {
       id: 'demo-user-1',
-      email: 'owner@karobaar.demo',
-      name: 'Demo Store Owner',
+      email: 'owner@sascafeteria.com',
+      name: 'SAS Cafeteria Owner',
       role: 'Owner'
     };
     const demoBusiness = {
       id: 'demo-business-1',
-      name: 'Karobaar Demo Enterprise',
-      currency: 'USD',
-      category: 'Retail & POS'
+      name: 'SAS CAFETERIA',
+      currency: 'INR',
+      category: 'Cafeteria & Restaurant',
+      settings: {
+        currency: 'INR',
+        theme: 'light'
+      }
     };
+
+    try {
+      await initializeDemoData('demo-business-1');
+    } catch (e) {
+      console.warn("Demo data init:", e);
+    }
 
     localStorage.setItem('karobaar_session_user', JSON.stringify(demoUser));
     localStorage.setItem('karobaar_session_business', JSON.stringify(demoBusiness));
     localStorage.setItem('karobaar_session_businesses', JSON.stringify([demoBusiness]));
+    localStorage.setItem('karobaar-active-business', 'demo-business-1');
     
     navigate('/dashboard');
     window.location.reload();
@@ -434,8 +447,7 @@ const Login = () => {
       <div className="login-visuals">
         <div className="visuals-content">
           <div className="visual-logo">
-            <span className="logo-icon-box">K</span>
-            Karobaar
+            <KarobaarLogo size="lg" theme="light" layout="horizontal" />
           </div>
           <h1 className="visual-title">
             {typedText}
@@ -460,25 +472,17 @@ const Login = () => {
       <div className="login-container">
         <div className="login-card-wrapper">
           
-          {/* Mobile branding header with screenshot pills (visible on small screens) */}
+          {/* Mobile branding header with Karobaar 3-bar logo matching Screen 2 */}
           <div className="mobile-brand-header">
-            <div className="mobile-logo-badge">
-              <span className="mobile-logo-icon">K</span>
-              Karobaar
-            </div>
-            <div className="mobile-pills-row">
-              <span className="mobile-pill">Smart POS</span>
-              <span className="mobile-pill">Inventory Tracking</span>
-              <span className="mobile-pill">Payroll Management</span>
-            </div>
+            <KarobaarLogo size="lg" theme="dark" layout="vertical" />
           </div>
 
           <div className="login-header">
             {viewMode === 'auth' ? (
               <>
-                <h2 className="login-title">{isRegistering ? 'Create an account' : 'Welcome back'}</h2>
+                <h2 className="login-title">{isRegistering ? 'Create an account' : 'Welcome back!'}</h2>
                 <p className="login-subtitle">
-                  {isRegistering ? 'Get started with your Karobaar business operating system.' : 'Sign in to access your business workspace.'}
+                  {isRegistering ? 'Get started with your Karobaar business operating system.' : 'Sign in to continue to your business dashboard.'}
                 </p>
               </>
             ) : (
@@ -708,7 +712,7 @@ const Login = () => {
                   onClick={handleExploreDemoStore}
                 >
                   <Sparkles size={16} />
-                  <span>Try Demo Workspace (1-Click Instant Access)</span>
+                  <span>Try Demo Workspace (SAS CAFETERIA)</span>
                 </button>
               </div>
             ) : (

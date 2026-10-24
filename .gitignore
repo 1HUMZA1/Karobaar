@@ -32,6 +32,7 @@ Karobaar-Windows*.zip
 # Standalone mobile/flutter builds
 karobaar_flutter/
 karobaar_app/build/
+karobaar_app/web/
 karobaar_desktop/dist-electron/
 
 # Environment and run logs

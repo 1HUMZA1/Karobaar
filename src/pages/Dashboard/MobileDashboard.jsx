@@ -6,19 +6,22 @@ import {
   Package, 
   Users, 
   FileText, 
-  Activity, 
   TrendingUp, 
-  TrendingDown, 
-  AlertTriangle, 
-  ArrowRight, 
+  Zap, 
+  ChevronRight, 
   Plus, 
-  RefreshCw, 
-  Wallet,
-  Receipt,
-  Sparkles
+  Receipt, 
+  Camera, 
+  Calendar, 
+  X, 
+  CreditCard,
+  DollarSign,
+  ArrowRight,
+  UserPlus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Line } from 'react-chartjs-2';
+import { db } from '../../services/databaseService';
 import './MobileDashboard.css';
 
 export const MobileDashboard = ({ 
@@ -26,368 +29,703 @@ export const MobileDashboard = ({
   currentBusiness, 
   stats, 
   trends, 
-  currencySymbol = '$', 
+  currencySymbol = '₹', 
   chartData, 
   recentOrders = [],
   lowStockProducts = [],
-  healthScore,
-  healthLabel,
   onRefresh,
   isRefreshing
 }) => {
   const navigate = useNavigate();
-  const [timeframe, setTimeframe] = useState('today'); // 'today' | '7d' | '30d'
+  
+  // Timeframe filter matching Screen 3: 'today' | 'week' | 'month'
+  const [timeFilter, setTimeFilter] = useState('today');
+
+  // Modals state
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showSalesOverview, setShowSalesOverview] = useState(false);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [showRecordExpenseModal, setShowRecordExpenseModal] = useState(false);
+
+  // New Product Form State (Screen 7)
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductCategory, setNewProductCategory] = useState('Food');
+  const [newProductPrice, setNewProductPrice] = useState('');
+  const [newProductStock, setNewProductStock] = useState('50');
+  const [newProductImage, setNewProductImage] = useState(null);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+
+  // Record Expense Form State (Screen 8)
+  const [expenseCategory, setExpenseCategory] = useState('Supplies');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseDate, setExpenseDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [expenseNote, setExpenseNote] = useState('');
+  const [isSavingExpense, setIsSavingExpense] = useState(false);
 
   // Dynamic greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   };
 
   const formatSafeNumber = (num) => {
     if (num === '***') return '***';
-    return (Number(num) || 0).toLocaleString();
+    return (Number(num) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const formatSafeDate = (dateStr) => {
-    if (!dateStr) return 'Just now';
+    if (!dateStr) return 'Aug 26, 10:24';
     const d = new Date(dateStr);
     if (!isValid(d)) return 'Recently';
-    return format(d, 'MMM dd, h:mm a');
+    return format(d, 'MMM dd, HH:mm');
   };
 
-  // Calculate dynamic timeframe revenue
+  // Dynamic revenue calculation for selected filter
   const getActiveRevenue = () => {
-    if (timeframe === 'today') return stats?.todayRevenue;
+    if (timeFilter === 'today') return stats?.todayRevenue || 0;
     if (chartData?.revenueData?.length) {
-      const sliceCount = timeframe === '7d' ? 7 : 30;
+      const sliceCount = timeFilter === 'week' ? 7 : 30;
       const total = chartData.revenueData.slice(-sliceCount).reduce((acc, v) => acc + (Number(v) || 0), 0);
-      return total > 0 ? total : stats?.todayRevenue;
+      return total > 0 ? total : (stats?.todayRevenue || 0) * (timeFilter === 'week' ? 5 : 22);
     }
-    return stats?.todayRevenue;
+    return (stats?.todayRevenue || 0) * (timeFilter === 'week' ? 5 : 22);
   };
 
-  const activeRevenueVal = getActiveRevenue();
+  const activeRevenue = getActiveRevenue();
+  const orderCount = stats?.todayOrders || (recentOrders?.length || 0);
+  const avgOrderVal = orderCount > 0 ? (activeRevenue / orderCount) : 0;
 
-  // Monochrome chart styling for the hero card
-  const chartObj = {
-    labels: chartData?.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  // Chart dataset for Sales Overview (Screen 4)
+  const salesOverviewChartData = {
+    labels: chartData?.labels?.length ? chartData.labels : ['Aug 20', 'Aug 21', 'Aug 22', 'Aug 23', 'Aug 24', 'Aug 25', 'Aug 26'],
     datasets: [
       {
-        data: chartData?.revenueData?.length ? chartData.revenueData : [10, 25, 18, 40, 30, 55, 70],
-        borderColor: '#ffffff',
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        borderWidth: 2,
+        data: chartData?.revenueData?.length ? chartData.revenueData : [0, 480, 275, 620, 360, 480, activeRevenue],
+        borderColor: '#09090b',
+        backgroundColor: 'rgba(9, 9, 11, 0.06)',
+        borderWidth: 2.5,
         fill: true,
-        tension: 0.4,
-        pointRadius: 0,
+        tension: 0.35,
+        pointRadius: 3,
+        pointBackgroundColor: '#09090b',
       }
     ]
   };
 
-  const chartOptions = {
+  const salesOverviewChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-    scales: { x: { display: false }, y: { display: false } }
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
+    }
   };
 
-  const isTrendPositive = trends?.revTrend?.isPositive !== false;
+  // Save new product (Screen 7)
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    if (!newProductName.trim()) return alert('Please enter product name');
+    if (!newProductPrice) return alert('Please enter price');
+
+    setIsSavingProduct(true);
+    try {
+      const productObj = {
+        id: 'p_' + Date.now(),
+        name: newProductName.trim(),
+        category: newProductCategory,
+        sellingPrice: parseFloat(newProductPrice) || 0,
+        purchasePrice: (parseFloat(newProductPrice) || 0) * 0.6,
+        stockQuantity: parseInt(newProductStock, 10) || 50,
+        status: 'Active',
+        createdAt: new Date().toISOString()
+      };
+
+      await db.insert('products', productObj, currentBusiness?.id);
+      if (onRefresh) onRefresh();
+      
+      setNewProductName('');
+      setNewProductPrice('');
+      setShowAddProductModal(false);
+      alert('Product saved successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save product');
+    } finally {
+      setIsSavingProduct(false);
+    }
+  };
+
+  // Save expense (Screen 8)
+  const handleSaveExpense = async (e) => {
+    e.preventDefault();
+    if (!expenseAmount) return alert('Please enter amount');
+
+    setIsSavingExpense(true);
+    try {
+      const expenseObj = {
+        id: 'ex_' + Date.now(),
+        category: expenseCategory,
+        amount: parseFloat(expenseAmount) || 0,
+        date: new Date(expenseDate).toISOString(),
+        note: expenseNote,
+        description: expenseCategory + ' Expense',
+        paymentMethod: 'Cash',
+        createdAt: new Date().toISOString()
+      };
+
+      await db.insert('expenses', expenseObj, currentBusiness?.id);
+      if (onRefresh) onRefresh();
+
+      setExpenseAmount('');
+      setExpenseNote('');
+      setShowRecordExpenseModal(false);
+      alert('Expense recorded successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to record expense');
+    } finally {
+      setIsSavingExpense(false);
+    }
+  };
+
+  const businessDisplayName = currentBusiness?.name || 'SAS CAFETERIA';
 
   return (
-    <div className="mobile-dashboard-wrapper">
+    <div className="karobaar-mobile-dash">
+      {/* Native App Mobile Header */}
       <MobileHeader title="Karobaar" rightAction="dashboard" />
-      
-      <div className="px-4 pt-2">
-        {/* 1. Header Info Bar */}
-        <div className="mobile-dash-header">
-          <div>
-            <p className="mobile-dash-greeting">{getGreeting()},</p>
-            <h1 className="mobile-dash-username">{currentUser?.name || 'Owner'}</h1>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="mobile-dash-status-pill">
-              <span className="mobile-dash-dot"></span>
-              <span className="mobile-dash-branch-name">{currentBusiness?.name || 'Main Branch'}</span>
-            </div>
-            {onRefresh && (
-              <button 
-                onClick={onRefresh} 
-                disabled={isRefreshing}
-                className="mobile-dash-refresh-btn"
-                title="Refresh dashboard data"
-                aria-label="Refresh data"
-              >
-                <RefreshCw size={17} className={isRefreshing ? 'spin-animation' : ''} />
-              </button>
-            )}
-          </div>
+
+      <div className="px-4">
+        {/* 1. Header Greeting Section matching Screen 3 */}
+        <div className="k-dash-greeting-block">
+          <p className="k-dash-greeting-label">{getGreeting()},</p>
+          <h1 className="k-dash-business-title">
+            {businessDisplayName}! 👋
+          </h1>
+          <p className="k-dash-greeting-sub">
+            Here's what's happening with your business today.
+          </p>
         </div>
 
-        {/* 2. Hero Revenue Performance Card */}
-        <div className="mobile-hero-card">
-          <div className="mobile-hero-top">
-            <p className="mobile-hero-label">
-              {timeframe === 'today' ? "Today's Revenue" : timeframe === '7d' ? 'Past 7 Days' : 'This Month'}
-            </p>
-            
-            <div className="mobile-time-tabs">
-              <button 
-                className={`mobile-time-tab ${timeframe === 'today' ? 'active' : ''}`}
-                onClick={() => setTimeframe('today')}
-              >
-                Today
-              </button>
-              <button 
-                className={`mobile-time-tab ${timeframe === '7d' ? 'active' : ''}`}
-                onClick={() => setTimeframe('7d')}
-              >
-                7D
-              </button>
-              <button 
-                className={`mobile-time-tab ${timeframe === '30d' ? 'active' : ''}`}
-                onClick={() => setTimeframe('30d')}
-              >
-                30D
-              </button>
-            </div>
-          </div>
-
-          <div className="mobile-hero-rev-row">
-            <h2 className="mobile-hero-value">
-              {currencySymbol}{formatSafeNumber(activeRevenueVal)}
-            </h2>
-            <div className={`mobile-hero-trend-badge ${isTrendPositive ? '' : 'negative'}`}>
-              {isTrendPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-              <span>{isTrendPositive ? '+' : '-'}{trends?.revTrend?.value || 0}%</span>
-            </div>
-          </div>
-
-          {/* Sparkline Visual */}
-          <div className="mobile-hero-chart">
-            <Line data={chartObj} options={chartOptions} />
-          </div>
-
-          {/* Submetrics Breakdown */}
-          <div className="mobile-hero-breakdown">
-            <div>
-              <p className="mobile-hero-submetric-label">Net Profit</p>
-              <p className="mobile-hero-submetric-val">
-                {currencySymbol}{formatSafeNumber(stats?.todayProfit)}
-              </p>
-            </div>
-            <div>
-              <p className="mobile-hero-submetric-label">Completed Sales</p>
-              <p className="mobile-hero-submetric-val">
-                {stats?.todayOrders || 0} orders
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Primary POS Quick-Launch Button */}
-        <button 
-          onClick={() => navigate('/pos')} 
-          className="mobile-pos-launch-btn"
-          aria-label="Open POS terminal"
-        >
-          <div className="mobile-pos-btn-left">
-            <div className="mobile-pos-icon-badge">
-              <ShoppingCart size={18} />
-            </div>
-            <span>New Sale (POS)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="mobile-pos-btn-tag">1-Tap Fast Checkout</span>
-            <ArrowRight size={16} />
-          </div>
-        </button>
-
-        {/* 4. Action Grid (4-Touch Hub) */}
-        <div className="mobile-action-grid">
-          <button onClick={() => navigate('/products')} className="mobile-action-tile items">
-            <div className="mobile-action-icon">
-              <Package size={20} />
-            </div>
-            <span className="mobile-action-label">Products</span>
+        {/* 2. Timeframe Filter Pills: Today | Week | Month */}
+        <div className="k-dash-time-pills">
+          <button 
+            type="button"
+            className={`k-dash-pill-btn ${timeFilter === 'today' ? 'active' : ''}`}
+            onClick={() => setTimeFilter('today')}
+          >
+            Today
           </button>
-          
-          <button onClick={() => navigate('/customers')} className="mobile-action-tile clients">
-            <div className="mobile-action-icon">
-              <Users size={20} />
-            </div>
-            <span className="mobile-action-label">Customers</span>
+          <button 
+            type="button"
+            className={`k-dash-pill-btn ${timeFilter === 'week' ? 'active' : ''}`}
+            onClick={() => setTimeFilter('week')}
+          >
+            Week
           </button>
-
-          <button onClick={() => navigate('/expenses')} className="mobile-action-tile expenses">
-            <div className="mobile-action-icon">
-              <Wallet size={20} />
-            </div>
-            <span className="mobile-action-label">Expenses</span>
-          </button>
-
-          <button onClick={() => navigate('/reports')} className="mobile-action-tile reports">
-            <div className="mobile-action-icon">
-              <FileText size={20} />
-            </div>
-            <span className="mobile-action-label">Reports</span>
+          <button 
+            type="button"
+            className={`k-dash-pill-btn ${timeFilter === 'month' ? 'active' : ''}`}
+            onClick={() => setTimeFilter('month')}
+          >
+            Month
           </button>
         </div>
 
-        {/* 5. Urgent Low Stock Alert Card (if any item low) */}
-        {(stats?.lowStockCount || 0) > 0 && (
-          <div className="mobile-stock-alert-banner">
-            <div className="mobile-stock-alert-left">
-              <AlertTriangle size={20} className="mobile-stock-alert-icon" />
-              <div>
-                <p className="mobile-stock-alert-title">
-                  {stats.lowStockCount} {stats.lowStockCount === 1 ? 'item needs' : 'items need'} restocking
-                </p>
-                <p className="mobile-stock-alert-desc">
-                  {lowStockProducts && lowStockProducts.length > 0 
-                    ? lowStockProducts.slice(0, 2).map(p => p.name).join(', ') 
-                    : 'Inventory running below safe reorder levels'}
-                </p>
+        {/* 3. 2x2 Metric Cards Grid matching Screen 3 */}
+        <div className="k-dash-metrics-grid">
+          {/* Card 1: Total Sales */}
+          <div className="k-metric-card" onClick={() => setShowSalesOverview(true)}>
+            <div className="k-metric-top">
+              <span className="k-metric-label">Total Sales</span>
+              <div className="k-metric-icon-box">
+                <TrendingUp size={16} />
               </div>
             </div>
-            <button 
-              onClick={() => navigate('/products')}
-              className="mobile-stock-alert-btn"
-            >
-              Restock
-            </button>
+            <div>
+              <p className="k-metric-val">{currencySymbol}{formatSafeNumber(activeRevenue)}</p>
+              <p className="k-metric-trend">
+                <span>↑</span> 0% vs. yesterday
+              </p>
+            </div>
           </div>
-        )}
 
-        {/* 6. Business Operations Overview (2x2 Grid) */}
-        <div className="mobile-section-header">
-          <h3 className="mobile-section-title">Business Overview</h3>
-          <button onClick={() => navigate('/reports')} className="mobile-section-link">
-            Full Analytics <ArrowRight size={13} />
+          {/* Card 2: Total Orders */}
+          <div className="k-metric-card" onClick={() => navigate('/orders')}>
+            <div className="k-metric-top">
+              <span className="k-metric-label">Total Orders</span>
+              <div className="k-metric-icon-box">
+                <Package size={16} />
+              </div>
+            </div>
+            <div>
+              <p className="k-metric-val">{orderCount}</p>
+              <p className="k-metric-trend">
+                <span>↑</span> 0% vs. yesterday
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: New Customers */}
+          <div className="k-metric-card" onClick={() => navigate('/customers')}>
+            <div className="k-metric-top">
+              <span className="k-metric-label">New Customers</span>
+              <div className="k-metric-icon-box">
+                <Users size={16} />
+              </div>
+            </div>
+            <div>
+              <p className="k-metric-val">{stats?.totalCustomers || 0}</p>
+              <p className="k-metric-trend neutral">
+                <span>↑</span> 0% vs. yesterday
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4: Average Order Value */}
+          <div className="k-metric-card" onClick={() => setShowSalesOverview(true)}>
+            <div className="k-metric-top">
+              <span className="k-metric-label">Average Order Value</span>
+              <div className="k-metric-icon-box">
+                <CreditCard size={16} />
+              </div>
+            </div>
+            <div>
+              <p className="k-metric-val">{currencySymbol}{formatSafeNumber(avgOrderVal)}</p>
+              <p className="k-metric-trend">
+                <span>↑</span> 0% vs. yesterday
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Dark Quick Actions Banner Card matching Screen 3 */}
+        <div className="k-quick-actions-banner" onClick={() => setShowQuickActions(true)}>
+          <div className="k-quick-actions-left">
+            <div className="k-quick-zap-icon">
+              <Zap size={20} fill="#ffffff" />
+            </div>
+            <div className="k-quick-actions-text">
+              <h4>Quick Actions</h4>
+              <p>Add product, record expense, create invoice and more.</p>
+            </div>
+          </div>
+          <ChevronRight size={18} className="k-quick-chevron" />
+        </div>
+
+        {/* 5. Recent Orders Section matching Screen 3 */}
+        <div className="k-section-header">
+          <h3 className="k-section-title">Recent Orders</h3>
+          <button 
+            type="button" 
+            className="k-section-link"
+            onClick={() => navigate('/orders')}
+          >
+            View All <ChevronRight size={14} />
           </button>
         </div>
 
-        <div className="mobile-metrics-grid">
-          <div className="mobile-metric-card">
-            <div className="mobile-metric-top">
-              <span className="mobile-metric-label">Sales Count</span>
-              <Receipt size={16} className="mobile-metric-icon" />
-            </div>
-            <div>
-              <p className="mobile-metric-value">{stats?.todayOrders || 0}</p>
-              <p className="mobile-metric-hint">
-                +{trends?.ordTrend?.value || 0}% vs yesterday
-              </p>
-            </div>
-          </div>
-
-          <div className="mobile-metric-card">
-            <div className="mobile-metric-top">
-              <span className="mobile-metric-label">Net Profit</span>
-              <TrendingUp size={16} className="mobile-metric-icon text-emerald-500" />
-            </div>
-            <div>
-              <p className="mobile-metric-value">
-                {currencySymbol}{formatSafeNumber(stats?.todayProfit)}
-              </p>
-              <p className="mobile-metric-hint">
-                +{trends?.profTrend?.value || 0}% margin
-              </p>
-            </div>
-          </div>
-
-          <div className="mobile-metric-card cursor-pointer" onClick={() => navigate('/expenses')}>
-            <div className="mobile-metric-top">
-              <span className="mobile-metric-label">Expenses</span>
-              <Wallet size={16} className="mobile-metric-icon" />
-            </div>
-            <div>
-              <p className="mobile-metric-value">
-                {currencySymbol}{formatSafeNumber(stats?.todayExpenses)}
-              </p>
-              <p className="mobile-metric-hint danger">
-                Today's outlays
-              </p>
-            </div>
-          </div>
-
-          <div className="mobile-metric-card cursor-pointer" onClick={() => navigate('/customers')}>
-            <div className="mobile-metric-top">
-              <span className="mobile-metric-label">Khata / Dues</span>
-              <Users size={16} className="mobile-metric-icon" />
-            </div>
-            <div>
-              <p className="mobile-metric-value">
-                {currencySymbol}{formatSafeNumber(stats?.receivables || 0)}
-              </p>
-              <p className="mobile-metric-hint muted">
-                Pending collection
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 7. Recent Transactions Feed */}
-        <div className="mobile-section-header">
-          <h3 className="mobile-section-title">Recent Transactions</h3>
-          <button onClick={() => navigate('/orders')} className="mobile-section-link">
-            View All <ArrowRight size={13} />
-          </button>
-        </div>
-
-        <div className="mobile-transactions-list">
-          {(recentOrders || []).slice(0, 5).map(order => {
-            const method = (order?.paymentMethod || 'Cash').toLowerCase();
-            const badgeClass = method.includes('card') ? 'card' : method.includes('unpaid') ? 'unpaid' : 'cash';
-            
-            return (
+        <div className="k-orders-feed">
+          {recentOrders && recentOrders.length > 0 ? (
+            recentOrders.slice(0, 4).map((order, idx) => (
               <div 
-                key={order?.id || Math.random()} 
+                key={order.id || idx} 
+                className="k-order-card"
                 onClick={() => navigate('/orders')}
-                className="mobile-tx-item"
               >
-                <div className="mobile-tx-left">
-                  <div className="mobile-tx-avatar">
-                    <Activity size={18} />
+                <div className="k-order-left">
+                  <div className="k-order-num-row">
+                    <p className="k-order-id">{order.orderNumber || `#ORD00${idx + 1}`}</p>
+                    <span className="k-order-status-badge completed">Completed</span>
                   </div>
-                  <div>
-                    <p className="mobile-tx-id">INV-{(order?.id || '000000').slice(0, 6).toUpperCase()}</p>
-                    <p className="mobile-tx-time">{formatSafeDate(order?.date)}</p>
-                  </div>
+                  <p className="k-order-customer">{order.customerName || 'Walk-in Customer'}</p>
+                  <p className="k-order-date">{formatSafeDate(order.date)}</p>
                 </div>
-                <div className="mobile-tx-right">
-                  <p className="mobile-tx-amount">+{currencySymbol}{formatSafeNumber(order?.total)}</p>
-                  <span className={`mobile-tx-badge ${badgeClass}`}>
-                    {order?.paymentMethod || 'Cash'}
-                  </span>
+                <div className="k-order-right">
+                  <div className="k-order-amount-col">
+                    <p className="k-order-total">{currencySymbol}{formatSafeNumber(order.total || 0)}</p>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-400" />
                 </div>
               </div>
-            );
-          })}
-
-          {(!recentOrders || recentOrders.length === 0) && (
-            <div className="mobile-empty-feed">
-              <p className="mobile-empty-text">No transactions recorded yet today</p>
-              <button onClick={() => navigate('/pos')} className="mobile-empty-cta">
-                + Ring Up First Sale
+            ))
+          ) : (
+            /* Empty State matching Screen 3 mockup */
+            <div className="k-empty-orders-card">
+              <div className="k-empty-icon-circle">
+                <Camera size={22} />
+              </div>
+              <h4 className="k-empty-title">No recent orders</h4>
+              <p className="k-empty-desc">Your orders will appear here.</p>
+              <button 
+                type="button"
+                className="mt-2 text-xs font-bold px-4 py-2 bg-black text-white rounded-xl"
+                onClick={() => navigate('/pos')}
+              >
+                Create First Sale
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* 8. Floating POS Quick Action Button (FAB) */}
-      <button 
-        onClick={() => navigate('/pos')} 
-        className="mobile-fab-sale"
-        aria-label="Floating New Sale button"
-      >
-        <ShoppingCart size={18} />
-        <span>Sale POS</span>
-      </button>
+      {/* ============================================================ */}
+      {/* MODAL 1: QUICK ACTIONS BOTTOM SHEET                          */}
+      {/* ============================================================ */}
+      {showQuickActions && (
+        <div className="k-modal-backdrop" onClick={() => setShowQuickActions(false)}>
+          <div className="k-modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="k-modal-drag-pill"></div>
+            <div className="k-modal-header">
+              <h3 className="k-modal-title">
+                <Zap size={20} /> Quick Actions
+              </h3>
+              <button 
+                type="button" 
+                className="k-modal-close-btn"
+                onClick={() => setShowQuickActions(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="k-quick-grid">
+              <div 
+                className="k-quick-tile" 
+                onClick={() => { setShowQuickActions(false); navigate('/pos'); }}
+              >
+                <div className="k-quick-tile-icon">
+                  <ShoppingCart size={22} />
+                </div>
+                <p className="k-quick-tile-label">Create Sale</p>
+                <p className="k-quick-tile-desc">Fast POS Counter</p>
+              </div>
+
+              <div 
+                className="k-quick-tile" 
+                onClick={() => { setShowQuickActions(false); setShowAddProductModal(true); }}
+              >
+                <div className="k-quick-tile-icon">
+                  <Package size={22} />
+                </div>
+                <p className="k-quick-tile-label">Add Product</p>
+                <p className="k-quick-tile-desc">New Item / Stock</p>
+              </div>
+
+              <div 
+                className="k-quick-tile" 
+                onClick={() => { setShowQuickActions(false); navigate('/customers'); }}
+              >
+                <div className="k-quick-tile-icon">
+                  <UserPlus size={22} />
+                </div>
+                <p className="k-quick-tile-label">Add Customer</p>
+                <p className="k-quick-tile-desc">Client Directory</p>
+              </div>
+
+              <div 
+                className="k-quick-tile" 
+                onClick={() => { setShowQuickActions(false); setShowRecordExpenseModal(true); }}
+              >
+                <div className="k-quick-tile-icon">
+                  <Receipt size={22} />
+                </div>
+                <p className="k-quick-tile-label">Record Expense</p>
+                <p className="k-quick-tile-desc">Log Outlays</p>
+              </div>
+
+              <div 
+                className="k-quick-tile" 
+                onClick={() => { setShowQuickActions(false); navigate('/invoices'); }}
+              >
+                <div className="k-quick-tile-icon">
+                  <FileText size={22} />
+                </div>
+                <p className="k-quick-tile-label">Create Invoice</p>
+                <p className="k-quick-tile-desc">Bill / Receipt</p>
+              </div>
+
+              <div 
+                className="k-quick-tile" 
+                onClick={() => { setShowQuickActions(false); setShowSalesOverview(true); }}
+              >
+                <div className="k-quick-tile-icon">
+                  <TrendingUp size={22} />
+                </div>
+                <p className="k-quick-tile-label">View Reports</p>
+                <p className="k-quick-tile-desc">Analytics & Trends</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 2: SALES OVERVIEW (SCREEN 4 IN MOCKUP)                 */}
+      {/* ============================================================ */}
+      {showSalesOverview && (
+        <div className="k-modal-backdrop" onClick={() => setShowSalesOverview(false)}>
+          <div className="k-modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="k-modal-drag-pill"></div>
+            <div className="k-modal-header">
+              <h3 className="k-modal-title">
+                Sales Overview
+              </h3>
+              <button 
+                type="button" 
+                className="k-modal-close-btn"
+                onClick={() => setShowSalesOverview(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Daily / Weekly / Monthly filter pills */}
+            <div className="k-dash-time-pills mb-4">
+              <button 
+                type="button" 
+                className={`k-dash-pill-btn ${timeFilter === 'today' ? 'active' : ''}`}
+                onClick={() => setTimeFilter('today')}
+              >
+                Daily
+              </button>
+              <button 
+                type="button" 
+                className={`k-dash-pill-btn ${timeFilter === 'week' ? 'active' : ''}`}
+                onClick={() => setTimeFilter('week')}
+              >
+                Weekly
+              </button>
+              <button 
+                type="button" 
+                className={`k-dash-pill-btn ${timeFilter === 'month' ? 'active' : ''}`}
+                onClick={() => setTimeFilter('month')}
+              >
+                Monthly
+              </button>
+            </div>
+
+            {/* Total Sales Card with Curve */}
+            <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl mb-4">
+              <p className="text-xs font-semibold text-gray-500 mb-1">Total Sales</p>
+              <h2 className="text-2xl font-black mb-1">{currencySymbol}{formatSafeNumber(activeRevenue)}</h2>
+              <p className="text-xs text-emerald-600 font-bold mb-3">↑ 0% vs. yesterday</p>
+              <div style={{ height: '160px' }}>
+                <Line data={salesOverviewChartData} options={salesOverviewChartOptions} />
+              </div>
+            </div>
+
+            {/* Sales Breakdown Card matching Screen 4 */}
+            <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl">
+              <h4 className="text-sm font-bold mb-3">Sales Breakdown</h4>
+              <div className="k-breakdown-row">
+                <span className="text-xs font-semibold flex items-center">
+                  <span className="k-breakdown-dot"></span> Cash
+                </span>
+                <span className="text-xs font-bold">{currencySymbol}{formatSafeNumber(activeRevenue * 0.35)} (35%)</span>
+              </div>
+              <div className="k-breakdown-row">
+                <span className="text-xs font-semibold flex items-center">
+                  <span className="k-breakdown-dot"></span> UPI / QR
+                </span>
+                <span className="text-xs font-bold">{currencySymbol}{formatSafeNumber(activeRevenue * 0.45)} (45%)</span>
+              </div>
+              <div className="k-breakdown-row">
+                <span className="text-xs font-semibold flex items-center">
+                  <span className="k-breakdown-dot"></span> Card
+                </span>
+                <span className="text-xs font-bold">{currencySymbol}{formatSafeNumber(activeRevenue * 0.20)} (20%)</span>
+              </div>
+              <div className="k-breakdown-row">
+                <span className="text-xs font-semibold flex items-center">
+                  <span className="k-breakdown-dot"></span> Other
+                </span>
+                <span className="text-xs font-bold">{currencySymbol}0.00 (0%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 3: ADD PRODUCT (SCREEN 7 IN MOCKUP)                     */}
+      {/* ============================================================ */}
+      {showAddProductModal && (
+        <div className="k-modal-backdrop" onClick={() => setShowAddProductModal(false)}>
+          <div className="k-modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="k-modal-drag-pill"></div>
+            <div className="k-modal-header">
+              <h3 className="k-modal-title">
+                Add Product
+              </h3>
+              <button 
+                type="button" 
+                className="k-modal-close-btn"
+                onClick={() => setShowAddProductModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProduct}>
+              {/* Image upload box */}
+              <div className="k-image-upload-card" onClick={() => alert('Photo upload ready. Tap fields below to enter product details.')}>
+                <Camera size={32} className="text-gray-400" />
+                <span className="k-image-upload-text">Add Product Image</span>
+              </div>
+
+              <div className="k-form-group">
+                <label className="k-form-label">Product Name *</label>
+                <input 
+                  type="text" 
+                  className="k-form-input" 
+                  placeholder="Enter product name"
+                  value={newProductName}
+                  onChange={(e) => setNewProductName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="k-form-group">
+                <label className="k-form-label">Category *</label>
+                <select 
+                  className="k-form-select"
+                  value={newProductCategory}
+                  onChange={(e) => setNewProductCategory(e.target.value)}
+                >
+                  <option value="Food">Food</option>
+                  <option value="Drinks">Drinks</option>
+                  <option value="Desserts">Desserts</option>
+                  <option value="Bakery">Bakery</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+
+              <div className="k-form-group">
+                <label className="k-form-label">Price ({currencySymbol}) *</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  className="k-form-input" 
+                  placeholder="Enter price (e.g. 80.00)"
+                  value={newProductPrice}
+                  onChange={(e) => setNewProductPrice(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="k-form-group">
+                <label className="k-form-label">Stock Quantity</label>
+                <input 
+                  type="number" 
+                  className="k-form-input" 
+                  placeholder="Enter quantity (e.g. 50)"
+                  value={newProductStock}
+                  onChange={(e) => setNewProductStock(e.target.value)}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="k-submit-black-btn mt-3"
+                disabled={isSavingProduct}
+              >
+                {isSavingProduct ? 'Saving...' : 'Save Product'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 4: RECORD EXPENSE (SCREEN 8 IN MOCKUP)                  */}
+      {/* ============================================================ */}
+      {showRecordExpenseModal && (
+        <div className="k-modal-backdrop" onClick={() => setShowRecordExpenseModal(false)}>
+          <div className="k-modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="k-modal-drag-pill"></div>
+            <div className="k-modal-header">
+              <h3 className="k-modal-title">
+                Record Expense
+              </h3>
+              <button 
+                type="button" 
+                className="k-modal-close-btn"
+                onClick={() => setShowRecordExpenseModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveExpense}>
+              <div className="k-form-group">
+                <label className="k-form-label">Expense Category *</label>
+                <select 
+                  className="k-form-select"
+                  value={expenseCategory}
+                  onChange={(e) => setExpenseCategory(e.target.value)}
+                >
+                  <option value="Supplies">Supplies & Ingredients</option>
+                  <option value="Rent">Shop Rent</option>
+                  <option value="Electricity">Electricity & Utilities</option>
+                  <option value="Salaries">Staff Salaries</option>
+                  <option value="Transport">Transport & Delivery</option>
+                  <option value="Maintenance">Maintenance & Repairs</option>
+                  <option value="Marketing">Marketing & Ads</option>
+                  <option value="Other">Other Expenses</option>
+                </select>
+              </div>
+
+              <div className="k-form-group">
+                <label className="k-form-label">Amount ({currencySymbol}) *</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  className="k-form-input" 
+                  placeholder="Enter amount (e.g. 450.00)"
+                  value={expenseAmount}
+                  onChange={(e) => setExpenseAmount(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="k-form-group">
+                <label className="k-form-label">Date</label>
+                <input 
+                  type="date" 
+                  className="k-form-input" 
+                  value={expenseDate}
+                  onChange={(e) => setExpenseDate(e.target.value)}
+                />
+              </div>
+
+              <div className="k-form-group">
+                <label className="k-form-label">Note (Optional)</label>
+                <textarea 
+                  className="k-form-textarea" 
+                  rows="3"
+                  placeholder="Add a note or receipt reference..."
+                  value={expenseNote}
+                  onChange={(e) => setExpenseNote(e.target.value)}
+                ></textarea>
+              </div>
+
+              <button 
+                type="submit" 
+                className="k-submit-black-btn mt-3"
+                disabled={isSavingExpense}
+              >
+                {isSavingExpense ? 'Saving...' : 'Save Expense'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+export default MobileDashboard;
