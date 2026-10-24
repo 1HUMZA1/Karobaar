@@ -88,7 +88,24 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     console.log("[AUTH] Firebase initializing");
     
+    // Safeguard: Ensure user is never stuck on splash screen if offline or on slow connection
+    const authTimeout = setTimeout(() => {
+      setAuthStatus(prev => {
+        if (prev === 'loading') {
+          console.log("[AUTH] Splash timeout reached — progressing to login/dashboard");
+          const savedUser = localStorage.getItem('karobaar_session_user');
+          const savedBiz = localStorage.getItem('karobaar_session_business');
+          if (savedUser && savedBiz) {
+            return 'authenticated';
+          }
+          return 'unauthenticated';
+        }
+        return prev;
+      });
+    }, 2000);
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      clearTimeout(authTimeout);
       setAuthError(''); // Clear previous errors
       if (firebaseUser) {
         console.log(`[AUTH] Authenticated UID: ${firebaseUser.uid}`);
@@ -170,7 +187,10 @@ export const AppProvider = ({ children }) => {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(authTimeout);
+      unsubscribe();
+    };
   }, []);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
