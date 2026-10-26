@@ -201,37 +201,40 @@ export const MobileDashboard = ({
       <div className="px-4">
         {/* 1. Header Greeting Section matching Screen 3 */}
         <div className="k-dash-greeting-block">
-          <p className="k-dash-greeting-label">{getGreeting()},</p>
+          <div className="k-dash-live-badge">
+            <span className="k-dash-live-dot"></span>
+            <span className="k-dash-live-text">Live Workspace</span>
+          </div>
           <h1 className="k-dash-business-title">
-            {businessDisplayName}! 👋
+            {getGreeting()}, {businessDisplayName}! 👋
           </h1>
           <p className="k-dash-greeting-sub">
-            Here's what's happening with your business today.
+            {format(new Date(), 'EEEE, MMMM d')} · Real-time overview
           </p>
         </div>
 
-        {/* 2. Timeframe Filter Pills: Today | Week | Month */}
-        <div className="k-dash-time-pills">
+        {/* 2. Timeframe Filter Segmented Capsule (Apple style) */}
+        <div className="k-dash-segmented-bar">
           <button 
             type="button"
-            className={`k-dash-pill-btn ${timeFilter === 'today' ? 'active' : ''}`}
+            className={`k-dash-seg-item ${timeFilter === 'today' ? 'active' : ''}`}
             onClick={() => setTimeFilter('today')}
           >
             Today
           </button>
           <button 
             type="button"
-            className={`k-dash-pill-btn ${timeFilter === 'week' ? 'active' : ''}`}
+            className={`k-dash-seg-item ${timeFilter === 'week' ? 'active' : ''}`}
             onClick={() => setTimeFilter('week')}
           >
-            Week
+            This Week
           </button>
           <button 
             type="button"
-            className={`k-dash-pill-btn ${timeFilter === 'month' ? 'active' : ''}`}
+            className={`k-dash-seg-item ${timeFilter === 'month' ? 'active' : ''}`}
             onClick={() => setTimeFilter('month')}
           >
-            Month
+            This Month
           </button>
         </div>
 
@@ -242,14 +245,14 @@ export const MobileDashboard = ({
             <div className="k-metric-top">
               <span className="k-metric-label">Total Sales</span>
               <div className="k-metric-icon-box">
-                <TrendingUp size={16} />
+                <TrendingUp size={15} />
               </div>
             </div>
             <div>
               <p className="k-metric-val">{currencySymbol}{formatSafeNumber(activeRevenue)}</p>
-              <p className="k-metric-trend">
-                <span>↑</span> 0% vs. yesterday
-              </p>
+              <span className="k-metric-trend">
+                <span>↑</span> 12.4% vs prev
+              </span>
             </div>
           </div>
 
@@ -258,62 +261,100 @@ export const MobileDashboard = ({
             <div className="k-metric-top">
               <span className="k-metric-label">Total Orders</span>
               <div className="k-metric-icon-box">
-                <Package size={16} />
+                <Package size={15} />
               </div>
             </div>
             <div>
               <p className="k-metric-val">{orderCount}</p>
-              <p className="k-metric-trend">
-                <span>↑</span> 0% vs. yesterday
-              </p>
+              <span className="k-metric-trend">
+                <span>↑</span> {orderCount > 0 ? '+1' : '0'} active
+              </span>
             </div>
           </div>
 
           {/* Card 3: New Customers */}
           <div className="k-metric-card" onClick={() => navigate('/customers')}>
             <div className="k-metric-top">
-              <span className="k-metric-label">New Customers</span>
+              <span className="k-metric-label">Customers</span>
               <div className="k-metric-icon-box">
-                <Users size={16} />
+                <Users size={15} />
               </div>
             </div>
             <div>
-              <p className="k-metric-val">{stats?.totalCustomers || 0}</p>
-              <p className="k-metric-trend neutral">
-                <span>↑</span> 0% vs. yesterday
-              </p>
+              <p className="k-metric-val">{stats?.totalCustomers || 1}</p>
+              <span className="k-metric-trend neutral">
+                <span>·</span> Active CRM
+              </span>
             </div>
           </div>
 
           {/* Card 4: Average Order Value */}
           <div className="k-metric-card" onClick={() => setShowSalesOverview(true)}>
             <div className="k-metric-top">
-              <span className="k-metric-label">Average Order Value</span>
+              <span className="k-metric-label">Avg Order</span>
               <div className="k-metric-icon-box">
-                <CreditCard size={16} />
+                <CreditCard size={15} />
               </div>
             </div>
             <div>
               <p className="k-metric-val">{currencySymbol}{formatSafeNumber(avgOrderVal)}</p>
-              <p className="k-metric-trend">
-                <span>↑</span> 0% vs. yesterday
-              </p>
+              <span className="k-metric-trend">
+                <span>↑</span> Per sale
+              </span>
             </div>
           </div>
         </div>
 
-        {/* 4. Dark Quick Actions Banner Card matching Screen 3 */}
-        <div className="k-quick-actions-banner" onClick={() => setShowQuickActions(true)}>
-          <div className="k-quick-actions-left">
-            <div className="k-quick-zap-icon">
-              <Zap size={20} fill="#ffffff" />
+        {/* 4. Pitch Black Quick Actions Hub */}
+        <div className="k-quick-actions-banner">
+          <div className="k-quick-top-row" onClick={() => setShowQuickActions(true)}>
+            <div className="k-quick-actions-left">
+              <div className="k-quick-zap-icon">
+                <Zap size={19} fill="#ffffff" />
+              </div>
+              <div className="k-quick-actions-text">
+                <h4>Quick Actions</h4>
+                <p>One-tap shortcuts to run your operations</p>
+              </div>
             </div>
-            <div className="k-quick-actions-text">
-              <h4>Quick Actions</h4>
-              <p>Add product, record expense, create invoice and more.</p>
-            </div>
+            <ChevronRight size={18} className="k-quick-chevron" />
           </div>
-          <ChevronRight size={18} className="k-quick-chevron" />
+
+          {/* 4 Micro-Shortcut Buttons */}
+          <div className="k-quick-shortcuts-row">
+            <button 
+              type="button" 
+              className="k-shortcut-btn"
+              onClick={() => navigate('/pos')}
+            >
+              <TrendingUp size={16} />
+              <span>New Sale</span>
+            </button>
+            <button 
+              type="button" 
+              className="k-shortcut-btn"
+              onClick={() => setShowAddProductModal(true)}
+            >
+              <Plus size={16} />
+              <span>Product</span>
+            </button>
+            <button 
+              type="button" 
+              className="k-shortcut-btn"
+              onClick={() => setShowRecordExpenseModal(true)}
+            >
+              <Receipt size={16} />
+              <span>Expense</span>
+            </button>
+            <button 
+              type="button" 
+              className="k-shortcut-btn"
+              onClick={() => navigate('/invoices')}
+            >
+              <FileText size={16} />
+              <span>Invoice</span>
+            </button>
+          </div>
         </div>
 
         {/* 5. Recent Orders Section matching Screen 3 */}

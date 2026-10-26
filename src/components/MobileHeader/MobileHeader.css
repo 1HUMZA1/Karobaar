@@ -1,38 +1,133 @@
-.mobile-header {
+/* ============================================================ */
+/* KAROBAAR MINIMALIST MOBILE HEADER                            */
+/* Apple / Linear Style Translucent Top Bar                     */
+/* ============================================================ */
+
+.k-mobile-top-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
-  background-color: var(--bg-card);
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 45;
+  transition: all 0.2s ease;
 }
 
-.mobile-header-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  width: 40px;
-  height: 40px;
+[data-theme='dark'] .k-mobile-top-header {
+  background: rgba(9, 9, 11, 0.88);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.k-header-circle-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: var(--text-main, #09090b);
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.mobile-header-title {
+[data-theme='dark'] .k-header-circle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.k-header-circle-btn:active {
+  transform: scale(0.92);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='dark'] .k-header-circle-btn:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.k-header-circle-btn.k-plus-action {
+  background: #09090b;
+  color: #ffffff;
+  border: none;
+}
+
+[data-theme='dark'] .k-header-circle-btn.k-plus-action {
+  background: #ffffff;
+  color: #09090b;
+}
+
+.k-header-center-info {
   flex: 1;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
-.right-custom-btn.plus-btn {
-  background-color: var(--primary-color);
-  color: var(--bg-primary);
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
+.k-header-title-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main, #09090b);
+  letter-spacing: -0.015em;
+}
+
+.k-header-subtitle-text {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted, #71717a);
+}
+
+.k-header-brand-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.k-header-right-actions {
+  display: flex;
+  align-items: center;
+}
+
+.k-header-dot-badge {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-card, #ffffff);
+}
+
+.k-header-avatar-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #09090b;
+  color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+[data-theme='dark'] .k-header-avatar-btn {
+  background: #ffffff;
+  color: #09090b;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.k-header-avatar-btn:active {
+  transform: scale(0.92);
 }
 
 @media (min-width: 1025px) {

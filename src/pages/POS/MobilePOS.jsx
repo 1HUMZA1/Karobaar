@@ -61,7 +61,7 @@ export const MobilePOS = ({
   };
 
   return (
-    <div className="mobile-pos-page pb-28">
+    <div className="mobile-pos-page pb-36">
       <MobileHeader title="New Sale" leftIcon="back" />
 
       {/* Success Notification Banner */}
@@ -170,38 +170,38 @@ export const MobilePOS = ({
         })}
       </div>
 
-      {/* Floating Cart Bottom Banner */}
-      <div className="fixed bottom-16 left-0 right-0 bg-[var(--bg-card)] border-t border-[var(--border-color)] p-4 rounded-t-3xl shadow-[0_-4px_24px_rgba(0,0,0,0.08)] z-40">
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-[var(--text-main)]">Cart</h3>
-            <span className="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[10px] font-semibold text-[var(--text-secondary)]">
-              {totalItems} items
-            </span>
+      {/* Floating Cart Capsule - Apple Pay Style */}
+      {totalItems > 0 && (
+        <div className="fixed bottom-22 left-4 right-4 max-w-md mx-auto bg-[#09090b] text-white p-3.5 rounded-2xl shadow-xl z-40 border border-white/10 flex items-center justify-between animate-in fade-in slide-in-from-bottom-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-bold text-xs">
+              {totalItems}
+            </div>
+            <div>
+              <p className="text-[10px] text-zinc-400 font-medium">Subtotal (incl. tax)</p>
+              <p className="text-sm font-extrabold text-white">{currencySymbol}{total.toFixed(2)}</p>
+            </div>
           </div>
-          {cart.length > 0 && (
-            <button onClick={clearCart} className="text-xs font-semibold text-red-500 hover:underline">
+
+          <div className="flex items-center gap-2">
+            <button 
+              type="button" 
+              onClick={clearCart} 
+              className="text-[11px] font-semibold text-zinc-400 hover:text-red-400 px-2 py-1"
+            >
               Clear
             </button>
-          )}
+            <button 
+              type="button"
+              onClick={() => setShowCheckoutModal(true)}
+              className="px-4 py-2.5 rounded-xl bg-white text-black font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-transform shadow-xs"
+            >
+              <span>Checkout</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
         </div>
-        
-        <div className="flex justify-between items-baseline mb-3">
-          <span className="text-xs font-medium text-[var(--text-secondary)]">Subtotal (incl. tax)</span>
-          <span className="text-xl font-bold text-[var(--text-main)]">
-            {currencySymbol}{total.toFixed(2)}
-          </span>
-        </div>
-
-        <button 
-          onClick={() => setShowCheckoutModal(true)}
-          disabled={cart.length === 0 || processing}
-          className="w-full bg-[#09090b] text-white dark:bg-white dark:text-black h-12 rounded-xl flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-transform active:scale-[0.99] shadow-sm"
-        >
-          <span>Proceed to Checkout</span>
-          <ArrowRight size={18} />
-        </button>
-      </div>
+      )}
 
       {/* Checkout Drawer / Modal */}
       {showCheckoutModal && (

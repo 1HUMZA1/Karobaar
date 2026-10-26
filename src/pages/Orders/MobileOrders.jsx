@@ -58,7 +58,7 @@ export const MobileOrders = ({
   };
 
   return (
-    <div className="mobile-orders-page pb-24">
+    <div className="mobile-orders-page pb-32">
       {/* Screen 5 Top Header with Back arrow & Filter toggle */}
       <MobileHeader 
         title="Orders" 
@@ -127,42 +127,55 @@ export const MobileOrders = ({
             const customer = order.customerName || (order.customerId ? `Customer #${order.customerId}` : 'Walk-in Customer');
             const payment = order.paymentMethod || 'Cash';
             const status = order.status || 'Completed';
+            const initials = customer
+              .split(' ')
+              .map(n => n[0])
+              .filter(Boolean)
+              .slice(0, 2)
+              .join('')
+              .toUpperCase() || 'C';
 
             return (
               <div 
                 key={order.id} 
-                className="bg-[var(--bg-card)] rounded-2xl p-4 border border-[var(--border-color)] active:scale-[0.99] transition-transform shadow-xs cursor-pointer hover:border-black/30 dark:hover:border-white/30" 
+                className="bg-[var(--bg-card)] rounded-2xl p-3.5 border border-[var(--border-color)] active:scale-[0.99] transition-transform shadow-xs cursor-pointer hover:border-black/30 dark:hover:border-white/30" 
                 onClick={() => onOrderClick && onOrderClick(order)}
               >
-                {/* Row 1: Order ID on left, Date on right */}
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-sm font-bold text-[var(--text-main)] tracking-tight">
-                    {orderNum.startsWith('#') ? orderNum : `#${orderNum}`}
-                  </span>
-                  <span className="text-xs font-medium text-[var(--text-muted)]">
-                    {formatDate(order.date || order.createdAt)}
-                  </span>
-                </div>
-                
-                {/* Row 2: Customer Name on left, Amount on right */}
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-xs font-medium text-[var(--text-secondary)] truncate max-w-[65%]">
-                    {customer}
-                  </span>
-                  <span className="text-base font-bold text-[var(--text-main)]">
-                    {currencySymbol}{total.toFixed(2)}
-                  </span>
-                </div>
-                
-                {/* Row 3: Status Badge on left, Payment method on right */}
-                <div className="flex justify-between items-center pt-2 border-t border-[var(--border-color)]/60">
-                  <div>
-                    {getStatusBadge(status)}
+                <div className="flex items-center gap-3">
+                  {/* Customer Initials Avatar */}
+                  <div className="w-10 h-10 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center font-bold text-xs text-[var(--text-main)] flex-shrink-0 tracking-wider">
+                    {initials}
                   </div>
-                  <span className="text-xs font-medium text-[var(--text-muted)] flex items-center gap-1">
-                    <span>{payment}</span>
-                    <ChevronRight size={14} className="text-[var(--text-muted)]" />
-                  </span>
+
+                  {/* Order Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-0.5">
+                      <span className="text-sm font-bold text-[var(--text-main)] tracking-tight">
+                        {orderNum.startsWith('#') ? orderNum : `#${orderNum}`}
+                      </span>
+                      <span className="text-sm font-bold text-[var(--text-main)]">
+                        {currencySymbol}{total.toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-[var(--text-secondary)] truncate max-w-[65%]">
+                        {customer}
+                      </span>
+                      <span className="text-[11px] font-medium text-[var(--text-muted)]">
+                        {formatDate(order.date || order.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer with Status Badge and Payment Method */}
+                <div className="flex justify-between items-center pt-2.5 mt-2.5 border-t border-[var(--border-color)]/60">
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(status)}
+                    <span className="text-[11px] text-[var(--text-muted)] font-medium">· {payment}</span>
+                  </div>
+                  <ChevronRight size={15} className="text-[var(--text-muted)]" />
                 </div>
               </div>
             );

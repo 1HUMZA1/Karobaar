@@ -40,7 +40,7 @@ export const MobileProducts = ({
   // Screen 7 View: Add / Edit Product
   if (isModalOpen) {
     return (
-      <div className="mobile-product-modal fixed inset-0 z-50 bg-[var(--bg-primary)] overflow-y-auto pb-16">
+      <div className="mobile-product-modal fixed inset-0 z-50 bg-[var(--bg-primary)] overflow-y-auto pb-32">
         {/* Top Header */}
         <div className="k-modal-top-bar px-4 py-3 border-b border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between sticky top-0 z-10">
           <button 
@@ -190,7 +190,7 @@ export const MobileProducts = ({
 
   // Screen 6 View: Products Screen
   return (
-    <div className="mobile-products-page pb-24">
+    <div className="mobile-products-page pb-32">
       {/* Top Header matching Screen 6 */}
       <MobileHeader 
         title="Products" 

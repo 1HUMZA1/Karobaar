@@ -2,10 +2,19 @@ import React from 'react';
 import { Menu, Bell, User, ArrowLeft, Search, SlidersHorizontal, Plus } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { KarobaarLogo } from '../KarobaarLogo/KarobaarLogo';
 import './MobileHeader.css';
 
-export const MobileHeader = ({ title, leftIcon = 'menu', onLeftClick, rightAction, rightIcon, rightOnClick }) => {
-  const { toggleSidebar, currentUser } = useAppContext();
+export const MobileHeader = ({ 
+  title, 
+  leftIcon = 'menu', 
+  onLeftClick, 
+  rightAction, 
+  rightIcon, 
+  rightOnClick,
+  subtitle
+}) => {
+  const { toggleSidebar, currentUser, currentBusiness } = useAppContext();
   const navigate = useNavigate();
   
   const handleLeft = () => {
@@ -15,41 +24,76 @@ export const MobileHeader = ({ title, leftIcon = 'menu', onLeftClick, rightActio
   };
   
   return (
-    <div className="mobile-header hidden-desktop">
-      <button className="mobile-header-btn" onClick={handleLeft}>
-        {leftIcon === 'back' ? <ArrowLeft size={22} /> : <Menu size={22} />}
+    <header className="k-mobile-top-header hidden-desktop">
+      {/* Left Action Button */}
+      <button 
+        type="button"
+        className="k-header-circle-btn" 
+        onClick={handleLeft}
+        aria-label={leftIcon === 'back' ? 'Back' : 'Menu'}
+      >
+        {leftIcon === 'back' ? <ArrowLeft size={19} /> : <Menu size={19} />}
       </button>
       
-      <div className="mobile-header-title">
+      {/* Center Title or Brand Logo */}
+      <div className="k-header-center-info">
         {title === 'Karobaar' ? (
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-[var(--primary-color)] text-[var(--bg-primary)] flex items-center justify-center font-extrabold text-sm tracking-tighter">K</div>
-            <span className="font-extrabold text-xl tracking-tight text-[var(--text-main)]">Karobaar</span>
+          <div className="k-header-brand-badge">
+            <KarobaarLogo size="sm" theme="auto" layout="horizontal" showTagline={false} />
           </div>
         ) : (
-          <span className="font-bold text-lg text-[var(--text-main)]">{title}</span>
+          <div className="flex flex-col items-center">
+            <span className="k-header-title-text">{title}</span>
+            {subtitle && <span className="k-header-subtitle-text">{subtitle}</span>}
+          </div>
         )}
       </div>
       
-      <div className="mobile-header-right">
+      {/* Right Action Button */}
+      <div className="k-header-right-actions">
         {rightAction === 'dashboard' ? (
-          <div className="flex items-center gap-3">
-            <button className="mobile-header-btn relative">
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[var(--danger)] rounded-full border border-[var(--bg-card)]"></span>
+          <div className="flex items-center gap-2">
+            <button 
+              type="button" 
+              className="k-header-circle-btn relative"
+              onClick={() => navigate('/notifications')}
+              aria-label="Notifications"
+            >
+              <Bell size={18} />
+              <span className="k-header-dot-badge"></span>
             </button>
-            <div className="w-8 h-8 rounded-full bg-[var(--bg-hover)] overflow-hidden border border-[var(--border-color)]">
-              {currentUser?.photoURL ? <img src={currentUser.photoURL} alt="User" className="w-full h-full object-cover" /> : <User size={16} className="m-2 text-[var(--text-muted)]"/>}
-            </div>
+            <button 
+              type="button"
+              className="k-header-avatar-btn"
+              onClick={() => navigate('/more')}
+              aria-label="Profile"
+            >
+              {currentUser?.photoURL ? (
+                <img src={currentUser.photoURL} alt="User" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[11px] font-bold">
+                  {(currentUser?.name || currentBusiness?.name || 'K').slice(0, 1).toUpperCase()}
+                </span>
+              )}
+            </button>
           </div>
         ) : rightIcon ? (
-          <button className={`mobile-header-btn right-custom-btn ${rightIcon === 'plus' ? 'plus-btn' : ''}`} onClick={rightOnClick}>
-            {rightIcon === 'plus' && <Plus size={20} />}
-            {rightIcon === 'filter' && <SlidersHorizontal size={20} />}
-            {rightIcon === 'search' && <Search size={20} />}
+          <button 
+            type="button"
+            className={`k-header-circle-btn ${rightIcon === 'plus' ? 'k-plus-action' : ''}`} 
+            onClick={rightOnClick}
+            aria-label={rightIcon}
+          >
+            {rightIcon === 'plus' && <Plus size={18} />}
+            {rightIcon === 'filter' && <SlidersHorizontal size={18} />}
+            {rightIcon === 'search' && <Search size={18} />}
           </button>
-        ) : <div style={{width: 32}}></div>}
+        ) : (
+          <div style={{ width: 38 }}></div>
+        )}
       </div>
-    </div>
+    </header>
   );
 };
+
+export default MobileHeader;
