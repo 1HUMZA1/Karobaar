@@ -247,7 +247,7 @@ const Dashboard = () => {
         lowStockProducts={lowStockProducts}
         healthScore={healthScore}
         healthLabel={healthLabel}
-        onRefresh={fetchDashboardData}
+        onRefresh={() => loadDashboardData(currentUser?.activeBusinessId)}
         isRefreshing={isRefreshing}
       />
     );

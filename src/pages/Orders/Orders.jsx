@@ -22,7 +22,7 @@ const Orders = () => {
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState(null);
   
   // Use SWR Hook instead of blocking fetch
-  const { data: orders, loading, isRevalidating } = useCollection('sales', currentUser?.activeBusinessId, {
+  const { data: orders, loading, isRevalidating, refetch } = useCollection('sales', currentUser?.activeBusinessId, {
     sortBy: (a, b) => new Date(b.date) - new Date(a.date)
   });
 

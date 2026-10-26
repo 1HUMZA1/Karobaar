@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Bell, AlertCircle, ShoppingBag, Users, BarChart2, CloudOff, Info } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { useAppContext } from '../../context/AppContext';
 import { useCollection } from '../../hooks/useCollection';
 import { localDb } from '../../services/localDb';

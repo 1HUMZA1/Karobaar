@@ -22,10 +22,11 @@ const Expenses = () => {
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, accounts, ledger, expenses
+  const [searchTerm, setSearchTerm] = useState('');
   
-  const { data: expenses, mutate: mutateExpenses, refetch: refetchExpenses } = useCollection('expenses', currentUser?.activeBusinessId, { sortBy: (a, b) => new Date(b.date) - new Date(a.date) });
+  const { data: expenses, loading: loadingExpenses, mutate: mutateExpenses, refetch: refetchExpenses } = useCollection('expenses', currentUser?.activeBusinessId, { sortBy: (a, b) => new Date(b.date) - new Date(a.date) });
   const { data: sales } = useCollection('sales', currentUser?.activeBusinessId);
-  const { data: dbAccounts, mutate: mutateAccounts, refetch: refetchAccounts } = useCollection('accounts', currentUser?.activeBusinessId);
+  const { data: dbAccounts, loading: loadingAccounts, mutate: mutateAccounts, refetch: refetchAccounts } = useCollection('accounts', currentUser?.activeBusinessId);
   const { data: transfers, mutate: mutateTransfers, refetch: refetchTransfers } = useCollection('transfers', currentUser?.activeBusinessId, { sortBy: (a, b) => new Date(b.date) - new Date(a.date) });
 
   const [accounts, setAccounts] = useState([]);

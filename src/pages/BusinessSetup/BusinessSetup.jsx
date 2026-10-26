@@ -4,7 +4,7 @@ import { useAppContext } from '../../context/AppContext';
 import { db } from '../../services/databaseService';
 import { Button } from '../../components/ui/Button';
 import { auth } from '../../services/firebase';
-import { signOut, RecaptchaVerifier, linkWithPhoneNumber, PhoneAuthProvider } from 'firebase/auth';
+import { signOut, RecaptchaVerifier, linkWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { Country, City } from 'country-state-city';
 import './BusinessSetup.css';
 
@@ -188,11 +188,6 @@ const BusinessSetup = () => {
 
   const isAuthLoading = authStatus === 'loading';
 
-  // If the user has already completed setup, do not let them stay on this page
-  if (authStatus === 'authenticated') {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -334,8 +329,15 @@ const BusinessSetup = () => {
     defaultPaymentMethod: 'Cash'
   });
 
-  if (authStatus === 'unauthenticated' || authStatus === 'authenticated') {
+  const [submitState, setSubmitState] = useState(''); // '', 'Saving locally...', 'Saved locally', 'Opening your dashboard...'
+
+  // Early returns strictly AFTER all hooks are called
+  if (authStatus === 'authenticated') {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (authStatus === 'unauthenticated') {
+    return <Navigate to="/login" replace />;
   }
 
   const toggleModule = (modId) => {
@@ -362,8 +364,6 @@ const BusinessSetup = () => {
   };
 
   const handleBack = () => setStep(s => s - 1);
-  const [submitState, setSubmitState] = useState(''); // '', 'Saving locally...', 'Saved locally', 'Opening your dashboard...'
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
