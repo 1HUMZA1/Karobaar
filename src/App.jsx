@@ -110,9 +110,18 @@ const AppContent = () => {
   const [sysMsgIndex, setSysMsgIndex] = useState(0);
   const [progress, setProgress] = useState(15);
   const [isSlow, setIsSlow] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    if (authStatus !== 'loading') return;
+    // Hard 800ms limit: never trap user on loading/splash screen
+    const hardLimit = setTimeout(() => {
+      setTimedOut(true);
+    }, 800);
+    return () => clearTimeout(hardLimit);
+  }, []);
+
+  useEffect(() => {
+    if (authStatus !== 'loading' || timedOut) return;
     
     const sloganInterval = setInterval(() => {
       setSloganIndex(prev => (prev + 1) % SLOGANS.length);
@@ -140,9 +149,9 @@ const AppContent = () => {
       clearInterval(progressInterval);
       clearTimeout(slowTimer);
     };
-  }, [authStatus]);
+  }, [authStatus, timedOut]);
 
-  if (authStatus === 'loading') {
+  if (authStatus === 'loading' && !timedOut) {
     return (
       <div className="login-splash-screen" style={{ 
         height: '100vh', 

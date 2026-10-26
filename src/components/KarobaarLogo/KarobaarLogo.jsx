@@ -3,7 +3,7 @@ import './KarobaarLogo.css';
 
 /**
  * Karobaar Brand Logo
- * Features the signature 3-bar ascending growth chart symbol
+ * Features the signature "K" emblem in a minimalist rounded square
  * Tagline: "Turn Work Into Growth."
  */
 export const KarobaarLogo = ({ 
@@ -18,22 +18,40 @@ export const KarobaarLogo = ({
   const fillColor = isLight ? '#ffffff' : '#09090b';
   const taglineColor = isLight ? 'rgba(255, 255, 255, 0.75)' : '#71717a';
 
+  const badgeDimensions = {
+    sm: { box: 28, radius: 7, fontSize: '0.95rem', border: 2 },
+    md: { box: 38, radius: 9, fontSize: '1.25rem', border: 2.5 },
+    lg: { box: 48, radius: 12, fontSize: '1.65rem', border: 3 },
+    xl: { box: 64, radius: 16, fontSize: '2.2rem', border: 3.5 }
+  }[size] || { box: 38, radius: 9, fontSize: '1.25rem', border: 2.5 };
+
   return (
     <div className={`karobaar-brand-logo ${size} ${layout} ${className}`}>
-      <svg 
-        className="karobaar-bars-icon" 
-        viewBox="0 0 28 28" 
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg"
-        aria-label="Karobaar Logo"
+      {/* Signature "K" Logo Emblem */}
+      <div 
+        className="karobaar-k-emblem"
+        style={{
+          width: `${badgeDimensions.box}px`,
+          height: `${badgeDimensions.box}px`,
+          borderRadius: `${badgeDimensions.radius}px`,
+          border: `${badgeDimensions.border}px solid ${fillColor}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: fillColor,
+          fontWeight: 800,
+          fontSize: badgeDimensions.fontSize,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif',
+          lineHeight: 1,
+          letterSpacing: '-0.02em',
+          userSelect: 'none',
+          flexShrink: 0,
+          boxShadow: isLight ? '0 4px 16px rgba(255,255,255,0.08)' : '0 2px 8px rgba(0,0,0,0.06)'
+        }}
+        aria-label="Karobaar K Logo"
       >
-        {/* Left short bar */}
-        <rect x="2" y="14" width="6" height="12" rx="3" fill={fillColor} />
-        {/* Middle medium bar */}
-        <rect x="11" y="7" width="6" height="19" rx="3" fill={fillColor} />
-        {/* Right tall bar */}
-        <rect x="20" y="2" width="6" height="24" rx="3" fill={fillColor} />
-      </svg>
+        K
+      </div>
       
       {showText && (
         <div className="karobaar-text-group">

@@ -58,8 +58,8 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
     super.initState();
     _startApp();
 
-    // Safety timeout: Maximum 2 seconds splash display
-    Future.delayed(const Duration(milliseconds: 2000), () {
+    // Safety timeout: Maximum 1 second splash display so dashboard shows immediately
+    Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted && _isLoading) {
         setState(() {
           _isLoading = false;
@@ -164,38 +164,25 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Official Karobaar 3-Ascending-Bars Logo (Black on White)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  width: 8,
-                  height: 18,
-                  decoration: BoxDecoration(
+            // Official Karobaar "K" Logo Emblem (Black on White)
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black, width: 3),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: const Center(
+                child: Text(
+                  'K',
+                  style: TextStyle(
                     color: Colors.black,
-                    borderRadius: BorderRadius.circular(4),
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    height: 1.0,
                   ),
                 ),
-                const SizedBox(width: 5),
-                Container(
-                  width: 8,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Container(
-                  width: 8,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
