@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../services/databaseService';
 import { localDb } from '../services/localDb';
+import { initializeDemoData } from '../services/demoData';
 
 /**
  * Custom hook for Stale-While-Revalidate (SWR) fetching of Firestore collections.
@@ -44,6 +45,12 @@ export const useCollection = (collectionName, businessId = null, options = {}) =
       setError(null);
 
       let freshData = await db.getCollection(collectionName, businessId);
+      if ((!freshData || freshData.length === 0) && businessId === 'demo-business-1') {
+        try {
+          await initializeDemoData(businessId);
+          freshData = await db.getCollection(collectionName, businessId);
+        } catch (initErr) {}
+      }
 
       // Apply optional filtering/sorting locally
       if (filterBy) {

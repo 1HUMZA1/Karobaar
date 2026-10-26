@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, ShoppingCart, Plus, Minus, X, CreditCard, Banknote, User, Printer, Trash2, Package, ArrowRight } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { salesService } from '../../services/salesService';
+import { initializeDemoData } from '../../services/demoData';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -41,12 +42,16 @@ const POS = () => {
   }, [currentUser?.activeBusinessId]);
 
   const loadData = async (businessId) => {
-    const p = await db.getCollection('products', businessId);
+    let p = await db.getCollection('products', businessId);
+    if ((!p || p.length === 0) && businessId === 'demo-business-1') {
+      await initializeDemoData(businessId);
+      p = await db.getCollection('products', businessId);
+    }
     const c = await db.getCollection('customers', businessId);
     const e = await db.getCollection('employees', businessId);
-    setProducts(p.filter(prod => prod.status !== 'Inactive'));
-    setCustomers(c);
-    setEmployees(e.filter(emp => emp.status === 'Active'));
+    setProducts((p || []).filter(prod => prod.status !== 'Inactive'));
+    setCustomers(c || []);
+    setEmployees((e || []).filter(emp => emp.status === 'Active'));
   };
 
   const filteredProducts = products.filter(p => 

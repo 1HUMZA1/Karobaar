@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../../services/databaseService';
 import { localDb } from '../../services/localDb';
+import { initializeDemoData } from '../../services/demoData';
 import { useAppContext } from '../../context/AppContext';
 import { format, subDays, startOfDay } from 'date-fns';
 import { DashboardKPIs } from '../../components/Dashboard/DashboardKPIs';
@@ -146,6 +147,13 @@ const Dashboard = () => {
   const loadDashboardData = async (businessId) => {
     setIsRefreshing(true);
     try {
+      if (businessId === 'demo-business-1') {
+        const prodCheck = await db.getCollection('products', businessId);
+        if (!prodCheck || prodCheck.length === 0) {
+          await initializeDemoData(businessId);
+        }
+      }
+
       // Fetch in parallel
       const [sales, exp, purchases, customers, products, attendance] = await Promise.all([
         db.getCollection('sales', businessId),

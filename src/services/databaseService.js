@@ -126,6 +126,17 @@ class DatabaseService {
     return cached || [];
   }
 
+  // Save an entire collection locally (used by demo/initial data seeding)
+  async saveCollection(collectionName, records, businessId = null) {
+    localDb.bulkSave(collectionName, records, businessId);
+    return records;
+  }
+
+  // Save a single record directly to local database
+  async save(collectionName, id, data, businessId = null) {
+    return localDb.save(collectionName, id, data, false, businessId);
+  }
+
   // Find a single item by ID (Cache-First, background revalidate)
   async getById(collectionName, id, businessId = null) {
     // 1. Check local cache first for instant response

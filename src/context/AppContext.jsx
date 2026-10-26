@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../services/databaseService';
 import { auth } from '../services/firebase';
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { initializeDemoData } from '../services/demoData';
 
 const AppContext = createContext();
 
@@ -83,6 +84,64 @@ export const AppProvider = ({ children }) => {
       setAppUiVersion(currentBusiness.settings.appUiVersion);
     }
   }, [currentBusiness]);
+
+  // Helper: Instantly provisions and logs into the ready-to-use business workspace
+  const launchReadyToUseWorkspace = async () => {
+    const businessId = 'demo-business-1';
+    try {
+      await initializeDemoData(businessId);
+    } catch (e) {
+      console.warn("Demo data init:", e);
+    }
+
+    const demoBusiness = {
+      id: businessId,
+      name: 'SAS CAFETERIA',
+      currency: 'INR',
+      category: 'Cafeteria & Restaurant',
+      address: '123 Commercial Plaza, Main Street',
+      phone: '+91 98765 00000',
+      settings: {
+        currency: 'INR',
+        theme: 'light',
+        taxRate: 5
+      },
+      modules: {
+        pos: true,
+        inventory: true,
+        orders: true,
+        customers: true,
+        expenses: true,
+        suppliers: true,
+        reports: true,
+        employees: true,
+        invoices: true
+      }
+    };
+
+    const demoUser = {
+      id: 'demo-user-1',
+      name: 'SAS Cafeteria Owner',
+      email: 'owner@sascafeteria.com',
+      role: 'Owner',
+      activeBusinessId: businessId,
+      memberships: [businessId],
+      onboardingCompleted: true
+    };
+
+    try {
+      localStorage.removeItem('karobaar_explicit_logout');
+      localStorage.setItem('karobaar_session_user', JSON.stringify(demoUser));
+      localStorage.setItem('karobaar_session_business', JSON.stringify(demoBusiness));
+      localStorage.setItem('karobaar_session_businesses', JSON.stringify([demoBusiness]));
+      localStorage.setItem('karobaar-active-business', businessId);
+    } catch (e) {}
+
+    setCurrentUser(demoUser);
+    setCurrentBusiness(demoBusiness);
+    setUserBusinesses([demoBusiness]);
+    setAuthStatus('authenticated');
+  };
 
   // Firebase Auth Listener
   useEffect(() => {
@@ -174,16 +233,42 @@ export const AppProvider = ({ children }) => {
           }
         }
       } else {
-        console.log("[AUTH] Unauthenticated user");
-        try {
-          localStorage.removeItem('karobaar_session_user');
-          localStorage.removeItem('karobaar_session_business');
-          localStorage.removeItem('karobaar_session_businesses');
-        } catch (e) {}
-        setCurrentUser(null);
-        setCurrentBusiness(null);
-        setUserBusinesses([]);
-        setAuthStatus('unauthenticated');
+        console.log("[AUTH] Firebase auth has no cloud user. Checking for local/offline session...");
+        const savedUserRaw = localStorage.getItem('karobaar_session_user');
+        const savedBizRaw = localStorage.getItem('karobaar_session_business');
+        
+        if (savedUserRaw && savedBizRaw) {
+          try {
+            const userObj = JSON.parse(savedUserRaw);
+            const bizObj = JSON.parse(savedBizRaw);
+            let businessesData = [bizObj];
+            try {
+              businessesData = JSON.parse(localStorage.getItem('karobaar_session_businesses')) || [bizObj];
+            } catch (e) {}
+
+            console.log("[AUTH] Preserving active local/offline session for:", userObj.name || userObj.email);
+            setCurrentUser(userObj);
+            setCurrentBusiness(bizObj);
+            setUserBusinesses(businessesData);
+            setAuthStatus('authenticated');
+            return;
+          } catch (e) {
+            console.error("[AUTH] Error parsing local session:", e);
+          }
+        }
+
+        const wasExplicitlyLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
+        if (wasExplicitlyLoggedOut) {
+          console.log("[AUTH] User explicitly logged out. Showing login screen.");
+          setCurrentUser(null);
+          setCurrentBusiness(null);
+          setUserBusinesses([]);
+          setAuthStatus('unauthenticated');
+        } else {
+          // Fresh launch without explicit logout: auto-provision ready-to-use workspace immediately
+          console.log("[AUTH] First launch detected — auto-provisioning ready-to-use SAS CAFETERIA workspace...");
+          launchReadyToUseWorkspace();
+        }
       }
     });
 
@@ -247,10 +332,13 @@ export const AppProvider = ({ children }) => {
   const logout = async () => {
     setAuthStatus('loading');
     try {
+      localStorage.setItem('karobaar_explicit_logout', 'true');
       localStorage.removeItem('karobaar_session_user');
       localStorage.removeItem('karobaar_session_business');
       localStorage.removeItem('karobaar_session_businesses');
-      await firebaseSignOut(auth);
+      try {
+        await firebaseSignOut(auth);
+      } catch (e) {}
       setCurrentUser(null);
       setCurrentBusiness(null);
       setUserBusinesses([]);
@@ -281,6 +369,7 @@ export const AppProvider = ({ children }) => {
       switchBranch,
       userRole,
       refreshUserProfile,
+      launchReadyToUseWorkspace,
       logout
     }}>
       {children}

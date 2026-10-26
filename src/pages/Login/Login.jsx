@@ -125,7 +125,7 @@ const PHONE_LENGTHS = {
 
 const Login = () => {
   const navigate = useNavigate();
-  const { authStatus, authError } = useAppContext();
+  const { authStatus, authError, launchReadyToUseWorkspace } = useAppContext();
 
   // Navigation: 'auth' (Sign In / Register) | 'forgot_password'
   const [viewMode, setViewMode] = useState('auth');
@@ -407,36 +407,18 @@ const Login = () => {
 
   // --- 1-Click Instant Demo / Guest Workspace Access ---
   const handleExploreDemoStore = async () => {
-    const demoUser = {
-      id: 'demo-user-1',
-      email: 'owner@sascafeteria.com',
-      name: 'SAS Cafeteria Owner',
-      role: 'Owner'
-    };
-    const demoBusiness = {
-      id: 'demo-business-1',
-      name: 'SAS CAFETERIA',
-      currency: 'INR',
-      category: 'Cafeteria & Restaurant',
-      settings: {
-        currency: 'INR',
-        theme: 'light'
-      }
-    };
-
+    setIsAuthenticating(true);
     try {
-      await initializeDemoData('demo-business-1');
+      if (launchReadyToUseWorkspace) {
+        await launchReadyToUseWorkspace();
+      }
+      navigate('/dashboard');
     } catch (e) {
-      console.warn("Demo data init:", e);
+      console.error("Workspace launch error:", e);
+      setGeneralError('Failed to initialize ready-to-use workspace.');
+    } finally {
+      setIsAuthenticating(false);
     }
-
-    localStorage.setItem('karobaar_session_user', JSON.stringify(demoUser));
-    localStorage.setItem('karobaar_session_business', JSON.stringify(demoBusiness));
-    localStorage.setItem('karobaar_session_businesses', JSON.stringify([demoBusiness]));
-    localStorage.setItem('karobaar-active-business', 'demo-business-1');
-    
-    navigate('/dashboard');
-    window.location.reload();
   };
 
   return (
@@ -705,15 +687,21 @@ const Login = () => {
                   </button>
                 </div>
 
-                {/* 1-Click Instant Demo Store Access */}
-                <button 
-                  type="button" 
-                  className="demo-access-btn"
-                  onClick={handleExploreDemoStore}
-                >
-                  <Sparkles size={16} />
-                  <span>Try Demo Workspace (SAS CAFETERIA)</span>
-                </button>
+                {/* 1-Click Instant Ready-to-Use Workspace Access */}
+                <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid #e4e4e7' }}>
+                  <button 
+                    type="button" 
+                    className="demo-access-btn"
+                    onClick={handleExploreDemoStore}
+                    style={{ width: '100%', justifyContent: 'center' }}
+                  >
+                    <Sparkles size={16} />
+                    <span>Launch Ready-to-Use Workspace (SAS CAFETERIA)</span>
+                  </button>
+                  <p style={{ fontSize: '0.75rem', textAlign: 'center', color: '#71717a', margin: '0.45rem 0 0 0', fontWeight: 500 }}>
+                    Pre-loaded with live POS, products, sales history, customers, and expenses.
+                  </p>
+                </div>
               </div>
             ) : (
               /* ======================================================== */

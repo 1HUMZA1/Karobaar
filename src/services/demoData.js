@@ -2,6 +2,51 @@ import { db } from './databaseService';
 import { subDays, formatISO } from 'date-fns';
 
 export const initializeDemoData = async (businessId = 'demo-business-1') => {
+  // Ensure business entity exists in localDb
+  const existingBiz = await db.getById('businesses', businessId);
+  if (!existingBiz) {
+    const demoBusinessDoc = {
+      id: businessId,
+      name: 'SAS CAFETERIA',
+      currency: 'INR',
+      category: 'Cafeteria & Restaurant',
+      address: '123 Commercial Plaza, Main Street',
+      phone: '+91 98765 00000',
+      settings: {
+        currency: 'INR',
+        theme: 'light',
+        taxRate: 5
+      },
+      modules: {
+        pos: true,
+        inventory: true,
+        orders: true,
+        customers: true,
+        expenses: true,
+        suppliers: true,
+        reports: true,
+        employees: true,
+        invoices: true
+      }
+    };
+    await db.save('businesses', businessId, demoBusinessDoc);
+  }
+
+  // Ensure user entity exists in localDb
+  const existingUser = await db.getById('users', 'demo-user-1');
+  if (!existingUser) {
+    const demoUserDoc = {
+      id: 'demo-user-1',
+      name: 'SAS Cafeteria Owner',
+      email: 'owner@sascafeteria.com',
+      role: 'Owner',
+      activeBusinessId: businessId,
+      memberships: [businessId],
+      onboardingCompleted: true
+    };
+    await db.save('users', 'demo-user-1', demoUserDoc);
+  }
+
   const products = await db.getCollection('products', businessId);
   
   if (products.length === 0) {
