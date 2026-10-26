@@ -256,11 +256,11 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container max-w-[1600px] mx-auto hidden-mobile">
       
-      {/* 1. Header Area */}
-      <div className="dashboard-header flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
-        <div>
-          <p className="text-text-muted font-bold tracking-wide text-xs mb-2">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
-          <h1 className="text-3xl font-extrabold tracking-tight mb-1 text-text-main flex items-center">
+      {/* 1. Header Area - Strictly Left-Aligned Greeting with Right-Aligned Executive Health Dock */}
+      <div className="dashboard-header">
+        <div className="dashboard-header-text">
+          <p className="text-text-muted font-bold tracking-wide text-xs mb-2 text-left">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
+          <h1 className="text-3xl font-extrabold tracking-tight mb-1 text-text-main flex items-center text-left">
             {greetingTyped}
             {greetingTyped.length === fullGreetingText.length ? (
               <span className="ml-2">👋</span>
@@ -268,10 +268,10 @@ const Dashboard = () => {
               <span className="ml-1 animate-pulse border-r-4 border-text-main h-[0.8em] inline-block align-baseline"></span>
             )}
           </h1>
-          <p className="text-text-secondary text-sm font-semibold">Here's what's happening with your operations today.</p>
+          <p className="text-text-secondary text-sm font-semibold text-left">Here's what's happening with your operations today.</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="dashboard-header-actions">
           <div className="executive-health-dock flex items-center gap-3 bg-[var(--bg-card)] px-4 py-2.5 rounded-2xl border border-[var(--border-color)] shadow-sm">
             <div className="flex items-center gap-2.5">
               <div className="relative flex items-center justify-center">

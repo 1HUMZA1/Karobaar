@@ -1,3 +1,46 @@
+
+/* ==========================================================================
+   Dashboard Header - Solid Left Alignment for Title & Clean Right Alignment for Actions
+   ========================================================================== */
+.dashboard-header {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: flex-end !important;
+  width: 100% !important;
+  margin-bottom: 2rem !important;
+  gap: 1.5rem !important;
+}
+
+.dashboard-header-text {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  flex: 1 1 auto !important;
+}
+
+.dashboard-header-text h1,
+.dashboard-header-text p,
+.dashboard-header-text span {
+  text-align: left !important;
+}
+
+.dashboard-header-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+}
+
 /* DashboardPremium Layout Utilities */
 
 /* Display & Flexbox */
