@@ -10,7 +10,8 @@ import { DashboardOperations } from '../../components/Dashboard/DashboardOperati
 import { DashboardFeed } from '../../components/Dashboard/DashboardFeed';
 import { GettingStartedGuide } from '../../components/Dashboard/GettingStartedGuide';
 import { Button } from '../../components/ui/Button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Zap, Package, Users, Receipt } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileDashboard } from './MobileDashboard';
 import './DashboardPremium.css';
@@ -22,6 +23,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { userRole, currentUser, currentBusiness } = useAppContext();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -296,6 +298,61 @@ const Dashboard = () => {
       </div>
 
       <GettingStartedGuide />
+
+      {/* Operations Quick Command Bar */}
+      <div className="operations-quick-bar flex flex-wrap items-center justify-between gap-3 p-3.5 mb-6 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#dcfce7] border border-[#86efac] text-[#15803d]">
+            <span className="w-2 h-2 rounded-full bg-[#16a34a] animate-pulse"></span>
+            <span className="text-xs font-extrabold uppercase tracking-wider">Register Live</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-text-secondary">
+            <span>Shift:</span>
+            <span className="font-bold text-text-main">Morning #1</span>
+          </div>
+          <div className="hidden md:flex items-center gap-1.5 text-xs text-text-muted font-medium">
+            <span>•</span>
+            <span>Counter: Main Counter</span>
+          </div>
+        </div>
+
+        {/* 1-Tap Quick Action Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <button 
+            onClick={() => navigate('/pos')}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#09090b] text-[#ffffff] hover:bg-[#27272a] text-xs font-bold transition-all shadow-sm"
+            title="Open POS (F2)"
+          >
+            <Zap size={13} className="fill-current text-amber-400" />
+            <span>New Sale</span>
+            <kbd className="text-[10px] bg-white/20 px-1 rounded font-bold">F2</kbd>
+          </button>
+          
+          <button 
+            onClick={() => navigate('/products')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] hover:border-text-main text-text-main text-xs font-semibold transition-all shadow-sm hover:-translate-y-0.5"
+          >
+            <Package size={13} />
+            <span>+ Product</span>
+          </button>
+
+          <button 
+            onClick={() => navigate('/customers')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] hover:border-text-main text-text-main text-xs font-semibold transition-all shadow-sm hover:-translate-y-0.5"
+          >
+            <Users size={13} />
+            <span>+ Customer</span>
+          </button>
+
+          <button 
+            onClick={() => navigate('/expenses')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] hover:border-text-main text-text-main text-xs font-semibold transition-all shadow-sm hover:-translate-y-0.5"
+          >
+            <Receipt size={13} />
+            <span>+ Expense</span>
+          </button>
+        </div>
+      </div>
 
       {/* 2. KPI Cards */}
       <DashboardKPIs stats={maskedStats} trends={trends} currencySymbol={currencySymbol} />

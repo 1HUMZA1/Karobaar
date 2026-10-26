@@ -26,30 +26,42 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
         <div className="flex-1 overflow-x-auto px-4 pb-4">
           <table className="w-full text-left">
             <thead>
-              <tr>
-                <th className="p-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Order ID</th>
-                <th className="p-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Customer</th>
-                <th className="p-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Date</th>
-                <th className="p-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Amount</th>
-                <th className="p-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-center">Status</th>
+              <tr className="border-b border-[var(--border-light)]">
+                <th className="p-4 text-xs font-bold text-text-muted uppercase tracking-wider">Order ID</th>
+                <th className="p-4 text-xs font-bold text-text-muted uppercase tracking-wider">Customer</th>
+                <th className="p-4 text-xs font-bold text-text-muted uppercase tracking-wider">Date</th>
+                <th className="p-4 text-xs font-bold text-text-muted uppercase tracking-wider text-right">Amount</th>
+                <th className="p-4 text-xs font-bold text-text-muted uppercase tracking-wider text-center">Status</th>
+                <th className="p-4 text-xs font-bold text-text-muted uppercase tracking-wider text-right">Action</th>
               </tr>
             </thead>
             <tbody className="space-y-2">
               {recentOrders.length > 0 ? (
                 recentOrders.slice(0, 5).map(order => (
-                  <tr key={order.id} className="hover:bg-[var(--bg-hover)] transition-colors cursor-pointer rounded-lg overflow-hidden group" onClick={() => navigate(`/orders`)}>
-                    <td className="p-4 text-sm font-medium text-text-main">#{order.id.slice(0, 8).toUpperCase()}</td>
-                    <td className="p-4 text-sm text-text-secondary truncate max-w-[150px]">{order.customerName || 'Walk-in Customer'}</td>
+                  <tr key={order.id} className="hover:bg-[var(--bg-hover)] transition-colors cursor-pointer rounded-lg overflow-hidden group border-b border-[var(--border-light)]" onClick={() => navigate(`/orders`)}>
+                    <td className="p-4 text-sm font-bold text-text-main">#{order.id.slice(0, 8).toUpperCase()}</td>
+                    <td className="p-4 text-sm text-text-secondary truncate max-w-[150px] font-medium">{order.customerName || 'Walk-in Customer'}</td>
                     <td className="p-4 text-sm text-text-muted">{format(new Date(order.date), 'MMM dd, HH:mm')}</td>
-                    <td className="p-4 text-sm font-semibold text-text-main text-right">{currencySymbol}{(order.total || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                    <td className="p-4 text-sm font-extrabold text-text-main text-right" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {currencySymbol}{(order.total || 0).toLocaleString(undefined, {minimumFractionDigits:2})}
+                    </td>
                     <td className="p-4 text-center">
-                      <span className={`inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider
-                        ${order.status === 'Completed' || order.status === 'Paid' ? 'bg-success-bg text-success' 
-                        : order.status === 'Pending' ? 'bg-warning-bg text-warning' 
-                        : 'bg-[var(--bg-elevated)] text-text-secondary'}`}
+                      <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border
+                        ${order.status === 'Completed' || order.status === 'Paid' ? 'bg-[#dcfce7] text-[#15803d] border-[#86efac]' 
+                        : order.status === 'Pending' ? 'bg-[#fef3c7] text-[#b45309] border-[#fde68a]' 
+                        : 'bg-[var(--bg-elevated)] text-text-secondary border-[var(--border-color)]'}`}
                       >
                         {order.status || 'Completed'}
                       </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); navigate(`/invoices`); }}
+                        className="text-xs font-bold text-text-main hover:bg-[#09090b] hover:text-[#ffffff] border border-[var(--border-color)] px-2.5 py-1 rounded-md transition-colors shadow-sm"
+                        title="View Receipt"
+                      >
+                        Receipt
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -100,9 +112,17 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
                       <p className="text-xs font-bold text-text-main mt-0.5">Suggest Reorder: {suggestedQuantity}</p>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-4">
-                    <p className="text-sm font-bold text-danger">{product.stockQuantity}</p>
-                    <p className="text-[10px] text-text-muted uppercase tracking-wider">In Stock</p>
+                  <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                    <div className="text-right">
+                      <p className="text-sm font-extrabold text-danger">{product.stockQuantity}</p>
+                      <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">In Stock</p>
+                    </div>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); navigate('/inventory'); }}
+                      className="text-xs font-bold bg-[#09090b] text-[#ffffff] px-2.5 py-1.5 rounded-lg hover:bg-[#27272a] transition-all shadow-sm"
+                    >
+                      Restock
+                    </button>
                   </div>
                 </div>
               );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, Sun, Moon, Bell, User, LogOut, HelpCircle, Settings } from 'lucide-react';
+import { Menu, Search, Sun, Moon, Bell, User, LogOut, HelpCircle, Settings, Zap } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../services/databaseService';
@@ -160,6 +160,17 @@ const Topbar = () => {
       </div>
 
       <div className="topbar-right">
+        {/* 1-Click Fast POS Access */}
+        <button 
+          className="topbar-quick-sale-btn hidden-mobile"
+          onClick={() => navigate('/pos')}
+          title="Open POS Register (F2)"
+        >
+          <Zap size={14} className="fill-current text-amber-400" />
+          <span>New Sale</span>
+          <kbd className="topbar-kbd">F2</kbd>
+        </button>
+
         {/* Sync Indicator */}
         <div className="topbar-sync-status hidden-mobile">
           {!navigator.onLine ? (
