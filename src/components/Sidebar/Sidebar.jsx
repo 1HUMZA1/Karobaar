@@ -8,6 +8,7 @@ import {
   ChevronLeft, ChevronRight, Building2
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
+import { KarobaarLogo } from '../KarobaarLogo/KarobaarLogo';
 import './Sidebar.css';
 
 const ALL_ROLES = ['Owner', 'Admin', 'Manager', 'Sales Staff', 'Cashier', 'Warehouse', 'Accountant', 'HR', 'Employee', 'OWNER'];
@@ -78,12 +79,30 @@ const navGroups = [
 const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen, userRole, currentBusiness, userBusinesses, switchBranch } = useAppContext();
   const [isPinned, setIsPinned] = useState(true);
-  const [isHovered, setIsHovered] = useState(false);
+  const [tooltip, setTooltip] = useState(null); // { name: string, top: number, left: number }
 
   const enabledModules = currentBusiness?.modules || {};
   
-  const togglePin = () => setIsPinned(!isPinned);
+  const togglePin = () => {
+    setIsPinned(!isPinned);
+    setTooltip(null);
+  };
   const isEffectivelyCollapsed = !isPinned;
+
+  const handleMouseEnter = (e, name) => {
+    if (isEffectivelyCollapsed) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setTooltip({
+        name,
+        top: rect.top + rect.height / 2,
+        left: rect.right + 12
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setTooltip(null);
+  };
 
   return (
     <>
@@ -99,20 +118,37 @@ const Sidebar = () => {
         className={`sidebar ${sidebarOpen ? 'mobile-open' : ''} ${isEffectivelyCollapsed ? 'collapsed' : ''}`}
       >
         <div className="sidebar-header">
-          <div className="logo-container" onClick={() => window.open('#/home', '_blank')} style={{ cursor: 'pointer' }} title="Visit Karobaar Landing Page">
-            <span className="logo-icon">K</span>
-            <span className="logo-text">Karobaar</span>
+          <div 
+            className="logo-container" 
+            onClick={() => { window.location.hash = '#/dashboard'; }} 
+            style={{ cursor: 'pointer' }}
+            onMouseEnter={(e) => handleMouseEnter(e, 'Karobaar — Turn Work Into Growth')}
+            onMouseLeave={handleMouseLeave}
+          >
+            <KarobaarLogo 
+              size="sm" 
+              theme="dark" 
+              showTagline={false} 
+              showText={!isEffectivelyCollapsed} 
+            />
           </div>
           
           <button 
             className="sidebar-close-btn hidden-desktop"
             onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
           >
             <X size={20} />
           </button>
         </div>
 
-        <button className="sidebar-toggle-btn hidden-mobile" onClick={togglePin}>
+        <button 
+          className="sidebar-toggle-btn hidden-mobile" 
+          onClick={togglePin}
+          onMouseEnter={(e) => handleMouseEnter(e, isEffectivelyCollapsed ? 'Expand Sidebar (Show Names)' : 'Collapse Sidebar')}
+          onMouseLeave={handleMouseLeave}
+          aria-label={isEffectivelyCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
           {isEffectivelyCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
 
@@ -135,9 +171,9 @@ const Sidebar = () => {
               style={{ cursor: 'pointer' }} 
               onClick={() => {
                 window.location.hash = '#/dashboard';
-                window.location.reload();
               }}
-              title="Refresh and go to Dashboard"
+              onMouseEnter={(e) => handleMouseEnter(e, currentBusiness?.name || 'My Business')}
+              onMouseLeave={handleMouseLeave}
             >
               {currentBusiness?.name || 'My Business'}
             </div>
@@ -164,8 +200,10 @@ const Sidebar = () => {
                       <NavLink 
                         to={item.path} 
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                        title={isEffectivelyCollapsed ? item.name : undefined}
+                        onMouseEnter={(e) => handleMouseEnter(e, item.name)}
+                        onMouseLeave={handleMouseLeave}
                         onClick={() => {
+                          setTooltip(null);
                           if (window.innerWidth <= 768) {
                             setSidebarOpen(false);
                           }
@@ -188,6 +226,24 @@ const Sidebar = () => {
           <p className="footer-status"><span>●</span> All systems operational</p>
         </div>
       </aside>
+
+      {/* Floating Tooltip displaying name beside icon when mouse is placed at icon */}
+      {tooltip && isEffectivelyCollapsed && (
+        <div 
+          className="sidebar-floating-tooltip"
+          style={{
+            position: 'fixed',
+            top: `${tooltip.top}px`,
+            left: `${tooltip.left}px`,
+            transform: 'translateY(-50%)',
+            zIndex: 999999,
+            pointerEvents: 'none'
+          }}
+        >
+          <div className="tooltip-arrow" />
+          <span className="tooltip-text">{tooltip.name}</span>
+        </div>
+      )}
     </>
   );
 };

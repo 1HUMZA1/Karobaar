@@ -34,19 +34,21 @@ class LocalServer {
         },
       );
     } catch (_) {
-      // SPA Fallback: if not found, serve web/index.html
-      try {
-        final indexBytes = await rootBundle.load('web/index.html');
-        return Response.ok(
-          indexBytes.buffer.asUint8List(indexBytes.offsetInBytes, indexBytes.lengthInBytes),
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            'Access-Control-Allow-Origin': '*',
-          },
-        );
-      } catch (e) {
-        return Response.notFound('Not found: $path');
+      // SPA Fallback: ONLY serve index.html for navigation routes (not static files with extensions)
+      final hasExtension = path.split('/').last.contains('.');
+      if (!hasExtension) {
+        try {
+          final indexBytes = await rootBundle.load('web/index.html');
+          return Response.ok(
+            indexBytes.buffer.asUint8List(indexBytes.offsetInBytes, indexBytes.lengthInBytes),
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8',
+              'Access-Control-Allow-Origin': '*',
+            },
+          );
+        } catch (_) {}
       }
+      return Response.notFound('Not found: $path');
     }
   }
 

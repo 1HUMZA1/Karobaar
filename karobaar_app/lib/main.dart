@@ -56,6 +56,15 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
   void initState() {
     super.initState();
     _startApp();
+
+    // Safety timeout: Never stay stuck on splash screen for more than 2.5s
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted && _isLoading) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
   }
 
   Future<void> _startApp() async {
@@ -72,17 +81,25 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageStarted: (String url) {
-              setState(() {
-                _isLoading = true;
-              });
+              if (mounted) {
+                setState(() {
+                  _isLoading = true;
+                });
+              }
             },
             onPageFinished: (String url) {
-              setState(() {
-                _isLoading = false;
-              });
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
             },
             onWebResourceError: (WebResourceError error) {
-              // Ignore non-fatal minor errors
+              debugPrint('[Karobaar WebResourceError] ${error.errorCode}: ${error.description}');
+              if (error.isForMainFrame ?? false) {
+                // Seamless fallback to online production mirror if local socket failed
+                _controller.loadRequest(Uri.parse('https://1HUMZA1.github.io/Karobaar/'));
+              }
             },
             onNavigationRequest: (NavigationRequest request) {
               return NavigationDecision.navigate;
@@ -98,10 +115,17 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
         });
       }
     } catch (e) {
-      // Fallback to online url if server fails
+      debugPrint('[Karobaar Server Init Error] $e - Falling back to online mirror');
       _controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(Colors.black)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onPageFinished: (_) {
+              if (mounted) setState(() => _isLoading = false);
+            },
+          ),
+        )
         ..loadRequest(Uri.parse('https://1HUMZA1.github.io/Karobaar/'));
 
       if (mounted) {
@@ -155,7 +179,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Karobaar 3-Ascending-Bars Logo
+            // Official Karobaar 3-Ascending-Bars Logo
             Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,

@@ -4,6 +4,7 @@ import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../services/databaseService';
 import { localDb } from '../../services/localDb';
+import { KarobaarLogo } from '../KarobaarLogo/KarobaarLogo';
 import './Topbar.css';
 
 const Topbar = () => {
@@ -101,9 +102,16 @@ const Topbar = () => {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button className="icon-btn mobile-menu-btn" onClick={toggleSidebar}>
+        <button className="icon-btn mobile-menu-btn" onClick={toggleSidebar} aria-label="Toggle navigation">
           <Menu size={20} />
         </button>
+        <div 
+          className="mobile-logo-header hidden-desktop" 
+          style={{ display: 'flex', alignItems: 'center', marginLeft: '10px', cursor: 'pointer' }}
+          onClick={() => navigate('/dashboard')}
+        >
+          <KarobaarLogo size="sm" theme={theme === 'dark' ? 'light' : 'dark'} showTagline={false} />
+        </div>
       </div>
 
       <div className="topbar-center hidden-mobile">
@@ -116,6 +124,7 @@ const Topbar = () => {
             value={searchQuery}
             onChange={handleSearch}
             style={{ position: 'relative', zIndex: 5 }}
+            placeholder=""
           />
           
           {searchQuery.length === 0 && (
@@ -162,15 +171,15 @@ const Topbar = () => {
           )}
         </div>
 
-        <button className="icon-btn" onClick={toggleTheme} title="Toggle Theme">
+        <button className="icon-btn" onClick={toggleTheme} title="Toggle Theme" aria-label="Toggle theme">
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
         
-        <button className="icon-btn" title="Help">
+        <button className="icon-btn" title="Help" aria-label="Help">
           <HelpCircle size={18} />
         </button>
 
-        <button className="icon-btn notification-btn" title="Notifications" onClick={() => navigate('/notifications')}>
+        <button className="icon-btn notification-btn" title="Notifications" aria-label="Notifications" onClick={() => navigate('/notifications')}>
           <Bell size={18} />
           <span className="notification-badge">3</span>
         </button>
@@ -187,7 +196,7 @@ const Topbar = () => {
           </div>
           <div className="user-info hidden-mobile">
             <span className="user-name">{currentUser?.name || 'User'}</span>
-            <span className="user-business">{currentBusiness?.businessName || 'Business'}</span>
+            <span className="user-business">{currentBusiness?.businessName || currentBusiness?.name || 'Business'}</span>
           </div>
           
           {isProfileOpen && (
