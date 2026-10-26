@@ -27,6 +27,11 @@
     </style>
     <script>
       (function() {
+        if (window.location.hostname.includes('github.io') && !window.location.pathname.includes('/docs/')) {
+          var target = window.location.pathname.replace(/\/+$/, '') + '/docs/' + window.location.search + (window.location.hash || '#/dashboard');
+          window.location.replace(target);
+          return;
+        }
         try {
           var theme = localStorage.getItem('karobaar-theme') || 'light';
           document.documentElement.setAttribute('data-theme', theme);
