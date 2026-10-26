@@ -181,7 +181,29 @@
   .lg\:col-span-3 { grid-column: span 3 / span 3; }
 }
 
-/* --- Attractive Quick Actions --- */
+/* --- High Contrast KPI Cards --- */
+.kpi-card {
+  background-color: var(--bg-card);
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.kpi-card:hover {
+  border-color: var(--text-main) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.business-health-widget {
+  background-color: var(--bg-card) !important;
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* --- High Contrast Hassle-Free Quick Actions --- */
 .quick-actions-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -196,44 +218,50 @@
   gap: 8px;
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid transparent;
-  background-color: var(--bg-hover);
-  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  font-weight: 600;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .quick-action-btn:hover {
-  background-color: var(--bg-tertiary);
-  color: var(--text-primary);
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  border-color: var(--text-main);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 .quick-action-icon {
-  opacity: 0.9;
-  transition: opacity 0.2s;
+  opacity: 1;
+  transition: transform 0.2s;
 }
 
 .quick-action-btn:hover .quick-action-icon {
-  opacity: 1;
+  transform: scale(1.1);
 }
 
 .quick-action-label {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* The Primary Quick Action (New Sale) */
 .quick-action-primary {
   grid-column: span 2;
-  background-color: var(--primary-color);
-  color: var(--primary-text);
+  background-color: #09090b !important;
+  color: #ffffff !important;
+  border: 1.5px solid #09090b !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
 
 .quick-action-primary:hover {
-  background-color: var(--primary-hover);
-  color: var(--primary-text);
-  box-shadow: 0 8px 20px -4px var(--primary-light);
+  background-color: #27272a !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
 .quick-action-primary .quick-action-icon {
@@ -241,8 +269,26 @@
 }
 
 .quick-action-primary .quick-action-label {
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-.dashboard-container { padding: 1rem; padding-bottom: 3rem; } 
-@media (min-width: 768px) { .dashboard-container { padding: 1.5rem; padding-bottom: 3rem; } }
+/* Dashboard Cards Border & Elevation */
+.dashboard-container .bg-\[var\(--bg-card\)\] {
+  border: 1.5px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-container { 
+  padding: 1.25rem; 
+  padding-bottom: 3.5rem; 
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+} 
+@media (min-width: 768px) { 
+  .dashboard-container { 
+    padding: 2rem; 
+    padding-bottom: 3.5rem; 
+  } 
+}

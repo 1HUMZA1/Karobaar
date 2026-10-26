@@ -257,8 +257,8 @@ const Dashboard = () => {
       {/* 1. Header Area */}
       <div className="dashboard-header flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
-          <p className="text-text-muted font-medium tracking-wide text-xs mb-2">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
-          <h1 className="text-3xl font-bold tracking-tight mb-1 text-text-main flex items-center">
+          <p className="text-text-muted font-bold tracking-wide text-xs mb-2">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
+          <h1 className="text-3xl font-extrabold tracking-tight mb-1 text-text-main flex items-center">
             {greetingTyped}
             {greetingTyped.length === fullGreetingText.length ? (
               <span className="ml-2">👋</span>
@@ -266,30 +266,30 @@ const Dashboard = () => {
               <span className="ml-1 animate-pulse border-r-4 border-text-main h-[0.8em] inline-block align-baseline"></span>
             )}
           </h1>
-          <p className="text-text-secondary text-sm">Here's what's happening with your operations today.</p>
+          <p className="text-text-secondary text-sm font-semibold">Here's what's happening with your operations today.</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="business-health-widget bg-[var(--bg-card)] px-5 py-3 rounded-xl shadow-md flex flex-col items-end">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold mb-1">Business Health</span>
+          <div className="business-health-widget bg-[var(--bg-card)] px-5 py-3 rounded-xl shadow-sm border border-[var(--border-color)] flex flex-col items-end">
+            <span className="text-[10px] text-text-muted uppercase tracking-wider font-extrabold mb-1">Business Health</span>
             <div className="flex items-center gap-3">
-              <span className={`text-sm font-bold ${healthScore >= 70 ? 'text-success' : 'text-warning'}`}>
+              <span className={`text-base font-extrabold ${healthScore >= 70 ? 'text-success' : 'text-warning'}`}>
                 {healthScore} <span className="text-text-muted font-normal text-xs">/ 100</span>
               </span>
-              <span className="text-xs text-text-secondary font-medium bg-[var(--bg-hover)] px-2 py-0.5 rounded-md">{healthLabel}</span>
+              <span className="text-xs font-bold bg-[#dcfce7] border border-[#86efac] text-[#15803d] px-2.5 py-0.5 rounded-md">{healthLabel}</span>
             </div>
           </div>
 
           <Button 
             variant="outline" 
             size="sm" 
-            className="h-[54px] px-5 bg-[var(--bg-card)] border-transparent hover:bg-[var(--bg-hover)] text-text-secondary shadow-md relative overflow-hidden"
+            className="h-[54px] px-5 bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-text-main hover:bg-[var(--bg-hover)] text-text-main shadow-sm rounded-xl relative overflow-hidden font-bold"
             onClick={() => loadDashboardData(currentUser.activeBusinessId)}
             disabled={isRefreshing}
           >
             <div className="flex flex-col items-center gap-1">
               <RefreshCw size={14} className={`text-text-main ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="text-[9px] uppercase tracking-wider">{isRefreshing ? 'Syncing...' : 'Refresh'}</span>
+              <span className="text-[9px] uppercase tracking-wider font-bold">{isRefreshing ? 'Syncing...' : 'Refresh'}</span>
             </div>
           </Button>
         </div>

@@ -147,10 +147,10 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
               <button 
                 key={r}
                 onClick={() => setRange(r)}
-                className={`text-xs font-semibold px-3 py-1 rounded-md transition-all ${
+                className={`text-xs px-3 py-1 rounded-md transition-all ${
                   range === r 
-                    ? 'bg-[var(--bg-hover)] text-text-main shadow-sm' 
-                    : 'text-text-muted hover:text-text-main'
+                    ? 'bg-[#09090b] text-[#ffffff] shadow-sm font-bold' 
+                    : 'text-text-secondary hover:text-text-main font-semibold'
                 }`}
               >
                 {r}
@@ -210,35 +210,35 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
           </h2>
         </div>
         <div className="p-6 pt-0 flex-1 flex flex-col gap-3">
-          <div className="flex justify-between items-center bg-[var(--bg-hover)] p-4 rounded-xl transition-colors hover:bg-[var(--bg-tertiary)]">
+          <div className="flex justify-between items-center bg-[var(--bg-elevated)] border border-[var(--border-color)] p-4 rounded-xl transition-all hover:border-text-main shadow-sm">
             <div>
-              <p className="text-xs text-text-secondary font-medium uppercase tracking-wider mb-1">Pending Receivables</p>
-              <p className="text-base font-bold text-text-main">{stats.receivables === '***' ? '***' : `${currencySymbol}${Number(stats.receivables || 0).toLocaleString()}`}</p>
+              <p className="text-xs text-text-secondary font-bold uppercase tracking-wider mb-1">Pending Receivables</p>
+              <p className="text-xl font-extrabold text-text-main">{stats.receivables === '***' ? '***' : `${currencySymbol}${Number(stats.receivables || 0).toLocaleString()}`}</p>
             </div>
-            <div className="p-2.5 bg-[var(--warning-light)] text-[var(--warning-color)] rounded-lg">
-              <DollarSign size={18} />
+            <div className="p-2.5 bg-[#fef3c7] text-[#b45309] rounded-lg border border-[#fde68a]">
+              <DollarSign size={18} strokeWidth={2.5} />
             </div>
           </div>
           
-          <div className="flex justify-between items-center bg-[var(--bg-hover)] p-4 rounded-xl transition-colors hover:bg-[var(--bg-tertiary)]">
+          <div className="flex justify-between items-center bg-[var(--bg-elevated)] border border-[var(--border-color)] p-4 rounded-xl transition-all hover:border-text-main shadow-sm">
             <div>
-              <p className="text-xs text-text-secondary font-medium uppercase tracking-wider mb-1">Total Customers</p>
-              <p className="text-base font-bold text-text-main">{stats.totalCustomers || 0}</p>
+              <p className="text-xs text-text-secondary font-bold uppercase tracking-wider mb-1">Total Customers</p>
+              <p className="text-xl font-extrabold text-text-main">{stats.totalCustomers || 0}</p>
             </div>
-            <div className="p-2.5 bg-[var(--info-light)] text-[var(--info-color)] rounded-lg">
-              <Users size={18} />
+            <div className="p-2.5 bg-[#dbeafe] text-[#1d4ed8] rounded-lg border border-[#bfdbfe]">
+              <Users size={18} strokeWidth={2.5} />
             </div>
           </div>
 
-          <div className="flex justify-between items-center bg-[var(--bg-hover)] p-4 rounded-xl transition-colors hover:bg-[var(--bg-tertiary)]">
+          <div className="flex justify-between items-center bg-[var(--bg-elevated)] border border-[var(--border-color)] p-4 rounded-xl transition-all hover:border-text-main shadow-sm">
             <div>
-              <p className="text-xs text-text-secondary font-medium uppercase tracking-wider mb-1">Low Stock Items</p>
-              <p className={`text-base font-bold ${(stats.lowStockCount || 0) > 0 ? 'text-danger' : 'text-success'}`}>
+              <p className="text-xs text-text-secondary font-bold uppercase tracking-wider mb-1">Low Stock Items</p>
+              <p className={`text-xl font-extrabold ${(stats.lowStockCount || 0) > 0 ? 'text-danger' : 'text-success'}`}>
                 {stats.lowStockCount || 0}
               </p>
             </div>
-            <div className={`p-2.5 rounded-lg ${(stats.lowStockCount || 0) > 0 ? 'bg-[var(--danger-light)] text-[var(--danger-color)]' : 'bg-[var(--success-light)] text-[var(--success-color)]'}`}>
-              <Package size={18} />
+            <div className={`p-2.5 rounded-lg border ${(stats.lowStockCount || 0) > 0 ? 'bg-[#fee2e2] text-[#b91c1c] border-[#fecaca]' : 'bg-[#dcfce7] text-[#15803d] border-[#86efac]'}`}>
+              <Package size={18} strokeWidth={2.5} />
             </div>
           </div>
         </div>

@@ -50,7 +50,8 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
   final LocalServer _localServer = LocalServer();
   bool _isServerReady = false;
   bool _isLoading = true;
-  static const String _cloudUrl = 'https://1HUMZA1.github.io/Karobaar/';
+  bool _hasInitialLoaded = false;
+  static const String _cloudUrl = 'https://1HUMZA1.github.io/Karobaar/docs/#/dashboard';
   String _currentUrl = _cloudUrl;
 
   @override
@@ -58,11 +59,12 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
     super.initState();
     _startApp();
 
-    // Safety timeout: Maximum 1 second splash display so dashboard shows immediately
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted && _isLoading) {
+    // Safety timeout: Maximum 1.2 second splash display so dashboard shows immediately
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) {
         setState(() {
           _isLoading = false;
+          _hasInitialLoaded = true;
         });
       }
     });
@@ -78,7 +80,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            if (mounted) {
+            if (mounted && !_hasInitialLoaded) {
               setState(() {
                 _isLoading = true;
               });
@@ -88,6 +90,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
             if (mounted) {
               setState(() {
                 _isLoading = false;
+                _hasInitialLoaded = true;
               });
             }
           },
@@ -149,7 +152,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
               : Stack(
                   children: [
                     WebViewWidget(controller: _controller),
-                    if (_isLoading) _buildSplashScreen(),
+                    if (_isLoading && !_hasInitialLoaded) _buildSplashScreen(),
                   ],
                 ),
         ),

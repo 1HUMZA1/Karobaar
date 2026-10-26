@@ -86,16 +86,19 @@
 }
 
 .business-badge {
-  background-color: var(--bg-hover);
-  color: var(--text-main);
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md);
+  background-color: #09090b;
+  color: #ffffff;
+  padding: 0.6rem 0.85rem;
+  border-radius: 10px;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: 1px solid var(--border-color);
+  border: 1px solid #09090b;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  letter-spacing: 0.02em;
 }
 
 .sidebar-toggle-btn.hidden-mobile {
@@ -148,10 +151,10 @@
 
 .nav-group-title {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  color: #475569;
   margin-bottom: 0.5rem;
   padding: 0 0.75rem;
   transition: opacity 0.3s ease;
@@ -178,17 +181,17 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 2px;
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-weight: 500;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 3px;
+  border-radius: 9px;
+  color: #1e293b;
+  font-weight: 600;
   font-size: 0.9rem;
-  transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transform-origin: left center;
+  border: 1px solid transparent;
 }
 
 .nav-text {
@@ -212,24 +215,26 @@
 }
 
 .nav-link:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-main);
+  background-color: #f1f5f9;
+  color: #09090b;
+  border-color: #cbd5e1;
   text-decoration: none;
-  transform: scale(1.02) translateX(4px);
-  box-shadow: var(--shadow-sm);
+  transform: translateX(3px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .nav-link.active {
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-  font-weight: 600;
-  border: 1px solid var(--text-primary);
+  background-color: #09090b !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  border: 1px solid #09090b !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .nav-link.active:hover {
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-  transform: scale(1.02) translateX(4px);
+  background-color: #18181b !important;
+  color: #ffffff !important;
+  transform: none;
 }
 
 /* Floating Tooltip displaying name beside icon when mouse is placed at icon */

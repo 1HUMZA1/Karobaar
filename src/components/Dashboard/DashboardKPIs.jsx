@@ -29,56 +29,64 @@ export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
       {/* 1. Today's Revenue */}
       <div className="kpi-card bg-[var(--bg-card)] rounded-xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)]">
         <div className="flex justify-between items-start mb-5">
-          <div className="p-3 rounded-full bg-[var(--bg-hover)] text-[var(--text-main)]"><DollarSign size={20}/></div>
+          <div className="w-11 h-11 rounded-xl bg-[#09090b] text-[#ffffff] flex items-center justify-center shadow-sm">
+            <DollarSign size={20} strokeWidth={2.5} />
+          </div>
           <Sparkline color="var(--text-main)" trend={trends.revTrend.isPositive ? 1 : -1} />
         </div>
-        <p className="text-sm font-medium text-text-secondary mb-1">Today's Revenue</p>
+        <p className="text-sm font-bold text-text-secondary mb-1">Today's Revenue</p>
         <h3 className="text-3xl font-extrabold tracking-tight mb-2 text-text-main">{currencySymbol}{(stats.todayRevenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
         <div className="flex items-center text-xs font-semibold text-[var(--text-secondary)]">
-          {trends.revTrend.isPositive ? <ArrowUpRight size={14} className="mr-1"/> : <ArrowDownRight size={14} className="mr-1"/>}
-          {trends.revTrend.value}% <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
+          {trends.revTrend.isPositive ? <ArrowUpRight size={14} className="mr-1 text-success"/> : <ArrowDownRight size={14} className="mr-1 text-danger"/>}
+          <span className="font-bold">{trends.revTrend.value}%</span> <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
         </div>
       </div>
       
       {/* 2. Today's Orders */}
       <div className="kpi-card bg-[var(--bg-card)] rounded-xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)]">
         <div className="flex justify-between items-start mb-5">
-          <div className="p-3 rounded-full bg-[var(--bg-hover)] text-[var(--text-main)]"><ShoppingBag size={20}/></div>
+          <div className="w-11 h-11 rounded-xl bg-[#09090b] text-[#ffffff] flex items-center justify-center shadow-sm">
+            <ShoppingBag size={20} strokeWidth={2.5} />
+          </div>
           <Sparkline color="var(--text-main)" trend={trends.ordTrend.isPositive ? 1 : -1} />
         </div>
-        <p className="text-sm font-medium text-text-secondary mb-1">Today's Orders</p>
+        <p className="text-sm font-bold text-text-secondary mb-1">Today's Orders</p>
         <h3 className="text-3xl font-extrabold tracking-tight mb-2 text-text-main">{stats.todayOrders || 0}</h3>
         <div className="flex items-center text-xs font-semibold text-[var(--text-secondary)]">
-          {trends.ordTrend.isPositive ? <ArrowUpRight size={14} className="mr-1"/> : <ArrowDownRight size={14} className="mr-1"/>}
-          {trends.ordTrend.value}% <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
+          {trends.ordTrend.isPositive ? <ArrowUpRight size={14} className="mr-1 text-success"/> : <ArrowDownRight size={14} className="mr-1 text-danger"/>}
+          <span className="font-bold">{trends.ordTrend.value}%</span> <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
         </div>
       </div>
 
       {/* 3. Estimated Profit */}
       <div className="kpi-card bg-[var(--bg-card)] rounded-xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)]">
         <div className="flex justify-between items-start mb-5">
-          <div className="p-3 rounded-full bg-[var(--bg-hover)] text-[var(--text-main)]"><TrendingUp size={20}/></div>
+          <div className="w-11 h-11 rounded-xl bg-[#09090b] text-[#ffffff] flex items-center justify-center shadow-sm">
+            <TrendingUp size={20} strokeWidth={2.5} />
+          </div>
           <Sparkline color="var(--text-secondary)" trend={trends.profTrend.isPositive ? 1 : -1} />
         </div>
-        <p className="text-sm font-medium text-text-secondary mb-1">Estimated Profit</p>
+        <p className="text-sm font-bold text-text-secondary mb-1">Estimated Profit</p>
         <h3 className="text-3xl font-extrabold tracking-tight mb-2 text-text-main">{currencySymbol}{(stats.todayProfit || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
         <div className="flex items-center text-xs font-semibold text-[var(--text-secondary)]">
-          {trends.profTrend.isPositive ? <ArrowUpRight size={14} className="mr-1"/> : <ArrowDownRight size={14} className="mr-1"/>}
-          {trends.profTrend.value}% <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
+          {trends.profTrend.isPositive ? <ArrowUpRight size={14} className="mr-1 text-success"/> : <ArrowDownRight size={14} className="mr-1 text-danger"/>}
+          <span className="font-bold">{trends.profTrend.value}%</span> <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
         </div>
       </div>
 
       {/* 4. Expenses */}
       <div className="kpi-card bg-[var(--bg-card)] rounded-xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)]">
         <div className="flex justify-between items-start mb-5">
-          <div className="p-3 rounded-full bg-[var(--bg-hover)] text-[var(--text-main)]"><CreditCard size={20}/></div>
+          <div className="w-11 h-11 rounded-xl bg-[#09090b] text-[#ffffff] flex items-center justify-center shadow-sm">
+            <CreditCard size={20} strokeWidth={2.5} />
+          </div>
           <Sparkline color="var(--text-muted)" trend={!trends.expTrend.isPositive ? 1 : -1} />
         </div>
-        <p className="text-sm font-medium text-text-secondary mb-1">Expenses</p>
+        <p className="text-sm font-bold text-text-secondary mb-1">Expenses</p>
         <h3 className="text-3xl font-extrabold tracking-tight mb-2 text-text-main">{currencySymbol}{(stats.todayExpenses || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
         <div className="flex items-center text-xs font-semibold text-[var(--text-secondary)]">
-          {!trends.expTrend.isPositive ? <ArrowDownRight size={14} className="mr-1"/> : <ArrowUpRight size={14} className="mr-1"/>}
-          {trends.expTrend.value}% <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
+          {!trends.expTrend.isPositive ? <ArrowDownRight size={14} className="mr-1 text-danger"/> : <ArrowUpRight size={14} className="mr-1 text-success"/>}
+          <span className="font-bold">{trends.expTrend.value}%</span> <span className="text-text-muted ml-1 font-medium">vs yesterday</span>
         </div>
       </div>
     </div>
