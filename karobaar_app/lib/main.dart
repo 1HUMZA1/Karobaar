@@ -7,10 +7,10 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Colors.black,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Colors.black,
-      systemNavigationBarIconBrightness: Brightness.light,
+      statusBarColor: Colors.white,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
   runApp(const KarobaarApp());
@@ -26,10 +26,10 @@ class KarobaarApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,
-        scaffoldBackgroundColor: Colors.black,
-        colorScheme: const ColorScheme.dark(
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: const ColorScheme.light(
           primary: Colors.black,
-          surface: Colors.black,
+          surface: Colors.white,
         ),
         useMaterial3: true,
       ),
@@ -50,15 +50,16 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
   final LocalServer _localServer = LocalServer();
   bool _isServerReady = false;
   bool _isLoading = true;
-  String _currentUrl = '';
+  static const String _cloudUrl = 'https://1HUMZA1.github.io/Karobaar/';
+  String _currentUrl = _cloudUrl;
 
   @override
   void initState() {
     super.initState();
     _startApp();
 
-    // Safety timeout: Never stay stuck on splash screen for more than 2.5s
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    // Safety timeout: Maximum 2 seconds splash display
+    Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted && _isLoading) {
         setState(() {
           _isLoading = false;
@@ -68,71 +69,55 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
   }
 
   Future<void> _startApp() async {
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.white)
+      ..setUserAgent(
+        'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 KarobaarApp/1.1.0',
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (String url) {
+            if (mounted) {
+              setState(() {
+                _isLoading = true;
+              });
+            }
+          },
+          onPageFinished: (String url) {
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+            }
+          },
+          onWebResourceError: (WebResourceError error) async {
+            debugPrint('[Karobaar WebResourceError] ${error.errorCode}: ${error.description}');
+            // If cloud mirror cannot be reached, fallback to offline local server
+            if (_currentUrl.startsWith('https://')) {
+              try {
+                final port = await _localServer.start();
+                _currentUrl = 'http://127.0.0.1:$port/';
+                await _controller.loadRequest(Uri.parse(_currentUrl));
+              } catch (_) {}
+            }
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            return NavigationDecision.navigate;
+          },
+        ),
+      );
+
     try {
-      final port = await _localServer.start();
-      _currentUrl = 'http://127.0.0.1:$port/';
-
-      _controller = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(Colors.black)
-        ..setUserAgent(
-          'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 KarobaarApp/1.1.0',
-        )
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onPageStarted: (String url) {
-              if (mounted) {
-                setState(() {
-                  _isLoading = true;
-                });
-              }
-            },
-            onPageFinished: (String url) {
-              if (mounted) {
-                setState(() {
-                  _isLoading = false;
-                });
-              }
-            },
-            onWebResourceError: (WebResourceError error) {
-              debugPrint('[Karobaar WebResourceError] ${error.errorCode}: ${error.description}');
-              if (error.isForMainFrame ?? false) {
-                // Seamless fallback to online production mirror if local socket failed
-                _controller.loadRequest(Uri.parse('https://1HUMZA1.github.io/Karobaar/'));
-              }
-            },
-            onNavigationRequest: (NavigationRequest request) {
-              return NavigationDecision.navigate;
-            },
-          ),
-        );
-
       await _controller.loadRequest(Uri.parse(_currentUrl));
-
-      if (mounted) {
-        setState(() {
-          _isServerReady = true;
-        });
-      }
     } catch (e) {
-      debugPrint('[Karobaar Server Init Error] $e - Falling back to online mirror');
-      _controller = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(Colors.black)
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onPageFinished: (_) {
-              if (mounted) setState(() => _isLoading = false);
-            },
-          ),
-        )
-        ..loadRequest(Uri.parse('https://1HUMZA1.github.io/Karobaar/'));
+      debugPrint('[Initial load error] $e');
+    }
 
-      if (mounted) {
-        setState(() {
-          _isServerReady = true;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _isServerReady = true;
+      });
     }
   }
 
@@ -157,7 +142,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.white,
         body: SafeArea(
           child: !_isServerReady
               ? _buildSplashScreen()
@@ -174,12 +159,12 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
 
   Widget _buildSplashScreen() {
     return Container(
-      color: Colors.black,
+      color: Colors.white,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Official Karobaar 3-Ascending-Bars Logo
+            // Official Karobaar 3-Ascending-Bars Logo (Black on White)
             Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -188,7 +173,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
                   width: 8,
                   height: 18,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.black,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -197,7 +182,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
                   width: 8,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.black,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -206,7 +191,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
                   width: 8,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.black,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -216,7 +201,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
             const Text(
               'Karobaar',
               style: TextStyle(
-                color: Colors.white,
+                color: Colors.black,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
@@ -226,7 +211,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
             const Text(
               'Turn Work Into Growth.',
               style: TextStyle(
-                color: Colors.white70,
+                color: Color(0xFF71717A),
                 fontSize: 12,
                 letterSpacing: 0.3,
               ),
@@ -237,7 +222,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
               ),
             ),
           ],
