@@ -46,10 +46,10 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
                       {currencySymbol}{(order.total || 0).toLocaleString(undefined, {minimumFractionDigits:2})}
                     </td>
                     <td className="p-4 text-center">
-                      <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border
-                        ${order.status === 'Completed' || order.status === 'Paid' ? 'bg-[#dcfce7] text-[#15803d] border-[#86efac]' 
-                        : order.status === 'Pending' ? 'bg-[#fef3c7] text-[#b45309] border-[#fde68a]' 
-                        : 'bg-[var(--bg-elevated)] text-text-secondary border-[var(--border-color)]'}`}
+                      <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider
+                        ${order.status === 'Completed' || order.status === 'Paid' ? 'bg-emerald-50 text-emerald-700' 
+                        : order.status === 'Pending' ? 'bg-amber-50 text-amber-700' 
+                        : 'bg-[var(--bg-hover)] text-text-secondary'}`}
                       >
                         {order.status || 'Completed'}
                       </span>
@@ -57,7 +57,7 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
                     <td className="p-4 text-right">
                       <button 
                         onClick={(e) => { e.stopPropagation(); navigate(`/invoices`); }}
-                        className="text-xs font-bold text-text-main hover:bg-[#09090b] hover:text-[#ffffff] border border-[var(--border-color)] px-2.5 py-1 rounded-md transition-colors shadow-sm"
+                        className="text-xs font-semibold text-text-secondary hover:text-text-main hover:bg-[var(--bg-hover)] px-2.5 py-1 rounded-lg transition-colors"
                         title="View Receipt"
                       >
                         Receipt

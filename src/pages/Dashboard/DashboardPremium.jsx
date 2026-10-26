@@ -271,48 +271,52 @@ const Dashboard = () => {
           <p className="text-text-secondary text-sm font-semibold">Here's what's happening with your operations today.</p>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="business-health-widget bg-[var(--bg-card)] px-5 py-3 rounded-xl shadow-sm border border-[var(--border-color)] flex flex-col items-end">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider font-extrabold mb-1">Business Health</span>
-            <div className="flex items-center gap-3">
-              <span className={`text-base font-extrabold ${healthScore >= 70 ? 'text-success' : 'text-warning'}`}>
-                {healthScore} <span className="text-text-muted font-normal text-xs">/ 100</span>
-              </span>
-              <span className="text-xs font-bold bg-[#dcfce7] border border-[#86efac] text-[#15803d] px-2.5 py-0.5 rounded-md">{healthLabel}</span>
+        <div className="flex items-center gap-3">
+          <div className="executive-health-dock flex items-center gap-3 bg-[var(--bg-card)] px-4 py-2.5 rounded-2xl border border-[var(--border-color)] shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="relative flex items-center justify-center">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span className="absolute w-4 h-4 rounded-full bg-emerald-400/30 animate-ping"></span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold leading-none mb-1">Business Health</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-extrabold text-text-main leading-none">{healthScore}<span className="text-text-muted font-medium text-xs">/100</span></span>
+                  <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full leading-none">{healthLabel}</span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-[54px] px-5 bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-text-main hover:bg-[var(--bg-hover)] text-text-main shadow-sm rounded-xl relative overflow-hidden font-bold"
-            onClick={() => loadDashboardData(currentUser.activeBusinessId)}
-            disabled={isRefreshing}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <RefreshCw size={14} className={`text-text-main ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="text-[9px] uppercase tracking-wider font-bold">{isRefreshing ? 'Syncing...' : 'Refresh'}</span>
-            </div>
-          </Button>
+            <div className="h-6 w-[1px] bg-[var(--border-color)] mx-1"></div>
+
+            <button 
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--bg-hover)] hover:bg-[#09090b] text-text-secondary hover:text-[#ffffff] transition-all duration-200 text-xs font-bold"
+              onClick={() => loadDashboardData(currentUser.activeBusinessId)}
+              disabled={isRefreshing}
+              title="Sync & Refresh Dashboard"
+            >
+              <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
+              <span>{isRefreshing ? 'Syncing...' : 'Refresh'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
       <GettingStartedGuide />
 
-      {/* Operations Quick Command Bar */}
-      <div className="operations-quick-bar flex flex-wrap items-center justify-between gap-3 p-3.5 mb-6 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] shadow-sm">
+      {/* Operations Quick Command Dock */}
+      <div className="operations-command-dock flex flex-wrap items-center justify-between gap-3 p-3.5 mb-6 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#dcfce7] border border-[#86efac] text-[#15803d]">
-            <span className="w-2 h-2 rounded-full bg-[#16a34a] animate-pulse"></span>
-            <span className="text-xs font-extrabold uppercase tracking-wider">Register Live</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="uppercase tracking-wider">Register Live</span>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-text-secondary">
-            <span>Shift:</span>
+          <div className="hidden sm:flex items-center gap-2 text-xs text-text-secondary">
+            <span className="text-text-muted">Shift:</span>
             <span className="font-bold text-text-main">Morning #1</span>
-          </div>
-          <div className="hidden md:flex items-center gap-1.5 text-xs text-text-muted font-medium">
-            <span>•</span>
-            <span>Counter: Main Counter</span>
+            <span className="text-text-muted">•</span>
+            <span className="text-text-muted">Counter:</span>
+            <span className="font-semibold text-text-main">Main Counter</span>
           </div>
         </div>
 
@@ -320,35 +324,35 @@ const Dashboard = () => {
         <div className="flex items-center gap-2 overflow-x-auto">
           <button 
             onClick={() => navigate('/pos')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#09090b] text-[#ffffff] hover:bg-[#27272a] text-xs font-bold transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#09090b] text-[#ffffff] hover:bg-[#27272a] text-xs font-bold transition-all shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
             title="Open POS (F2)"
           >
-            <Zap size={13} className="fill-current text-amber-400" />
+            <Zap size={14} className="fill-current text-amber-400" />
             <span>New Sale</span>
-            <kbd className="text-[10px] bg-white/20 px-1 rounded font-bold">F2</kbd>
+            <kbd className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold ml-1">F2</kbd>
           </button>
           
           <button 
             onClick={() => navigate('/products')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] hover:border-text-main text-text-main text-xs font-semibold transition-all shadow-sm hover:-translate-y-0.5"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--bg-hover)] hover:bg-[#e2e8f0] text-text-main text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
-            <Package size={13} />
+            <Package size={13} className="text-text-secondary" />
             <span>+ Product</span>
           </button>
 
           <button 
             onClick={() => navigate('/customers')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] hover:border-text-main text-text-main text-xs font-semibold transition-all shadow-sm hover:-translate-y-0.5"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--bg-hover)] hover:bg-[#e2e8f0] text-text-main text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
-            <Users size={13} />
+            <Users size={13} className="text-text-secondary" />
             <span>+ Customer</span>
           </button>
 
           <button 
             onClick={() => navigate('/expenses')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] hover:border-text-main text-text-main text-xs font-semibold transition-all shadow-sm hover:-translate-y-0.5"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--bg-hover)] hover:bg-[#e2e8f0] text-text-main text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
-            <Receipt size={13} />
+            <Receipt size={13} className="text-text-secondary" />
             <span>+ Expense</span>
           </button>
         </div>

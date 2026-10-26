@@ -142,15 +142,15 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
             <Activity size={18} className="text-primary"/> Revenue Overview
           </h2>
-          <div className="flex bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-lg p-0.5">
+          <div className="flex bg-[var(--bg-hover)] rounded-xl p-1 gap-1">
             {['7D', '30D', '1Y'].map(r => (
               <button 
                 key={r}
                 onClick={() => setRange(r)}
-                className={`text-xs px-3 py-1 rounded-md transition-all ${
+                className={`text-xs px-3 py-1 rounded-lg transition-all ${
                   range === r 
                     ? 'bg-[#09090b] text-[#ffffff] shadow-sm font-bold' 
-                    : 'text-text-secondary hover:text-text-main font-semibold'
+                    : 'text-text-muted hover:text-text-main font-semibold'
                 }`}
               >
                 {r}
@@ -210,34 +210,34 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
           </h2>
         </div>
         <div className="p-6 pt-0 flex-1 flex flex-col gap-3">
-          <div className="flex justify-between items-center bg-[var(--bg-elevated)] border border-[var(--border-color)] p-4 rounded-xl transition-all hover:border-text-main shadow-sm">
+          <div className="flex justify-between items-center bg-[var(--bg-hover)] p-4 rounded-2xl transition-all hover:bg-[var(--bg-card)] hover:shadow-sm border border-transparent hover:border-[var(--border-color)]">
             <div>
-              <p className="text-xs text-text-secondary font-bold uppercase tracking-wider mb-1">Pending Receivables</p>
+              <p className="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Pending Receivables</p>
               <p className="text-xl font-extrabold text-text-main">{stats.receivables === '***' ? '***' : `${currencySymbol}${Number(stats.receivables || 0).toLocaleString()}`}</p>
             </div>
-            <div className="p-2.5 bg-[#fef3c7] text-[#b45309] rounded-lg border border-[#fde68a]">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
               <DollarSign size={18} strokeWidth={2.5} />
             </div>
           </div>
           
-          <div className="flex justify-between items-center bg-[var(--bg-elevated)] border border-[var(--border-color)] p-4 rounded-xl transition-all hover:border-text-main shadow-sm">
+          <div className="flex justify-between items-center bg-[var(--bg-hover)] p-4 rounded-2xl transition-all hover:bg-[var(--bg-card)] hover:shadow-sm border border-transparent hover:border-[var(--border-color)]">
             <div>
-              <p className="text-xs text-text-secondary font-bold uppercase tracking-wider mb-1">Total Customers</p>
+              <p className="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Total Customers</p>
               <p className="text-xl font-extrabold text-text-main">{stats.totalCustomers || 0}</p>
             </div>
-            <div className="p-2.5 bg-[#dbeafe] text-[#1d4ed8] rounded-lg border border-[#bfdbfe]">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
               <Users size={18} strokeWidth={2.5} />
             </div>
           </div>
 
-          <div className="flex justify-between items-center bg-[var(--bg-elevated)] border border-[var(--border-color)] p-4 rounded-xl transition-all hover:border-text-main shadow-sm">
+          <div className="flex justify-between items-center bg-[var(--bg-hover)] p-4 rounded-2xl transition-all hover:bg-[var(--bg-card)] hover:shadow-sm border border-transparent hover:border-[var(--border-color)]">
             <div>
-              <p className="text-xs text-text-secondary font-bold uppercase tracking-wider mb-1">Low Stock Items</p>
+              <p className="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Low Stock Items</p>
               <p className={`text-xl font-extrabold ${(stats.lowStockCount || 0) > 0 ? 'text-danger' : 'text-success'}`}>
                 {stats.lowStockCount || 0}
               </p>
             </div>
-            <div className={`p-2.5 rounded-lg border ${(stats.lowStockCount || 0) > 0 ? 'bg-[#fee2e2] text-[#b91c1c] border-[#fecaca]' : 'bg-[#dcfce7] text-[#15803d] border-[#86efac]'}`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${(stats.lowStockCount || 0) > 0 ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>
               <Package size={18} strokeWidth={2.5} />
             </div>
           </div>
