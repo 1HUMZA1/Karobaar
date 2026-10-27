@@ -49,6 +49,22 @@ export const CustomizeAIChatbot = () => {
   const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish'); // 'hinglish' | 'en' | 'hi'
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
+  const speechCommitTimerRef = useRef(null);
+  const interimRef = useRef('');
+  const [voiceVolumeLevel, setVoiceVolumeLevel] = useState(0);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animFrameRef = useRef(null);
+
+  // Pre-warm Speech Synthesis voices immediately on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
 
   // Sync refs for uninterrupted voice callbacks
   const voiceModeActiveRef = useRef(voiceModeActive);
@@ -150,10 +166,25 @@ export const CustomizeAIChatbot = () => {
         }
 
         if (interim) {
+          interimRef.current = interim;
           setInterimTranscript(interim);
+
+          // Real-time Fast Commit: Auto-dispatch after 500ms pause instead of waiting 2.5s for browser
+          clearTimeout(speechCommitTimerRef.current);
+          speechCommitTimerRef.current = setTimeout(() => {
+            if (interimRef.current && interimRef.current.trim().length > 1) {
+              const textToRun = interimRef.current.trim();
+              interimRef.current = '';
+              setInterimTranscript('');
+              try { recognition.stop(); } catch (e) {}
+              handleUserQuery(textToRun);
+            }
+          }, 500);
         }
 
         if (final.trim()) {
+          clearTimeout(speechCommitTimerRef.current);
+          interimRef.current = '';
           setInterimTranscript('');
           handleUserQuery(final.trim());
         }
@@ -186,8 +217,47 @@ export const CustomizeAIChatbot = () => {
 
   const isSpeakingRef = useRef(false);
 
+  // Real-time Audio Reactive Voice Visualizer
+  const startAudioVisualizer = async () => {
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) return;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 64;
+      const source = ctx.createMediaStreamSource(stream);
+      source.connect(analyser);
+      audioContextRef.current = ctx;
+      analyserRef.current = analyser;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const updateVolume = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        const avg = sum / dataArray.length;
+        setVoiceVolumeLevel(Math.min(1, avg / 45));
+        animFrameRef.current = requestAnimationFrame(updateVolume);
+      };
+      updateVolume();
+    } catch (e) {}
+  };
+
+  const stopAudioVisualizer = () => {
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    if (audioContextRef.current) {
+      try { audioContextRef.current.close(); } catch (e) {}
+      audioContextRef.current = null;
+    }
+    setVoiceVolumeLevel(0);
+  };
+
   const startListening = () => {
     stopSpeaking();
+    startAudioVisualizer();
     if (!recognitionRef.current) return;
     try {
       recognitionRef.current.abort();
@@ -197,10 +267,11 @@ export const CustomizeAIChatbot = () => {
         recognitionRef.current.start();
         setIsListening(true);
       } catch (e) {}
-    }, 120);
+    }, 60);
   };
 
   const stopListening = () => {
+    stopAudioVisualizer();
     if (!recognitionRef.current) return;
     try {
       recognitionRef.current.stop();
@@ -223,7 +294,7 @@ export const CustomizeAIChatbot = () => {
     // Limit spoken length for responsiveness
     const sentences = clean.split('\n').filter(Boolean).slice(0, 3).join('. ');
     const utterance = new SpeechSynthesisUtterance(sentences);
-    utterance.rate = 1.05;
+    utterance.rate = 1.15; // Crisp, fast, real-time response rate
     utterance.pitch = 1.0;
 
     const voices = window.speechSynthesis.getVoices();
@@ -264,7 +335,7 @@ export const CustomizeAIChatbot = () => {
       isSpeakingRef.current = false;
       setIsSpeaking(false);
       if (voiceModeActiveRef.current) {
-        setTimeout(startListening, 250);
+        setTimeout(startListening, 80);
       }
     };
 
@@ -273,7 +344,7 @@ export const CustomizeAIChatbot = () => {
       isSpeakingRef.current = false;
       setIsSpeaking(false);
       if (voiceModeActiveRef.current) {
-        setTimeout(startListening, 250);
+        setTimeout(startListening, 80);
       }
     };
 
@@ -537,8 +608,8 @@ export const CustomizeAIChatbot = () => {
     const businessId = currentUser?.activeBusinessId || 'demo-business-1';
     const lower = query.toLowerCase();
 
-    // AI reasoning delay simulation
-    setTimeout(async () => {
+    // Ultra-fast Realtime Processing (0ms Artificial Delay)
+    (async () => {
       let botResponse = '';
       let botActionData = null;
 
@@ -929,7 +1000,7 @@ export const CustomizeAIChatbot = () => {
       setMessages(prev => [...prev, newBotMsg]);
       // Speak response out loud in voice mode
       speakText(botResponse);
-    }, 400);
+    })();
   };
 
   const handleKeyDown = (e) => {
@@ -1013,6 +1084,14 @@ export const CustomizeAIChatbot = () => {
                 <div className="jarvis-liquid-sphere-wrapper">
                   <div 
                     className={`jarvis-liquid-sphere ${isListening ? 'listening' : isSpeaking ? 'speaking' : 'idle'}`}
+                    style={{
+                      transform: isListening 
+                        ? `scale(${1 + voiceVolumeLevel * 0.12})` 
+                        : isSpeaking 
+                        ? 'scale(1.05)' 
+                        : 'scale(1)',
+                      transition: isListening ? 'transform 0.08s ease-out' : 'transform 0.3s ease'
+                    }}
                     onClick={() => {
                       if (isSpeaking) {
                         stopSpeaking();
