@@ -69,6 +69,76 @@ export const cleanSpokenQuery = (text, configuredName = 'Jarvis') => {
 };
 
 /**
+ * Detects if a heard transcript is an acoustic feedback echo of the assistant's own voice
+ * (i.e. Speech output from the device speakers being recaptured by the microphone).
+ *
+ * @param {string} heardText - The transcript captured by SpeechRecognition
+ * @param {string} lastSpokenText - The most recent utterance spoken by the assistant
+ * @param {Array<string>} recentSpokenList - Recent utterances spoken by the assistant
+ * @returns {boolean} True if the heard text matches recently spoken assistant speech
+ */
+export const isSelfEcho = (heardText, lastSpokenText, recentSpokenList = []) => {
+  if (!heardText || typeof heardText !== 'string') return false;
+
+  // Normalize: lowercase, strip punctuation, emojis, and symbols, collapse spaces
+  const normalize = (str) =>
+    (str || '')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const heard = normalize(heardText);
+  if (!heard || heard.length < 2) return false;
+
+  const heardWords = heard.split(/\s+/).filter(w => w.length > 1);
+  if (heardWords.length === 0) return false;
+
+  // Gather target texts to test against
+  const targets = [];
+  if (lastSpokenText) targets.push(lastSpokenText);
+  if (Array.isArray(recentSpokenList)) {
+    targets.push(...recentSpokenList);
+  }
+
+  for (const rawTarget of targets) {
+    if (!rawTarget) continue;
+    const target = normalize(rawTarget);
+    if (!target) continue;
+
+    // 1. Direct containment: heard phrase is inside spoken text or vice versa
+    if (target.includes(heard) || (target.length >= 8 && heard.includes(target))) {
+      return true;
+    }
+
+    // 2. High word overlap: if >= 38% of heard words are present in target
+    const targetWords = new Set(target.split(/\s+/).filter(w => w.length > 1));
+    if (targetWords.size === 0) continue;
+
+    let matchingWordsCount = 0;
+    for (const hw of heardWords) {
+      if (targetWords.has(hw)) {
+        matchingWordsCount++;
+      } else {
+        for (const tw of targetWords) {
+          if ((hw.length >= 4 && tw.includes(hw)) || (tw.length >= 4 && hw.includes(tw))) {
+            matchingWordsCount++;
+            break;
+          }
+        }
+      }
+    }
+
+    const overlapRatio = matchingWordsCount / heardWords.length;
+    if (overlapRatio >= 0.38 || (matchingWordsCount >= 3 && matchingWordsCount >= heardWords.length * 0.28)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
  * Main Jarvis Query Processor
  */
 export const processJarvisQuery = async (rawQuery, context) => {

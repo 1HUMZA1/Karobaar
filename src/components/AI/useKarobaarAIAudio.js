@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { isSelfEcho } from './jarvisEngine';
 
 /**
  * useKarobaarAIAudio
@@ -19,13 +20,18 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isVoiceSupported, setIsVoiceSupported] = useState(true);
 
-  // Audio Context & Stream Refs
+  // Audio Context & Stream Refs with Anti-Echo Locks
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const micStreamRef = useRef(null);
   const animFrameRef = useRef(null);
   const recognitionRef = useRef(null);
   const isMountedRef = useRef(true);
+  const isSpeakingRef = useRef(false);
+  const lastSpokenTextRef = useRef('');
+  const recentSpokenListRef = useRef([]);
+  const lastSpeechEndTimeRef = useRef(0);
+  const speechCooldownTimerRef = useRef(null);
 
   // Check Speech Recognition Support
   useEffect(() => {
@@ -79,8 +85,14 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
     }
   }, []);
 
-  // Start Real Microphone Capture with Live Audio Analyzer
+  // Start Real Microphone Capture with Live Audio Analyzer & Anti-Echo Guard
   const startListening = useCallback(async () => {
+    // If speaking or within acoustic echo cooldown, do not start
+    if (isSpeakingRef.current || (Date.now() - lastSpeechEndTimeRef.current) < 900) {
+      console.warn('[useKarobaarAIAudio] Prevented mic start during speech/echo cooldown');
+      return;
+    }
+
     setErrorMessage('');
     setInterimTranscript('');
 
@@ -88,6 +100,7 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    isSpeakingRef.current = false;
     setIsSpeaking(false);
 
     try {
@@ -153,6 +166,18 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
         };
 
         recognition.onresult = (event) => {
+          // ANTI-ECHO GUARD 1: Active speech output
+          if (isSpeakingRef.current) {
+            setInterimTranscript('');
+            return;
+          }
+
+          // ANTI-ECHO GUARD 2: Within 900ms acoustic echo cooldown buffer
+          if ((Date.now() - lastSpeechEndTimeRef.current) < 900) {
+            setInterimTranscript('');
+            return;
+          }
+
           let interim = '';
           let final = '';
 
@@ -171,6 +196,14 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
           if (final && final.trim()) {
             const cleanFinal = final.trim();
             stopListening();
+
+            // ANTI-ECHO GUARD 3: Self-hearing acoustic echo check
+            if (isSelfEcho(cleanFinal, lastSpokenTextRef.current, recentSpokenListRef.current)) {
+              console.warn('[useKarobaarAIAudio Anti-Echo] Dropped self-hearing transcript:', cleanFinal);
+              setInterimTranscript('');
+              return;
+            }
+
             if (onFinalTranscript) {
               onFinalTranscript(cleanFinal);
             }
@@ -235,12 +268,18 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
     }
   }, [isListening, startListening, stopListening]);
 
-  // Speech Output Helper with Natural Human Cadence
+  // Speech Output Helper with Natural Human Cadence & Strict Anti-Echo Locks
   const speakText = useCallback((text, onFinish) => {
     if (!('speechSynthesis' in window)) {
       if (onFinish) onFinish();
       return;
     }
+
+    // 1. Synchronously set speaking state lock immediately
+    isSpeakingRef.current = true;
+    setIsSpeaking(true);
+    setVisualizerState('speaking');
+    clearTimeout(speechCooldownTimerRef.current);
 
     stopListening();
     window.speechSynthesis.cancel();
@@ -255,9 +294,16 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
       .trim();
 
     if (!clean) {
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      setVisualizerState('idle');
       if (onFinish) onFinish();
       return;
     }
+
+    // 2. Register utterance for anti-echo detection
+    lastSpokenTextRef.current = clean;
+    recentSpokenListRef.current = [clean, ...(recentSpokenListRef.current || []).slice(0, 5)];
 
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.rate = 1.05;
@@ -276,10 +322,8 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
       utterance.lang = 'en-IN';
     }
 
-    setIsSpeaking(true);
-    setVisualizerState('speaking');
-
     const handleSpeechEnd = () => {
+      lastSpeechEndTimeRef.current = Date.now();
       if (isMountedRef.current) {
         setIsSpeaking(false);
         setVisualizerState('done');
@@ -287,8 +331,15 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
           if (isMountedRef.current) {
             setVisualizerState('idle');
           }
-        }, 1600);
+        }, 1200);
       }
+
+      // Enforce 900ms acoustic echo cooldown before unlocking isSpeakingRef
+      clearTimeout(speechCooldownTimerRef.current);
+      speechCooldownTimerRef.current = setTimeout(() => {
+        isSpeakingRef.current = false;
+      }, 900);
+
       if (onFinish) onFinish();
     };
 
@@ -296,9 +347,9 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
     utterance.onerror = handleSpeechEnd;
 
     // Safety timeout in case speech engine stalls
-    const maxDuration = Math.min(12000, Math.max(2000, clean.length * 75));
+    const maxDuration = Math.min(14000, Math.max(2000, clean.length * 80));
     const timer = setTimeout(() => {
-      if (isMountedRef.current && isSpeaking) {
+      if (isSpeakingRef.current) {
         handleSpeechEnd();
       }
     }, maxDuration);
@@ -310,17 +361,22 @@ export const useKarobaarAIAudio = ({ onFinalTranscript } = {}) => {
     window.speechSynthesis.speak(utterance);
 
     return () => clearTimeout(timer);
-  }, [stopListening, isSpeaking]);
+  }, [stopListening]);
 
-  // Stop Speaking
+  // Stop Speaking cleanly
   const stopSpeaking = useCallback(() => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    clearTimeout(speechCooldownTimerRef.current);
+    lastSpeechEndTimeRef.current = Date.now();
     if (isMountedRef.current) {
       setIsSpeaking(false);
       setVisualizerState('idle');
     }
+    speechCooldownTimerRef.current = setTimeout(() => {
+      isSpeakingRef.current = false;
+    }, 400);
   }, []);
 
   return {

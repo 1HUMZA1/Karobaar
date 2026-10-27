@@ -383,43 +383,6 @@ export const KarobaarAI = () => {
     setIsSettingsOpen(false);
   };
 
-  // Toggle Voice Dictation
-  const handleToggleVoice = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser.');
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-IN';
-
-      recognition.onstart = () => setIsListening(true);
-      recognition.onresult = (e) => {
-        const transcript = e.results[0]?.[0]?.transcript || '';
-        if (transcript) {
-          setInputText(prev => (prev ? prev + ' ' : '') + transcript);
-        }
-      };
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
-
-      recognition.start();
-      recognitionRef.current = recognition;
-    } catch (e) {
-      setIsListening(false);
-    }
-  };
-
   // Simple Markdown Parser (Bold, Lists, Headings)
   const renderMarkdown = (content) => {
     if (!content) return null;
@@ -822,7 +785,7 @@ export const KarobaarAI = () => {
 
                 <button 
                   type="button" 
-                  onClick={handleToggleVoice}
+                  onClick={toggleListening}
                   className={`karobaar-ai-icon-btn-tiny ${isListening ? 'active-listening-btn' : ''}`}
                   style={{ 
                     color: isListening ? '#09090b' : '#ffffff',

@@ -34,7 +34,7 @@ import {
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../services/databaseService';
-import { processJarvisQuery, cleanSpokenQuery } from './jarvisEngine';
+import { processJarvisQuery, cleanSpokenQuery, isSelfEcho } from './jarvisEngine';
 import { aiModelService } from '../../services/aiModelService';
 import { executeKarobaarTool } from '../../services/aiToolsService';
 import KarobaarAIOverlay from './KarobaarAIOverlay';
@@ -148,12 +148,39 @@ export const CustomizeAIChatbot = () => {
     }
   }, []);
 
-  // Global Continuous Speech Recognition Refs
+  // Global Continuous Speech Recognition Refs with Anti-Echo Hardware/State Locks
   const recognitionRef = useRef(null);
   const isListeningEnabledRef = useRef(true);
   const isSpeakingRef = useRef(false);
+  const lastSpokenTextRef = useRef('');
+  const recentSpokenListRef = useRef([]);
+  const lastSpeechEndTimeRef = useRef(0);
+  const speechCooldownTimerRef = useRef(null);
+  const isHudOverlayOpenRef = useRef(isHudOverlayOpen);
   const interimRef = useRef('');
   const commitTimerRef = useRef(null);
+
+  // Sync isHudOverlayOpen ref & pause background listener while HUD overlay is open
+  useEffect(() => {
+    isHudOverlayOpenRef.current = isHudOverlayOpen;
+    if (isHudOverlayOpen) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (e) {}
+        setIsListening(false);
+      }
+    } else {
+      if (isListeningEnabledRef.current && !isSpeakingRef.current && recognitionRef.current) {
+        setTimeout(() => {
+          try {
+            const timeSinceSpeech = Date.now() - lastSpeechEndTimeRef.current;
+            if (!isSpeakingRef.current && isListeningEnabledRef.current && !isHudOverlayOpenRef.current && timeSinceSpeech >= 900) {
+              recognitionRef.current.start();
+            }
+          } catch (e) {}
+        }, 300);
+      }
+    }
+  }, [isHudOverlayOpen]);
 
   // Toggle voice input recording / mute
   const toggleVoiceListening = () => {
@@ -163,7 +190,7 @@ export const CustomizeAIChatbot = () => {
     if (!next && recognitionRef.current) {
       try { recognitionRef.current.abort(); } catch (e) {}
       setIsListening(false);
-    } else if (next && recognitionRef.current && !isSpeakingRef.current) {
+    } else if (next && recognitionRef.current && !isSpeakingRef.current && !isHudOverlayOpenRef.current) {
       try { recognitionRef.current.start(); } catch (e) {}
     }
   };
@@ -187,6 +214,28 @@ export const CustomizeAIChatbot = () => {
     };
 
     recognition.onresult = (event) => {
+      // ANTI-ECHO GUARD 1: Assistant is currently speaking out loud!
+      if (isSpeakingRef.current) {
+        interimRef.current = '';
+        setInterimTranscript('');
+        return;
+      }
+
+      // ANTI-ECHO GUARD 2: Within 900ms acoustic echo cooldown buffer
+      const timeSinceSpeech = Date.now() - lastSpeechEndTimeRef.current;
+      if (timeSinceSpeech < 900) {
+        interimRef.current = '';
+        setInterimTranscript('');
+        return;
+      }
+
+      // If HUD overlay is open, background ambient listener yields
+      if (isHudOverlayOpenRef.current) {
+        interimRef.current = '';
+        setInterimTranscript('');
+        return;
+      }
+
       let interim = '';
       let final = '';
 
@@ -206,10 +255,23 @@ export const CustomizeAIChatbot = () => {
         // Fast auto-dispatch after 450ms pause
         clearTimeout(commitTimerRef.current);
         commitTimerRef.current = setTimeout(() => {
+          // Re-verify speaking / cooldown guards before executing
+          if (isSpeakingRef.current || (Date.now() - lastSpeechEndTimeRef.current) < 900 || isHudOverlayOpenRef.current) {
+            interimRef.current = '';
+            setInterimTranscript('');
+            return;
+          }
+
           if (interimRef.current && interimRef.current.trim().length > 1) {
             const raw = interimRef.current.trim();
             interimRef.current = '';
             setInterimTranscript('');
+
+            // ANTI-ECHO GUARD 3: Drop self-hearing echo of recently spoken text
+            if (isSelfEcho(raw, lastSpokenTextRef.current, recentSpokenListRef.current)) {
+              console.warn('[Anti-Echo Filter] Dropped self-hearing transcript (interim):', raw);
+              return;
+            }
 
             const { isSoloWakeWord, cleanedQuery } = cleanSpokenQuery(raw, assistantName);
             if (isSoloWakeWord) {
@@ -236,7 +298,19 @@ export const CustomizeAIChatbot = () => {
         interimRef.current = '';
         setInterimTranscript('');
 
+        // Re-verify speaking / cooldown guards
+        if (isSpeakingRef.current || (Date.now() - lastSpeechEndTimeRef.current) < 900 || isHudOverlayOpenRef.current) {
+          return;
+        }
+
         const raw = final.trim();
+
+        // ANTI-ECHO GUARD 3: Drop self-hearing echo of recently spoken text
+        if (isSelfEcho(raw, lastSpokenTextRef.current, recentSpokenListRef.current)) {
+          console.warn('[Anti-Echo Filter] Dropped self-hearing transcript (final):', raw);
+          return;
+        }
+
         const { isSoloWakeWord, cleanedQuery } = cleanSpokenQuery(raw, assistantName);
         if (isSoloWakeWord) {
           playWakeChime();
@@ -267,22 +341,27 @@ export const CustomizeAIChatbot = () => {
     recognition.onend = () => {
       if (isMounted) {
         setIsListening(false);
-        // Automatically restart so Jarvis listens from everywhere continuously
-        if (isListeningEnabledRef.current && !isSpeakingRef.current) {
+        // Automatically restart so Jarvis listens from everywhere continuously,
+        // STRICTLY ONLY if not speaking, not in echo cooldown, and HUD overlay is not open
+        const inCooldown = (Date.now() - lastSpeechEndTimeRef.current) < 900;
+        if (isListeningEnabledRef.current && !isSpeakingRef.current && !inCooldown && !isHudOverlayOpenRef.current) {
           setTimeout(() => {
             try {
-              if (isMounted && isListeningEnabledRef.current && !isSpeakingRef.current) {
+              const stillInCooldown = (Date.now() - lastSpeechEndTimeRef.current) < 900;
+              if (isMounted && isListeningEnabledRef.current && !isSpeakingRef.current && !stillInCooldown && !isHudOverlayOpenRef.current) {
                 recognition.start();
               }
             } catch (e) {}
-          }, 200);
+          }, 250);
         }
       }
     };
 
-    try {
-      recognition.start();
-    } catch (e) {}
+    if (!isHudOverlayOpenRef.current) {
+      try {
+        recognition.start();
+      } catch (e) {}
+    }
 
     recognitionRef.current = recognition;
 
@@ -292,23 +371,41 @@ export const CustomizeAIChatbot = () => {
     };
   }, [assistantName, aiLanguage]);
 
-  // Speech Output Helper with Natural Human Cadence
+  // Speech Output Helper with Natural Human Cadence & Strict Anti-Echo Locks
   const speakText = (text) => {
     if (!('speechSynthesis' in window)) return;
+
+    // 1. Synchronously lock speaking state IMMEDIATELY
+    isSpeakingRef.current = true;
+    setIsSpeaking(true);
+    clearTimeout(speechCooldownTimerRef.current);
+    clearTimeout(commitTimerRef.current);
+    interimRef.current = '';
+    setInterimTranscript('');
+
+    // 2. Cancel any pending speech synthesis
     window.speechSynthesis.cancel();
 
-    // Temporarily pause speech recognition while speaking so Jarvis does not hear itself
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch (e) {}
-    }
-
-    const clean = text
+    const clean = String(text || '')
       .replace(/[*#_`]/g, '')
       .replace(/•/g, '')
       .replace(/\n+/g, ' ')
       .trim();
 
-    if (!clean) return;
+    if (!clean) {
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      return;
+    }
+
+    // 3. Register utterance for semantic anti-echo filtering
+    lastSpokenTextRef.current = clean;
+    recentSpokenListRef.current = [clean, ...(recentSpokenListRef.current || []).slice(0, 5)];
+
+    // 4. Temporarily abort speech recognition so mic stops capturing speaker output
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (e) {}
+    }
 
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.rate = 1.05;
@@ -331,41 +428,41 @@ export const CustomizeAIChatbot = () => {
       window.speechSynthesis.resume();
     } catch (e) {}
 
-    isSpeakingRef.current = true;
-    setIsSpeaking(true);
-
-    const restartListening = () => {
-      isSpeakingRef.current = false;
+    const restartListeningAfterCooldown = () => {
+      lastSpeechEndTimeRef.current = Date.now();
       setIsSpeaking(false);
-      if (isListeningEnabledRef.current && recognitionRef.current) {
-        setTimeout(() => {
+
+      // Enforce 900ms acoustic echo cooldown buffer so residual speaker sound clears
+      clearTimeout(speechCooldownTimerRef.current);
+      speechCooldownTimerRef.current = setTimeout(() => {
+        isSpeakingRef.current = false;
+        if (isListeningEnabledRef.current && recognitionRef.current && !isHudOverlayOpenRef.current) {
           try {
-            if (isListeningEnabledRef.current && !isSpeakingRef.current) {
-              recognitionRef.current.start();
-            }
+            recognitionRef.current.start();
           } catch (e) {}
-        }, 150);
-      }
+        }
+      }, 900);
     };
 
+    const maxDuration = Math.min(14000, Math.max(2500, clean.length * 80));
     const safetyTimer = setTimeout(() => {
-      if (isSpeakingRef.current) restartListening();
-    }, Math.min(6000, Math.max(1800, clean.length * 65)));
+      if (isSpeakingRef.current) restartListeningAfterCooldown();
+    }, maxDuration);
 
     utterance.onend = () => {
       clearTimeout(safetyTimer);
-      restartListening();
+      restartListeningAfterCooldown();
     };
 
     utterance.onerror = () => {
       clearTimeout(safetyTimer);
-      restartListening();
+      restartListeningAfterCooldown();
     };
 
     try {
       window.speechSynthesis.speak(utterance);
     } catch (e) {
-      restartListening();
+      restartListeningAfterCooldown();
     }
   };
 
@@ -373,17 +470,16 @@ export const CustomizeAIChatbot = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
-    isSpeakingRef.current = false;
+    clearTimeout(speechCooldownTimerRef.current);
+    lastSpeechEndTimeRef.current = Date.now();
     setIsSpeaking(false);
-    if (isListeningEnabledRef.current && recognitionRef.current) {
-      try {
-        recognitionRef.current.start();
-      } catch (e) {
-        setTimeout(() => {
-          try { recognitionRef.current.start(); } catch (err) {}
-        }, 100);
+    // Keep lock for 400ms to clear audio queues
+    speechCooldownTimerRef.current = setTimeout(() => {
+      isSpeakingRef.current = false;
+      if (isListeningEnabledRef.current && recognitionRef.current && !isHudOverlayOpenRef.current) {
+        try { recognitionRef.current.start(); } catch (err) {}
       }
-    }
+    }, 400);
   };
 
   // Web Audio Synthesizer: 2-Tone Wake Chime
@@ -428,14 +524,6 @@ export const CustomizeAIChatbot = () => {
     const handleWakeEvent = (e) => {
       playWakeChime();
       setIsHudOverlayOpen(true);
-
-      // Start voice listening if enabled
-      if (recognitionRef.current && isListeningEnabledRef.current && !isSpeakingRef.current) {
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-        } catch (err) {}
-      }
 
       if (e?.detail?.query) {
         handleUserQuery(e.detail.query);
