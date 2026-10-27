@@ -27,7 +27,9 @@ import {
   ShieldCheck,
   RefreshCw,
   Target,
-  Volume2
+  Volume2,
+  Check,
+  Upload
 } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { auth } from '../../services/firebase';

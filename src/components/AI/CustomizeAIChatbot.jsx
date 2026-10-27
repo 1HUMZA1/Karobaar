@@ -327,6 +327,8 @@ export const CustomizeAIChatbot = () => {
           `hey ${currentName}`,
           `ok ${currentName}`,
           `hello ${currentName}`,
+          `wake up ${currentName}`,
+          `${currentName} wake up`,
           `suno ${currentName}`
         ];
 
@@ -338,13 +340,15 @@ export const CustomizeAIChatbot = () => {
         }
       };
 
-      bgRec.onerror = () => {};
+      bgRec.onerror = (e) => {
+        // Continuous recovery for background voice recognition
+      };
 
       bgRec.onend = () => {
         if (isComponentMounted && !isOpen && aiSettings.backgroundWake !== false) {
           setTimeout(() => {
             try { bgRec.start(); } catch {}
-          }, 1500);
+          }, 300);
         }
       };
 
@@ -819,7 +823,7 @@ export const CustomizeAIChatbot = () => {
         >
           <div className="customize-trigger-orb" />
           <Sparkles size={16} className="customize-sparkle-icon" />
-          <span className="customize-trigger-text">{aiSettings.assistantName || "Mr. H"} Voice AI</span>
+          <span className="customize-trigger-text">{aiSettings.assistantName || "Jarvis"} Voice AI</span>
         </button>
       )}
 
