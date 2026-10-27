@@ -65,17 +65,38 @@ export const CustomizeAIChatbot = () => {
   // Settings for Customize AI
   const [aiSettings, setAiSettings] = useState(() => {
     try {
-      const saved = localStorage.getItem('karobaar_customize_ai_settings');
-      return saved ? JSON.parse(saved) : {
-        assistantName: 'Jarvis',
+      const raw = localStorage.getItem('karobaar_customize_ai_settings');
+      const saved = raw ? JSON.parse(raw) : {};
+      const name = (saved.assistantName && saved.assistantName !== 'Customize') ? saved.assistantName : 'Jarvis';
+      return {
+        assistantName: name,
         showFloatingBubble: true,
         autoExecute: true,
-        voiceFeedback: true
+        voiceFeedback: true,
+        ...saved,
+        assistantName: name
       };
     } catch {
-      return { assistantName: 'Jarvis', showFloatingBubble: true, autoExecute: true };
+      return { assistantName: 'Jarvis', showFloatingBubble: true, autoExecute: true, voiceFeedback: true };
     }
   });
+
+  const assistantName = (aiSettings.assistantName && aiSettings.assistantName !== 'Customize') ? aiSettings.assistantName : 'Jarvis';
+
+  // Backwards compatibility migration: ensure Jarvis is the assistantName
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('karobaar_customize_ai_settings');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!parsed.assistantName || parsed.assistantName === 'Customize') {
+          parsed.assistantName = 'Jarvis';
+          localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(parsed));
+          setAiSettings(prev => ({ ...prev, assistantName: 'Jarvis' }));
+        }
+      }
+    } catch {}
+  }, []);
 
   // Conversation history
   const [messages, setMessages] = useState(() => {
@@ -89,7 +110,7 @@ export const CustomizeAIChatbot = () => {
       {
         id: 'welcome-1',
         sender: 'bot',
-        text: `Hello! I am **${aiSettings.assistantName || 'Mr. H'}**, your Realtime Voice AI Assistant for ${currentBusiness?.name || 'Karobaar'}. I can operate the app live for you: talk to me to create sales, audit inventory, switch modes, or highlight app features on screen.`,
+        text: `Hello! I am **${assistantName}**, your Realtime Voice AI Assistant for ${currentBusiness?.name || 'Karobaar'}. I can operate the app live for you: talk to me to create sales, audit inventory, switch modes, or highlight app features on screen.`,
         timestamp: new Date().toISOString(),
         quickActions: [
           { label: '🎙️ Voice: "Today\'s Sales"', query: 'Show today sales summary' },
@@ -918,6 +939,12 @@ export const CustomizeAIChatbot = () => {
     }
   };
 
+  // Latest assistant response for subtitle display
+  const latestBotMsg = [...messages].reverse().find(m => m.sender === 'bot');
+  const latestBotText = latestBotMsg
+    ? latestBotMsg.text.replace(/[*#_`]/g, '').trim().slice(0, 130) + (latestBotMsg.text.replace(/[*#_`]/g, '').trim().length > 130 ? '...' : '')
+    : '';
+
   return (
     <>
       {/* Floating Realtime AI Trigger Button (Strictly Monochrome) */}
@@ -929,7 +956,7 @@ export const CustomizeAIChatbot = () => {
         >
           <div className="customize-trigger-orb" />
           <Sparkles size={16} className="customize-sparkle-icon" />
-          <span className="customize-trigger-text">{aiSettings.assistantName || "Jarvis"} Voice AI</span>
+          <span className="customize-trigger-text">{assistantName} AI</span>
         </button>
       )}
 
@@ -940,89 +967,45 @@ export const CustomizeAIChatbot = () => {
             className={`customize-ai-panel ${voiceModeActive ? 'jarvis-bottom-popup' : ''}`} 
             onClick={e => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="customize-ai-header">
-              <div className="customize-ai-header-left">
-                <div className={`customize-ai-avatar ${isSpeaking ? 'speaking-pulse' : ''}`}>
-                  <Sparkles size={16} />
-                </div>
-                <div>
-                  <div className="customize-ai-title-row">
-                    <h3 className="customize-ai-title">{aiSettings.assistantName || 'Customize'}</h3>
-                    <span className="customize-ai-badge">Voice AI</span>
-                  </div>
-                  <p className="customize-ai-status">
-                    {isListening ? (
-                      <span className="status-listening">● Listening to your voice...</span>
-                    ) : isSpeaking ? (
-                      <span className="status-speaking">● Speaking response...</span>
-                    ) : (
-                      '● Realtime • Ready to operate'
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Buttons in Header */}
-              <div className="customize-ai-header-actions">
-                {/* Language Mode Selector: Hinglish (Roman English) / English / Hindi */}
-                <button 
-                  type="button" 
-                  className="customize-ai-icon-btn"
-                  onClick={() => {
-                    const next = aiLanguage === 'hinglish' ? 'en' : aiLanguage === 'en' ? 'hi' : 'hinglish';
-                    setAiLanguage(next);
-                    localStorage.setItem('karobaar_ai_language', next);
-                  }}
-                  style={{ width: 'auto', padding: '0 8px', fontSize: '11px', fontWeight: 700, gap: '4px' }}
-                  title="Toggle Language: Hinglish (Roman English) / English / Hindi"
-                >
-                  <Globe size={13} />
-                  <span>{aiLanguage === 'hinglish' ? 'Hinglish' : aiLanguage === 'hi' ? 'हिंदी' : 'EN'}</span>
-                </button>
-
-                {/* Voice Mode Toggle (ChatGPT Voice Orb vs Text View) */}
-                <button 
-                  onClick={() => setVoiceModeActive(!voiceModeActive)}
-                  className={`customize-ai-icon-btn ${voiceModeActive ? 'active' : ''}`}
-                  title={voiceModeActive ? 'Switch to Chat History' : 'Switch to Fullscreen Voice Orb'}
-                >
-                  <Radio size={15} />
-                </button>
-
-                {/* Speech Mute / Unmute Toggle */}
-                <button 
-                  onClick={() => {
-                    if (voiceSpeechEnabled) stopSpeaking();
-                    setVoiceSpeechEnabled(!voiceSpeechEnabled);
-                  }}
-                  className={`customize-ai-icon-btn ${!voiceSpeechEnabled ? 'muted' : ''}`}
-                  title={voiceSpeechEnabled ? 'Mute AI voice output' : 'Enable AI voice output'}
-                >
-                  {voiceSpeechEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-                </button>
-
-                <button 
-                  onClick={handleClearHistory} 
-                  className="customize-ai-icon-btn"
-                  title="Clear conversation"
-                >
-                  <Trash2 size={15} />
-                </button>
-
-                <button 
-                  onClick={() => { stopSpeaking(); setIsOpen(false); }} 
-                  className="customize-ai-icon-btn"
-                  title="Close AI window"
-                >
-                  <X size={17} />
-                </button>
-              </div>
-            </div>
-
-            {/* VIEW 1: Bottom Popup with Round Liquid Voice Sphere Animation */}
+            {/* VIEW 1: Voice Mode (Sleek Minimalist Liquid Orb Popup) */}
             {voiceModeActive ? (
               <div className="jarvis-liquid-popup-content">
+                {/* Sleek Minimalist Voice Header */}
+                <div className="jarvis-voice-header">
+                  <div className="jarvis-header-brand">
+                    <div className={`jarvis-status-orb ${isListening ? 'listening' : isSpeaking ? 'speaking' : ''}`} />
+                    <span className="jarvis-header-name">{assistantName}</span>
+                    <span className="jarvis-header-sub">Voice AI</span>
+                  </div>
+
+                  <div className="jarvis-header-actions">
+                    {/* Clean Language Selector */}
+                    <button 
+                      type="button" 
+                      className="jarvis-lang-pill"
+                      onClick={() => {
+                        const next = aiLanguage === 'hinglish' ? 'en' : aiLanguage === 'en' ? 'hi' : 'hinglish';
+                        setAiLanguage(next);
+                        localStorage.setItem('karobaar_ai_language', next);
+                      }}
+                      title="Toggle Language: Hinglish / EN / हिंदी"
+                    >
+                      <Globe size={12} />
+                      <span>{aiLanguage === 'hinglish' ? 'Hinglish' : aiLanguage === 'hi' ? 'हिंदी' : 'EN'}</span>
+                    </button>
+
+                    {/* Close Button */}
+                    <button 
+                      type="button"
+                      onClick={() => { stopSpeaking(); setIsOpen(false); }} 
+                      className="jarvis-close-btn"
+                      title={`Close ${assistantName}`}
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                </div>
+
                 {/* Drag handle */}
                 <div className="jarvis-bottom-drag-bar" />
 
@@ -1038,7 +1021,7 @@ export const CustomizeAIChatbot = () => {
                         toggleVoiceInput();
                       }
                     }}
-                    title={isSpeaking ? "Tap liquid orb to interrupt & talk" : isListening ? "Listening... Tap to pause" : "Tap to speak to Jarvis"}
+                    title={isSpeaking ? "Tap orb to interrupt" : isListening ? "Listening... Tap to pause" : `Tap to speak to ${assistantName}`}
                   >
                     {/* Concentric soundwave shockwave rings */}
                     <div className="liquid-audio-ring ring-1" />
@@ -1065,34 +1048,43 @@ export const CustomizeAIChatbot = () => {
                   </div>
                 </div>
 
-                {/* Real-time Voice Status & Interactive Transcript */}
+                {/* Real-time Subtitle & Status (Clean borderless cinema typography, NO BOX BORDER) */}
                 <div className="jarvis-voice-info-block">
-                  <h4 className="jarvis-status-headline">
+                  <div className="jarvis-status-headline">
                     {isListening ? (
-                      <span className="status-listening-badge">● Listening to your voice...</span>
+                      <span className="status-listening-badge"><span className="status-pulse-dot" /> Listening to your voice...</span>
                     ) : isSpeaking ? (
-                      <span className="status-speaking-badge">● {aiSettings.assistantName || 'Jarvis'} speaking (Tap orb to interrupt)</span>
+                      <span className="status-speaking-badge"><span className="status-pulse-dot" /> {assistantName} speaking (Tap orb to interrupt)</span>
                     ) : (
-                      <span className="status-idle-badge">● {aiSettings.assistantName || 'Jarvis'} ready • Full web app control</span>
+                      <span className="status-idle-badge"><span className="status-pulse-dot" /> {assistantName} ready • Full app control</span>
                     )}
-                  </h4>
+                  </div>
 
-                  <div className="jarvis-transcript-bubble">
-                    <p className="jarvis-transcript-text">
-                      {interimTranscript ? `"${interimTranscript}"` : messages[messages.length - 1]?.text.replace(/[*#_`]/g, '').slice(0, 110) + '...'}
+                  <div className="jarvis-subtitle-clean">
+                    <p className="jarvis-subtitle-text">
+                      {interimTranscript ? `“${interimTranscript}”` : latestBotText ? latestBotText : `Say "Hey ${assistantName}" or tap the mic below`}
                     </p>
                   </div>
                 </div>
 
-                {/* 1-Tap Quick Action Voice Command Chips */}
-                <div className="jarvis-fast-commands-row custom-scrollbar">
-                  <button type="button" onClick={() => handleUserQuery('Add 2 Burger to cart')} className="jarvis-fast-chip">🛒 Bill 2 Burger</button>
-                  <button type="button" onClick={() => handleUserQuery('Show today sales summary')} className="jarvis-fast-chip">📊 Today's Sales</button>
-                  <button type="button" onClick={() => handleUserQuery('Which items are low in stock?')} className="jarvis-fast-chip">⚠️ Low Stock</button>
-                  <button type="button" onClick={() => handleUserQuery('Show customers with pending dues')} className="jarvis-fast-chip">👥 Khata Dues</button>
-                  <button type="button" onClick={() => handleUserQuery('Toggle dark mode')} className="jarvis-fast-chip">🌙 Dark Mode</button>
-                  <button type="button" onClick={() => handleUserQuery('Switch to legacy operations desk')} className="jarvis-fast-chip">⚡ Legacy Desk</button>
-                  <button type="button" onClick={() => handleUserQuery('Show live feature spotlight tour')} className="jarvis-fast-chip">🎯 Tour Guide</button>
+                {/* 1-Tap Quick Action Commands (Centered flex-wrap cluster, NO SCROLLBAR) */}
+                <div className="jarvis-fast-commands-cluster">
+                  <button type="button" onClick={() => handleUserQuery('Show today sales summary')} className="jarvis-fast-chip">
+                    <TrendingUp size={12} />
+                    <span>Today's Sales</span>
+                  </button>
+                  <button type="button" onClick={() => handleUserQuery('Add 2 Burger to cart')} className="jarvis-fast-chip">
+                    <ShoppingCart size={12} />
+                    <span>Bill 2 Burger</span>
+                  </button>
+                  <button type="button" onClick={() => handleUserQuery('Which items are low in stock?')} className="jarvis-fast-chip">
+                    <AlertTriangle size={12} />
+                    <span>Low Stock</span>
+                  </button>
+                  <button type="button" onClick={() => handleUserQuery('Toggle dark mode')} className="jarvis-fast-chip">
+                    <Moon size={12} />
+                    <span>Dark Mode</span>
+                  </button>
                 </div>
 
                 {/* Bottom Voice Controls Bar */}
@@ -1112,13 +1104,89 @@ export const CustomizeAIChatbot = () => {
                     className="jarvis-switch-mode-btn"
                     title="Switch to detailed text chat and action cards view"
                   >
-                    Switch to Chat History
+                    <Bot size={13} />
+                    <span>Switch to Chat History</span>
                   </button>
                 </div>
               </div>
             ) : (
               /* VIEW 2: Chat Stream Feed Mode */
               <>
+                <div className="customize-ai-header">
+                  <div className="customize-ai-header-left">
+                    <div className={`customize-ai-avatar ${isSpeaking ? 'speaking-pulse' : ''}`}>
+                      <Sparkles size={16} />
+                    </div>
+                    <div>
+                      <div className="customize-ai-title-row">
+                        <h3 className="customize-ai-title">{assistantName}</h3>
+                        <span className="customize-ai-badge">Voice AI</span>
+                      </div>
+                      <p className="customize-ai-status">
+                        {isListening ? (
+                          <span className="status-listening">● Listening to your voice...</span>
+                        ) : isSpeaking ? (
+                          <span className="status-speaking">● Speaking response...</span>
+                        ) : (
+                          '● Realtime • Ready to operate'
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Header Actions for Chat view */}
+                  <div className="customize-ai-header-actions">
+                    <button 
+                      type="button" 
+                      className="customize-ai-icon-btn"
+                      onClick={() => {
+                        const next = aiLanguage === 'hinglish' ? 'en' : aiLanguage === 'en' ? 'hi' : 'hinglish';
+                        setAiLanguage(next);
+                        localStorage.setItem('karobaar_ai_language', next);
+                      }}
+                      style={{ width: 'auto', padding: '0 8px', fontSize: '11px', fontWeight: 700, gap: '4px' }}
+                      title="Toggle Language: Hinglish / English / Hindi"
+                    >
+                      <Globe size={13} />
+                      <span>{aiLanguage === 'hinglish' ? 'Hinglish' : aiLanguage === 'hi' ? 'हिंदी' : 'EN'}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setVoiceModeActive(true)}
+                      className="customize-ai-icon-btn"
+                      title="Switch to Voice Orb View"
+                    >
+                      <Radio size={15} />
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        if (voiceSpeechEnabled) stopSpeaking();
+                        setVoiceSpeechEnabled(!voiceSpeechEnabled);
+                      }}
+                      className={`customize-ai-icon-btn ${!voiceSpeechEnabled ? 'muted' : ''}`}
+                      title={voiceSpeechEnabled ? 'Mute AI voice output' : 'Enable AI voice output'}
+                    >
+                      {voiceSpeechEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                    </button>
+
+                    <button 
+                      onClick={handleClearHistory} 
+                      className="customize-ai-icon-btn"
+                      title="Clear conversation"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+
+                    <button 
+                      onClick={() => { stopSpeaking(); setIsOpen(false); }} 
+                      className="customize-ai-icon-btn"
+                      title="Close AI window"
+                    >
+                      <X size={17} />
+                    </button>
+                  </div>
+                </div>
                 <div className="customize-ai-messages custom-scrollbar">
                   {messages.map(msg => (
                     <div key={msg.id} className={`customize-ai-message-row ${msg.sender === 'user' ? 'user' : 'bot'}`}>

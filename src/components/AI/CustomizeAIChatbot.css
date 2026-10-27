@@ -783,6 +783,7 @@
 
 /* ==========================================================================
    JARVIS BOTTOM POPUP & ROUND LIQUID VOICE SPHERE (Strict Monochrome)
+   Apple Intelligence / ChatGPT Advanced Voice aesthetic
    ========================================================================== */
 
 .customize-ai-drawer-overlay.bottom-popup-mode {
@@ -792,52 +793,163 @@
 }
 
 .customize-ai-panel.jarvis-bottom-popup {
-  width: 520px !important;
-  max-width: 96vw !important;
+  width: 480px !important;
+  max-width: 95vw !important;
   height: auto !important;
-  max-height: 88vh !important;
-  margin: 0 auto !important;
-  border-radius: 28px 28px 0 0 !important;
-  border-bottom: none !important;
-  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  max-height: 86vh !important;
+  margin: 0 auto 20px auto !important;
+  border-radius: 28px !important;
+  border: 1.5px solid var(--border-color) !important;
+  background-color: var(--bg-card) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
   animation: jarvisBottomSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.customize-ai-panel.jarvis-bottom-popup::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 @keyframes jarvisBottomSlideUp {
   from {
-    transform: translateY(100%);
-    opacity: 0.4;
+    transform: translateY(30px) scale(0.96);
+    opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 }
 
-.jarvis-bottom-drag-bar {
-  width: 48px;
-  height: 4px;
+/* Minimalist Voice Header */
+.jarvis-voice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px 2px 14px;
+  flex-shrink: 0;
+}
+
+.jarvis-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.jarvis-status-orb {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.jarvis-status-orb.listening {
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: orbGlow 1.4s infinite ease-in-out;
+}
+
+.jarvis-status-orb.speaking {
+  background-color: var(--text-main);
+  box-shadow: 0 0 8px var(--text-main);
+  animation: orbGlow 1.2s infinite ease-in-out;
+}
+
+.jarvis-header-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.2px;
+}
+
+.jarvis-header-sub {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-  margin: 4px auto 8px auto;
+  background-color: var(--bg-body);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.jarvis-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.jarvis-lang-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.jarvis-lang-pill:hover {
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  border-color: var(--text-main);
+}
+
+.jarvis-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.jarvis-close-btn:hover {
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  border-color: var(--text-main);
+}
+
+.jarvis-bottom-drag-bar {
+  width: 36px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  margin: 4px auto 6px auto;
 }
 
 [data-theme="light"] .jarvis-bottom-drag-bar {
-  background: rgba(15, 23, 42, 0.2);
+  background: rgba(15, 23, 42, 0.16);
 }
 
 .jarvis-liquid-popup-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 20px 24px 20px;
-  background-color: var(--bg-body);
+  padding: 8px 18px 22px 18px;
+  background-color: var(--bg-card);
   text-align: center;
 }
 
 .jarvis-liquid-sphere-wrapper {
   position: relative;
-  padding: 16px 0;
+  padding: 12px 0 14px 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -845,12 +957,12 @@
 
 .jarvis-liquid-sphere {
   position: relative;
-  width: 148px;
-  height: 148px;
+  width: 136px;
+  height: 136px;
   border-radius: 50%;
   background: #09090b;
-  border: 2px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 0 28px rgba(255, 255, 255, 0.18), inset 0 0 22px rgba(0, 0, 0, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 26px rgba(255, 255, 255, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.95);
   overflow: hidden;
   cursor: pointer;
   display: flex;
@@ -862,12 +974,16 @@
 [data-theme="light"] .jarvis-liquid-sphere {
   background: #ffffff;
   border-color: #09090b;
-  box-shadow: 0 0 24px rgba(15, 23, 42, 0.16), inset 0 0 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 22px rgba(15, 23, 42, 0.14), inset 0 0 16px rgba(0, 0, 0, 0.08);
 }
 
 .jarvis-liquid-sphere:hover {
   transform: scale(1.03);
   border-color: #ffffff;
+}
+
+[data-theme="light"] .jarvis-liquid-sphere:hover {
+  border-color: #000000;
 }
 
 /* Liquid Waves Chamber */
@@ -880,16 +996,16 @@
 
 .liquid-wave-layer {
   position: absolute;
-  width: 290px;
-  height: 290px;
+  width: 270px;
+  height: 270px;
   left: 50%;
-  margin-left: -145px;
+  margin-left: -135px;
   border-radius: 41% 43% 39% 44%;
   transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
 }
 
-/* Idle State: Calm Liquid at ~48% level */
+/* Idle State: Calm Liquid */
 .jarvis-liquid-sphere.idle .wave-deep {
   top: 18%;
   background: rgba(255, 255, 255, 0.22);
@@ -917,7 +1033,7 @@
   background: rgba(15, 23, 42, 0.85);
 }
 
-/* Listening State: Liquid surges up to ~65% with fast ripples */
+/* Listening State: Liquid surges with energetic ripples */
 .jarvis-liquid-sphere.listening .wave-deep {
   top: -4%;
   background: rgba(255, 255, 255, 0.28);
@@ -944,7 +1060,7 @@
   background: rgba(15, 23, 42, 0.95);
 }
 
-/* Speaking State: Liquid surges up to ~75% with resonant fluid churning */
+/* Speaking State: Resonant churning fluid */
 .jarvis-liquid-sphere.speaking .wave-deep {
   top: -14%;
   background: rgba(255, 255, 255, 0.32);
@@ -987,20 +1103,20 @@
   background: rgba(15, 23, 42, 0.75);
 }
 .b1 { width: 6px; height: 6px; left: 26%; bottom: 12px; animation: bubbleRise 2.2s infinite ease-in; }
-.b2 { width: 9px; height: 9px; left: 62%; bottom: 6px; animation: bubbleRise 2.9s infinite ease-in 0.7s; }
+.b2 { width: 8px; height: 8px; left: 62%; bottom: 6px; animation: bubbleRise 2.9s infinite ease-in 0.7s; }
 .b3 { width: 5px; height: 5px; left: 44%; bottom: 16px; animation: bubbleRise 1.7s infinite ease-in 1.3s; }
 .b4 { width: 7px; height: 7px; left: 74%; bottom: 10px; animation: bubbleRise 2.4s infinite ease-in 0.4s; }
 
 @keyframes bubbleRise {
   0% { transform: translateY(0) scale(0.6); opacity: 0; }
   25% { opacity: 0.85; }
-  100% { transform: translateY(-75px) scale(1.2); opacity: 0; }
+  100% { transform: translateY(-70px) scale(1.2); opacity: 0; }
 }
 
 /* Concentric Shockwave Audio Rings */
 .liquid-audio-ring {
   position: absolute;
-  inset: -12px;
+  inset: -10px;
   border-radius: 50%;
   border: 1.5px solid rgba(255, 255, 255, 0.35);
   pointer-events: none;
@@ -1034,10 +1150,10 @@
 .liquid-core-glyph {
   position: relative;
   z-index: 10;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.82);
+  background: rgba(0, 0, 0, 0.85);
   border: 1.5px solid rgba(255, 255, 255, 0.65);
   color: #ffffff;
   display: flex;
@@ -1049,10 +1165,10 @@
 }
 
 [data-theme="light"] .liquid-core-glyph {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   border-color: #09090b;
   color: #09090b;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.22);
 }
 
 .jarvis-liquid-sphere:hover .liquid-core-glyph {
@@ -1068,88 +1184,120 @@
   50% { transform: scale(1.2); opacity: 1; }
 }
 
-/* Info & Transcript Block */
+/* Subtitle & Info Section (No Boxed Border) */
 .jarvis-voice-info-block {
   width: 100%;
-  max-width: 440px;
-  margin: 6px 0 12px 0;
+  max-width: 420px;
+  margin: 4px 0 12px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .jarvis-status-headline {
-  font-size: 14px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
+}
+
+.status-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  margin-right: 5px;
+  animation: statusDotPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes statusDotPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.25); }
 }
 
 .status-listening-badge {
   color: #10b981;
+  font-size: 12px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-}
-.status-speaking-badge {
-  color: var(--text-main);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.status-idle-badge {
-  color: var(--text-secondary);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
-.jarvis-transcript-bubble {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 8px 14px;
-  min-height: 40px;
+.status-speaking-badge {
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-idle-badge {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.jarvis-subtitle-clean {
+  width: 100%;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 2px 8px;
 }
 
-.jarvis-transcript-text {
-  font-size: 12px;
+.jarvis-subtitle-text {
+  font-size: 13.5px;
+  font-weight: 500;
   line-height: 1.45;
   color: var(--text-main);
   margin: 0;
-  font-weight: 500;
+  text-align: center;
+  letter-spacing: -0.1px;
 }
 
-/* Fast Command Chips */
-.jarvis-fast-commands-row {
+/* Fast Action Chips Cluster (Flex Wrapped, Zero Scrollbars) */
+.jarvis-fast-commands-cluster {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
-  overflow-x: auto;
   width: 100%;
-  padding: 6px 4px;
-  margin-bottom: 14px;
+  max-width: 420px;
+  margin: 4px 0 18px 0;
+  overflow: hidden;
+  scrollbar-width: none !important;
+}
+
+.jarvis-fast-commands-cluster::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .jarvis-fast-chip {
-  white-space: nowrap;
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6.5px 13px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 600;
   border: 1px solid var(--border-color);
   background-color: var(--bg-card);
   color: var(--text-main);
   cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  user-select: none;
 }
 
 .jarvis-fast-chip:hover {
   background-color: var(--text-main);
   color: var(--bg-card);
   border-color: var(--text-main);
-  transform: translateY(-1px);
+  transform: translateY(-1.5px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
 }
 
 /* Bottom Controls Bar */
@@ -1162,8 +1310,8 @@
 }
 
 .jarvis-mic-main-btn {
-  width: 58px;
-  height: 58px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   border: none;
   background-color: var(--text-main);
@@ -1172,12 +1320,12 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .jarvis-mic-main-btn:hover {
-  transform: scale(1.06);
+  transform: scale(1.07);
 }
 
 .jarvis-mic-main-btn.listening {
@@ -1185,24 +1333,27 @@
 }
 
 @keyframes jarvisMicPulse {
-  0%, 100% { transform: scale(1.04); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  0%, 100% { transform: scale(1.04); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
   50% { transform: scale(1.12); box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
 }
 
 .jarvis-switch-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: transparent;
   border: 1px solid var(--border-color);
-  padding: 6px 14px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .jarvis-switch-mode-btn:hover {
-  background-color: var(--bg-card);
+  background-color: var(--bg-body);
   color: var(--text-main);
   border-color: var(--text-main);
 }
