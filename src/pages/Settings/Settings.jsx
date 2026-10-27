@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   Download,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { auth } from '../../services/firebase';
@@ -142,6 +144,22 @@ const Settings = () => {
       ...prev,
       [modId]: !prev[modId]
     }));
+  };
+
+  const handleSelectAllModules = () => {
+    const allEnabled = {};
+    MODULES_LIST.forEach(m => {
+      allEnabled[m.id] = true;
+    });
+    setEnabledModules(allEnabled);
+  };
+
+  const handleDeselectAllModules = () => {
+    const allDisabled = {};
+    MODULES_LIST.forEach(m => {
+      allDisabled[m.id] = false;
+    });
+    setEnabledModules(allDisabled);
   };
 
   const handleSave = async () => {
@@ -600,10 +618,34 @@ const Settings = () => {
           {/* TAB 5: Features & Modules */}
           {activeTab === 'features' && (
             <div className="settings-content-card">
-              <div className="settings-card-header">
+              <div className="settings-card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h2 className="settings-card-title">Features & Modules Manager</h2>
-                  <p className="settings-card-subtitle">Turn active modules on or off for this branch</p>
+                  <p className="settings-card-subtitle">
+                    Turn active modules on or off for this branch • ({MODULES_LIST.filter(m => enabledModules[m.id] !== false).length} of {MODULES_LIST.length} Active)
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button"
+                    onClick={handleSelectAllModules}
+                    className="settings-btn-primary"
+                    style={{ height: '34px', fontSize: '0.75rem', padding: '0 0.85rem' }}
+                    title="Enable all modules"
+                  >
+                    <CheckSquare size={14} />
+                    <span>Select All</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={handleDeselectAllModules}
+                    className="settings-btn-secondary"
+                    style={{ height: '34px', fontSize: '0.75rem', padding: '0 0.85rem' }}
+                    title="Disable all modules"
+                  >
+                    <Square size={14} />
+                    <span>Deselect All</span>
+                  </button>
                 </div>
               </div>
 
