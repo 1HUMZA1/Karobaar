@@ -156,7 +156,7 @@ const Sidebar = () => {
           {userBusinesses && userBusinesses.length > 1 ? (
             <select 
               className="business-badge w-full text-center" 
-              style={{ cursor: 'pointer', appearance: 'none', background: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '8px', fontWeight: 'bold' }} 
+              style={{ cursor: 'pointer', appearance: 'none', padding: '0.65rem 1rem', borderRadius: '12px', fontWeight: '700' }} 
               value={currentBusiness?.id || ''}
               onChange={(e) => switchBranch(e.target.value)}
               title="Switch Branch"

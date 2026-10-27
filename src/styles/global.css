@@ -92,17 +92,17 @@
 
 /* Dynamic Accent Colors - Balanced Contrast */
 [data-accent="default"] {
-  --primary-color: #10b981;
-  --primary-hover: #059669;
-  --primary-light: rgba(16, 185, 129, 0.12);
+  --primary-color: #09090b;
+  --primary-hover: #27272a;
+  --primary-light: #f4f4f5;
   --primary-text: #ffffff;
 }
 [data-theme="dark"] [data-accent="default"],
 [data-theme="dark"][data-accent="default"] {
-  --primary-color: #10b981;
-  --primary-hover: #34d399;
-  --primary-light: rgba(16, 185, 129, 0.2);
-  --primary-text: #ffffff;
+  --primary-color: #ffffff;
+  --primary-hover: #e4e4e7;
+  --primary-light: rgba(255, 255, 255, 0.12);
+  --primary-text: #09090b;
 }
 
 [data-accent="ocean"] {

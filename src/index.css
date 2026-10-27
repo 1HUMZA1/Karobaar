@@ -61,10 +61,17 @@
 
 /* Accents (Primary Colors) */
 [data-accent="default"] {
-  --primary: #16a34a;
-  --primary-light: #22c55e;
-  --primary-dark: #15803d;
-  --primary-bg: rgba(22, 163, 74, 0.15);
+  --primary: #09090b;
+  --primary-light: #27272a;
+  --primary-dark: #000000;
+  --primary-bg: rgba(9, 9, 11, 0.06);
+}
+[data-theme="dark"] [data-accent="default"],
+[data-theme="dark"][data-accent="default"] {
+  --primary: #ffffff;
+  --primary-light: #f4f4f5;
+  --primary-dark: #e4e4e7;
+  --primary-bg: rgba(255, 255, 255, 0.1);
 }
 
 [data-accent="midnight"] {
