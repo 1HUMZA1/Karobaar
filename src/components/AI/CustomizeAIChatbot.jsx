@@ -26,7 +26,10 @@ import {
   Play,
   Globe,
   Maximize2,
-  Minimize2
+  Minimize2,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -34,49 +37,29 @@ import { db } from '../../services/databaseService';
 import './CustomizeAIChatbot.css';
 
 export const CustomizeAIChatbot = () => {
-  const { theme, toggleTheme, appUiVersion, setAppUiVersion, currentUser, currentBusiness, userBusinesses, switchBranch } = useAppContext();
+  const { 
+    theme, 
+    toggleTheme, 
+    appUiVersion, 
+    setAppUiVersion, 
+    currentUser, 
+    currentBusiness, 
+    userBusinesses, 
+    switchBranch 
+  } = useAppContext();
   const navigate = useNavigate();
-  
-  // UI States
-  const [isOpen, setIsOpen] = useState(false);
+
+  // Simple, Non-Intrusive UI States
+  const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
+  const [isBarMinimized, setIsBarMinimized] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [voiceModeActive, setVoiceModeActive] = useState(false); // ChatGPT Voice Orb Screen
   const [isListening, setIsListening] = useState(false);
-  const [voiceSpeechEnabled, setVoiceSpeechEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
-  const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish'); // 'hinglish' | 'en' | 'hi'
+  const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish');
   const messagesEndRef = useRef(null);
-  const recognitionRef = useRef(null);
-  const speechCommitTimerRef = useRef(null);
-  const interimRef = useRef('');
-  const [voiceVolumeLevel, setVoiceVolumeLevel] = useState(0);
-  const audioContextRef = useRef(null);
-  const analyserRef = useRef(null);
-  const animFrameRef = useRef(null);
-
-  // Pre-warm Speech Synthesis voices immediately on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-    }
-  }, []);
-
-  // Sync refs for uninterrupted voice callbacks
-  const voiceModeActiveRef = useRef(voiceModeActive);
-  const voiceSpeechEnabledRef = useRef(voiceSpeechEnabled);
-
-  useEffect(() => {
-    voiceModeActiveRef.current = voiceModeActive;
-  }, [voiceModeActive]);
-
-  useEffect(() => {
-    voiceSpeechEnabledRef.current = voiceSpeechEnabled;
-  }, [voiceSpeechEnabled]);
 
   // Settings for Customize AI
   const [aiSettings, setAiSettings] = useState(() => {
@@ -139,166 +122,193 @@ export const CustomizeAIChatbot = () => {
     ];
   });
 
-  // Initialize Web Speech Recognition
+  // Pre-warm Speech Synthesis voices immediately on mount
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-IN'; // Indian English / Hindi mix support
-
-      recognition.onstart = () => {
-        setIsListening(true);
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
       };
-
-      recognition.onresult = (event) => {
-        let interim = '';
-        let final = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const piece = event.results[i][0]?.transcript || '';
-          if (event.results[i].isFinal) {
-            final += piece;
-          } else {
-            interim += piece;
-          }
-        }
-
-        if (interim) {
-          interimRef.current = interim;
-          setInterimTranscript(interim);
-
-          // Real-time Fast Commit: Auto-dispatch after 500ms pause instead of waiting 2.5s for browser
-          clearTimeout(speechCommitTimerRef.current);
-          speechCommitTimerRef.current = setTimeout(() => {
-            if (interimRef.current && interimRef.current.trim().length > 1) {
-              const textToRun = interimRef.current.trim();
-              interimRef.current = '';
-              setInterimTranscript('');
-              try { recognition.stop(); } catch (e) {}
-              handleUserQuery(textToRun);
-            }
-          }, 500);
-        }
-
-        if (final.trim()) {
-          clearTimeout(speechCommitTimerRef.current);
-          interimRef.current = '';
-          setInterimTranscript('');
-          handleUserQuery(final.trim());
-        }
-      };
-
-      recognition.onerror = (event) => {
-        console.warn('Speech recognition status:', event.error);
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          setIsListening(false);
-        }
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        // If in voice mode and assistant is not speaking, keep listening active
-        if (voiceModeActiveRef.current && !isSpeakingRef.current) {
-          setTimeout(() => {
-            try {
-              if (voiceModeActiveRef.current && !isSpeakingRef.current) {
-                recognition.start();
-              }
-            } catch (e) {}
-          }, 250);
-        }
-      };
-
-      recognitionRef.current = recognition;
     }
   }, []);
 
+  // Global Continuous Speech Recognition Refs
+  const recognitionRef = useRef(null);
+  const isListeningEnabledRef = useRef(true);
   const isSpeakingRef = useRef(false);
+  const interimRef = useRef('');
+  const commitTimerRef = useRef(null);
 
-  // Real-time Audio Reactive Voice Visualizer
-  const startAudioVisualizer = async () => {
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) return;
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 64;
-      const source = ctx.createMediaStreamSource(stream);
-      source.connect(analyser);
-      audioContextRef.current = ctx;
-      analyserRef.current = analyser;
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      const updateVolume = () => {
-        if (!analyserRef.current) return;
-        analyserRef.current.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-        const avg = sum / dataArray.length;
-        setVoiceVolumeLevel(Math.min(1, avg / 45));
-        animFrameRef.current = requestAnimationFrame(updateVolume);
-      };
-      updateVolume();
-    } catch (e) {}
-  };
-
-  const stopAudioVisualizer = () => {
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    if (audioContextRef.current) {
-      try { audioContextRef.current.close(); } catch (e) {}
-      audioContextRef.current = null;
+  // Toggle voice input recording / mute
+  const toggleVoiceListening = () => {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    isListeningEnabledRef.current = next;
+    if (!next && recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (e) {}
+      setIsListening(false);
+    } else if (next && recognitionRef.current && !isSpeakingRef.current) {
+      try { recognitionRef.current.start(); } catch (e) {}
     }
-    setVoiceVolumeLevel(0);
   };
 
-  const startListening = () => {
-    stopSpeaking();
-    startAudioVisualizer();
-    if (!recognitionRef.current) return;
+  // Helper: Clean spoken query, handle solo wake-words, and strip prefixes
+  const cleanSpokenQuery = (text) => {
+    if (!text) return '';
+    const name = (aiSettings.assistantName || 'Jarvis').toLowerCase();
+    let cleaned = text.trim();
+    const lower = cleaned.toLowerCase();
+
+    // Check if user spoke ONLY the wake word
+    const soloWakeWords = [
+      name, 
+      `hey ${name}`, 
+      `ok ${name}`, 
+      `hello ${name}`, 
+      `wake up ${name}`, 
+      `${name} wake up`, 
+      `suno ${name}`
+    ];
+    if (soloWakeWords.includes(lower)) {
+      playWakeChime();
+      setIsBarMinimized(false);
+      const isHi = aiLanguage === 'hi';
+      const isEn = aiLanguage === 'en';
+      const greeting = isHi
+        ? `जी सर, ${assistantName} सुन रहा है! कहिए, क्या सहायता करूँ?`
+        : isEn
+        ? `Yes sir, ${assistantName} is listening from anywhere. How can I assist you?`
+        : `Ji sir, ${assistantName} sun raha hai! Boliye, main kya kar sakta hoon?`;
+      speakText(greeting);
+      return '';
+    }
+
+    // Strip wake word prefixes if user spoke "Hey Jarvis [command]"
+    const prefixRegex = new RegExp(`^(?:hey|ok|hello|wake up|suno)?\\s*${name}\\s*(?:bhai|ji|sir)?[,\\s]*`, 'i');
+    cleaned = cleaned.replace(prefixRegex, '').trim();
+
+    return cleaned || text;
+  };
+
+  // Continuous Ambient Listener active from EVERYWHERE in the application
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn('Speech Recognition is not supported on this browser.');
+      return;
+    }
+
+    let isMounted = true;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-IN'; // Indian English / Hindi accent support
+
+    recognition.onstart = () => {
+      if (isMounted) setIsListening(true);
+    };
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      let final = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const piece = event.results[i][0]?.transcript || '';
+        if (event.results[i].isFinal) {
+          final += piece;
+        } else {
+          interim += piece;
+        }
+      }
+
+      if (interim) {
+        interimRef.current = interim;
+        setInterimTranscript(interim);
+
+        // Fast auto-dispatch after 450ms pause
+        clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = setTimeout(() => {
+          if (interimRef.current && interimRef.current.trim().length > 1) {
+            const queryToRun = cleanSpokenQuery(interimRef.current.trim());
+            interimRef.current = '';
+            setInterimTranscript('');
+            if (queryToRun) {
+              handleUserQuery(queryToRun);
+            }
+          }
+        }, 450);
+      }
+
+      if (final.trim()) {
+        clearTimeout(commitTimerRef.current);
+        interimRef.current = '';
+        setInterimTranscript('');
+        const queryToRun = cleanSpokenQuery(final.trim());
+        if (queryToRun) {
+          handleUserQuery(queryToRun);
+        }
+      }
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        setIsListening(false);
+      }
+    };
+
+    recognition.onend = () => {
+      if (isMounted) {
+        setIsListening(false);
+        // Automatically restart so Jarvis listens from everywhere continuously!
+        if (isListeningEnabledRef.current && !isSpeakingRef.current) {
+          setTimeout(() => {
+            try {
+              if (isMounted && isListeningEnabledRef.current && !isSpeakingRef.current) {
+                recognition.start();
+              }
+            } catch (e) {}
+          }, 200);
+        }
+      }
+    };
+
     try {
-      recognitionRef.current.abort();
+      recognition.start();
     } catch (e) {}
-    setTimeout(() => {
-      try {
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch (e) {}
-    }, 60);
-  };
 
-  const stopListening = () => {
-    stopAudioVisualizer();
-    if (!recognitionRef.current) return;
-    try {
-      recognitionRef.current.stop();
-    } catch (e) {}
-    setIsListening(false);
-  };
+    recognitionRef.current = recognition;
 
-  // Text-To-Speech function
-  const speakText = (textToSpeak) => {
-    if (!voiceSpeechEnabled || !window.speechSynthesis) return;
+    return () => {
+      isMounted = false;
+      try { recognition.abort(); } catch (e) {}
+    };
+  }, [aiSettings.assistantName, aiLanguage]);
 
-    window.speechSynthesis.cancel(); // cancel ongoing speech
-    // Clean markdown characters
-    const clean = textToSpeak
+  // Speech Output Engine
+  const speakText = (text) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+
+    // Temporarily pause speech recognition while speaking so Jarvis does not hear itself
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (e) {}
+    }
+
+    const clean = text
       .replace(/[*#_`]/g, '')
       .replace(/•/g, '')
-      .replace(/₹/g, 'Rupees ')
+      .replace(/\n+/g, ' ')
       .trim();
 
-    // Limit spoken length for responsiveness
-    const sentences = clean.split('\n').filter(Boolean).slice(0, 3).join('. ');
-    const utterance = new SpeechSynthesisUtterance(sentences);
-    utterance.rate = 1.15; // Crisp, fast, real-time response rate
+    if (!clean) return;
+
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.rate = 1.05;
     utterance.pitch = 1.0;
 
     const voices = window.speechSynthesis.getVoices();
-    const isHindi = /[\u0900-\u097F]/.test(sentences) || /(namaste|dhanyawad|aapka|shukriya|kar diya|kardo|hai|kripya|bhejo|aaj|kamayi|bikri|dukan|maal|batao|udhaar)/i.test(sentences);
+    const isHindi = /[\u0900-\u097F]/.test(clean) || /(namaste|dhanyawad|aapka|shukriya|kar diya|kardo|hai|kripya|bhejo|aaj|kamayi|bikri|dukan|maal|batao|udhaar)/i.test(clean);
+
     if (isHindi) {
       const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('swara') || v.name.toLowerCase().includes('madhur'));
       if (hiVoice) utterance.voice = hiVoice;
@@ -309,7 +319,6 @@ export const CustomizeAIChatbot = () => {
       utterance.lang = 'en-IN';
     }
 
-    // Chrome speech queue unfreeze trick
     try {
       window.speechSynthesis.resume();
     } catch (e) {}
@@ -317,74 +326,54 @@ export const CustomizeAIChatbot = () => {
     isSpeakingRef.current = true;
     setIsSpeaking(true);
 
-    const safetyTimer = setTimeout(() => {
-      if (isSpeakingRef.current) {
-        isSpeakingRef.current = false;
-        setIsSpeaking(false);
-        if (voiceModeActiveRef.current) startListening();
+    const restartListening = () => {
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      if (isListeningEnabledRef.current && recognitionRef.current) {
+        setTimeout(() => {
+          try {
+            if (isListeningEnabledRef.current && !isSpeakingRef.current) {
+              recognitionRef.current.start();
+            }
+          } catch (e) {}
+        }, 150);
       }
-    }, Math.min(5000, Math.max(1800, clean.length * 65)));
-
-    utterance.onstart = () => {
-      isSpeakingRef.current = true;
-      setIsSpeaking(true);
     };
+
+    const safetyTimer = setTimeout(() => {
+      if (isSpeakingRef.current) restartListening();
+    }, Math.min(6000, Math.max(1800, clean.length * 65)));
 
     utterance.onend = () => {
       clearTimeout(safetyTimer);
-      isSpeakingRef.current = false;
-      setIsSpeaking(false);
-      if (voiceModeActiveRef.current) {
-        setTimeout(startListening, 80);
-      }
+      restartListening();
     };
 
     utterance.onerror = () => {
       clearTimeout(safetyTimer);
-      isSpeakingRef.current = false;
-      setIsSpeaking(false);
-      if (voiceModeActiveRef.current) {
-        setTimeout(startListening, 80);
-      }
+      restartListening();
     };
 
     try {
       window.speechSynthesis.speak(utterance);
     } catch (e) {
       clearTimeout(safetyTimer);
-      isSpeakingRef.current = false;
-      setIsSpeaking(false);
-      if (voiceModeActiveRef.current) startListening();
+      restartListening();
     }
   };
 
   const stopSpeaking = () => {
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
+      isSpeakingRef.current = false;
       setIsSpeaking(false);
-    }
-  };
-
-  // Toggle Voice Input Recording
-  const toggleVoiceInput = () => {
-    if (!recognitionRef.current) {
-      alert('Speech Recognition is not supported on this browser. Try Google Chrome or Edge.');
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      stopSpeaking();
-      try {
-        recognitionRef.current.start();
-      } catch (err) {
-        console.error('Error starting recognition:', err);
+      if (isListeningEnabledRef.current && recognitionRef.current) {
+        setTimeout(() => {
+          try { recognitionRef.current.start(); } catch (e) {}
+        }, 100);
       }
     }
   };
-
 
   // Web Audio Synthesizer: 2-Tone Wake Chime
   const playWakeChime = () => {
@@ -396,8 +385,8 @@ export const CustomizeAIChatbot = () => {
       const gain = ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.14); // A5
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.14);
 
       gain.gain.setValueAtTime(0.18, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
@@ -407,48 +396,30 @@ export const CustomizeAIChatbot = () => {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.35);
-    } catch (e) {
-      // Handled silently
-    }
-  };
-
-  // Trigger Assistant Wake
-  const triggerAssistantWake = (queryAfterWake = '') => {
-    playWakeChime();
-    setIsOpen(true);
-    setVoiceModeActive(true);
-    const name = aiSettings.assistantName || 'Jarvis';
-
-    if (queryAfterWake) {
-      setTimeout(() => {
-        handleUserQuery(queryAfterWake);
-      }, 250);
-    } else {
-      // Start listening directly so user can speak immediately!
-      startListening();
-
-      const isHi = aiLanguage === 'hi';
-      const isEn = aiLanguage === 'en';
-      const greeting = isHi
-        ? `जी सर, ${name} हाज़िर है! कहिए, क्या सहायता करूँ?`
-        : isEn
-        ? `Yes sir, ${name} is online and listening. How can I assist you?`
-        : `Ji sir, ${name} hazir hai! Boliye, main aapke liye kya kar sakta hoon?`;
-
-      setTimeout(() => {
-        speakText(greeting);
-      }, 150);
-    }
+    } catch (e) {}
   };
 
   // Listen to wake event from Dedicated Topbar Button
   useEffect(() => {
     const handleWakeEvent = (e) => {
-      triggerAssistantWake(e?.detail?.query || '');
+      playWakeChime();
+      setIsBarMinimized(false);
+      if (e?.detail?.query) {
+        handleUserQuery(e.detail.query);
+      } else {
+        const isHi = aiLanguage === 'hi';
+        const isEn = aiLanguage === 'en';
+        const greeting = isHi
+          ? `जी सर, ${assistantName} सुन रहा है!`
+          : isEn
+          ? `Yes sir, ${assistantName} is listening!`
+          : `Ji sir, ${assistantName} sun raha hai!`;
+        speakText(greeting);
+      }
     };
     window.addEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
     return () => window.removeEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
-  }, [aiSettings.assistantName, aiLanguage]);
+  }, [assistantName, aiLanguage]);
 
   // Sync settings dynamically when changed in Settings tab
   useEffect(() => {
@@ -457,7 +428,7 @@ export const CustomizeAIChatbot = () => {
         const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
         setAiSettings(prev => ({
           ...prev,
-          assistantName: e?.detail?.assistantName || saved.assistantName || 'Mr. H',
+          assistantName: e?.detail?.assistantName || saved.assistantName || 'Jarvis',
           ...saved
         }));
       } catch {}
@@ -470,103 +441,19 @@ export const CustomizeAIChatbot = () => {
     };
   }, []);
 
-  // Background Speech Recognition for Hands-Free Wake Words ("Hey Mr. H", "Hey Jarvis", etc.)
-  const bgRecognitionRef = useRef(null);
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    if (isOpen || aiSettings.backgroundWake === false) {
-      if (bgRecognitionRef.current) {
-        try { bgRecognitionRef.current.abort(); } catch {}
-      }
-      return;
-    }
-
-    let isComponentMounted = true;
-    try {
-      const bgRec = new SpeechRecognition();
-      bgRec.continuous = true;
-      bgRec.interimResults = false;
-      bgRec.lang = 'en-IN';
-
-      bgRec.onresult = (event) => {
-        const lastIdx = event.results.length - 1;
-        const transcript = (event.results[lastIdx][0]?.transcript || '').toLowerCase().trim();
-        const currentName = (aiSettings.assistantName || 'Jarvis').toLowerCase();
-
-        // Strictly single active identity: Only the active selected assistant can be called!
-        const wakeTriggers = [
-          currentName,
-          `hey ${currentName}`,
-          `ok ${currentName}`,
-          `hello ${currentName}`,
-          `wake up ${currentName}`,
-          `${currentName} wake up`,
-          `suno ${currentName}`
-        ];
-
-        const matchedTrigger = wakeTriggers.find(t => transcript.includes(t));
-        if (matchedTrigger) {
-          try { bgRec.stop(); } catch {}
-          let queryPart = transcript.substring(transcript.indexOf(matchedTrigger) + matchedTrigger.length).trim();
-          triggerAssistantWake(queryPart);
-        }
-      };
-
-      bgRec.onerror = (e) => {
-        // Continuous recovery for background voice recognition
-      };
-
-      bgRec.onend = () => {
-        if (isComponentMounted && !isOpen && aiSettings.backgroundWake !== false) {
-          setTimeout(() => {
-            try { bgRec.start(); } catch {}
-          }, 300);
-        }
-      };
-
-      bgRec.start();
-      bgRecognitionRef.current = bgRec;
-    } catch (e) {
-      // Permission or autoplay restriction
-    }
-
-    return () => {
-      isComponentMounted = false;
-      if (bgRecognitionRef.current) {
-        try { bgRecognitionRef.current.abort(); } catch {}
-      }
-    };
-  }, [isOpen, aiSettings.assistantName, aiSettings.backgroundWake]);
-
-  // Listen to open event from Topbar or Global Search
-  useEffect(() => {
-    const handleOpenAi = (e) => {
-      setIsOpen(true);
-      if (e.detail && e.detail.query) {
-        handleUserQuery(e.detail.query);
-      }
-    };
-    window.addEventListener('karobaar_open_ai_assistant', handleOpenAi);
-    return () => window.removeEventListener('karobaar_open_ai_assistant', handleOpenAi);
-  }, []);
-
   // Save conversation history
   useEffect(() => {
     try {
       localStorage.setItem('karobaar_customize_ai_history', JSON.stringify(messages.slice(-30)));
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) {}
   }, [messages]);
 
-  // Scroll to bottom on new message
+  // Scroll to bottom on new message in drawer
   useEffect(() => {
-    if (isOpen && !voiceModeActive) {
+    if (isChatDrawerOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen, isTyping, voiceModeActive]);
+  }, [messages, isChatDrawerOpen, isTyping]);
 
   const handleClearHistory = () => {
     stopSpeaking();
@@ -575,12 +462,8 @@ export const CustomizeAIChatbot = () => {
         {
           id: 'welcome-reset',
           sender: 'bot',
-          text: `Chat history cleared. How can **Customize** assist your business today?`,
-          timestamp: new Date().toISOString(),
-          quickActions: [
-            { label: '📊 Check Today\'s Sales', query: 'Show today sales summary' },
-            { label: '📦 Low Stock Alert', query: 'Which items are low in stock?' }
-          ]
+          text: `Chat history cleared. How can **${assistantName}** assist your business today?`,
+          timestamp: new Date().toISOString()
         }
       ];
       setMessages(resetMsg);
@@ -1698,419 +1581,238 @@ export const CustomizeAIChatbot = () => {
   // Latest assistant response for subtitle display
   const latestBotMsg = [...messages].reverse().find(m => m.sender === 'bot');
   const latestBotText = latestBotMsg
-    ? latestBotMsg.text.replace(/[*#_`]/g, '').trim().slice(0, 130) + (latestBotMsg.text.replace(/[*#_`]/g, '').trim().length > 130 ? '...' : '')
+    ? latestBotMsg.text.replace(/[*#_`]/g, '').trim().slice(0, 110) + (latestBotMsg.text.replace(/[*#_`]/g, '').trim().length > 110 ? '...' : '')
     : '';
 
   return (
     <>
-      {/* Floating Realtime AI Trigger Button (Strictly Monochrome) */}
-      {aiSettings.showFloatingBubble && !isOpen && (
+      {/* VIEW 1: Minimized Floating Pill (When collapsed in bottom corner) */}
+      {isBarMinimized ? (
         <button 
-          className="customize-ai-floating-trigger"
-          onClick={() => setIsOpen(true)}
-          title="Open Customize Voice AI Assistant"
+          type="button"
+          className="jarvis-minimized-pill"
+          onClick={() => setIsBarMinimized(false)}
+          title="Expand Jarvis Voice Bar (Listening from everywhere)"
         >
-          <div className="customize-trigger-orb" />
-          <Sparkles size={16} className="customize-sparkle-icon" />
-          <span className="customize-trigger-text">{assistantName} AI</span>
+          <span className={`jarvis-bar-dot ${isListening ? 'listening' : isSpeaking ? 'speaking' : !voiceEnabled ? 'muted' : 'idle'}`} />
+          <Sparkles size={14} />
+          <span>{assistantName} Active</span>
         </button>
+      ) : (
+        /* VIEW 2: Simple, Non-Intrusive Floating Jarvis Bar (Listening from everywhere, ZERO POPUPS) */
+        <div className="jarvis-simple-bar-wrapper">
+          <div className="jarvis-simple-bar">
+            {/* Brand & Status Indicator */}
+            <div 
+              className="jarvis-bar-brand"
+              onClick={() => {
+                if (isSpeaking) stopSpeaking();
+                else toggleVoiceListening();
+              }}
+              title={isSpeaking ? "Tap to stop speaking" : isListening ? "Listening everywhere • Tap to mute" : "Muted • Tap to listen"}
+            >
+              <span className={`jarvis-bar-dot ${isListening ? 'listening' : isSpeaking ? 'speaking' : !voiceEnabled ? 'muted' : 'idle'}`} />
+              <span className="jarvis-bar-title">{assistantName}</span>
+            </div>
+
+            <div className="jarvis-bar-divider" />
+
+            {/* Live Dynamic Speech / Feedback Text */}
+            <div className="jarvis-bar-text-area">
+              <p className={`jarvis-bar-live-text ${interimTranscript ? 'interim' : latestBotText ? 'response' : 'idle'}`}>
+                {interimTranscript ? (
+                  `“${interimTranscript}”`
+                ) : latestBotText ? (
+                  latestBotText
+                ) : isListening ? (
+                  `Listening everywhere... Speak naturally`
+                ) : (
+                  `Mic muted • Tap mic to listen`
+                )}
+              </p>
+            </div>
+
+            {/* Quick Commands (Subtle 1-Click Chips) */}
+            <div className="jarvis-bar-chips-cluster">
+              <button type="button" onClick={() => handleUserQuery('Show today sales summary')} className="jarvis-bar-chip">
+                <TrendingUp size={11} />
+                <span>Sales</span>
+              </button>
+              <button type="button" onClick={() => handleUserQuery('Which items are low in stock?')} className="jarvis-bar-chip">
+                <AlertTriangle size={11} />
+                <span>Stock</span>
+              </button>
+              <button type="button" onClick={() => handleUserQuery('Toggle dark mode')} className="jarvis-bar-chip">
+                <Moon size={11} />
+                <span>Mode</span>
+              </button>
+            </div>
+
+            {/* Bar Controls */}
+            <div className="jarvis-bar-actions">
+              {/* Language Selector */}
+              <button 
+                type="button" 
+                className="jarvis-bar-lang-pill"
+                onClick={() => {
+                  const next = aiLanguage === 'hinglish' ? 'en' : aiLanguage === 'en' ? 'hi' : 'hinglish';
+                  setAiLanguage(next);
+                  localStorage.setItem('karobaar_ai_language', next);
+                }}
+                title="Toggle Language: Hinglish / EN / हिंदी"
+              >
+                <Globe size={11} />
+                <span>{aiLanguage === 'hinglish' ? 'Hinglish' : aiLanguage === 'hi' ? 'हिंदी' : 'EN'}</span>
+              </button>
+
+              {/* Mic Toggle Button */}
+              <button 
+                type="button" 
+                onClick={toggleVoiceListening}
+                className={`jarvis-bar-icon-btn ${isListening ? 'active' : 'muted'}`}
+                title={isListening ? "Mute Microphone" : "Unmute Microphone"}
+              >
+                {isListening ? <Mic size={14} /> : <MicOff size={14} />}
+              </button>
+
+              {/* Side Chat Drawer Toggle Button */}
+              <button 
+                type="button" 
+                onClick={() => setIsChatDrawerOpen(!isChatDrawerOpen)}
+                className={`jarvis-bar-icon-btn ${isChatDrawerOpen ? 'active' : ''}`}
+                title="View Full Chat History & Details"
+              >
+                <MessageSquare size={14} />
+              </button>
+
+              {/* Minimize Bar */}
+              <button 
+                type="button" 
+                onClick={() => setIsBarMinimized(true)}
+                className="jarvis-bar-icon-btn"
+                title="Minimize to Pill"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Main Realtime Voice AI Window / Overlay */}
-      {isOpen && (
-        <div className={`customize-ai-drawer-overlay ${voiceModeActive ? 'bottom-popup-mode' : ''}`} onClick={() => { stopSpeaking(); setIsOpen(false); }}>
-          <div 
-            className={`customize-ai-panel ${voiceModeActive ? 'jarvis-bottom-popup' : ''}`} 
-            onClick={e => e.stopPropagation()}
-          >
-            {/* VIEW 1: Voice Mode (Sleek Minimalist Liquid Orb Popup) */}
-            {voiceModeActive ? (
-              <div className="jarvis-liquid-popup-content">
-                {/* Sleek Minimalist Voice Header */}
-                <div className="jarvis-voice-header">
-                  <div className="jarvis-header-brand">
-                    <div className={`jarvis-status-orb ${isListening ? 'listening' : isSpeaking ? 'speaking' : ''}`} />
-                    <span className="jarvis-header-name">{assistantName}</span>
-                    <span className="jarvis-header-sub">Voice AI</span>
-                  </div>
-
-                  <div className="jarvis-header-actions">
-                    {/* Clean Language Selector */}
-                    <button 
-                      type="button" 
-                      className="jarvis-lang-pill"
-                      onClick={() => {
-                        const next = aiLanguage === 'hinglish' ? 'en' : aiLanguage === 'en' ? 'hi' : 'hinglish';
-                        setAiLanguage(next);
-                        localStorage.setItem('karobaar_ai_language', next);
-                      }}
-                      title="Toggle Language: Hinglish / EN / हिंदी"
-                    >
-                      <Globe size={12} />
-                      <span>{aiLanguage === 'hinglish' ? 'Hinglish' : aiLanguage === 'hi' ? 'हिंदी' : 'EN'}</span>
-                    </button>
-
-                    {/* Close Button */}
-                    <button 
-                      type="button"
-                      onClick={() => { stopSpeaking(); setIsOpen(false); }} 
-                      className="jarvis-close-btn"
-                      title={`Close ${assistantName}`}
-                    >
-                      <X size={15} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Drag handle */}
-                <div className="jarvis-bottom-drag-bar" />
-
-                {/* Centered Round Liquid Voice Sphere */}
-                <div className="jarvis-liquid-sphere-wrapper">
-                  <div 
-                    className={`jarvis-liquid-sphere ${isListening ? 'listening' : isSpeaking ? 'speaking' : 'idle'}`}
-                    style={{
-                      transform: isListening 
-                        ? `scale(${1 + voiceVolumeLevel * 0.12})` 
-                        : isSpeaking 
-                        ? 'scale(1.05)' 
-                        : 'scale(1)',
-                      transition: isListening ? 'transform 0.08s ease-out' : 'transform 0.3s ease'
-                    }}
-                    onClick={() => {
-                      if (isSpeaking) {
-                        stopSpeaking();
-                        try { recognitionRef.current?.start(); } catch (e) {}
-                      } else {
-                        toggleVoiceInput();
-                      }
-                    }}
-                    title={isSpeaking ? "Tap orb to interrupt" : isListening ? "Listening... Tap to pause" : `Tap to speak to ${assistantName}`}
-                  >
-                    {/* Concentric soundwave shockwave rings */}
-                    <div className="liquid-audio-ring ring-1" />
-                    <div className="liquid-audio-ring ring-2" />
-                    <div className="liquid-audio-ring ring-3" />
-
-                    {/* Liquid chamber with dynamic wave layers */}
-                    <div className="liquid-chamber">
-                      <div className="liquid-wave-layer wave-deep" />
-                      <div className="liquid-wave-layer wave-mid" />
-                      <div className="liquid-wave-layer wave-surface" />
-                      
-                      {/* Fluid rising micro-bubbles */}
-                      <div className="liquid-bubble b1" />
-                      <div className="liquid-bubble b2" />
-                      <div className="liquid-bubble b3" />
-                      <div className="liquid-bubble b4" />
-                    </div>
-
-                    {/* Glowing Center AI Arc Reactor Glyph */}
-                    <div className="liquid-core-glyph">
-                      <Sparkles size={18} className="liquid-core-sparkle" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Real-time Subtitle & Status (Clean borderless cinema typography, NO BOX BORDER) */}
-                <div className="jarvis-voice-info-block">
-                  <div className="jarvis-status-headline">
-                    {isListening ? (
-                      <span className="status-listening-badge"><span className="status-pulse-dot" /> Listening to your voice...</span>
-                    ) : isSpeaking ? (
-                      <span className="status-speaking-badge"><span className="status-pulse-dot" /> {assistantName} speaking (Tap orb to interrupt)</span>
-                    ) : (
-                      <span className="status-idle-badge"><span className="status-pulse-dot" /> {assistantName} ready • Full app control</span>
-                    )}
-                  </div>
-
-                  <div className="jarvis-subtitle-clean">
-                    <p className="jarvis-subtitle-text">
-                      {interimTranscript ? `“${interimTranscript}”` : latestBotText ? latestBotText : `Say "Hey ${assistantName}" or tap the mic below`}
-                    </p>
-                  </div>
-                </div>
-
-                {/* 1-Tap Quick Action Commands (Centered flex-wrap cluster, NO SCROLLBAR) */}
-                <div className="jarvis-fast-commands-cluster">
-                  <button type="button" onClick={() => handleUserQuery('Show today sales summary')} className="jarvis-fast-chip">
-                    <TrendingUp size={12} />
-                    <span>Today's Sales</span>
-                  </button>
-                  <button type="button" onClick={() => handleUserQuery('Add 2 Burger to cart')} className="jarvis-fast-chip">
-                    <ShoppingCart size={12} />
-                    <span>Bill 2 Burger</span>
-                  </button>
-                  <button type="button" onClick={() => handleUserQuery('Which items are low in stock?')} className="jarvis-fast-chip">
-                    <AlertTriangle size={12} />
-                    <span>Low Stock</span>
-                  </button>
-                  <button type="button" onClick={() => handleUserQuery('Toggle dark mode')} className="jarvis-fast-chip">
-                    <Moon size={12} />
-                    <span>Dark Mode</span>
-                  </button>
-                </div>
-
-                {/* Bottom Voice Controls Bar */}
-                <div className="jarvis-bottom-controls-bar">
-                  <button 
-                    type="button"
-                    onClick={toggleVoiceInput}
-                    className={`jarvis-mic-main-btn ${isListening ? 'listening' : ''}`}
-                    title={isListening ? 'Stop listening' : 'Start speaking'}
-                  >
-                    {isListening ? <MicOff size={22} /> : <Mic size={22} />}
-                  </button>
-
-                  <button 
-                    type="button" 
-                    onClick={() => setVoiceModeActive(false)}
-                    className="jarvis-switch-mode-btn"
-                    title="Switch to detailed text chat and action cards view"
-                  >
-                    <Bot size={13} />
-                    <span>Switch to Chat History</span>
-                  </button>
-                </div>
+      {/* VIEW 3: Optional Slide-over Chat History Drawer (Opened ONLY via Chat Icon, NO BACKDROP) */}
+      {isChatDrawerOpen && (
+        <div className="jarvis-chat-side-drawer">
+          <div className="customize-ai-header">
+            <div className="customize-ai-header-left">
+              <div className="customize-ai-avatar">
+                <Sparkles size={15} />
               </div>
-            ) : (
-              /* VIEW 2: Chat Stream Feed Mode */
-              <>
-                <div className="customize-ai-header">
-                  <div className="customize-ai-header-left">
-                    <div className={`customize-ai-avatar ${isSpeaking ? 'speaking-pulse' : ''}`}>
-                      <Sparkles size={16} />
-                    </div>
-                    <div>
-                      <div className="customize-ai-title-row">
-                        <h3 className="customize-ai-title">{assistantName}</h3>
-                        <span className="customize-ai-badge">Voice AI</span>
-                      </div>
-                      <p className="customize-ai-status">
-                        {isListening ? (
-                          <span className="status-listening">● Listening to your voice...</span>
-                        ) : isSpeaking ? (
-                          <span className="status-speaking">● Speaking response...</span>
-                        ) : (
-                          '● Realtime • Ready to operate'
-                        )}
-                      </p>
-                    </div>
-                  </div>
+              <div>
+                <h3 className="customize-ai-title">{assistantName} History</h3>
+                <p className="customize-ai-status">
+                  {isListening ? '● Listening from anywhere' : '● Ambient Ready'}
+                </p>
+              </div>
+            </div>
 
-                  {/* Header Actions for Chat view */}
-                  <div className="customize-ai-header-actions">
-                    <button 
-                      type="button" 
-                      className="customize-ai-icon-btn"
-                      onClick={() => {
-                        const next = aiLanguage === 'hinglish' ? 'en' : aiLanguage === 'en' ? 'hi' : 'hinglish';
-                        setAiLanguage(next);
-                        localStorage.setItem('karobaar_ai_language', next);
-                      }}
-                      style={{ width: 'auto', padding: '0 8px', fontSize: '11px', fontWeight: 700, gap: '4px' }}
-                      title="Toggle Language: Hinglish / English / Hindi"
-                    >
-                      <Globe size={13} />
-                      <span>{aiLanguage === 'hinglish' ? 'Hinglish' : aiLanguage === 'hi' ? 'हिंदी' : 'EN'}</span>
-                    </button>
+            <div className="customize-ai-header-actions">
+              <button onClick={handleClearHistory} className="customize-ai-icon-btn" title="Clear chat history">
+                <Trash2 size={14} />
+              </button>
+              <button onClick={() => setIsChatDrawerOpen(false)} className="customize-ai-icon-btn" title="Close drawer">
+                <X size={15} />
+              </button>
+            </div>
+          </div>
 
-                    <button 
-                      onClick={() => setVoiceModeActive(true)}
-                      className="customize-ai-icon-btn"
-                      title="Switch to Voice Orb View"
-                    >
-                      <Radio size={15} />
-                    </button>
-
-                    <button 
-                      onClick={() => {
-                        if (voiceSpeechEnabled) stopSpeaking();
-                        setVoiceSpeechEnabled(!voiceSpeechEnabled);
-                      }}
-                      className={`customize-ai-icon-btn ${!voiceSpeechEnabled ? 'muted' : ''}`}
-                      title={voiceSpeechEnabled ? 'Mute AI voice output' : 'Enable AI voice output'}
-                    >
-                      {voiceSpeechEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-                    </button>
-
-                    <button 
-                      onClick={handleClearHistory} 
-                      className="customize-ai-icon-btn"
-                      title="Clear conversation"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-
-                    <button 
-                      onClick={() => { stopSpeaking(); setIsOpen(false); }} 
-                      className="customize-ai-icon-btn"
-                      title="Close AI window"
-                    >
-                      <X size={17} />
-                    </button>
-                  </div>
-                </div>
-                <div className="customize-ai-messages custom-scrollbar">
-                  {messages.map(msg => (
-                    <div key={msg.id} className={`customize-ai-message-row ${msg.sender === 'user' ? 'user' : 'bot'}`}>
-                      {msg.sender === 'bot' && (
-                        <div className="customize-ai-bot-icon">
-                          <Bot size={14} />
-                        </div>
-                      )}
-
-                      <div className="customize-ai-bubble-wrap">
-                        <div className={`customize-ai-bubble ${msg.sender === 'user' ? 'user-bubble' : 'bot-bubble'}`}>
-                          <div className="customize-ai-bubble-text">
-                            {msg.text.split('\n').map((line, idx) => (
-                              <p key={idx} style={{ margin: '0 0 4px 0' }}>
-                                {line.startsWith('• ') ? (
-                                  <span style={{ display: 'inline-block', marginLeft: '6px' }}>{line}</span>
-                                ) : line}
-                              </p>
-                            ))}
-                          </div>
-
-                          {/* Re-play voice speech button for bot message */}
-                          {msg.sender === 'bot' && (
-                            <div className="customize-bubble-actions">
-                              <button 
-                                onClick={() => speakText(msg.text)} 
-                                className="customize-speech-replay-btn"
-                                title="Listen to this response out loud"
-                              >
-                                <Volume2 size={12} />
-                                <span>Speak</span>
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Interactive Action Card */}
-                          {msg.actionData && (
-                            <div className="customize-ai-action-card">
-                              {msg.actionData.badge && (
-                                <div className="customize-ai-action-badge">
-                                  <CheckCircle2 size={13} />
-                                  <span>{msg.actionData.badge}</span>
-                                </div>
-                              )}
-
-                              {msg.actionData.metrics && (
-                                <div className="customize-ai-metrics-grid">
-                                  {msg.actionData.metrics.map((m, i) => (
-                                    <div key={i} className="customize-ai-metric-item">
-                                      <span className="metric-label">{m.label}</span>
-                                      <span className="metric-value">{m.value}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {msg.actionData.items && (
-                                <div className="customize-ai-items-list">
-                                  {msg.actionData.items.map(it => (
-                                    <div key={it.id} className="customize-ai-item-row">
-                                      <span>{it.name}</span>
-                                      <span className="stock-alert">{it.stockQuantity} left</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {msg.actionData.cta && (
-                                <button 
-                                  className="customize-ai-cta-btn"
-                                  onClick={() => {
-                                    setIsOpen(false);
-                                    navigate(msg.actionData.cta.path);
-                                  }}
-                                >
-                                  <span>{msg.actionData.cta.label}</span>
-                                  <ArrowRight size={13} />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Quick Suggestion Chips */}
-                        {msg.quickActions && (
-                          <div className="customize-ai-chips-wrap">
-                            {msg.quickActions.map((qa, i) => (
-                              <button 
-                                key={i} 
-                                className="customize-ai-chip"
-                                onClick={() => handleUserQuery(qa.query)}
-                              >
-                                {qa.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  {isTyping && (
-                    <div className="customize-ai-message-row bot">
-                      <div className="customize-ai-bot-icon">
-                        <Bot size={14} />
-                      </div>
-                      <div className="customize-ai-bubble bot-bubble">
-                        <div className="customize-ai-typing-indicator">
-                          <span></span><span></span><span></span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Voice Listening Banner when user is speaking */}
-                {isListening && (
-                  <div className="customize-live-listening-bar">
-                    <div className="listening-pulse-dot" />
-                    <span className="listening-text">
-                      {interimTranscript ? `"${interimTranscript}"` : 'Listening... speak your command now'}
-                    </span>
-                    <button onClick={toggleVoiceInput} className="listening-stop-btn">Stop</button>
+          {/* Message Stream */}
+          <div className="customize-ai-messages custom-scrollbar">
+            {messages.map(msg => (
+              <div key={msg.id} className={`customize-ai-message-row ${msg.sender === 'user' ? 'user' : 'bot'}`}>
+                {msg.sender === 'bot' && (
+                  <div className="customize-ai-bot-icon">
+                    <Bot size={13} />
                   </div>
                 )}
 
-                {/* Input Bar with Real-time Voice Button */}
-                <div className="customize-ai-input-bar">
-                  <button 
-                    type="button" 
-                    onClick={toggleVoiceInput}
-                    className={`customize-ai-mic-btn ${isListening ? 'active' : ''}`}
-                    title={isListening ? 'Stop listening' : 'Speak command with voice'}
-                  >
-                    <Mic size={16} />
-                  </button>
+                <div className="customize-ai-bubble-wrap">
+                  <div className={`customize-ai-bubble ${msg.sender === 'user' ? 'user-bubble' : 'bot-bubble'}`}>
+                    <div className="customize-ai-bubble-text">
+                      {msg.text.split('\n').map((line, idx) => (
+                        <p key={idx} style={{ margin: '0 0 4px 0' }}>{line}</p>
+                      ))}
+                    </div>
 
-                  <input 
-                    type="text"
-                    placeholder="Ask or speak to operate app live..."
-                    value={inputMessage}
-                    onChange={e => setInputMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="customize-ai-input"
-                    autoFocus
-                  />
-
-                  <button 
-                    type="button" 
-                    onClick={() => handleUserQuery()}
-                    disabled={!inputMessage.trim() || isTyping}
-                    className="customize-ai-send-btn"
-                    title="Send instruction"
-                  >
-                    <Send size={15} />
-                  </button>
+                    {/* Action Card if present */}
+                    {msg.actionData && (
+                      <div className="customize-ai-action-card">
+                        {msg.actionData.badge && (
+                          <div className="customize-ai-action-badge">
+                            <CheckCircle2 size={13} />
+                            <span>{msg.actionData.badge}</span>
+                          </div>
+                        )}
+                        {msg.actionData.metrics && (
+                          <div className="customize-ai-metrics-grid">
+                            {msg.actionData.metrics.map((m, i) => (
+                              <div key={i} className="customize-ai-metric-item">
+                                <span className="metric-label">{m.label}</span>
+                                <span className="metric-value">{m.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {msg.actionData.items && (
+                          <div className="customize-ai-items-list">
+                            {msg.actionData.items.map(it => (
+                              <div key={it.id} className="customize-ai-item-row">
+                                <span>{it.name}</span>
+                                <span className="stock-alert">{it.stockQuantity} left</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {msg.actionData.cta && (
+                          <button 
+                            className="customize-ai-cta-btn"
+                            onClick={() => {
+                              setIsChatDrawerOpen(false);
+                              navigate(msg.actionData.cta.path);
+                            }}
+                          >
+                            <span>{msg.actionData.cta.label}</span>
+                            <ArrowRight size={13} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </>
-            )}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Bottom Text Input */}
+          <div className="customize-ai-input-area">
+            <div className="customize-ai-input-box">
+              <input 
+                type="text" 
+                value={inputMessage}
+                onChange={e => setInputMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={`Type a command for ${assistantName}...`}
+                className="customize-ai-text-input"
+              />
+              <button 
+                type="button" 
+                onClick={() => handleUserQuery()}
+                disabled={!inputMessage.trim()}
+                className="customize-ai-send-btn"
+              >
+                <Send size={15} />
+              </button>
+            </div>
           </div>
         </div>
       )}
