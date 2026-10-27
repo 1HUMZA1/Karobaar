@@ -107,7 +107,7 @@ export const CustomizeAIChatbot = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
-      recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-IN'; // Indian English / Hindi mix support
 
@@ -116,29 +116,76 @@ export const CustomizeAIChatbot = () => {
       };
 
       recognition.onresult = (event) => {
-        let currentTranscript = '';
+        let interim = '';
+        let final = '';
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript;
+          const piece = event.results[i][0]?.transcript || '';
+          if (event.results[i].isFinal) {
+            final += piece;
+          } else {
+            interim += piece;
+          }
         }
-        setInterimTranscript(currentTranscript);
-        if (event.results[0].isFinal) {
-          handleUserQuery(currentTranscript);
+
+        if (interim) {
+          setInterimTranscript(interim);
+        }
+
+        if (final.trim()) {
           setInterimTranscript('');
+          handleUserQuery(final.trim());
         }
       };
 
       recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
+        console.warn('Speech recognition status:', event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setIsListening(false);
+        }
       };
 
       recognition.onend = () => {
         setIsListening(false);
+        // If in voice mode and assistant is not speaking, keep listening active
+        if (voiceModeActiveRef.current && !isSpeakingRef.current) {
+          setTimeout(() => {
+            try {
+              if (voiceModeActiveRef.current && !isSpeakingRef.current) {
+                recognition.start();
+              }
+            } catch (e) {}
+          }, 250);
+        }
       };
 
       recognitionRef.current = recognition;
     }
   }, []);
+
+  const isSpeakingRef = useRef(false);
+
+  const startListening = () => {
+    stopSpeaking();
+    if (!recognitionRef.current) return;
+    try {
+      recognitionRef.current.abort();
+    } catch (e) {}
+    setTimeout(() => {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (e) {}
+    }, 120);
+  };
+
+  const stopListening = () => {
+    if (!recognitionRef.current) return;
+    try {
+      recognitionRef.current.stop();
+    } catch (e) {}
+    setIsListening(false);
+  };
 
   // Text-To-Speech function
   const speakText = (textToSpeak) => {
@@ -170,21 +217,53 @@ export const CustomizeAIChatbot = () => {
       utterance.lang = 'en-IN';
     }
 
-    utterance.onstart = () => setIsSpeaking(true);
+    // Chrome speech queue unfreeze trick
+    try {
+      window.speechSynthesis.resume();
+    } catch (e) {}
+
+    isSpeakingRef.current = true;
+    setIsSpeaking(true);
+
+    const safetyTimer = setTimeout(() => {
+      if (isSpeakingRef.current) {
+        isSpeakingRef.current = false;
+        setIsSpeaking(false);
+        if (voiceModeActiveRef.current) startListening();
+      }
+    }, Math.min(5000, Math.max(1800, clean.length * 65)));
+
+    utterance.onstart = () => {
+      isSpeakingRef.current = true;
+      setIsSpeaking(true);
+    };
+
     utterance.onend = () => {
+      clearTimeout(safetyTimer);
+      isSpeakingRef.current = false;
       setIsSpeaking(false);
-      // Hands-Free Conversational Loop: automatically resumes listening when speaking ends
-      if (voiceModeActiveRef.current && voiceSpeechEnabledRef.current && recognitionRef.current) {
-        setTimeout(() => {
-          try {
-            recognitionRef.current.start();
-          } catch (e) {}
-        }, 400);
+      if (voiceModeActiveRef.current) {
+        setTimeout(startListening, 250);
       }
     };
-    utterance.onerror = () => setIsSpeaking(false);
 
-    window.speechSynthesis.speak(utterance);
+    utterance.onerror = () => {
+      clearTimeout(safetyTimer);
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      if (voiceModeActiveRef.current) {
+        setTimeout(startListening, 250);
+      }
+    };
+
+    try {
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      clearTimeout(safetyTimer);
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+      if (voiceModeActiveRef.current) startListening();
+    }
   };
 
   const stopSpeaking = () => {
@@ -251,8 +330,11 @@ export const CustomizeAIChatbot = () => {
     if (queryAfterWake) {
       setTimeout(() => {
         handleUserQuery(queryAfterWake);
-      }, 300);
+      }, 250);
     } else {
+      // Start listening directly so user can speak immediately!
+      startListening();
+
       const isHi = aiLanguage === 'hi';
       const isEn = aiLanguage === 'en';
       const greeting = isHi
@@ -263,7 +345,7 @@ export const CustomizeAIChatbot = () => {
 
       setTimeout(() => {
         speakText(greeting);
-      }, 200);
+      }, 150);
     }
   };
 
@@ -440,8 +522,7 @@ export const CustomizeAIChatbot = () => {
       let botActionData = null;
 
       try {
-
-        // 0.0 Live Feature Spotlight & Outlining Tour
+        // 1. Live Feature Spotlight & Outlining Tour
         if (lower.includes('tour') || lower.includes('spotlight') || lower.includes('feature') || lower.includes('outline') || lower.includes('guide') || lower.includes('sikhao') || lower.includes('dikhao') || lower.includes('samjhao')) {
           setIsOpen(false);
           stopSpeaking();
@@ -455,31 +536,53 @@ export const CustomizeAIChatbot = () => {
           }, 350);
         }
 
-        // 0.2 Autonomous Route Navigation Across All Web Modules
-        if (lower.startsWith('open ') || lower.startsWith('go to ') || lower.startsWith('navigate ') || lower.includes('page kholo') || lower.includes('kholo')) {
+        // 2. Autonomous Navigation Across All Web Modules
+        else if (lower.startsWith('open ') || lower.startsWith('go to ') || lower.startsWith('navigate ') || lower.includes('page kholo') || lower.includes('kholo') || lower === 'dashboard' || lower === 'pos' || lower === 'orders' || lower === 'products' || lower === 'customers' || lower === 'expenses' || lower === 'reports' || lower === 'settings') {
           if (lower.includes('invoice') || lower.includes('bill')) {
             navigate('/invoices');
-            botResponse = `Navigating to **Tax Invoices & Billing** desk. Here you can generate GST receipts, print thermal slips, and track settlements.`;
+            botResponse = `Opening **Tax Invoices & Billing** desk. Track printed tax receipts, invoice prefixes, and settlement slips.`;
+          } else if (lower.includes('pos') || lower.includes('billing') || lower.includes('register') || lower.includes('new sale') || lower.includes('counter')) {
+            navigate('/pos');
+            botResponse = `Opening the **POS Terminal / New Sale** register [F2]! Ready for fast item billing.`;
+            botActionData = { type: 'action_confirmed', badge: 'POS Terminal Launched' };
+          } else if (lower.includes('product') || lower.includes('catalog') || lower.includes('inventory') || lower.includes('stock') || lower.includes('items')) {
+            navigate('/products');
+            botResponse = `Opening **Products & Inventory Catalog**. Manage product prices, variants, categories, and stock quantities.`;
+          } else if (lower.includes('customer') || lower.includes('khata') || lower.includes('udhaar') || lower.includes('grahak')) {
+            navigate('/customers');
+            botResponse = `Opening **Customer Khata & Credit Ledger**. View outstanding customer balances, payment records, and reminders.`;
+          } else if (lower.includes('expense') || lower.includes('kharcha')) {
+            navigate('/expenses');
+            botResponse = `Opening **Expenses & Cashflow**. Log vendor payments, utility bills, and daily petty cash spend.`;
+          } else if (lower.includes('report') || lower.includes('analytics')) {
+            navigate('/reports');
+            botResponse = `Opening **Reports & Business Analytics**. View sales graphs, revenue breakdowns, and tax statements.`;
           } else if (lower.includes('employee') || lower.includes('staff') || lower.includes('worker') || lower.includes('payroll')) {
             navigate('/employees');
-            botResponse = `Navigating to **Employees & Staff Management**. Here you can manage staff roles, view salaries, and track commissions.`;
+            botResponse = `Opening **Employees & Staff Management**. Manage staff roles, view salaries, and track commissions.`;
           } else if (lower.includes('attendance') || lower.includes('timeclock') || lower.includes('clock in') || lower.includes('hazri')) {
             navigate('/attendance');
-            botResponse = `Navigating to **Attendance & Timeclock**. Here you can log daily check-ins, record shifts, and monitor staff leaves.`;
-          } else if (lower.includes('branch') || lower.includes('outlet') || lower.includes('store')) {
+            botResponse = `Opening **Attendance & Timeclock**. Track clock-ins, daily work hours, and staff leave approvals.`;
+          } else if (lower.includes('branch') || lower.includes('outlet')) {
             navigate('/branches');
-            botResponse = `Navigating to **Multi-Branch Operations**. Here you can manage independent outlets and warehouse inventory transfers.`;
-          } else if (lower.includes('order') || lower.includes('receipt') || lower.includes('bikri') || lower.includes('history')) {
+            botResponse = `Opening **Multi-Branch Operations**. Switch between store branches and manage transfers.`;
+          } else if (lower.includes('order') || lower.includes('receipt') || lower.includes('history')) {
             navigate('/orders');
-            botResponse = `Navigating to **Orders & Receipts**. Viewing complete history of all customer sales and completed transactions.`;
+            botResponse = `Opening **Orders & Receipts**. Review previous sales transactions and printed invoice receipts.`;
+          } else if (lower.includes('setting') || lower.includes('config')) {
+            navigate('/settings');
+            botResponse = `Opening **Settings & Workspace**. Configure Business Profile, Currency, UPI QR, and Customize AI rules.`;
           } else if (lower.includes('notification') || lower.includes('alert')) {
             navigate('/notifications');
-            botResponse = `Navigating to **System Notifications**. Showing critical stock warnings, sync alerts, and audit logs.`;
+            botResponse = `Opening **System Notifications & Alerts**.`;
+          } else {
+            navigate('/dashboard');
+            botResponse = `Navigating to **Karobaar Dashboard** overview.`;
           }
         }
 
-        // 0.3 Autonomous Expense Logging Live into Database
-        if (lower.includes('expense') || lower.includes('kharcha')) {
+        // 3. Autonomous Expense Recording live into Database
+        else if (lower.includes('expense') || lower.includes('kharcha')) {
           const expenseMatch = lower.match(/(?:add|log|record|naya|new)?\s*(?:expense|kharcha)?\s*(?:of|rs|₹)?\s*(\d+)(?:\s*(?:for|on|pe|ka|me)\s*(.+))?/i);
           const expAmount = expenseMatch && expenseMatch[1] ? parseFloat(expenseMatch[1]) : 0;
           const expNote = expenseMatch && expenseMatch[2] ? expenseMatch[2].trim() : 'General Business Expense';
@@ -498,11 +601,14 @@ export const CustomizeAIChatbot = () => {
               ? `₹${expAmount} का खर्च (${expNote}) सीधे बिज़नेस लेजर में दर्ज कर दिया गया है!`
               : `Recorded expense of **₹${expAmount}** for *${expNote}* directly into your live cashflow!`;
             botActionData = { type: 'action_confirmed', badge: `Expense Added: ₹${expAmount}` };
+          } else {
+            navigate('/expenses');
+            botResponse = `Opening **Expenses & Cashflow** tracker. You can log bills, supplier payments, or say "Jarvis add expense 200 for milk".`;
           }
         }
 
-        // 0.4 Autonomous POS Checkout & Settlement
-        if (lower.includes('checkout') || lower.includes('complete sale') || lower.includes('finalize bill') || lower.includes('bill complete') || lower.includes('bill banao')) {
+        // 4. Autonomous POS Checkout & Settlement
+        else if (lower.includes('checkout') || lower.includes('complete sale') || lower.includes('finalize bill') || lower.includes('bill complete') || lower.includes('bill banao')) {
           sessionStorage.setItem('pending_ai_pos_action', JSON.stringify({ checkout: true, timestamp: Date.now() }));
           navigate('/pos');
           setTimeout(() => {
@@ -512,8 +618,8 @@ export const CustomizeAIChatbot = () => {
           botActionData = { type: 'action_confirmed', badge: 'Checkout Opened' };
         }
 
-        // 0. Business Setup & AI Store Onboarding Concierge
-        if (lower.includes('setup') || lower.includes('onboard') || lower.includes('shuru karo') || lower.includes('store setup') || lower.includes('business setup') || lower.includes('dukan setup') || lower.includes('meri dukan') || lower.includes('mera business')) {
+        // 5. Business Setup & AI Store Onboarding Concierge
+        else if (lower.includes('setup') || lower.includes('onboard') || lower.includes('shuru karo') || lower.includes('store setup') || lower.includes('business setup') || lower.includes('dukan setup') || lower.includes('meri dukan') || lower.includes('mera business')) {
           setIsOpen(false);
           stopSpeaking();
           window.dispatchEvent(new CustomEvent('karobaar_start_ai_onboarding'));
@@ -524,7 +630,7 @@ export const CustomizeAIChatbot = () => {
           botActionData = { type: 'action_confirmed', badge: 'AI Store Setup Launched' };
         }
 
-        // 1. Sales & Revenue Live Automation
+                // 1. Sales & Revenue Live Automation
         else if (lower.includes('today sale') || lower.includes('today\'s sale') || lower.includes('aaj ki sale') || (lower.includes('sale') && !lower.includes('new sale') && !lower.includes('add') && !lower.includes('sell') && !lower.includes('bill')) || lower.includes('revenue') || lower.includes('income') || lower.includes('kamayi') || lower.includes('earning')) {
           const sales = await db.getCollection('sales', businessId);
           const today = new Date().toISOString().split('T')[0];
