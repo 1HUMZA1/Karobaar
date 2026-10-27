@@ -60,12 +60,12 @@ const Topbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Assistant Name (Default: Mr. H, or Jarvis/Custom from settings)
+  // Assistant Name (Default: Jarvis, or Mr. H / Custom from settings)
   const [assistantName, setAssistantName] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-      return saved.assistantName || 'Mr. H';
-    } catch { return 'Mr. H'; }
+      return saved.assistantName || 'Jarvis';
+    } catch { return 'Jarvis'; }
   });
 
   useEffect(() => {

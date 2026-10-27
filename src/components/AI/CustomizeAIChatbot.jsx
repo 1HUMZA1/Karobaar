@@ -67,13 +67,13 @@ export const CustomizeAIChatbot = () => {
     try {
       const saved = localStorage.getItem('karobaar_customize_ai_settings');
       return saved ? JSON.parse(saved) : {
-        assistantName: 'Mr. H',
+        assistantName: 'Jarvis',
         showFloatingBubble: true,
         autoExecute: true,
         voiceFeedback: true
       };
     } catch {
-      return { assistantName: 'Mr. H', showFloatingBubble: true, autoExecute: true };
+      return { assistantName: 'Jarvis', showFloatingBubble: true, autoExecute: true };
     }
   });
 
@@ -246,7 +246,7 @@ export const CustomizeAIChatbot = () => {
     playWakeChime();
     setIsOpen(true);
     setVoiceModeActive(true);
-    const name = aiSettings.assistantName || 'Mr. H';
+    const name = aiSettings.assistantName || 'Jarvis';
 
     if (queryAfterWake) {
       setTimeout(() => {
@@ -319,19 +319,15 @@ export const CustomizeAIChatbot = () => {
       bgRec.onresult = (event) => {
         const lastIdx = event.results.length - 1;
         const transcript = (event.results[lastIdx][0]?.transcript || '').toLowerCase().trim();
-        const currentName = (aiSettings.assistantName || 'Mr. H').toLowerCase();
+        const currentName = (aiSettings.assistantName || 'Jarvis').toLowerCase();
 
+        // Strictly single active identity: Only the active selected assistant can be called!
         const wakeTriggers = [
           currentName,
           `hey ${currentName}`,
           `ok ${currentName}`,
-          'mr h',
-          'hey mr h',
-          'mr. h',
-          'hey mr. h',
-          'jarvis',
-          'hey jarvis',
-          'customize'
+          `hello ${currentName}`,
+          `suno ${currentName}`
         ];
 
         const matchedTrigger = wakeTriggers.find(t => transcript.includes(t));
@@ -453,6 +449,63 @@ export const CustomizeAIChatbot = () => {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('karobaar_start_spotlight_tour', { detail: { stepIndex: 0 } }));
           }, 350);
+        }
+
+        // 0.2 Autonomous Route Navigation Across All Web Modules
+        if (lower.startsWith('open ') || lower.startsWith('go to ') || lower.startsWith('navigate ') || lower.includes('page kholo') || lower.includes('kholo')) {
+          if (lower.includes('invoice') || lower.includes('bill')) {
+            navigate('/invoices');
+            botResponse = `Navigating to **Tax Invoices & Billing** desk. Here you can generate GST receipts, print thermal slips, and track settlements.`;
+          } else if (lower.includes('employee') || lower.includes('staff') || lower.includes('worker') || lower.includes('payroll')) {
+            navigate('/employees');
+            botResponse = `Navigating to **Employees & Staff Management**. Here you can manage staff roles, view salaries, and track commissions.`;
+          } else if (lower.includes('attendance') || lower.includes('timeclock') || lower.includes('clock in') || lower.includes('hazri')) {
+            navigate('/attendance');
+            botResponse = `Navigating to **Attendance & Timeclock**. Here you can log daily check-ins, record shifts, and monitor staff leaves.`;
+          } else if (lower.includes('branch') || lower.includes('outlet') || lower.includes('store')) {
+            navigate('/branches');
+            botResponse = `Navigating to **Multi-Branch Operations**. Here you can manage independent outlets and warehouse inventory transfers.`;
+          } else if (lower.includes('order') || lower.includes('receipt') || lower.includes('bikri') || lower.includes('history')) {
+            navigate('/orders');
+            botResponse = `Navigating to **Orders & Receipts**. Viewing complete history of all customer sales and completed transactions.`;
+          } else if (lower.includes('notification') || lower.includes('alert')) {
+            navigate('/notifications');
+            botResponse = `Navigating to **System Notifications**. Showing critical stock warnings, sync alerts, and audit logs.`;
+          }
+        }
+
+        // 0.3 Autonomous Expense Logging Live into Database
+        if (lower.includes('expense') || lower.includes('kharcha')) {
+          const expenseMatch = lower.match(/(?:add|log|record|naya|new)?\s*(?:expense|kharcha)?\s*(?:of|rs|₹)?\s*(\d+)(?:\s*(?:for|on|pe|ka|me)\s*(.+))?/i);
+          const expAmount = expenseMatch && expenseMatch[1] ? parseFloat(expenseMatch[1]) : 0;
+          const expNote = expenseMatch && expenseMatch[2] ? expenseMatch[2].trim() : 'General Business Expense';
+
+          if (expAmount > 0) {
+            await db.add('expenses', {
+              businessId,
+              amount: expAmount,
+              category: 'General',
+              description: expNote,
+              date: new Date().toISOString(),
+              createdVia: 'Jarvis Autonomous Voice'
+            });
+            navigate('/expenses');
+            botResponse = aiLanguage === 'hi'
+              ? `₹${expAmount} का खर्च (${expNote}) सीधे बिज़नेस लेजर में दर्ज कर दिया गया है!`
+              : `Recorded expense of **₹${expAmount}** for *${expNote}* directly into your live cashflow!`;
+            botActionData = { type: 'action_confirmed', badge: `Expense Added: ₹${expAmount}` };
+          }
+        }
+
+        // 0.4 Autonomous POS Checkout & Settlement
+        if (lower.includes('checkout') || lower.includes('complete sale') || lower.includes('finalize bill') || lower.includes('bill complete') || lower.includes('bill banao')) {
+          sessionStorage.setItem('pending_ai_pos_action', JSON.stringify({ checkout: true, timestamp: Date.now() }));
+          navigate('/pos');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('karobaar_ai_pos_action', { detail: { checkout: true } }));
+          }, 300);
+          botResponse = `Finalizing sale and opening POS checkout settlement! Customer can pay via QR, Cash, or Split.`;
+          botActionData = { type: 'action_confirmed', badge: 'Checkout Opened' };
         }
 
         // 0. Business Setup & AI Store Onboarding Concierge
@@ -772,9 +825,9 @@ export const CustomizeAIChatbot = () => {
 
       {/* Main Realtime Voice AI Window / Overlay */}
       {isOpen && (
-        <div className="customize-ai-drawer-overlay" onClick={() => { stopSpeaking(); setIsOpen(false); }}>
+        <div className={`customize-ai-drawer-overlay ${voiceModeActive ? 'bottom-popup-mode' : ''}`} onClick={() => { stopSpeaking(); setIsOpen(false); }}>
           <div 
-            className={`customize-ai-panel ${voiceModeActive ? 'voice-orb-active' : ''}`} 
+            className={`customize-ai-panel ${voiceModeActive ? 'jarvis-bottom-popup' : ''}`} 
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
@@ -857,12 +910,16 @@ export const CustomizeAIChatbot = () => {
               </div>
             </div>
 
-            {/* VIEW 1: Fullscreen ChatGPT Voice Orb Mode */}
+            {/* VIEW 1: Bottom Popup with Round Liquid Voice Sphere Animation */}
             {voiceModeActive ? (
-              <div className="customize-voice-orb-view">
-                <div className="voice-orb-container">
+              <div className="jarvis-liquid-popup-content">
+                {/* Drag handle */}
+                <div className="jarvis-bottom-drag-bar" />
+
+                {/* Centered Round Liquid Voice Sphere */}
+                <div className="jarvis-liquid-sphere-wrapper">
                   <div 
-                    className={`voice-main-orb ${isListening ? 'listening' : isSpeaking ? 'speaking' : 'idle'}`}
+                    className={`jarvis-liquid-sphere ${isListening ? 'listening' : isSpeaking ? 'speaking' : 'idle'}`}
                     onClick={() => {
                       if (isSpeaking) {
                         stopSpeaking();
@@ -871,45 +928,81 @@ export const CustomizeAIChatbot = () => {
                         toggleVoiceInput();
                       }
                     }}
-                    style={{ cursor: 'pointer' }}
-                    title={isSpeaking ? "Tap to interrupt & speak" : isListening ? "Tap to pause mic" : "Tap to speak"}
+                    title={isSpeaking ? "Tap liquid orb to interrupt & talk" : isListening ? "Listening... Tap to pause" : "Tap to speak to Jarvis"}
                   >
-                    <div className="orb-core" />
-                    <div className="orb-wave wave-1" />
-                    <div className="orb-wave wave-2" />
-                    <div className="orb-wave wave-3" />
+                    {/* Concentric soundwave shockwave rings */}
+                    <div className="liquid-audio-ring ring-1" />
+                    <div className="liquid-audio-ring ring-2" />
+                    <div className="liquid-audio-ring ring-3" />
+
+                    {/* Liquid chamber with dynamic wave layers */}
+                    <div className="liquid-chamber">
+                      <div className="liquid-wave-layer wave-deep" />
+                      <div className="liquid-wave-layer wave-mid" />
+                      <div className="liquid-wave-layer wave-surface" />
+                      
+                      {/* Fluid rising micro-bubbles */}
+                      <div className="liquid-bubble b1" />
+                      <div className="liquid-bubble b2" />
+                      <div className="liquid-bubble b3" />
+                      <div className="liquid-bubble b4" />
+                    </div>
+
+                    {/* Glowing Center AI Arc Reactor Glyph */}
+                    <div className="liquid-core-glyph">
+                      <Sparkles size={18} className="liquid-core-sparkle" />
+                    </div>
                   </div>
                 </div>
 
-                <div className="voice-status-text-wrap">
-                  <h4 className="voice-status-headline">
-                    {isListening 
-                      ? 'Listening to your voice...' 
-                      : isSpeaking 
-                      ? 'Customize AI is speaking (Tap orb to interrupt)' 
-                      : 'Hands-Free Loop Active • Speak anytime'}
+                {/* Real-time Voice Status & Interactive Transcript */}
+                <div className="jarvis-voice-info-block">
+                  <h4 className="jarvis-status-headline">
+                    {isListening ? (
+                      <span className="status-listening-badge">● Listening to your voice...</span>
+                    ) : isSpeaking ? (
+                      <span className="status-speaking-badge">● {aiSettings.assistantName || 'Jarvis'} speaking (Tap orb to interrupt)</span>
+                    ) : (
+                      <span className="status-idle-badge">● {aiSettings.assistantName || 'Jarvis'} ready • Full web app control</span>
+                    )}
                   </h4>
-                  <p className="voice-interim-sub">
-                    {interimTranscript ? `"${interimTranscript}"` : messages[messages.length - 1]?.text.replace(/[*#_`]/g, '').slice(0, 100) + '...'}
-                  </p>
+
+                  <div className="jarvis-transcript-bubble">
+                    <p className="jarvis-transcript-text">
+                      {interimTranscript ? `"${interimTranscript}"` : messages[messages.length - 1]?.text.replace(/[*#_`]/g, '').slice(0, 110) + '...'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="voice-controls-bar">
+                {/* 1-Tap Quick Action Voice Command Chips */}
+                <div className="jarvis-fast-commands-row custom-scrollbar">
+                  <button type="button" onClick={() => handleUserQuery('Add 2 Burger to cart')} className="jarvis-fast-chip">🛒 Bill 2 Burger</button>
+                  <button type="button" onClick={() => handleUserQuery('Show today sales summary')} className="jarvis-fast-chip">📊 Today's Sales</button>
+                  <button type="button" onClick={() => handleUserQuery('Which items are low in stock?')} className="jarvis-fast-chip">⚠️ Low Stock</button>
+                  <button type="button" onClick={() => handleUserQuery('Show customers with pending dues')} className="jarvis-fast-chip">👥 Khata Dues</button>
+                  <button type="button" onClick={() => handleUserQuery('Toggle dark mode')} className="jarvis-fast-chip">🌙 Dark Mode</button>
+                  <button type="button" onClick={() => handleUserQuery('Switch to legacy operations desk')} className="jarvis-fast-chip">⚡ Legacy Desk</button>
+                  <button type="button" onClick={() => handleUserQuery('Show live feature spotlight tour')} className="jarvis-fast-chip">🎯 Tour Guide</button>
+                </div>
+
+                {/* Bottom Voice Controls Bar */}
+                <div className="jarvis-bottom-controls-bar">
                   <button 
                     type="button"
                     onClick={toggleVoiceInput}
-                    className={`voice-mic-main-btn ${isListening ? 'listening' : ''}`}
+                    className={`jarvis-mic-main-btn ${isListening ? 'listening' : ''}`}
                     title={isListening ? 'Stop listening' : 'Start speaking'}
                   >
-                    {isListening ? <MicOff size={24} /> : <Mic size={24} />}
+                    {isListening ? <MicOff size={22} /> : <Mic size={22} />}
                   </button>
 
                   <button 
                     type="button" 
                     onClick={() => setVoiceModeActive(false)}
-                    className="voice-switch-mode-btn"
+                    className="jarvis-switch-mode-btn"
+                    title="Switch to detailed text chat and action cards view"
                   >
-                    Switch to Text Chat
+                    Switch to Chat History
                   </button>
                 </div>
               </div>

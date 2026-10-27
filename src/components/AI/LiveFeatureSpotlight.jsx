@@ -29,8 +29,8 @@ export const LiveFeatureSpotlight = () => {
   const [assistantName, setAssistantName] = useState(() => {
     try {
       const s = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-      return s.assistantName || 'Mr. H';
-    } catch { return 'Mr. H'; }
+      return s.assistantName || 'Jarvis';
+    } catch { return 'Jarvis'; }
   });
 
   const [language, setLanguage] = useState(() => {

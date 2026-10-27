@@ -780,3 +780,429 @@
     border-radius: 16px 16px 0 0;
   }
 }
+
+/* ==========================================================================
+   JARVIS BOTTOM POPUP & ROUND LIQUID VOICE SPHERE (Strict Monochrome)
+   ========================================================================== */
+
+.customize-ai-drawer-overlay.bottom-popup-mode {
+  justify-content: center !important;
+  align-items: flex-end !important;
+  padding-bottom: 0 !important;
+}
+
+.customize-ai-panel.jarvis-bottom-popup {
+  width: 520px !important;
+  max-width: 96vw !important;
+  height: auto !important;
+  max-height: 88vh !important;
+  margin: 0 auto !important;
+  border-radius: 28px 28px 0 0 !important;
+  border-bottom: none !important;
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  animation: jarvisBottomSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes jarvisBottomSlideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.jarvis-bottom-drag-bar {
+  width: 48px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 4px auto 8px auto;
+}
+
+[data-theme="light"] .jarvis-bottom-drag-bar {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.jarvis-liquid-popup-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 20px 24px 20px;
+  background-color: var(--bg-body);
+  text-align: center;
+}
+
+.jarvis-liquid-sphere-wrapper {
+  position: relative;
+  padding: 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jarvis-liquid-sphere {
+  position: relative;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  background: #09090b;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 28px rgba(255, 255, 255, 0.18), inset 0 0 22px rgba(0, 0, 0, 0.95);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+
+[data-theme="light"] .jarvis-liquid-sphere {
+  background: #ffffff;
+  border-color: #09090b;
+  box-shadow: 0 0 24px rgba(15, 23, 42, 0.16), inset 0 0 16px rgba(0, 0, 0, 0.1);
+}
+
+.jarvis-liquid-sphere:hover {
+  transform: scale(1.03);
+  border-color: #ffffff;
+}
+
+/* Liquid Waves Chamber */
+.liquid-chamber {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.liquid-wave-layer {
+  position: absolute;
+  width: 290px;
+  height: 290px;
+  left: 50%;
+  margin-left: -145px;
+  border-radius: 41% 43% 39% 44%;
+  transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+/* Idle State: Calm Liquid at ~48% level */
+.jarvis-liquid-sphere.idle .wave-deep {
+  top: 18%;
+  background: rgba(255, 255, 255, 0.22);
+  animation: liquidRotate 6.5s infinite linear;
+}
+.jarvis-liquid-sphere.idle .wave-mid {
+  top: 14%;
+  background: rgba(255, 255, 255, 0.45);
+  animation: liquidRotate 4.8s infinite linear reverse;
+}
+.jarvis-liquid-sphere.idle .wave-surface {
+  top: 10%;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 43% 39% 42% 41%;
+  animation: liquidRotate 3.6s infinite linear;
+}
+
+[data-theme="light"] .jarvis-liquid-sphere.idle .wave-deep {
+  background: rgba(15, 23, 42, 0.2);
+}
+[data-theme="light"] .jarvis-liquid-sphere.idle .wave-mid {
+  background: rgba(15, 23, 42, 0.45);
+}
+[data-theme="light"] .jarvis-liquid-sphere.idle .wave-surface {
+  background: rgba(15, 23, 42, 0.85);
+}
+
+/* Listening State: Liquid surges up to ~65% with fast ripples */
+.jarvis-liquid-sphere.listening .wave-deep {
+  top: -4%;
+  background: rgba(255, 255, 255, 0.28);
+  animation: liquidRotate 3s infinite linear;
+}
+.jarvis-liquid-sphere.listening .wave-mid {
+  top: -9%;
+  background: rgba(255, 255, 255, 0.55);
+  animation: liquidRotate 2.2s infinite linear reverse;
+}
+.jarvis-liquid-sphere.listening .wave-surface {
+  top: -14%;
+  background: rgba(255, 255, 255, 0.95);
+  animation: liquidRotate 1.8s infinite linear;
+}
+
+[data-theme="light"] .jarvis-liquid-sphere.listening .wave-deep {
+  background: rgba(15, 23, 42, 0.28);
+}
+[data-theme="light"] .jarvis-liquid-sphere.listening .wave-mid {
+  background: rgba(15, 23, 42, 0.55);
+}
+[data-theme="light"] .jarvis-liquid-sphere.listening .wave-surface {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+/* Speaking State: Liquid surges up to ~75% with resonant fluid churning */
+.jarvis-liquid-sphere.speaking .wave-deep {
+  top: -14%;
+  background: rgba(255, 255, 255, 0.32);
+  animation: liquidRotate 1.8s infinite linear;
+}
+.jarvis-liquid-sphere.speaking .wave-mid {
+  top: -20%;
+  background: rgba(255, 255, 255, 0.62);
+  animation: liquidRotate 1.3s infinite linear reverse;
+}
+.jarvis-liquid-sphere.speaking .wave-surface {
+  top: -26%;
+  background: rgba(255, 255, 255, 0.98);
+  animation: liquidRotate 1.0s infinite linear;
+}
+
+[data-theme="light"] .jarvis-liquid-sphere.speaking .wave-deep {
+  background: rgba(15, 23, 42, 0.32);
+}
+[data-theme="light"] .jarvis-liquid-sphere.speaking .wave-mid {
+  background: rgba(15, 23, 42, 0.62);
+}
+[data-theme="light"] .jarvis-liquid-sphere.speaking .wave-surface {
+  background: rgba(15, 23, 42, 0.98);
+}
+
+@keyframes liquidRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Fluid Bubbles Rising */
+.liquid-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+[data-theme="light"] .liquid-bubble {
+  background: rgba(15, 23, 42, 0.75);
+}
+.b1 { width: 6px; height: 6px; left: 26%; bottom: 12px; animation: bubbleRise 2.2s infinite ease-in; }
+.b2 { width: 9px; height: 9px; left: 62%; bottom: 6px; animation: bubbleRise 2.9s infinite ease-in 0.7s; }
+.b3 { width: 5px; height: 5px; left: 44%; bottom: 16px; animation: bubbleRise 1.7s infinite ease-in 1.3s; }
+.b4 { width: 7px; height: 7px; left: 74%; bottom: 10px; animation: bubbleRise 2.4s infinite ease-in 0.4s; }
+
+@keyframes bubbleRise {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  25% { opacity: 0.85; }
+  100% { transform: translateY(-75px) scale(1.2); opacity: 0; }
+}
+
+/* Concentric Shockwave Audio Rings */
+.liquid-audio-ring {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  opacity: 0;
+}
+[data-theme="light"] .liquid-audio-ring {
+  border-color: rgba(15, 23, 42, 0.35);
+}
+.jarvis-liquid-sphere.listening .ring-1 {
+  animation: liquidAudioRipple 1.6s infinite ease-out;
+}
+.jarvis-liquid-sphere.listening .ring-2 {
+  animation: liquidAudioRipple 1.6s infinite ease-out 0.5s;
+}
+.jarvis-liquid-sphere.speaking .ring-1 {
+  animation: liquidAudioRipple 1.1s infinite ease-out;
+}
+.jarvis-liquid-sphere.speaking .ring-2 {
+  animation: liquidAudioRipple 1.1s infinite ease-out 0.35s;
+}
+.jarvis-liquid-sphere.speaking .ring-3 {
+  animation: liquidAudioRipple 1.1s infinite ease-out 0.7s;
+}
+
+@keyframes liquidAudioRipple {
+  0% { transform: scale(0.92); opacity: 0.85; }
+  100% { transform: scale(1.42); opacity: 0; }
+}
+
+/* Glowing Arc Core Glyph */
+.liquid-core-glyph {
+  position: relative;
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.82);
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(4px);
+  transition: transform 0.2s ease;
+}
+
+[data-theme="light"] .liquid-core-glyph {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #09090b;
+  color: #09090b;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+}
+
+.jarvis-liquid-sphere:hover .liquid-core-glyph {
+  transform: scale(1.08);
+}
+
+.liquid-core-sparkle {
+  animation: corePulse 2s infinite ease-in-out;
+}
+
+@keyframes corePulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+/* Info & Transcript Block */
+.jarvis-voice-info-block {
+  width: 100%;
+  max-width: 440px;
+  margin: 6px 0 12px 0;
+}
+
+.jarvis-status-headline {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.status-listening-badge {
+  color: #10b981;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-speaking-badge {
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-idle-badge {
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.jarvis-transcript-bubble {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px 14px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.jarvis-transcript-text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-main);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Fast Command Chips */
+.jarvis-fast-commands-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  width: 100%;
+  padding: 6px 4px;
+  margin-bottom: 14px;
+}
+
+.jarvis-fast-chip {
+  white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.jarvis-fast-chip:hover {
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  border-color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+/* Bottom Controls Bar */
+.jarvis-bottom-controls-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.jarvis-mic-main-btn {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.jarvis-mic-main-btn:hover {
+  transform: scale(1.06);
+}
+
+.jarvis-mic-main-btn.listening {
+  animation: jarvisMicPulse 1.4s infinite;
+}
+
+@keyframes jarvisMicPulse {
+  0%, 100% { transform: scale(1.04); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { transform: scale(1.12); box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+}
+
+.jarvis-switch-mode-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.jarvis-switch-mode-btn:hover {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border-color: var(--text-main);
+}

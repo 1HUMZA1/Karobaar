@@ -91,13 +91,13 @@ const Settings = () => {
   const [aiAssistantName, setAiAssistantName] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-      return saved.assistantName || 'Mr. H';
+      return saved.assistantName || 'Jarvis';
     } catch { return 'Mr. H'; }
   });
   const [aiWakeWord, setAiWakeWord] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-      return saved.wakeWord || 'Hey Mr. H';
+      return saved.wakeWord || 'Jarvis';
     } catch { return 'Hey Mr. H'; }
   });
   const [aiBackgroundWake, setAiBackgroundWake] = useState(() => {
@@ -338,8 +338,8 @@ const Settings = () => {
 
     try {
       const aiConfig = {
-        assistantName: aiAssistantName || 'Mr. H',
-        wakeWord: aiWakeWord || `Hey ${aiAssistantName || 'Mr. H'}`,
+        assistantName: aiAssistantName || 'Jarvis',
+        wakeWord: aiWakeWord || (aiAssistantName || 'Jarvis'),
         backgroundWake: aiBackgroundWake,
         aiEnabled,
         showFloatingBubble: aiFloatingBubble,
@@ -350,7 +350,7 @@ const Settings = () => {
         rapidBarcodeAdd
       };
       localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(aiConfig));
-      window.dispatchEvent(new CustomEvent('karobaar_settings_updated', { detail: { assistantName: aiAssistantName || 'Mr. H' } }));
+      window.dispatchEvent(new CustomEvent('karobaar_settings_updated', { detail: { assistantName: aiAssistantName || 'Jarvis' } }));
       localStorage.setItem('karobaar_ai_language', aiLanguage);
       localStorage.setItem('karobaar_custom_upi_id', storeUpiId);
       if (storeUpiQrImage) localStorage.setItem('karobaar_custom_upi_qr_img', storeUpiQrImage);
@@ -770,7 +770,7 @@ const Settings = () => {
                     title="Wake assistant in live voice mode"
                   >
                     <Sparkles size={14} />
-                    <span>Wake {aiAssistantName || 'Mr. H'}</span>
+                    <span>Wake {aiAssistantName || 'Jarvis'}</span>
                   </button>
                 </div>
               </div>
@@ -789,11 +789,11 @@ const Settings = () => {
                     }}
                     placeholder="Mr. H"
                   />
-                  {/* Preset Assistant Names */}
-                  <div className="flex items-center gap-2 mt-2">
+                  {/* Preset Assistant Names - Single Identity Active */}
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
                     {[
-                      { name: 'Mr. H', badge: 'Default' },
-                      { name: 'Jarvis', badge: 'AI Preset' },
+                      { name: 'Jarvis', badge: 'Default' },
+                      { name: 'Mr. H', badge: 'Preset' },
                       { name: 'Customize', badge: 'Classic' }
                     ].map(preset => (
                       <button
@@ -801,18 +801,22 @@ const Settings = () => {
                         type="button"
                         onClick={() => {
                           setAiAssistantName(preset.name);
-                          setAiWakeWord(`Hey ${preset.name}`);
+                          setAiWakeWord(preset.name);
                         }}
-                        className={`px-2.5 py-1 text-xs rounded-md border font-bold transition-all ${
-                          aiAssistantName === preset.name
+                        className={`px-3 py-1.5 text-xs rounded-lg border font-bold transition-all flex items-center gap-1.5 ${
+                          (aiAssistantName || 'Jarvis') === preset.name
                             ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-sm'
-                            : 'bg-transparent text-text-secondary border-border-color hover:text-text-main'
+                            : 'bg-transparent text-text-secondary border-border-color hover:text-text-main hover:bg-[var(--bg-hover)]'
                         }`}
                       >
-                        {preset.name} ({preset.badge})
+                        <span>{preset.name}</span>
+                        <span className="opacity-70 text-[10px]">({preset.badge})</span>
                       </button>
                     ))}
                   </div>
+                  <span className="text-[11px] text-text-muted mt-1.5 block">
+                    ⚡ <strong>Single Active Identity:</strong> Only the currently selected name will wake the assistant via voice at any given time.
+                  </span>
                 </div>
 
                 <div className="settings-input-group">
@@ -862,7 +866,7 @@ const Settings = () => {
                 <div className="space-y-3">
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">Hands-Free Voice Wake-Up ("Hey {aiAssistantName || 'Mr. H'}")</div>
+                      <div className="font-semibold text-sm">Hands-Free Voice Wake-Up ("{aiAssistantName || 'Jarvis'}")</div>
                       <div className="text-xs text-text-secondary">AI listens continuously in the background for your voice wake call and triggers live conversation</div>
                     </div>
                     <input 
