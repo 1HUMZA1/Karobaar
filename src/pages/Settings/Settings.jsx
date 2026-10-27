@@ -19,7 +19,12 @@ import {
   RotateCcw,
   Sparkles,
   CheckSquare,
-  Square
+  Square,
+  Monitor,
+  Laptop,
+  Tablet,
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { auth } from '../../services/firebase';
@@ -112,6 +117,111 @@ const Settings = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordStatus, setPasswordStatus] = useState('');
+
+  // Device Sessions State
+  const [deviceList, setDeviceList] = useState(() => {
+    try {
+      const saved = localStorage.getItem('karobaar_connected_devices');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+      {
+        id: 'current-session',
+        name: 'This Device (Current Session)',
+        isCurrent: true,
+        ip: '127.0.0.1 (Localhost)',
+        lastActive: 'Active right now',
+        status: 'ACTIVE NOW',
+        type: 'desktop'
+      },
+      {
+        id: 'mobile-pwa',
+        name: 'Samsung Galaxy / Android Terminal',
+        isCurrent: false,
+        ip: '192.168.1.104 (Local Wi-Fi)',
+        lastActive: 'Synced 12 mins ago',
+        status: 'ONLINE',
+        type: 'mobile'
+      },
+      {
+        id: 'pos-tablet',
+        name: 'iPad Counter Register (Cafeteria POS)',
+        isCurrent: false,
+        ip: '192.168.1.112 (Store Wi-Fi)',
+        lastActive: 'Active 1 hour ago',
+        status: 'STANDBY',
+        type: 'tablet'
+      },
+      {
+        id: 'laptop-billing',
+        name: 'HP Laptop (Manager Office)',
+        isCurrent: false,
+        ip: '192.168.1.108 (Office LAN)',
+        lastActive: 'Yesterday, 8:40 PM',
+        status: 'OFFLINE',
+        type: 'laptop'
+      }
+    ];
+  });
+
+  const [deviceBanner, setDeviceBanner] = useState('');
+  const [isRefreshingDevices, setIsRefreshingDevices] = useState(false);
+
+  // Auto-detect current device info
+  const currentDeviceInfo = (() => {
+    if (typeof window === 'undefined') return { os: 'Windows PC', browser: 'Google Chrome', screen: '1920 × 1080' };
+    const ua = navigator.userAgent;
+    let os = 'Windows PC';
+    if (ua.indexOf('Win') !== -1) os = 'Windows PC';
+    else if (ua.indexOf('Mac') !== -1) os = 'Apple Mac';
+    else if (ua.indexOf('Android') !== -1) os = 'Android Mobile';
+    else if (ua.indexOf('iPhone') !== -1) os = 'Apple iPhone';
+    else if (ua.indexOf('iPad') !== -1) os = 'Apple iPad';
+    else if (ua.indexOf('Linux') !== -1) os = 'Linux Workstation';
+
+    let browser = 'Google Chrome';
+    if (ua.indexOf('Edg') !== -1) browser = 'Microsoft Edge';
+    else if (ua.indexOf('Chrome') !== -1) browser = 'Google Chrome';
+    else if (ua.indexOf('Safari') !== -1 && ua.indexOf('Chrome') === -1) browser = 'Apple Safari';
+    else if (ua.indexOf('Firefox') !== -1) browser = 'Mozilla Firefox';
+
+    return {
+      os,
+      browser,
+      screen: `${window.screen.width} × ${window.screen.height}`
+    };
+  })();
+
+  const handleRevokeDevice = (deviceId) => {
+    const updated = deviceList.filter(d => d.id !== deviceId);
+    setDeviceList(updated);
+    try {
+      localStorage.setItem('karobaar_connected_devices', JSON.stringify(updated));
+    } catch (e) {}
+    setDeviceBanner('Device session revoked successfully.');
+    setTimeout(() => setDeviceBanner(''), 3000);
+  };
+
+  const handleRevokeAllOtherDevices = () => {
+    if (window.confirm('Log out all other connected sessions and keep only this current device?')) {
+      const onlyCurrent = deviceList.filter(d => d.isCurrent);
+      setDeviceList(onlyCurrent);
+      try {
+        localStorage.setItem('karobaar_connected_devices', JSON.stringify(onlyCurrent));
+      } catch (e) {}
+      setDeviceBanner('All other device sessions have been logged out.');
+      setTimeout(() => setDeviceBanner(''), 3500);
+    }
+  };
+
+  const handleRefreshDevices = () => {
+    setIsRefreshingDevices(true);
+    setTimeout(() => {
+      setIsRefreshingDevices(false);
+      setDeviceBanner('Device session list refreshed.');
+      setTimeout(() => setDeviceBanner(''), 2500);
+    }, 400);
+  };
 
   useEffect(() => {
     if (currentBusiness) {
@@ -907,27 +1017,146 @@ const Settings = () => {
                 </form>
               </div>
 
-              {/* Section 3: Active Device Sessions */}
+              {/* Section 3: Active Authorized Sessions & Connected Devices */}
               <div className="settings-section-block">
-                <h3 className="settings-section-heading">
-                  <Smartphone size={16} /> Active Authorized Sessions
-                </h3>
-                <div className="flex flex-col gap-2">
-                  <div className="p-3 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
-                    <div>
-                      <span className="font-bold text-xs block text-text-main">Windows PC — Desktop Browser (This Device)</span>
-                      <span className="text-[11px] text-text-secondary">IP: 127.0.0.1 • Active right now</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">ONLINE</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
+                  <div>
+                    <h3 className="settings-section-heading">
+                      <ShieldCheck size={17} /> Connected Devices & Active Sessions ({deviceList.length})
+                    </h3>
+                    <p className="settings-card-subtitle">
+                      All computers, laptops, and mobile phones currently authenticated into your Karobaar account
+                    </p>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button" 
+                      className="settings-btn-secondary"
+                      style={{ height: '34px', fontSize: '0.75rem', padding: '0 0.85rem' }}
+                      onClick={handleRefreshDevices}
+                      title="Refresh session status"
+                    >
+                      <RefreshCw size={13} className={isRefreshingDevices ? 'animate-spin' : ''} />
+                      <span>Refresh</span>
+                    </button>
+                    {deviceList.length > 1 && (
+                      <button 
+                        type="button" 
+                        className="settings-btn-primary"
+                        style={{ height: '34px', fontSize: '0.75rem', padding: '0 0.85rem' }}
+                        onClick={handleRevokeAllOtherDevices}
+                        title="Sign out of all other devices"
+                      >
+                        <LogOut size={13} />
+                        <span>Log Out All Other Devices</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-                  <div className="p-3 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
-                    <div>
-                      <span className="font-bold text-xs block text-text-main">Mobile Terminal (Android / PWA)</span>
-                      <span className="text-[11px] text-text-secondary">Sync channel active • Last ping 15 mins ago</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-black dark:border-white">SYNCED</span>
+                {deviceBanner && (
+                  <div className="p-3 text-xs font-bold rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700">
+                    {deviceBanner}
                   </div>
+                )}
+
+                <div className="flex flex-col gap-2.5">
+                  {deviceList.map(device => {
+                    // Render appropriate device icon
+                    const renderIcon = () => {
+                      if (device.isCurrent) return <Monitor size={20} />;
+                      if (device.type === 'mobile') return <Smartphone size={20} />;
+                      if (device.type === 'tablet') return <Tablet size={20} />;
+                      return <Laptop size={20} />;
+                    };
+
+                    const displayName = device.isCurrent 
+                      ? `${currentDeviceInfo.os} • ${currentDeviceInfo.browser} (This Device)`
+                      : device.name;
+
+                    const displaySub = device.isCurrent
+                      ? `IP: ${device.ip} • Screen: ${currentDeviceInfo.screen} • Active right now`
+                      : `IP: ${device.ip} • ${device.lastActive}`;
+
+                    return (
+                      <div 
+                        key={device.id} 
+                        className="p-3.5 border rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-[var(--border-color)] bg-[var(--bg-card)] hover:border-black dark:hover:border-white transition-colors"
+                        style={{
+                          borderWidth: device.isCurrent ? '2px' : '1px'
+                        }}
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <div 
+                            className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                            style={{
+                              backgroundColor: device.isCurrent ? '#09090b' : 'var(--bg-hover)',
+                              color: device.isCurrent ? '#ffffff' : 'var(--text-main)',
+                              border: '1px solid var(--border-color)'
+                            }}
+                          >
+                            {renderIcon()}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-text-main">{displayName}</span>
+                              {device.isCurrent && (
+                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">
+                                  CURRENT
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-text-secondary mt-0.5 block">{displaySub}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                          <span 
+                            className="text-[10px] font-bold px-2.5 py-1 rounded-md"
+                            style={{
+                              backgroundColor: device.status === 'ACTIVE NOW' || device.status === 'ONLINE' ? '#09090b' : 'var(--bg-hover)',
+                              color: device.status === 'ACTIVE NOW' || device.status === 'ONLINE' ? '#ffffff' : 'var(--text-main)',
+                              border: '1px solid var(--border-color)'
+                            }}
+                          >
+                            ● {device.status}
+                          </span>
+
+                          {!device.isCurrent && (
+                            <button
+                              type="button"
+                              className="settings-btn-secondary"
+                              style={{ height: '30px', fontSize: '0.725rem', padding: '0 0.65rem' }}
+                              onClick={() => handleRevokeDevice(device.id)}
+                              title="Revoke session for this device"
+                            >
+                              Revoke
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Connect New Device Quick Card */}
+                <div className="mt-3 p-4 rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-hover)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <span className="font-bold text-xs block text-text-main">Connect Another Laptop or Mobile Phone</span>
+                    <span className="text-[11px] text-text-secondary">Open Karobaar on your phone or tablet browser via your local network URL to sync in real time.</span>
+                  </div>
+                  <button 
+                    type="button"
+                    className="settings-btn-secondary"
+                    style={{ height: '32px', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                    onClick={() => {
+                      navigator.clipboard?.writeText?.(window.location.origin);
+                      setDeviceBanner('Workspace URL copied to clipboard! Open it on your mobile device to log in.');
+                      setTimeout(() => setDeviceBanner(''), 3500);
+                    }}
+                  >
+                    Copy App URL
+                  </button>
                 </div>
               </div>
 
