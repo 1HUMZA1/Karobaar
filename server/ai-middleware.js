@@ -1,14 +1,48 @@
 /**
  * Karobaar AI Backend Middleware / Service
  * Secure Server-Side Proxy for LLM Tool-Calling.
- * Zero Exposure of API Keys to the browser. Supports Gemini, OpenAI, Groq, and OpenRouter.
+ * Zero Exposure of API Keys to the browser. Supports Gemini, OpenAI, Groq, OpenRouter, and Custom Gateways.
  */
 
 import https from 'https';
 import http from 'http';
 import { URL } from 'url';
+import fs from 'fs';
+import path from 'path';
 
-// Simple in-memory rate limiter (30 requests per minute per IP)
+// Secure server-side environment resolver (reads process.env, .env.local, and .env without client leakage)
+function getSecretEnv(keyName) {
+  if (process.env[keyName]) return process.env[keyName].trim();
+
+  const envFiles = ['.env.local', '.env'];
+  for (const file of envFiles) {
+    try {
+      const fullPath = path.resolve(process.cwd(), file);
+      if (fs.existsSync(fullPath)) {
+        const content = fs.readFileSync(fullPath, 'utf8');
+        const lines = content.split(/\r?\n/);
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          const eqIdx = trimmed.indexOf('=');
+          if (eqIdx !== -1) {
+            const k = trimmed.substring(0, eqIdx).trim();
+            let v = trimmed.substring(eqIdx + 1).trim();
+            if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+              v = v.slice(1, -1);
+            }
+            if (k === keyName) return v;
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore file reading errors
+    }
+  }
+  return '';
+}
+
+// Simple in-memory rate limiter (40 requests per minute per IP)
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 40;
@@ -116,14 +150,18 @@ export async function handleAiChatRequest(req, res) {
         systemPrompt = ''
       } = payload;
 
-      // Resolve API Key and Endpoint
-      const envKey = process.env.AI_API_KEY || 
-                     process.env.GEMINI_API_KEY || 
-                     process.env.VITE_AI_API_KEY || 
-                     process.env.OPENAI_API_KEY || 
-                     process.env.GROQ_API_KEY;
+      // Resolve API Key and Configuration from server environment securely
+      const envKey = getSecretEnv('AI_API_KEY') || 
+                     getSecretEnv('GEMINI_API_KEY') || 
+                     getSecretEnv('OPENAI_API_KEY') || 
+                     getSecretEnv('GROQ_API_KEY') ||
+                     getSecretEnv('VITE_AI_API_KEY');
 
-      const apiKey = customApiKey || envKey;
+      const configuredProvider = getSecretEnv('AI_PROVIDER') || provider || 'auto';
+      const configuredModel = getSecretEnv('AI_MODEL') || model || '';
+      const customBaseUrl = getSecretEnv('AI_BASE_URL');
+
+      const apiKey = (customApiKey || envKey || '').trim();
 
       if (!apiKey) {
         res.statusCode = 200;
@@ -131,38 +169,46 @@ export async function handleAiChatRequest(req, res) {
         res.end(JSON.stringify({
           fallback: true,
           error: 'NO_API_KEY',
-          message: 'No external LLM API key detected. Please configure GEMINI_API_KEY or OPENAI_API_KEY in .env, or provide one in Karobaar AI settings.'
+          message: 'No external LLM API key detected. Please configure AI_API_KEY or GEMINI_API_KEY in .env.local, or provide one in Karobaar AI settings.'
         }));
         return;
       }
 
-      // Determine provider and model
+      // Determine provider, endpoint, and model
       let targetEndpoint = '';
-      let targetModel = model;
-      let authHeader = `Bearer ${apiKey}`;
+      let targetModel = configuredModel;
+      let headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
 
-      if (apiKey.startsWith('AIzaSy') || provider === 'gemini') {
-        // Google Gemini OpenAI-compatible endpoint
-        targetEndpoint = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
-        targetModel = targetModel || 'gemini-2.5-flash';
-      } else if (apiKey.startsWith('gsk_') || provider === 'groq') {
-        // Groq endpoint
-        targetEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
-        targetModel = targetModel || 'llama-3.3-70b-versatile';
-      } else {
-        // Default OpenAI
+      if (customBaseUrl) {
+        targetEndpoint = customBaseUrl;
+        targetModel = targetModel || 'gpt-4o-mini';
+      } else if (configuredProvider === 'openai' || apiKey.startsWith('sk-proj-') || (apiKey.startsWith('sk-') && !apiKey.startsWith('sk-or-') && !apiKey.startsWith('sk-ant-'))) {
         targetEndpoint = 'https://api.openai.com/v1/chat/completions';
         targetModel = targetModel || 'gpt-4o-mini';
+      } else if (configuredProvider === 'groq' || apiKey.startsWith('gsk_')) {
+        targetEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
+        targetModel = targetModel || 'llama-3.3-70b-versatile';
+      } else if (configuredProvider === 'openrouter' || apiKey.startsWith('sk-or-')) {
+        targetEndpoint = 'https://openrouter.ai/api/v1/chat/completions';
+        targetModel = targetModel || 'google/gemini-2.0-flash-exp:free';
+      } else {
+        // Default Google Gemini (OpenAI-compatible endpoint)
+        targetEndpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+        targetModel = targetModel || 'gemini-1.5-flash';
       }
 
       // Prepare Messages with System Prompt
       const formattedMessages = [];
-      const defaultSystemPrompt = systemPrompt || `You are Karobaar AI, an intelligent, helpful executive AI assistant and business co-pilot for the Karobaar business management platform.
+      const defaultSystemPrompt = systemPrompt || `You are Karobaar AI and Jarvis, the unified executive AI assistant and business co-pilot for the Karobaar business management platform.
 Tagline: "Turn Work Into Growth."
-You can answer ANY question on any topic: general knowledge, history, science, math, coding, explanations, business strategy, or casual discussion.
-When asked about this business's data, sales, stock, customers, or actions, use the provided tools to fetch real data or perform authorized operations.
-Never guess financial figures or invent product IDs.
-Be polite, professional, concise, and structured (use markdown bullet points, tables, and bold headings).`;
+You have two core capabilities:
+1. GENERAL INTELLIGENCE: You can answer ANY question on any topic: science, technology, mathematics, programming, writing, history, geography, business economics, strategy, and casual conversation. Do not restrict yourself to Karobaar questions only.
+2. APPLICATION CONTROL & LIVE DATA: You are connected to the store's live databases via tools. When asked about sales, revenue, expenses, stock, customers, invoices, or app navigation, execute the appropriate tool to fetch verified data or perform authorized actions.
+Never invent financial figures, product IDs, or customer balances.
+Format all answers with clean Markdown (headings, bullet points, and tables where helpful). Keep answers clear, accurate, and concise.`;
 
       formattedMessages.push({ role: 'system', content: defaultSystemPrompt });
 
@@ -190,21 +236,19 @@ Be polite, professional, concise, and structured (use markdown bullet points, ta
         requestPayload.tool_choice = 'auto';
       }
 
-      // Execute request
+      // Execute request with safe error handling
       const response = await makeHttpsRequest(targetEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader
-        }
+        headers
       }, requestPayload);
 
+      // Pass through provider's status code and data
       res.statusCode = response.statusCode;
       res.setHeader('Content-Type', 'application/json');
       res.end(response.data);
 
     } catch (err) {
-      console.error('[AI Middleware Error]:', err);
+      console.error('[AI Gateway Server Error]:', err.message);
       res.statusCode = 500;
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({

@@ -32,9 +32,11 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../services/databaseService';
 import { processJarvisQuery, cleanSpokenQuery } from './jarvisEngine';
+import { aiModelService } from '../../services/aiModelService';
+import { executeKarobaarTool } from '../../services/aiToolsService';
 import './CustomizeAIChatbot.css';
 
 export const CustomizeAIChatbot = () => {
@@ -49,6 +51,15 @@ export const CustomizeAIChatbot = () => {
     switchBranch 
   } = useAppContext();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAiPage = location.pathname === '/ai';
+
+  // Automatically close floating drawer when navigating to full-page AI workspace
+  useEffect(() => {
+    if (isAiPage) {
+      setIsChatDrawerOpen(false);
+    }
+  }, [isAiPage]);
 
   // Simple, Non-Intrusive UI States
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
@@ -557,7 +568,48 @@ export const CustomizeAIChatbot = () => {
     }
   };
 
-  // Autonomous Realtime AI Command & Query Processing Engine
+  // Handle sensitive action confirmation in Jarvis drawer
+  const handleConfirmSensitiveAction = async (msgId, actionObj) => {
+    if (!actionObj) return;
+    setIsTyping(true);
+    const businessId = currentUser?.activeBusinessId || 'demo-business-1';
+    const authContext = {
+      db,
+      businessId,
+      currentUser,
+      currentBusiness,
+      confirmed: true
+    };
+
+    try {
+      const execResult = await executeKarobaarTool(actionObj.toolName, actionObj.toolArgs, authContext);
+      setIsTyping(false);
+
+      const resultMsg = {
+        id: 'bot-' + Date.now(),
+        sender: 'bot',
+        text: execResult.success
+          ? `✅ **Action Confirmed & Executed:**\n${execResult.message || JSON.stringify(execResult)}`
+          : `❌ **Action Failed:** ${execResult.error}`,
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, resultMsg]);
+      if (voiceEnabled) {
+        speakText(execResult.success ? 'Action executed successfully.' : 'Action failed.');
+      }
+    } catch (err) {
+      setIsTyping(false);
+      setMessages(prev => [...prev, {
+        id: 'bot-' + Date.now(),
+        sender: 'bot',
+        text: `Error executing confirmed action: ${err.message}`,
+        timestamp: new Date().toISOString()
+      }]);
+    }
+  };
+
+  // Autonomous Realtime AI Command & Query Processing Engine (Unified Model + Tool Loop)
   const handleUserQuery = async (queryText) => {
     const query = (queryText || inputMessage).trim();
     if (!query) return;
@@ -574,10 +626,45 @@ export const CustomizeAIChatbot = () => {
     setMessages(newMessages);
     setIsTyping(true);
 
+    // 1. Instant local fast-path shortcuts for voice UI control
+    const lower = query.toLowerCase();
+    if (/^(dark mode|enable dark mode|dark theme|switch to dark)/i.test(lower)) {
+      if (theme !== 'dark') toggleTheme();
+      const reply = "Switched to Dark Mode.";
+      setIsTyping(false);
+      setMessages(prev => [...prev, { id: 'bot-' + Date.now(), sender: 'bot', text: reply, timestamp: new Date().toISOString() }]);
+      if (voiceEnabled) speakText(reply);
+      return;
+    }
+    if (/^(light mode|enable light mode|light theme|switch to light)/i.test(lower)) {
+      if (theme !== 'light') toggleTheme();
+      const reply = "Switched to Light Mode.";
+      setIsTyping(false);
+      setMessages(prev => [...prev, { id: 'bot-' + Date.now(), sender: 'bot', text: reply, timestamp: new Date().toISOString() }]);
+      if (voiceEnabled) speakText(reply);
+      return;
+    }
+    if (/^(mute|stop talking|be quiet|shant ho jao|awaz band|silence)/i.test(lower)) {
+      stopSpeaking();
+      setVoiceEnabled(false);
+      const reply = "Voice feedback muted. I will respond in text.";
+      setIsTyping(false);
+      setMessages(prev => [...prev, { id: 'bot-' + Date.now(), sender: 'bot', text: reply, timestamp: new Date().toISOString() }]);
+      return;
+    }
+    if (/^(unmute|enable voice|awaz chalu|speak)/i.test(lower)) {
+      setVoiceEnabled(true);
+      const reply = "Voice feedback enabled.";
+      setIsTyping(false);
+      setMessages(prev => [...prev, { id: 'bot-' + Date.now(), sender: 'bot', text: reply, timestamp: new Date().toISOString() }]);
+      speakText(reply);
+      return;
+    }
+
     const businessId = currentUser?.activeBusinessId || 'demo-business-1';
 
     try {
-      const context = {
+      const authContext = {
         db,
         businessId,
         currentBusiness,
@@ -594,17 +681,49 @@ export const CustomizeAIChatbot = () => {
         triggerBackupExport
       };
 
-      const result = await processJarvisQuery(query, context);
+      // Prepare conversation history (last 8 messages for context)
+      const convHistory = newMessages.slice(-8).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text
+      }));
+
+      // Route through Unified AI Model Service with real tool calling & general intelligence
+      const result = await aiModelService.sendMessage({
+        messages: convHistory,
+        authContext,
+        callbacks: {
+          onStatusChange: (status) => {}
+        }
+      });
 
       setIsTyping(false);
+
+      const replyText = result.text || 'I analyzed that request.';
+
+      // Extract natural spoken sentence for speech output
+      let spokenText = result.spokenText;
+      if (!spokenText) {
+        const cleanForSpeech = replyText
+          .replace(new RegExp('```[\s\S]*?```', 'g'), 'Code block output.')
+          .replace(/[*#_`]/g, '')
+          .replace(/•/g, '')
+          .replace(/\|.*?\|/g, '')
+          .replace(/\n+/g, ' ')
+          .trim();
+        const sentences = cleanForSpeech.split(/[.?!]\s+/);
+        spokenText = (sentences.slice(0, 2).join('. ') + '.').slice(0, 240);
+      }
 
       const newBotMsg = {
         id: 'bot-' + Date.now(),
         sender: 'bot',
-        text: result.replyText,
-        spokenText: result.spokenText,
+        text: replyText,
+        spokenText,
         timestamp: new Date().toISOString(),
-        actionData: result.actionData,
+        actionData: result.actionData || null,
+        toolLogs: result.toolLogs || [],
+        requiresConfirmation: result.requiresConfirmation || false,
+        confirmationAction: result.confirmationAction || null,
         quickActions: result.quickActions || []
       };
 
@@ -612,7 +731,7 @@ export const CustomizeAIChatbot = () => {
 
       // Speak natural human response out loud
       if (voiceEnabled) {
-        speakText(result.spokenText || result.replyText);
+        speakText(spokenText);
       }
 
     } catch (err) {
@@ -661,6 +780,9 @@ export const CustomizeAIChatbot = () => {
   const latestBotText = latestBotMsg
     ? latestBotMsg.text.replace(/[*#_`]/g, '').trim().slice(0, 110) + (latestBotMsg.text.replace(/[*#_`]/g, '').trim().length > 110 ? '...' : '')
     : '';
+
+  // Do not render floating Jarvis bar when user is directly in full-page Karobaar AI workspace
+  if (isAiPage) return null;
 
   return (
     <>
@@ -871,6 +993,73 @@ export const CustomizeAIChatbot = () => {
                             <ArrowRight size={13} />
                           </button>
                         )}
+                      </div>
+                    )}
+
+                    {/* Tool Execution Logs if any */}
+                    {msg.toolLogs && msg.toolLogs.length > 0 && (
+                      <div className="customize-ai-tool-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                        {msg.toolLogs.map((tl, tli) => (
+                          <span 
+                            key={tli} 
+                            style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: '4px', 
+                              padding: '2px 8px', 
+                              borderRadius: '6px', 
+                              background: 'rgba(255, 255, 255, 0.06)', 
+                              border: '1px solid var(--border-color)', 
+                              fontSize: '10.5px', 
+                              color: 'var(--text-secondary)' 
+                            }}
+                          >
+                            <Zap size={10} />
+                            <span>{tl.name}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Sensitive Action Confirmation Card */}
+                    {msg.requiresConfirmation && msg.confirmationAction && (
+                      <div 
+                        className="customize-ai-confirm-card"
+                        style={{
+                          marginTop: '10px',
+                          padding: '12px',
+                          borderRadius: '10px',
+                          border: '1.5px solid var(--border-color)',
+                          background: 'rgba(255, 255, 255, 0.03)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px' }}>
+                          <AlertTriangle size={14} />
+                          <span>Confirmation Required</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px', lineHeight: 1.4 }}>
+                          {msg.confirmationAction.summary}
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => handleConfirmSensitiveAction(msg.id, msg.confirmationAction)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            background: 'var(--text-main)',
+                            color: 'var(--bg-main)',
+                            border: 'none',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Check size={13} />
+                          <span>Confirm & Execute</span>
+                        </button>
                       </div>
                     )}
 

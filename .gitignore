@@ -51,3 +51,6 @@ jobs.json
 *.njsproj
 *.sln
 *.sw?
+
+scratch/
+.env.*.local
