@@ -378,3 +378,54 @@
 @media (max-width: 1024px) {
   .topbar { display: none !important; }
 }
+
+
+/* ==========================================================================
+   Dark Theme Topbar Polish
+   ========================================================================== */
+[data-theme="dark"] .global-search-input {
+  background-color: #141417;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+[data-theme="dark"] .global-search-input:focus {
+  background-color: #1e1e24;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .global-search-icon {
+  color: #94a3b8;
+}
+[data-theme="dark"] .topbar-quick-sale-btn {
+  background-color: #ffffff;
+  color: #09090b;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+}
+[data-theme="dark"] .topbar-quick-sale-btn:hover {
+  background-color: #f4f4f5;
+}
+[data-theme="dark"] .topbar-kbd {
+  background: rgba(0, 0, 0, 0.15);
+  border-color: rgba(0, 0, 0, 0.25);
+  color: #09090b;
+}
+[data-theme="dark"] .icon-btn {
+  background: #1e1e24;
+  color: #f4f4f5;
+}
+[data-theme="dark"] .icon-btn:hover {
+  background: #ffffff;
+  color: #09090b;
+}
+[data-theme="dark"] .sync-synced {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+}
+[data-theme="dark"] .sync-syncing {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+}
+[data-theme="dark"] .sync-offline {
+  background: rgba(244, 63, 94, 0.16);
+  color: #fb7185;
+}

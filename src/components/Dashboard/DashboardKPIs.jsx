@@ -33,7 +33,7 @@ export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
       {/* 1. Today's Revenue */}
       <div className="kpi-card bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)]">
         <div className="flex justify-between items-start mb-3">
-          <div className="w-10 h-10 rounded-xl bg-[#09090b] text-[#ffffff] flex items-center justify-center shadow-sm">
+          <div className="kpi-icon-box">
             <DollarSign size={18} strokeWidth={2.5} />
           </div>
           <Sparkline color="var(--text-main)" trend={trends.revTrend.isPositive ? 1 : -1} />
@@ -59,7 +59,7 @@ export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
       {/* 2. Today's Orders */}
       <div className="kpi-card bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)]">
         <div className="flex justify-between items-start mb-3">
-          <div className="w-10 h-10 rounded-xl bg-[#09090b] text-[#ffffff] flex items-center justify-center shadow-sm">
+          <div className="kpi-icon-box">
             <ShoppingBag size={18} strokeWidth={2.5} />
           </div>
           <Sparkline color="var(--text-main)" trend={trends.ordTrend.isPositive ? 1 : -1} />
@@ -85,7 +85,7 @@ export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
       {/* 3. Estimated Profit */}
       <div className="kpi-card bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)]">
         <div className="flex justify-between items-start mb-3">
-          <div className="w-10 h-10 rounded-xl bg-[#09090b] text-[#ffffff] flex items-center justify-center shadow-sm">
+          <div className="kpi-icon-box">
             <TrendingUp size={18} strokeWidth={2.5} />
           </div>
           <Sparkline color="var(--text-secondary)" trend={trends.profTrend.isPositive ? 1 : -1} />
@@ -111,7 +111,7 @@ export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
       {/* 4. Expenses */}
       <div className="kpi-card bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)]">
         <div className="flex justify-between items-start mb-3">
-          <div className="w-10 h-10 rounded-xl bg-[#09090b] text-[#ffffff] flex items-center justify-center shadow-sm">
+          <div className="kpi-icon-box">
             <CreditCard size={18} strokeWidth={2.5} />
           </div>
           <Sparkline color="var(--text-muted)" trend={!trends.expTrend.isPositive ? 1 : -1} />

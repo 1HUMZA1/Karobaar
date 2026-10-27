@@ -374,3 +374,147 @@
     padding-bottom: 3.5rem; 
   } 
 }
+
+
+/* ==========================================================================
+   KPI Icon Box & Command Dock Buttons
+   ========================================================================== */
+.kpi-icon-box {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  background-color: #09090b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.cmd-primary-btn {
+  background-color: #09090b;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+.cmd-primary-btn:hover {
+  background-color: #27272a;
+}
+
+.cmd-ghost-btn {
+  background-color: var(--bg-hover);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+}
+.cmd-ghost-btn:hover {
+  background-color: #e2e8f0;
+}
+
+/* ==========================================================================
+   Dark Theme Polished Overrides (Vercel / Linear Precision)
+   ========================================================================== */
+[data-theme="dark"] .kpi-icon-box {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .cmd-primary-btn {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+}
+[data-theme="dark"] .cmd-primary-btn:hover {
+  background-color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .cmd-ghost-btn {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #f4f4f5;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .cmd-ghost-btn:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+[data-theme="dark"] .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.16) !important;
+}
+[data-theme="dark"] .text-emerald-700 {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.16) !important;
+}
+[data-theme="dark"] .text-rose-700 {
+  color: #fb7185 !important;
+}
+
+[data-theme="dark"] .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.16) !important;
+}
+[data-theme="dark"] .text-amber-700 {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.16) !important;
+}
+[data-theme="dark"] .text-blue-700 {
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .quick-action-primary {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.18) !important;
+}
+[data-theme="dark"] .quick-action-primary:hover {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+[data-theme="dark"] .quick-action-btn {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #f4f4f5;
+}
+[data-theme="dark"] .quick-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .kpi-card {
+  background-color: var(--bg-card);
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .kpi-card:hover {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] .executive-health-dock {
+  background-color: var(--bg-card);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .executive-health-dock button {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #f4f4f5;
+}
+[data-theme="dark"] .executive-health-dock button:hover {
+  background-color: #ffffff;
+  color: #09090b;
+}
+
+[data-theme="dark"] .operations-command-dock {
+  background-color: var(--bg-card);
+  border-color: rgba(255, 255, 255, 0.08);
+}

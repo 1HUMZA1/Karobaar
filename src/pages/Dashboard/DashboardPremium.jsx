@@ -324,7 +324,7 @@ const Dashboard = () => {
         <div className="flex items-center gap-2 overflow-x-auto">
           <button 
             onClick={() => navigate('/pos')}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#09090b] text-[#ffffff] hover:bg-[#27272a] text-xs font-bold transition-all shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
+            className="cmd-primary-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
             title="Open POS (F2)"
           >
             <Zap size={14} className="fill-current text-amber-400" />
@@ -334,7 +334,7 @@ const Dashboard = () => {
           
           <button 
             onClick={() => navigate('/products')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--bg-hover)] hover:bg-[#e2e8f0] text-text-main text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
+            className="cmd-ghost-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <Package size={13} className="text-text-secondary" />
             <span>+ Product</span>
@@ -342,7 +342,7 @@ const Dashboard = () => {
 
           <button 
             onClick={() => navigate('/customers')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--bg-hover)] hover:bg-[#e2e8f0] text-text-main text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
+            className="cmd-ghost-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <Users size={13} className="text-text-secondary" />
             <span>+ Customer</span>
@@ -350,7 +350,7 @@ const Dashboard = () => {
 
           <button 
             onClick={() => navigate('/expenses')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--bg-hover)] hover:bg-[#e2e8f0] text-text-main text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
+            className="cmd-ghost-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <Receipt size={13} className="text-text-secondary" />
             <span>+ Expense</span>

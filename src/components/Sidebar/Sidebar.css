@@ -434,3 +434,84 @@
     z-index: 9998;
   }
 }
+
+
+/* ==========================================================================
+   Dark Theme Sidebar Polish
+   ========================================================================== */
+[data-theme="dark"] .sidebar {
+  background-color: #09090b;
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .sidebar-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .logo-icon {
+  color: #ffffff;
+  border-color: #ffffff;
+  background-color: transparent;
+}
+
+[data-theme="dark"] .logo-text {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .business-badge {
+  background-color: #1e1e24;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .nav-group-title {
+  color: #64748b;
+}
+
+[data-theme="dark"] .nav-link {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .nav-link:hover {
+  background-color: #1e1e24;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .nav-link.active {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+  border: 1px solid #ffffff !important;
+}
+
+[data-theme="dark"] .nav-link.active svg {
+  color: #09090b !important;
+}
+
+[data-theme="dark"] .sidebar-toggle-btn.hidden-mobile {
+  background-color: #1e1e24;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .sidebar-toggle-btn.hidden-mobile:hover {
+  background-color: #2e2e38;
+}
+
+[data-theme="dark"] .sidebar-footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .footer-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .footer-version {
+  color: #64748b;
+}
+
+[data-theme="dark"] .footer-status {
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+}
