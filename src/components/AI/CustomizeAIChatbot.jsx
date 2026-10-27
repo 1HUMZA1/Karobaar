@@ -17,7 +17,15 @@ import {
   RotateCcw,
   Zap,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Radio,
+  Play,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -27,10 +35,18 @@ import './CustomizeAIChatbot.css';
 export const CustomizeAIChatbot = () => {
   const { theme, toggleTheme, appUiVersion, setAppUiVersion, currentUser, currentBusiness } = useAppContext();
   const navigate = useNavigate();
+  
+  // UI States
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [voiceModeActive, setVoiceModeActive] = useState(false); // ChatGPT Voice Orb Screen
+  const [isListening, setIsListening] = useState(false);
+  const [voiceSpeechEnabled, setVoiceSpeechEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
   const messagesEndRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   // Settings for Customize AI
   const [aiSettings, setAiSettings] = useState(() => {
@@ -40,7 +56,7 @@ export const CustomizeAIChatbot = () => {
         assistantName: 'Customize',
         showFloatingBubble: true,
         autoExecute: true,
-        dailySummaryAlert: true
+        voiceFeedback: true
       };
     } catch {
       return { assistantName: 'Customize', showFloatingBubble: true, autoExecute: true };
@@ -59,18 +75,108 @@ export const CustomizeAIChatbot = () => {
       {
         id: 'welcome-1',
         sender: 'bot',
-        text: `Hello! I am **Customize**, your AI automation assistant for ${currentBusiness?.name || 'Karobaar'}. I can automate sales, check inventory, switch operating modes, analyze finances, or execute commands for you.`,
+        text: `Hello! I am **Customize**, your Realtime Voice AI Assistant for ${currentBusiness?.name || 'Karobaar'}. I can operate the app live for you: talk to me to create sales, audit inventory, switch modes, or analyze finances.`,
         timestamp: new Date().toISOString(),
         quickActions: [
-          { label: '📊 Today\'s Total Sales', query: 'Show today sales summary' },
-          { label: '⚠️ Check Low Stock', query: 'Which items are low in stock?' },
-          { label: '⚡ Switch to Legacy Desk', query: 'Switch to legacy operations desk' },
-          { label: '🌙 Toggle Theme', query: 'Toggle dark mode' },
-          { label: '🛒 Open POS Terminal', query: 'Open POS register' }
+          { label: '🎙️ Voice: "Today\'s Sales"', query: 'Show today sales summary' },
+          { label: '🎙️ Voice: "Check Low Stock"', query: 'Which items are low in stock?' },
+          { label: '🛒 Voice: "Add 2 Burger to bill"', query: 'Add 2 Burger to cart' },
+          { label: '⚡ Voice: "Switch to Legacy Desk"', query: 'Switch to legacy operations desk' },
+          { label: '🌙 Voice: "Toggle Dark Mode"', query: 'Toggle dark mode' }
         ]
       }
     ];
   });
+
+  // Initialize Web Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN'; // Indian English / Hindi mix support
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event) => {
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        setInterimTranscript(currentTranscript);
+        if (event.results[0].isFinal) {
+          handleUserQuery(currentTranscript);
+          setInterimTranscript('');
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  // Text-To-Speech function
+  const speakText = (textToSpeak) => {
+    if (!voiceSpeechEnabled || !window.speechSynthesis) return;
+
+    window.speechSynthesis.cancel(); // cancel ongoing speech
+    // Clean markdown characters
+    const clean = textToSpeak
+      .replace(/[*#_`]/g, '')
+      .replace(/•/g, '')
+      .replace(/₹/g, 'Rupees ')
+      .trim();
+
+    // Limit spoken length for responsiveness
+    const sentences = clean.split('\n').filter(Boolean).slice(0, 3).join('. ');
+    const utterance = new SpeechSynthesisUtterance(sentences);
+    utterance.rate = 1.05;
+    utterance.pitch = 1.0;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  };
+
+  // Toggle Voice Input Recording
+  const toggleVoiceInput = () => {
+    if (!recognitionRef.current) {
+      alert('Speech Recognition is not supported on this browser. Try Google Chrome or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      stopSpeaking();
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.error('Error starting recognition:', err);
+      }
+    }
+  };
 
   // Listen to open event from Topbar or Global Search
   useEffect(() => {
@@ -95,12 +201,13 @@ export const CustomizeAIChatbot = () => {
 
   // Scroll to bottom on new message
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !voiceModeActive) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen, isTyping]);
+  }, [messages, isOpen, isTyping, voiceModeActive]);
 
   const handleClearHistory = () => {
+    stopSpeaking();
     if (window.confirm('Clear AI chat history?')) {
       const resetMsg = [
         {
@@ -119,11 +226,12 @@ export const CustomizeAIChatbot = () => {
     }
   };
 
-  // AI Command & Query Processing Engine
+  // Autonomous Realtime AI Command & Query Processing Engine
   const handleUserQuery = async (queryText) => {
     const query = (queryText || inputMessage).trim();
     if (!query) return;
 
+    stopSpeaking();
     setInputMessage('');
     const userMsgId = 'user-' + Date.now();
     const newMessages = [...messages, {
@@ -138,43 +246,155 @@ export const CustomizeAIChatbot = () => {
     const businessId = currentUser?.activeBusinessId || 'demo-business-1';
     const lower = query.toLowerCase();
 
-    // Emulated AI thinking time
+    // AI reasoning delay simulation
     setTimeout(async () => {
       let botResponse = '';
       let botActionData = null;
 
       try {
-        // 1. Sales & Revenue Automation
-        if (lower.includes('sale') || lower.includes('revenue') || lower.includes('income') || lower.includes('kamayi') || lower.includes('earning')) {
+        // 1. Sales & Revenue Live Automation
+        if (lower.includes('today sale') || lower.includes('today\'s sale') || lower.includes('aaj ki sale') || (lower.includes('sale') && !lower.includes('new sale') && !lower.includes('add') && !lower.includes('sell') && !lower.includes('bill')) || lower.includes('revenue') || lower.includes('income') || lower.includes('kamayi') || lower.includes('earning')) {
           const sales = await db.getCollection('sales', businessId);
           const today = new Date().toISOString().split('T')[0];
           const todaySales = sales.filter(s => (s.date || '').startsWith(today));
           const totalRev = todaySales.reduce((sum, s) => sum + (s.total || 0), 0);
           const ordersCount = todaySales.length;
 
-          botResponse = `Here is today's sales report for **${currentBusiness?.name || 'your business'}**:\n\n• **Total Revenue:** ₹${totalRev.toFixed(2)}\n• **Transactions:** ${ordersCount} orders\n• **All-Time Recorded Sales:** ${sales.length} orders`;
+          botResponse = `Here is today's sales report for **${currentBusiness?.name || 'Karobaar'}**:\n\n• **Today's Revenue:** ₹${totalRev.toFixed(2)}\n• **Orders Count:** ${ordersCount} orders\n• **Total Lifetime Sales:** ${sales.length} transactions`;
+          
           botActionData = {
             type: 'metrics',
-            title: "Today's Performance",
+            title: "Live Sales Performance",
             metrics: [
               { label: 'Today Revenue', value: `₹${totalRev.toFixed(2)}` },
-              { label: 'Total Orders', value: ordersCount },
+              { label: 'Orders Count', value: ordersCount },
               { label: 'Lifetime Sales', value: sales.length }
             ],
-            cta: { label: 'View Orders Feed', path: '/orders' }
+            cta: { label: 'View All Orders', path: '/orders' }
           };
         }
 
-        // 2. Low Stock & Inventory Automation
-        else if (lower.includes('stock') || lower.includes('inventory') || lower.includes('maal') || lower.includes('product') && lower.includes('low')) {
+        // 2. Clear POS Cart
+        else if (lower.includes('clear cart') || lower.includes('empty cart') || lower.includes('reset cart') || lower.includes('delete cart') || lower.includes('cart khali')) {
+          sessionStorage.setItem('pending_ai_pos_action', JSON.stringify({ clear: true, timestamp: Date.now() }));
+          navigate('/pos');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('karobaar_ai_pos_action', { detail: { clear: true } }));
+          }, 300);
+          botResponse = `Cleared your active POS cart. Billing register is ready for new items.`;
+          botActionData = { type: 'action_confirmed', badge: 'Cart Cleared' };
+        }
+
+        // 3. Hold POS Order
+        else if (lower.includes('hold order') || lower.includes('park order') || lower.includes('hold bill') || lower.includes('park bill')) {
+          sessionStorage.setItem('pending_ai_pos_action', JSON.stringify({ hold: true, timestamp: Date.now() }));
+          navigate('/pos');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('karobaar_ai_pos_action', { detail: { hold: true } }));
+          }, 300);
+          botResponse = `Placed the active order on Hold. You can resume it anytime from Held Orders [F4].`;
+          botActionData = { type: 'action_confirmed', badge: 'Order Held / Parked' };
+        }
+
+        // 4. POS Payment Method Switch
+        else if (lower.includes('pay with upi') || lower.includes('upi payment') || lower.includes('pay by upi') || lower.includes('gpay payment') || lower.includes('upi mode')) {
+          sessionStorage.setItem('pending_ai_pos_action', JSON.stringify({ paymentMethod: 'UPI', timestamp: Date.now() }));
+          navigate('/pos');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('karobaar_ai_pos_action', { detail: { paymentMethod: 'UPI' } }));
+          }, 300);
+          botResponse = `Payment method switched to **UPI QR Code**. Customers can scan dynamic QR or your shop standee.`;
+          botActionData = { type: 'action_confirmed', badge: 'UPI Mode Selected' };
+        }
+        else if (lower.includes('pay with cash') || lower.includes('cash payment') || lower.includes('pay by cash') || lower.includes('cash mode')) {
+          sessionStorage.setItem('pending_ai_pos_action', JSON.stringify({ paymentMethod: 'Cash', timestamp: Date.now() }));
+          navigate('/pos');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('karobaar_ai_pos_action', { detail: { paymentMethod: 'Cash' } }));
+          }, 300);
+          botResponse = `Payment method switched to **Cash**. Tendered cash counter and quick change calculator ready.`;
+          botActionData = { type: 'action_confirmed', badge: 'Cash Mode Selected' };
+        }
+
+        // 5. Apply Discount to POS
+        else if (lower.includes('discount') || lower.includes('chhoot') || lower.includes('percent off')) {
+          const discountMatch = lower.match(/(?:discount|chhoot|off)\s*(?:of|rs|₹)?\s*(\d+)/) || lower.match(/(\d+)\s*(?:rupees|rs|%|percent)?\s*(?:discount|off)/);
+          const discountVal = discountMatch ? parseInt(discountMatch[1], 10) : 0;
+          if (discountVal > 0) {
+            sessionStorage.setItem('pending_ai_pos_action', JSON.stringify({ discount: discountVal, timestamp: Date.now() }));
+            navigate('/pos');
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('karobaar_ai_pos_action', { detail: { discount: discountVal } }));
+            }, 300);
+            botResponse = `Applied a discount of **₹${discountVal}** to the POS bill!`;
+            botActionData = { type: 'action_confirmed', badge: `₹${discountVal} Discount Applied` };
+          } else {
+            botResponse = `Please specify the discount amount, e.g. "Apply 50 discount" or "Give 20 rupees off".`;
+          }
+        }
+
+        // 6. Live POS Product Addition (e.g. "Add 2 Burger", "Sell Cold Coffee", "Chai daal do")
+        else if (lower.includes('add') || lower.includes('sell') || lower.includes('becho') || lower.includes('daal') || lower.includes('dal') || lower.includes('order') || lower.includes('cart')) {
+          const products = await db.getCollection('products', businessId);
+          let targetProduct = null;
+          let targetQty = 1;
+
+          // Extract quantity if present
+          const qtyMatch = lower.match(/\b(\d+)\s*(?:pcs|plates|unit|units)?\b/);
+          if (qtyMatch) {
+            const parsed = parseInt(qtyMatch[1], 10);
+            if (!isNaN(parsed) && parsed > 0 && parsed <= 100) targetQty = parsed;
+          }
+
+          // Match product name
+          for (const p of products) {
+            const pName = (p.name || '').toLowerCase();
+            if (!pName) continue;
+            if (lower.includes(pName) || pName.split(/\s+/).some(w => w.length >= 3 && lower.includes(w))) {
+              targetProduct = p;
+              break;
+            }
+          }
+
+          if (targetProduct) {
+            sessionStorage.setItem('pending_ai_pos_action', JSON.stringify({
+              action: 'add_item',
+              product: targetProduct,
+              quantity: targetQty,
+              timestamp: Date.now()
+            }));
+            navigate('/pos');
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('karobaar_ai_pos_action', {
+                detail: { action: 'add_item', product: targetProduct, quantity: targetQty }
+              }));
+            }, 300);
+            const totalCost = (targetProduct.sellingPrice || targetProduct.price || 0) * targetQty;
+            botResponse = `Added **${targetQty}x ${targetProduct.name}** (₹${totalCost.toFixed(2)}) directly to your POS cart! Opening billing counter.`;
+            botActionData = {
+              type: 'action_confirmed',
+              badge: `Added ${targetQty}x ${targetProduct.name} (₹${totalCost.toFixed(2)})`
+            };
+          } else if (lower.startsWith('add') || lower.startsWith('sell') || lower.includes('to cart') || lower.includes('to bill')) {
+            botResponse = `I looked for that product in your inventory, but couldn't find a close match. Please verify the name in your Products catalog or add it first.`;
+          } else {
+            // Default POS open
+            navigate('/pos');
+            botResponse = `Opening the **POS Terminal / New Sale** register [F2]! Barcode scanner mode, category filters, and touch grid are ready for billing.`;
+            botActionData = { type: 'action_confirmed', badge: 'POS Terminal Launched' };
+          }
+        }
+
+        // 2. Low Stock & Inventory Live Audit
+        else if (lower.includes('stock') || lower.includes('inventory') || lower.includes('maal') || (lower.includes('product') && lower.includes('low'))) {
           const products = await db.getCollection('products', businessId);
           const lowStock = products.filter(p => (p.stockQuantity || 0) <= 10);
 
           if (lowStock.length === 0) {
-            botResponse = `All your inventory looks healthy! No products currently below threshold (10 units). Total items tracked: ${products.length}.`;
+            botResponse = `Great news! All your inventory is well-stocked. Total ${products.length} products tracked, and none are below minimum threshold.`;
           } else {
-            botResponse = `Found **${lowStock.length} items** requiring re-order attention:\n` +
-              lowStock.slice(0, 5).map(p => `• **${p.name}**: Only ${p.stockQuantity || 0} units left (₹${p.sellingPrice || p.price || 0})`).join('\n') +
+            botResponse = `Audit complete. Found **${lowStock.length} items** requiring re-order attention:\n` +
+              lowStock.slice(0, 5).map(p => `• **${p.name}**: Only ${p.stockQuantity || 0} units left (Price: ₹${p.sellingPrice || p.price || 0})`).join('\n') +
               (lowStock.length > 5 ? `\n...and ${lowStock.length - 5} more items.` : '');
             
             botActionData = {
@@ -186,46 +406,54 @@ export const CustomizeAIChatbot = () => {
           }
         }
 
-        // 3. Theme Toggle Automation
-        else if (lower.includes('dark') || lower.includes('light') || lower.includes('theme') || lower.includes('mode') && (lower.includes('change') || lower.includes('toggle') || lower.includes('switch'))) {
+        // 3. Theme Toggle Live App Control
+        else if (lower.includes('dark') || lower.includes('light') || lower.includes('theme') || (lower.includes('mode') && (lower.includes('change') || lower.includes('toggle') || lower.includes('switch') || lower.includes('kardo')))) {
           toggleTheme();
           const newTheme = theme === 'light' ? 'Dark' : 'Light';
-          botResponse = `Switched theme to **${newTheme} Mode**! Both Black & White high-contrast palettes have been updated.`;
+          botResponse = `Switched theme to **${newTheme} Mode**! The monochrome high-contrast styling has been updated across the entire workspace.`;
           botActionData = {
             type: 'action_confirmed',
             badge: `${newTheme} Theme Activated`
           };
         }
 
-        // 4. Operating Mode Automation (Legacy vs Premium)
-        else if (lower.includes('legacy') || lower.includes('premium')) {
-          const target = lower.includes('legacy') ? 'legacy' : 'premium';
-          setAppUiVersion(target);
+        // 4. Operating Mode Live App Control (Legacy vs Premium)
+        else if (lower.includes('legacy') || lower.includes('operations desk') || lower.includes('fast mode')) {
+          setAppUiVersion('legacy');
           navigate('/dashboard');
-          botResponse = `Switched workspace mode to **${target === 'legacy' ? 'Legacy Operations Desk' : 'Premium Command Center'}**! Navigated to Dashboard.`;
+          botResponse = `Reconfigured workspace to **Legacy Operations Desk**! Navigating to your responsive 4-column action dashboard now.`;
           botActionData = {
             type: 'action_confirmed',
-            badge: `${target === 'legacy' ? 'Legacy Desk' : 'Premium Center'} Active`
+            badge: 'Legacy Desk Activated'
+          };
+        }
+        else if (lower.includes('premium') || lower.includes('command center')) {
+          setAppUiVersion('premium');
+          navigate('/dashboard');
+          botResponse = `Reconfigured workspace to **Premium Command Center**! Executive metrics, live radar health, and dual charts are active.`;
+          botActionData = {
+            type: 'action_confirmed',
+            badge: 'Premium Center Activated'
           };
         }
 
-        // 5. Direct POS Navigation & New Sale
-        else if (lower.includes('pos') || lower.includes('billing') || lower.includes('new sale') || lower.includes('register') || lower.includes('counter')) {
+        // 5. Direct POS Navigation & POS Item Automation
+        else if (lower.includes('pos') || lower.includes('bill') || lower.includes('new sale') || lower.includes('register') || lower.includes('counter')) {
           navigate('/pos');
-          botResponse = `Opening **POS Register / New Sale Terminal** [F2]! All category filters, held bills, and touch grid are ready.`;
+          botResponse = `Opening the **POS Terminal / New Sale** register [F2]! Barcode scanner mode, category filters, and touch grid are ready for billing.`;
           botActionData = {
             type: 'action_confirmed',
             badge: 'POS Terminal Launched'
           };
         }
 
-        // 6. Customers & Udhaar Khata Automation
+        // 6. Customers & Khata Udhaar Live Audit
         else if (lower.includes('customer') || lower.includes('khata') || lower.includes('udhaar') || lower.includes('dues') || lower.includes('credit')) {
           const customers = await db.getCollection('customers', businessId);
           const withDues = customers.filter(c => (c.outstandingBalance || 0) > 0);
           const totalDues = withDues.reduce((sum, c) => sum + (c.outstandingBalance || 0), 0);
 
-          botResponse = `You have **${withDues.length} customers** with pending Udhaar/Credit totaling **₹${totalDues.toFixed(2)}**:\n` +
+          botResponse = `You have **${withDues.length} customers** with pending Udhaar balance totaling **₹${totalDues.toFixed(2)}**:\n` +
             withDues.slice(0, 4).map(c => `• **${c.name}**: Due ₹${c.outstandingBalance.toFixed(2)} (${c.phone || 'No phone'})`).join('\n') +
             (withDues.length > 4 ? `\n...and ${withDues.length - 4} more customers.` : '');
           
@@ -236,36 +464,48 @@ export const CustomizeAIChatbot = () => {
           };
         }
 
-        // 7. General Settings & Configuration
-        else if (lower.includes('setting') || lower.includes('config') || lower.includes('backup') || lower.includes('role') || lower.includes('password')) {
+        // 7. General Navigation
+        else if (lower.includes('setting') || lower.includes('config') || lower.includes('backup') || lower.includes('password')) {
           navigate('/settings');
-          botResponse = `Taking you to **Settings & Workspace** where you can configure Business Profile, Preferences, Features & Modules, and Customize AI rules.`;
+          botResponse = `Navigating to **Settings & Workspace** where you can configure Business Profile, Preferences, Features & Modules, and Customize AI rules.`;
+        }
+        else if (lower.includes('expense') || lower.includes('kharcha')) {
+          navigate('/expenses');
+          botResponse = `Opening **Expenses & Petty Cash** tracker. You can log vendor bills, utilities, and daily business spend here.`;
+        }
+        else if (lower.includes('report') || lower.includes('analytics')) {
+          navigate('/reports');
+          botResponse = `Opening **Reports & Business Analytics** where you can view sales graphs, category breakdowns, and GST tax sheets.`;
         }
 
-        // 8. General AI Business Consulting & Assistance
+        // 8. General AI Consulting & Capabilities
         else {
-          botResponse = `I have analyzed your request: "${query}".\n\nI can automate operations for you: check sales, audit low stock, add custom products, launch POS billing, switch to Legacy or Premium modes, or track customer dues.\n\nTry clicking any of the quick automation shortcuts below!`;
+          botResponse = `I am listening: "${query}".\n\nI can operate your business live: speak to me to check today's sales, audit low stock, toggle dark mode, switch between Legacy and Premium dashboards, launch POS billing, or look up customer dues.\n\nTap the microphone or choose a quick command below!`;
         }
       } catch (err) {
-        console.error('AI Error:', err);
-        botResponse = `I ran into an issue automating that request. Please verify connection or try a direct command like "Show sales" or "Check stock".`;
+        console.error('AI Processing Error:', err);
+        botResponse = `I encountered an issue processing that live command. Please verify your connection or try a direct command like "Show today's sales" or "Check stock".`;
       }
 
       setIsTyping(false);
-      setMessages(prev => [...prev, {
+      const newBotMsg = {
         id: 'bot-' + Date.now(),
         sender: 'bot',
         text: botResponse,
         timestamp: new Date().toISOString(),
         actionData: botActionData,
         quickActions: [
-          { label: '📊 Sales Report', query: 'Show today sales summary' },
+          { label: '📊 Today\'s Sales', query: 'Show today sales summary' },
           { label: '⚠️ Low Stock', query: 'Which items are low in stock?' },
-          { label: '⚡ Legacy Mode', query: 'Switch to legacy operations desk' },
-          { label: '🛒 Open POS', query: 'Open POS register' }
+          { label: '🛒 Add Burger to Bill', query: 'Add 2 Burger to cart' },
+          { label: '⚡ Legacy Mode', query: 'Switch to legacy operations desk' }
         ]
-      }]);
-    }, 450);
+      };
+
+      setMessages(prev => [...prev, newBotMsg]);
+      // Speak response out loud in voice mode
+      speakText(botResponse);
+    }, 400);
   };
 
   const handleKeyDown = (e) => {
@@ -277,38 +517,72 @@ export const CustomizeAIChatbot = () => {
 
   return (
     <>
-      {/* Floating Launcher Bubble (Strictly Monochrome) */}
+      {/* Floating Realtime AI Trigger Button (Strictly Monochrome) */}
       {aiSettings.showFloatingBubble && !isOpen && (
         <button 
           className="customize-ai-floating-trigger"
           onClick={() => setIsOpen(true)}
-          title="Open Customize AI Automator"
+          title="Open Customize Voice AI Assistant"
         >
-          <Sparkles size={18} className="customize-sparkle-icon" />
-          <span className="customize-trigger-text">Customize AI</span>
+          <div className="customize-trigger-orb" />
+          <Sparkles size={16} className="customize-sparkle-icon" />
+          <span className="customize-trigger-text">Customize Voice AI</span>
         </button>
       )}
 
-      {/* AI Assistant Drawer Window */}
+      {/* Main Realtime Voice AI Window / Overlay */}
       {isOpen && (
-        <div className="customize-ai-drawer-overlay" onClick={() => setIsOpen(false)}>
-          <div className="customize-ai-panel" onClick={e => e.stopPropagation()}>
+        <div className="customize-ai-drawer-overlay" onClick={() => { stopSpeaking(); setIsOpen(false); }}>
+          <div 
+            className={`customize-ai-panel ${voiceModeActive ? 'voice-orb-active' : ''}`} 
+            onClick={e => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="customize-ai-header">
               <div className="customize-ai-header-left">
-                <div className="customize-ai-avatar">
+                <div className={`customize-ai-avatar ${isSpeaking ? 'speaking-pulse' : ''}`}>
                   <Sparkles size={16} />
                 </div>
                 <div>
                   <div className="customize-ai-title-row">
                     <h3 className="customize-ai-title">{aiSettings.assistantName || 'Customize'}</h3>
-                    <span className="customize-ai-badge">AI Automator</span>
+                    <span className="customize-ai-badge">Voice AI</span>
                   </div>
-                  <p className="customize-ai-status">● Live • Ready to automate</p>
+                  <p className="customize-ai-status">
+                    {isListening ? (
+                      <span className="status-listening">● Listening to your voice...</span>
+                    ) : isSpeaking ? (
+                      <span className="status-speaking">● Speaking response...</span>
+                    ) : (
+                      '● Realtime • Ready to operate'
+                    )}
+                  </p>
                 </div>
               </div>
 
+              {/* Action Buttons in Header */}
               <div className="customize-ai-header-actions">
+                {/* Voice Mode Toggle (ChatGPT Voice Orb vs Text View) */}
+                <button 
+                  onClick={() => setVoiceModeActive(!voiceModeActive)}
+                  className={`customize-ai-icon-btn ${voiceModeActive ? 'active' : ''}`}
+                  title={voiceModeActive ? 'Switch to Chat History' : 'Switch to Fullscreen Voice Orb'}
+                >
+                  <Radio size={15} />
+                </button>
+
+                {/* Speech Mute / Unmute Toggle */}
+                <button 
+                  onClick={() => {
+                    if (voiceSpeechEnabled) stopSpeaking();
+                    setVoiceSpeechEnabled(!voiceSpeechEnabled);
+                  }}
+                  className={`customize-ai-icon-btn ${!voiceSpeechEnabled ? 'muted' : ''}`}
+                  title={voiceSpeechEnabled ? 'Mute AI voice output' : 'Enable AI voice output'}
+                >
+                  {voiceSpeechEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                </button>
+
                 <button 
                   onClick={handleClearHistory} 
                   className="customize-ai-icon-btn"
@@ -316,8 +590,9 @@ export const CustomizeAIChatbot = () => {
                 >
                   <Trash2 size={15} />
                 </button>
+
                 <button 
-                  onClick={() => setIsOpen(false)} 
+                  onClick={() => { stopSpeaking(); setIsOpen(false); }} 
                   className="customize-ai-icon-btn"
                   title="Close AI window"
                 >
@@ -326,130 +601,209 @@ export const CustomizeAIChatbot = () => {
               </div>
             </div>
 
-            {/* Messages Body */}
-            <div className="customize-ai-messages custom-scrollbar">
-              {messages.map(msg => (
-                <div key={msg.id} className={`customize-ai-message-row ${msg.sender === 'user' ? 'user' : 'bot'}`}>
-                  {msg.sender === 'bot' && (
-                    <div className="customize-ai-bot-icon">
-                      <Bot size={14} />
-                    </div>
-                  )}
+            {/* VIEW 1: Fullscreen ChatGPT Voice Orb Mode */}
+            {voiceModeActive ? (
+              <div className="customize-voice-orb-view">
+                <div className="voice-orb-container">
+                  <div className={`voice-main-orb ${isListening ? 'listening' : isSpeaking ? 'speaking' : 'idle'}`}>
+                    <div className="orb-core" />
+                    <div className="orb-wave wave-1" />
+                    <div className="orb-wave wave-2" />
+                    <div className="orb-wave wave-3" />
+                  </div>
+                </div>
 
-                  <div className="customize-ai-bubble-wrap">
-                    <div className={`customize-ai-bubble ${msg.sender === 'user' ? 'user-bubble' : 'bot-bubble'}`}>
-                      <div className="customize-ai-bubble-text">
-                        {msg.text.split('\n').map((line, idx) => (
-                          <p key={idx} style={{ margin: '0 0 4px 0' }}>
-                            {line.startsWith('• ') ? (
-                              <span style={{ display: 'inline-block', marginLeft: '6px' }}>{line}</span>
-                            ) : line}
-                          </p>
-                        ))}
-                      </div>
+                <div className="voice-status-text-wrap">
+                  <h4 className="voice-status-headline">
+                    {isListening ? 'Listening to your voice...' : isSpeaking ? 'Customize AI is speaking...' : 'Tap the microphone or speak'}
+                  </h4>
+                  <p className="voice-interim-sub">
+                    {interimTranscript ? `"${interimTranscript}"` : messages[messages.length - 1]?.text.replace(/[*#_`]/g, '').slice(0, 100) + '...'}
+                  </p>
+                </div>
 
-                      {/* Interactive Action Card */}
-                      {msg.actionData && (
-                        <div className="customize-ai-action-card">
-                          {msg.actionData.badge && (
-                            <div className="customize-ai-action-badge">
-                              <CheckCircle2 size={13} />
-                              <span>{msg.actionData.badge}</span>
-                            </div>
-                          )}
+                <div className="voice-controls-bar">
+                  <button 
+                    type="button"
+                    onClick={toggleVoiceInput}
+                    className={`voice-mic-main-btn ${isListening ? 'listening' : ''}`}
+                    title={isListening ? 'Stop listening' : 'Start speaking'}
+                  >
+                    {isListening ? <MicOff size={24} /> : <Mic size={24} />}
+                  </button>
 
-                          {msg.actionData.metrics && (
-                            <div className="customize-ai-metrics-grid">
-                              {msg.actionData.metrics.map((m, i) => (
-                                <div key={i} className="customize-ai-metric-item">
-                                  <span className="metric-label">{m.label}</span>
-                                  <span className="metric-value">{m.value}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {msg.actionData.items && (
-                            <div className="customize-ai-items-list">
-                              {msg.actionData.items.map(it => (
-                                <div key={it.id} className="customize-ai-item-row">
-                                  <span>{it.name}</span>
-                                  <span className="stock-alert">{it.stockQuantity} left</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {msg.actionData.cta && (
-                            <button 
-                              className="customize-ai-cta-btn"
-                              onClick={() => {
-                                setIsOpen(false);
-                                navigate(msg.actionData.cta.path);
-                              }}
-                            >
-                              <span>{msg.actionData.cta.label}</span>
-                              <ArrowRight size={13} />
-                            </button>
-                          )}
+                  <button 
+                    type="button" 
+                    onClick={() => setVoiceModeActive(false)}
+                    className="voice-switch-mode-btn"
+                  >
+                    Switch to Text Chat
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* VIEW 2: Chat Stream Feed Mode */
+              <>
+                <div className="customize-ai-messages custom-scrollbar">
+                  {messages.map(msg => (
+                    <div key={msg.id} className={`customize-ai-message-row ${msg.sender === 'user' ? 'user' : 'bot'}`}>
+                      {msg.sender === 'bot' && (
+                        <div className="customize-ai-bot-icon">
+                          <Bot size={14} />
                         </div>
                       )}
-                    </div>
 
-                    {/* Quick Suggestion Chips */}
-                    {msg.quickActions && (
-                      <div className="customize-ai-chips-wrap">
-                        {msg.quickActions.map((qa, i) => (
-                          <button 
-                            key={i} 
-                            className="customize-ai-chip"
-                            onClick={() => handleUserQuery(qa.query)}
-                          >
-                            {qa.label}
-                          </button>
-                        ))}
+                      <div className="customize-ai-bubble-wrap">
+                        <div className={`customize-ai-bubble ${msg.sender === 'user' ? 'user-bubble' : 'bot-bubble'}`}>
+                          <div className="customize-ai-bubble-text">
+                            {msg.text.split('\n').map((line, idx) => (
+                              <p key={idx} style={{ margin: '0 0 4px 0' }}>
+                                {line.startsWith('• ') ? (
+                                  <span style={{ display: 'inline-block', marginLeft: '6px' }}>{line}</span>
+                                ) : line}
+                              </p>
+                            ))}
+                          </div>
+
+                          {/* Re-play voice speech button for bot message */}
+                          {msg.sender === 'bot' && (
+                            <div className="customize-bubble-actions">
+                              <button 
+                                onClick={() => speakText(msg.text)} 
+                                className="customize-speech-replay-btn"
+                                title="Listen to this response out loud"
+                              >
+                                <Volume2 size={12} />
+                                <span>Speak</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Interactive Action Card */}
+                          {msg.actionData && (
+                            <div className="customize-ai-action-card">
+                              {msg.actionData.badge && (
+                                <div className="customize-ai-action-badge">
+                                  <CheckCircle2 size={13} />
+                                  <span>{msg.actionData.badge}</span>
+                                </div>
+                              )}
+
+                              {msg.actionData.metrics && (
+                                <div className="customize-ai-metrics-grid">
+                                  {msg.actionData.metrics.map((m, i) => (
+                                    <div key={i} className="customize-ai-metric-item">
+                                      <span className="metric-label">{m.label}</span>
+                                      <span className="metric-value">{m.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {msg.actionData.items && (
+                                <div className="customize-ai-items-list">
+                                  {msg.actionData.items.map(it => (
+                                    <div key={it.id} className="customize-ai-item-row">
+                                      <span>{it.name}</span>
+                                      <span className="stock-alert">{it.stockQuantity} left</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {msg.actionData.cta && (
+                                <button 
+                                  className="customize-ai-cta-btn"
+                                  onClick={() => {
+                                    setIsOpen(false);
+                                    navigate(msg.actionData.cta.path);
+                                  }}
+                                >
+                                  <span>{msg.actionData.cta.label}</span>
+                                  <ArrowRight size={13} />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Quick Suggestion Chips */}
+                        {msg.quickActions && (
+                          <div className="customize-ai-chips-wrap">
+                            {msg.quickActions.map((qa, i) => (
+                              <button 
+                                key={i} 
+                                className="customize-ai-chip"
+                                onClick={() => handleUserQuery(qa.query)}
+                              >
+                                {qa.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {isTyping && (
-                <div className="customize-ai-message-row bot">
-                  <div className="customize-ai-bot-icon">
-                    <Bot size={14} />
-                  </div>
-                  <div className="customize-ai-bubble bot-bubble">
-                    <div className="customize-ai-typing-indicator">
-                      <span></span><span></span><span></span>
                     </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+                  ))}
 
-            {/* Input Bar */}
-            <div className="customize-ai-input-bar">
-              <input 
-                type="text"
-                placeholder="Ask Customize AI or automate an action..."
-                value={inputMessage}
-                onChange={e => setInputMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="customize-ai-input"
-                autoFocus
-              />
-              <button 
-                type="button" 
-                onClick={() => handleUserQuery()}
-                disabled={!inputMessage.trim() || isTyping}
-                className="customize-ai-send-btn"
-                title="Send instruction"
-              >
-                <Send size={15} />
-              </button>
-            </div>
+                  {isTyping && (
+                    <div className="customize-ai-message-row bot">
+                      <div className="customize-ai-bot-icon">
+                        <Bot size={14} />
+                      </div>
+                      <div className="customize-ai-bubble bot-bubble">
+                        <div className="customize-ai-typing-indicator">
+                          <span></span><span></span><span></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Voice Listening Banner when user is speaking */}
+                {isListening && (
+                  <div className="customize-live-listening-bar">
+                    <div className="listening-pulse-dot" />
+                    <span className="listening-text">
+                      {interimTranscript ? `"${interimTranscript}"` : 'Listening... speak your command now'}
+                    </span>
+                    <button onClick={toggleVoiceInput} className="listening-stop-btn">Stop</button>
+                  </div>
+                )}
+
+                {/* Input Bar with Real-time Voice Button */}
+                <div className="customize-ai-input-bar">
+                  <button 
+                    type="button" 
+                    onClick={toggleVoiceInput}
+                    className={`customize-ai-mic-btn ${isListening ? 'active' : ''}`}
+                    title={isListening ? 'Stop listening' : 'Speak command with voice'}
+                  >
+                    <Mic size={16} />
+                  </button>
+
+                  <input 
+                    type="text"
+                    placeholder="Ask or speak to operate app live..."
+                    value={inputMessage}
+                    onChange={e => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="customize-ai-input"
+                    autoFocus
+                  />
+
+                  <button 
+                    type="button" 
+                    onClick={() => handleUserQuery()}
+                    disabled={!inputMessage.trim() || isTyping}
+                    className="customize-ai-send-btn"
+                    title="Send instruction"
+                  >
+                    <Send size={15} />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

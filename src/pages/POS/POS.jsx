@@ -378,6 +378,83 @@ const POS = () => {
     showToast(`Customer added: ${newCust.name}`);
   };
 
+  // Live AI Assistant POS Automation Engine (Voice commands & Omni-Search)
+  const executeAiPosAction = (actionDetail) => {
+    if (!actionDetail) return;
+    const { action, product, productName, quantity, discount, clear, hold, paymentMethod: payMethod } = actionDetail;
+
+    if (clear) {
+      setCart([]);
+      setDiscountValue(0);
+      showToast('POS cart cleared by Customize AI');
+      return;
+    }
+
+    if (discount !== undefined && discount !== null) {
+      setDiscountValue(Number(discount) || 0);
+      showToast(`Discount ₹${discount} applied by Customize AI`);
+      return;
+    }
+
+    if (hold) {
+      handleHoldOrder();
+      return;
+    }
+
+    if (payMethod) {
+      setPaymentMethod(payMethod);
+      showToast(`Payment method set to ${payMethod}`);
+      return;
+    }
+
+    if (action === 'add_item' || (!action && (product || productName))) {
+      let target = product;
+      if (!target && productName) {
+        const q = productName.toLowerCase().trim();
+        target = products.find(p => 
+          (p.name && p.name.toLowerCase() === q) || 
+          (p.name && p.name.toLowerCase().includes(q))
+        );
+      }
+
+      if (target) {
+        const qty = Number(quantity) || 1;
+        for (let i = 0; i < qty; i++) {
+          addToCart(target);
+        }
+        showToast(`AI added ${qty}x ${target.name} to cart`);
+      } else {
+        showToast(`Product not found in catalog`);
+      }
+    }
+  };
+
+  useEffect(() => {
+    // 1. Process any pending AI action queued during navigation
+    try {
+      const pendingRaw = sessionStorage.getItem('pending_ai_pos_action');
+      if (pendingRaw) {
+        sessionStorage.removeItem('pending_ai_pos_action');
+        const pending = JSON.parse(pendingRaw);
+        if (pending && Date.now() - (pending.timestamp || 0) < 10000) {
+          executeAiPosAction(pending);
+        }
+      }
+    } catch (e) {
+      console.error('Pending AI POS error:', e);
+    }
+
+    // 2. Real-time event listener for live voice assistant
+    const handleAiEvent = (e) => {
+      if (e.detail) {
+        executeAiPosAction(e.detail);
+      }
+    };
+
+    window.addEventListener('karobaar_ai_pos_action', handleAiEvent);
+    return () => window.removeEventListener('karobaar_ai_pos_action', handleAiEvent);
+  }, [products]);
+
   // Checkout Handler
   const handleCheckout = async () => {
     if (cart.length === 0 || !currentUser?.activeBusinessId) return;

@@ -1,6 +1,6 @@
 /* ==========================================================================
-   CUSTOMIZE AI CHATBOT & AUTOMATION ASSISTANT
-   Strict Black & White Palette, Responsive Drawer, Smooth Transitions
+   CUSTOMIZE REALTIME VOICE AI ASSISTANT & LIVE APP AUTOMATOR
+   Strict Black & White Palette, ChatGPT Voice Orb Mode, Speech Visualizer
    ========================================================================== */
 
 /* Floating Launcher Trigger */
@@ -32,6 +32,19 @@
   opacity: 0.95;
 }
 
+.customize-trigger-orb {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--bg-card);
+  animation: orbGlow 1.8s infinite ease-in-out;
+}
+
+@keyframes orbGlow {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.5); opacity: 1; }
+}
+
 .customize-sparkle-icon {
   animation: customizePulse 2s infinite ease-in-out;
 }
@@ -55,8 +68,8 @@
 .customize-ai-drawer-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
   z-index: 1200;
   display: flex;
   justify-content: flex-end;
@@ -84,6 +97,11 @@
   flex-direction: column;
   overflow: hidden;
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.customize-ai-panel.voice-orb-active {
+  height: 520px;
 }
 
 @keyframes slideUp {
@@ -123,6 +141,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.customize-ai-avatar.speaking-pulse {
+  animation: avatarVoiceWave 1.2s infinite ease-in-out;
+}
+
+@keyframes avatarVoiceWave {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,0,0,0.2); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(0,0,0,0.1); }
 }
 
 .customize-ai-title-row {
@@ -140,7 +168,7 @@
 
 .customize-ai-badge {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   padding: 1px 6px;
   border-radius: 4px;
   background-color: var(--bg-body);
@@ -154,6 +182,22 @@
   color: var(--text-secondary);
   margin: 2px 0 0 0;
   font-weight: 500;
+}
+
+.status-listening {
+  font-weight: 700;
+  color: var(--text-main);
+  animation: pulseBlink 1.2s infinite;
+}
+
+.status-speaking {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+@keyframes pulseBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 .customize-ai-header-actions {
@@ -176,13 +220,198 @@
   transition: all 0.15s ease;
 }
 
-.customize-ai-icon-btn:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-main);
+.customize-ai-icon-btn:hover,
+.customize-ai-icon-btn.active {
+  background-color: var(--text-main);
+  color: var(--bg-card);
   border-color: var(--text-main);
 }
 
-/* Messages Feed */
+.customize-ai-icon-btn.muted {
+  opacity: 0.5;
+}
+
+/* ==========================================================================
+   VIEW 1: ChatGPT Realtime Voice Orb Mode
+   ========================================================================== */
+.customize-voice-orb-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px 24px;
+  background-color: var(--bg-body);
+  text-align: center;
+}
+
+.voice-orb-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 220px;
+  width: 100%;
+}
+
+.voice-main-orb {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orb-core {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background-color: var(--text-main);
+  z-index: 5;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.orb-wave {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-main);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Listening Mode Ripple Animation */
+.voice-main-orb.listening .orb-core {
+  transform: scale(1.1);
+  animation: orbListenThrob 1.2s infinite ease-in-out;
+}
+
+.voice-main-orb.listening .wave-1 {
+  width: 130px;
+  height: 130px;
+  animation: rippleWave 1.8s infinite ease-out;
+}
+
+.voice-main-orb.listening .wave-2 {
+  width: 160px;
+  height: 160px;
+  animation: rippleWave 1.8s infinite ease-out 0.6s;
+}
+
+.voice-main-orb.listening .wave-3 {
+  width: 190px;
+  height: 190px;
+  animation: rippleWave 1.8s infinite ease-out 1.2s;
+}
+
+/* Speaking Mode Pulse Animation */
+.voice-main-orb.speaking .orb-core {
+  animation: orbSpeakWave 0.8s infinite alternate ease-in-out;
+}
+
+.voice-main-orb.speaking .wave-1 {
+  width: 140px;
+  height: 140px;
+  animation: speakRipple 1.4s infinite ease-out;
+}
+
+@keyframes orbListenThrob {
+  0%, 100% { transform: scale(1.05); }
+  50% { transform: scale(1.18); }
+}
+
+@keyframes orbSpeakWave {
+  0% { transform: scale(0.95); }
+  100% { transform: scale(1.22); }
+}
+
+@keyframes rippleWave {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+@keyframes speakRipple {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+.voice-status-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 320px;
+}
+
+.voice-status-headline {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.voice-interim-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+  min-height: 36px;
+}
+
+.voice-controls-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.voice-mic-main-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.voice-mic-main-btn:hover {
+  transform: scale(1.06);
+}
+
+.voice-mic-main-btn.listening {
+  animation: micActiveGlow 1.2s infinite;
+}
+
+@keyframes micActiveGlow {
+  0%, 100% { transform: scale(1.04); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.3); }
+  50% { transform: scale(1.12); box-shadow: 0 0 0 10px rgba(0, 0, 0, 0.15); }
+}
+
+.voice-switch-mode-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.voice-switch-mode-btn:hover {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+}
+
+/* ==========================================================================
+   VIEW 2: Chat Feed Mode
+   ========================================================================== */
 .customize-ai-messages {
   flex: 1;
   overflow-y: auto;
@@ -248,6 +477,33 @@
 
 .customize-ai-bubble-text p:last-child {
   margin-bottom: 0 !important;
+}
+
+/* Speech replay action on message */
+.customize-bubble-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.customize-speech-replay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.customize-speech-replay-btn:hover {
+  background-color: var(--bg-body);
+  color: var(--text-main);
 }
 
 /* Action Cards inside messages */
@@ -371,6 +627,45 @@
   transform: translateY(-1px);
 }
 
+/* Live Listening Banner */
+.customize-live-listening-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  font-size: 12px;
+  font-weight: 700;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.listening-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--bg-card);
+  animation: pulseBlink 1s infinite;
+}
+
+.listening-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.listening-stop-btn {
+  background: transparent;
+  border: 1px solid var(--bg-card);
+  color: var(--bg-card);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 /* Typing Indicator */
 .customize-ai-typing-indicator {
   display: flex;
@@ -395,7 +690,7 @@
   40% { transform: scale(1); opacity: 1; }
 }
 
-/* Input Bar */
+/* Input Bar with Microphone */
 .customize-ai-input-bar {
   padding: 12px 16px;
   border-top: 1px solid var(--border-color);
@@ -404,6 +699,37 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.customize-ai-mic-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.customize-ai-mic-btn:hover {
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  border-color: var(--text-main);
+}
+
+.customize-ai-mic-btn.active {
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  animation: micPulse 1.2s infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.15); }
 }
 
 .customize-ai-input {
