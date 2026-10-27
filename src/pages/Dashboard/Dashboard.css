@@ -1,642 +1,679 @@
 /* ==========================================================================
-   Karobaar Studio Executive Dashboard (Distinct Monochrome Edition)
-   Strictly Black & White — Completely Different from Normal Dashboard
+   Karobaar Studio Legacy Executive Mode
+   Strictly Black & White (Two Colors Only)
+   Fit-to-Page Responsive Layout — 100% Unique from Premium Dashboard
    ========================================================================== */
 
-.legacy-dashboard-container {
+.legacy-root {
   width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0.5rem 0 2.5rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 0 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   font-family: inherit;
+  color: var(--text-main, #09090b);
+  overflow-x: hidden;
 }
 
-/* 1. Executive Header Strip */
-.legacy-header-strip {
+/* 1. Header Strip */
+.legacy-header-bar {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color, #e4e4e7);
+  gap: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1.5px solid #09090b;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
-  .legacy-header-strip {
+  .legacy-header-bar {
     flex-direction: row;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
   }
 }
 
-.legacy-header-title h1 {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--text-main, #09090b);
-  letter-spacing: -0.03em;
-  margin: 0;
-  line-height: 1.2;
+[data-theme="dark"] .legacy-header-bar {
+  border-bottom-color: #ffffff;
 }
 
-.legacy-header-title p {
-  font-size: 0.875rem;
-  color: var(--text-secondary, #71717a);
-  margin-top: 0.25rem;
+.legacy-brand-group h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0;
+  line-height: 1.15;
+  color: #09090b;
+}
+
+[data-theme="dark"] .legacy-brand-group h1 {
+  color: #ffffff;
+}
+
+.legacy-brand-group p {
+  font-size: 0.825rem;
+  color: #71717a;
+  margin-top: 3px;
   font-weight: 500;
 }
 
-.legacy-header-meta {
+[data-theme="dark"] .legacy-brand-group p {
+  color: #a1a1aa;
+}
+
+.legacy-header-controls {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   flex-wrap: wrap;
 }
 
-.legacy-status-badge {
+/* Mode Switcher Button (Header) */
+.legacy-mode-switch-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0.4rem 0.85rem;
-  background-color: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #e4e4e7);
+  padding: 0.45rem 0.95rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 0.775rem;
   font-weight: 700;
-  color: var(--text-main, #09090b);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.legacy-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--text-main, #09090b);
-}
-
-.legacy-date-badge {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary, #71717a);
-}
-
-/* ==========================================================================
-   2. Completely Different Buttons: The Executive Action Dock
-   ========================================================================== */
-.legacy-actions-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.legacy-actions-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-secondary, #71717a);
-  margin: 0;
-}
-
-.legacy-actions-deck {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 0.85rem;
-}
-
-@media (min-width: 640px) {
-  .legacy-actions-deck {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .legacy-actions-deck {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-/* Distinct Action Tiles */
-.legacy-action-tile {
-  background-color: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #e4e4e7);
-  border-radius: 14px;
-  padding: 1rem 1.15rem;
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-  text-align: left;
-  user-select: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.legacy-action-tile:hover {
-  transform: translateY(-2px);
-  border-color: #09090b;
-  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.1);
-}
-
-.legacy-action-tile:active {
-  transform: translateY(0);
-}
-
-/* Primary Action Tile (Solid Black Hero) */
-.legacy-action-tile.primary {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   background-color: #09090b;
-  border-color: #09090b;
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  border: 1.5px solid #09090b;
+  user-select: none;
 }
 
-.legacy-action-tile.primary:hover {
-  background-color: #1e1e24;
-  border-color: #1e1e24;
-  box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.3);
-}
-
-.legacy-action-tile-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background-color: var(--bg-hover, #f4f4f5);
-  border: 1px solid var(--border-color, #e4e4e7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.legacy-mode-switch-btn:hover {
+  background-color: #ffffff;
   color: #09090b;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
+  transform: translateY(-1px);
 }
 
-.legacy-action-tile.primary .legacy-action-tile-icon {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
-}
-
-.legacy-action-tile:hover .legacy-action-tile-icon {
-  transform: scale(1.05);
-}
-
-.legacy-action-tile-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.legacy-action-tile-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-main, #09090b);
-  letter-spacing: -0.01em;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.legacy-action-tile.primary .legacy-action-tile-title {
-  color: #ffffff;
-}
-
-.legacy-action-tile-subtitle {
-  font-size: 0.75rem;
-  color: var(--text-secondary, #71717a);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.legacy-action-tile.primary .legacy-action-tile-subtitle {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.legacy-action-tile-badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 5px;
-  background-color: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+[data-theme="dark"] .legacy-mode-switch-btn {
+  background-color: #ffffff;
   color: #09090b;
-  letter-spacing: 0.02em;
+  border-color: #ffffff;
 }
 
-.legacy-action-tile.primary .legacy-action-tile-badge {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+[data-theme="dark"] .legacy-mode-switch-btn:hover {
+  background-color: #09090b;
   color: #ffffff;
 }
 
-/* ==========================================================================
-   3. Distinct Architectural Metric Cards (KPIs)
-   ========================================================================== */
-.legacy-metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 1rem;
-}
-
-@media (min-width: 640px) {
-  .legacy-metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .legacy-metrics-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-.legacy-metric-card {
-  background-color: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #e4e4e7);
-  border-radius: 16px;
-  padding: 1.35rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-  position: relative;
-}
-
-.legacy-metric-card:hover {
-  transform: translateY(-2px);
-  border-color: #09090b;
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
-}
-
-.legacy-metric-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
-}
-
-.legacy-metric-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary, #71717a);
-  letter-spacing: 0.01em;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.legacy-metric-icon-box {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background-color: var(--bg-hover, #f4f4f5);
-  border: 1px solid var(--border-color, #e4e4e7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-main, #09090b);
-}
-
-.legacy-metric-value {
-  font-size: 1.85rem;
-  font-weight: 800;
-  color: var(--text-main, #09090b);
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  margin: 0.25rem 0 0.75rem;
-}
-
-.legacy-metric-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  color: var(--text-secondary, #71717a);
-  font-weight: 500;
-  padding-top: 0.65rem;
-  border-top: 1px solid var(--border-color, #e4e4e7);
-}
-
-.legacy-metric-pill {
+.legacy-status-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: 5px;
+  padding: 0.4rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.7rem;
+  font-size: 0.725rem;
   font-weight: 700;
-  background-color: var(--bg-hover, #f4f4f5);
-  border: 1px solid var(--border-color, #e4e4e7);
-  color: var(--text-main, #09090b);
-}
-
-.legacy-metric-pill.alert {
-  background-color: #09090b;
-  color: #ffffff;
-  border-color: #09090b;
-}
-
-/* ==========================================================================
-   4. Executive Workspace Grid (Chart & Ledger)
-   ========================================================================== */
-.legacy-workspace-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-}
-
-@media (min-width: 1024px) {
-  .legacy-workspace-grid {
-    grid-template-columns: 2fr 1fr;
-  }
-}
-
-.legacy-card {
-  background-color: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #e4e4e7);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-  display: flex;
-  flex-direction: column;
-}
-
-.legacy-card-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-color, #e4e4e7);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.legacy-card-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-main, #09090b);
-  letter-spacing: -0.01em;
-  margin: 0;
-}
-
-.legacy-card-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary, #71717a);
-  background-color: var(--bg-hover, #f4f4f5);
-  border: 1px solid var(--border-color, #e4e4e7);
-  padding: 3px 10px;
-  border-radius: 9999px;
-}
-
-.legacy-card-body {
-  padding: 1.5rem;
-  flex: 1;
-}
-
-/* Recent Activity List */
-.legacy-ledger-list {
-  display: flex;
-  flex-direction: column;
-  divide-y: 1px solid var(--border-color, #e4e4e7);
-}
-
-.legacy-ledger-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 1.5rem;
-  border-bottom: 1px solid var(--border-color, #e4e4e7);
-  transition: background-color 0.15s ease;
-}
-
-.legacy-ledger-item:last-child {
-  border-bottom: none;
-}
-
-.legacy-ledger-item:hover {
-  background-color: var(--bg-hover, #f4f4f5);
-}
-
-.legacy-ledger-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.legacy-ledger-id {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text-main, #09090b);
-}
-
-.legacy-ledger-time {
-  font-size: 0.75rem;
-  color: var(--text-secondary, #71717a);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.legacy-ledger-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-}
-
-.legacy-ledger-amount {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--text-main, #09090b);
-}
-
-.legacy-ledger-pill {
-  font-size: 0.675rem;
-  font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 2px 7px;
-  border-radius: 5px;
-  background-color: #09090b;
-  color: #ffffff;
-}
-
-.legacy-ledger-empty {
-  padding: 3rem 1.5rem;
-  text-align: center;
-  color: var(--text-secondary, #71717a);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-/* ==========================================================================
-   5. Dark Theme Polish (Strictly Monochrome Black & White Harmony)
-   ========================================================================== */
-[data-theme="dark"] .legacy-header-strip {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .legacy-header-title h1 {
-  color: #ffffff;
-}
-
-[data-theme="dark"] .legacy-header-title p {
-  color: #a1a1aa;
-}
-
-[data-theme="dark"] .legacy-status-badge {
-  background-color: #141416;
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
-
-[data-theme="dark"] .legacy-status-dot {
-  background-color: #ffffff;
-}
-
-[data-theme="dark"] .legacy-action-tile {
-  background-color: #141416;
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .legacy-action-tile:hover {
-  border-color: #ffffff;
-  background-color: #1a1b1f;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-[data-theme="dark"] .legacy-action-tile.primary {
-  background-color: #ffffff;
-  border-color: #ffffff;
-  color: #09090b;
-  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
-}
-
-[data-theme="dark"] .legacy-action-tile.primary:hover {
+  text-transform: uppercase;
   background-color: #f4f4f5;
-  border-color: #f4f4f5;
-}
-
-[data-theme="dark"] .legacy-action-tile.primary .legacy-action-tile-title {
+  border: 1px solid #e4e4e7;
   color: #09090b;
 }
 
-[data-theme="dark"] .legacy-action-tile.primary .legacy-action-tile-subtitle {
-  color: #52525b;
-}
-
-[data-theme="dark"] .legacy-action-tile.primary .legacy-action-tile-icon {
-  background-color: #09090b;
-  border-color: #09090b;
-  color: #ffffff;
-}
-
-[data-theme="dark"] .legacy-action-tile.primary .legacy-action-tile-badge {
-  background-color: #09090b;
-  border-color: #09090b;
-  color: #ffffff;
-}
-
-[data-theme="dark"] .legacy-action-tile-icon {
-  background-color: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
-
-[data-theme="dark"] .legacy-action-tile-title {
-  color: #ffffff;
-}
-
-[data-theme="dark"] .legacy-action-tile-subtitle {
-  color: #a1a1aa;
-}
-
-[data-theme="dark"] .legacy-action-tile-badge {
-  background-color: rgba(255, 255, 255, 0.08);
+[data-theme="dark"] .legacy-status-tag {
+  background-color: #18191e;
   border-color: rgba(255, 255, 255, 0.15);
   color: #ffffff;
 }
 
-[data-theme="dark"] .legacy-metric-card {
+.legacy-status-tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #09090b;
+}
+
+[data-theme="dark"] .legacy-status-tag-dot {
+  background-color: #ffffff;
+}
+
+/* ==========================================================================
+   2. Fit-to-Page Action Buttons (Guaranteed 100% Fit, No Overflow)
+   ========================================================================== */
+.legacy-actions-strip {
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 900px) {
+  .legacy-actions-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Fit-to-page Buttons: Compact, Crisp, Strictly Black and White */
+.legacy-btn {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 42px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+/* Primary Button in Light Theme: Solid Black */
+.legacy-btn.primary {
+  background-color: #09090b;
+  color: #ffffff;
+  border: 1.5px solid #09090b;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.legacy-btn.primary:hover {
+  background-color: #27272a;
+  border-color: #27272a;
+  transform: translateY(-1px);
+}
+
+/* Secondary Button in Light Theme: White with Black Border */
+.legacy-btn.secondary {
+  background-color: #ffffff;
+  color: #09090b;
+  border: 1.5px solid #09090b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.legacy-btn.secondary:hover {
+  background-color: #09090b;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* In Dark Theme: Pure White Buttons for High Contrast */
+[data-theme="dark"] .legacy-btn.primary {
+  background-color: #ffffff;
+  color: #09090b;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .legacy-btn.primary:hover {
+  background-color: #e4e4e7;
+  border-color: #e4e4e7;
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .legacy-btn.secondary {
   background-color: #141416;
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .legacy-metric-card:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-[data-theme="dark"] .legacy-metric-icon-box {
-  background-color: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
   color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
 }
 
-[data-theme="dark"] .legacy-metric-value {
+[data-theme="dark"] .legacy-btn.secondary:hover {
+  background-color: #ffffff;
+  color: #09090b;
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.legacy-btn-kbd {
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   color: #ffffff;
+  font-weight: 700;
+  line-height: 1;
 }
 
-[data-theme="dark"] .legacy-metric-footer {
-  border-top-color: rgba(255, 255, 255, 0.08);
+[data-theme="dark"] .legacy-btn.primary .legacy-btn-kbd {
+  background: rgba(0, 0, 0, 0.15);
+  border-color: rgba(0, 0, 0, 0.25);
+  color: #09090b;
+}
+
+/* ==========================================================================
+   3. Feature Mode Selector Tabs (Modular Features in Legacy Mode)
+   ========================================================================== */
+.legacy-feature-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-color, #e4e4e7);
+  padding-bottom: 0.5rem;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.legacy-feature-tab {
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.825rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  color: #71717a;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.legacy-feature-tab:hover {
+  background-color: #f4f4f5;
+  color: #09090b;
+}
+
+.legacy-feature-tab.active {
+  background-color: #09090b;
+  color: #ffffff;
+  border-color: #09090b;
+}
+
+[data-theme="dark"] .legacy-feature-tab {
   color: #a1a1aa;
 }
 
-[data-theme="dark"] .legacy-metric-pill {
-  background-color: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #f4f4f5;
+[data-theme="dark"] .legacy-feature-tab:hover {
+  background-color: #1e1e24;
+  color: #ffffff;
 }
 
-[data-theme="dark"] .legacy-metric-pill.alert {
+[data-theme="dark"] .legacy-feature-tab.active {
   background-color: #ffffff;
   color: #09090b;
   border-color: #ffffff;
 }
 
-[data-theme="dark"] .legacy-card {
+/* ==========================================================================
+   4. Fit-to-Page Compact Metric Grid (Strictly Black & White)
+   ========================================================================== */
+.legacy-grid-4 {
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 900px) {
+  .legacy-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.legacy-kpi-card {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  background-color: #ffffff;
+  border: 1.5px solid #09090b;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.legacy-kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .legacy-kpi-card {
   background-color: #141416;
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
-[data-theme="dark"] .legacy-card-header {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+[data-theme="dark"] .legacy-kpi-card:hover {
+  border-color: #ffffff;
 }
 
-[data-theme="dark"] .legacy-card-title {
-  color: #ffffff;
+.legacy-kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
 
-[data-theme="dark"] .legacy-card-badge {
-  background-color: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
+.legacy-kpi-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #71717a;
+  margin: 0;
+}
+
+[data-theme="dark"] .legacy-kpi-label {
   color: #a1a1aa;
 }
 
-[data-theme="dark"] .legacy-ledger-item {
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+.legacy-kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background-color: #09090b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-[data-theme="dark"] .legacy-ledger-item:hover {
+[data-theme="dark"] .legacy-kpi-icon {
+  background-color: #ffffff;
+  color: #09090b;
+}
+
+.legacy-kpi-val {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #09090b;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0.15rem 0;
+}
+
+[data-theme="dark"] .legacy-kpi-val {
+  color: #ffffff;
+}
+
+.legacy-kpi-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.725rem;
+  font-weight: 600;
+  color: #71717a;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid #e4e4e7;
+}
+
+[data-theme="dark"] .legacy-kpi-bottom {
+  border-top-color: rgba(255, 255, 255, 0.1);
+  color: #a1a1aa;
+}
+
+.legacy-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: #09090b;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .legacy-tag {
+  background-color: #ffffff;
+  color: #09090b;
+}
+
+/* ==========================================================================
+   5. Modular Workspace (Chart & Sales Ledger Stream)
+   ========================================================================== */
+.legacy-split-grid {
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .legacy-split-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.legacy-box {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  border: 1.5px solid #09090b;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme="dark"] .legacy-box {
+  background-color: #141416;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.legacy-box-header {
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1.5px solid #09090b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+[data-theme="dark"] .legacy-box-header {
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.legacy-box-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #09090b;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="dark"] .legacy-box-title {
+  color: #ffffff;
+}
+
+.legacy-box-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #09090b;
+  background-color: #f4f4f5;
+  border: 1px solid #09090b;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+[data-theme="dark"] .legacy-box-badge {
+  background-color: #18191e;
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+.legacy-box-body {
+  padding: 1.15rem;
+  flex: 1;
+  position: relative;
+}
+
+/* Transaction Rows */
+.legacy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.15rem;
+  border-bottom: 1px solid #e4e4e7;
+  transition: background-color 0.15s ease;
+}
+
+.legacy-row:last-child {
+  border-bottom: none;
+}
+
+.legacy-row:hover {
+  background-color: #f4f4f5;
+}
+
+[data-theme="dark"] .legacy-row {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .legacy-row:hover {
   background-color: rgba(255, 255, 255, 0.04);
 }
 
-[data-theme="dark"] .legacy-ledger-id {
+.legacy-row-id {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #09090b;
+}
+
+[data-theme="dark"] .legacy-row-id {
   color: #ffffff;
 }
 
-[data-theme="dark"] .legacy-ledger-amount {
+.legacy-row-date {
+  font-size: 0.725rem;
+  color: #71717a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+[data-theme="dark"] .legacy-row-date {
+  color: #a1a1aa;
+}
+
+.legacy-row-amt {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #09090b;
+}
+
+[data-theme="dark"] .legacy-row-amt {
   color: #ffffff;
 }
 
-[data-theme="dark"] .legacy-ledger-pill {
+.legacy-row-status {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: #09090b;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .legacy-row-status {
   background-color: #ffffff;
   color: #09090b;
+}
+
+/* Quick POS Register Glance (Feature Tab 2) */
+.legacy-pos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.legacy-pos-item {
+  background: #ffffff;
+  border: 1px solid #09090b;
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.legacy-pos-item:hover {
+  background: #09090b;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.legacy-pos-item:hover .legacy-pos-item-price {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .legacy-pos-item {
+  background: #18191e;
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .legacy-pos-item:hover {
+  background: #ffffff;
+  color: #09090b;
+}
+
+[data-theme="dark"] .legacy-pos-item:hover .legacy-pos-item-price {
+  color: #09090b;
+}
+
+.legacy-pos-item-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legacy-pos-item-price {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #09090b;
+}
+
+[data-theme="dark"] .legacy-pos-item-price {
+  color: #ffffff;
+}
+
+/* Inventory Guard (Feature Tab 3) */
+.legacy-stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.825rem;
+}
+
+.legacy-stock-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #71717a;
+  border-bottom: 1.5px solid #09090b;
+}
+
+[data-theme="dark"] .legacy-stock-table th {
+  border-bottom-color: #ffffff;
+  color: #a1a1aa;
+}
+
+.legacy-stock-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #e4e4e7;
+  color: #09090b;
+}
+
+[data-theme="dark"] .legacy-stock-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }

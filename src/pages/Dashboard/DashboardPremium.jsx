@@ -22,7 +22,7 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
-const Dashboard = () => {
+const Dashboard = ({ onSwitchMode }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { userRole, currentUser, currentBusiness } = useAppContext();
@@ -297,6 +297,15 @@ const Dashboard = () => {
             >
               <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
               <span>{isRefreshing ? 'Syncing...' : 'Refresh'}</span>
+            </button>
+
+            <button 
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#09090b] text-[#ffffff] hover:bg-zinc-800 transition-all duration-200 text-xs font-bold"
+              onClick={() => onSwitchMode && onSwitchMode('legacy')}
+              title="Switch to Legacy Mode"
+            >
+              <Sparkles size={12} />
+              <span>Legacy Mode ⚡</span>
             </button>
           </div>
         </div>

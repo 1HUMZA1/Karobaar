@@ -8,15 +8,16 @@ import {
   UserPlus, 
   Receipt, 
   Clock, 
-  ArrowUpRight, 
   DollarSign, 
   Package, 
   Users, 
   CheckSquare, 
   CalendarOff,
+  Sparkles,
+  ArrowRight,
+  TrendingUp,
   AlertCircle
 } from 'lucide-react';
-import { GettingStartedGuide } from '../../components/Dashboard/GettingStartedGuide';
 import './Dashboard.css';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler
@@ -24,8 +25,9 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-const DashboardLegacy = () => {
+const DashboardLegacy = ({ onSwitchMode }) => {
   const { userRole, currentUser, currentBusiness, theme } = useAppContext();
+  const [activeFeatureTab, setActiveFeatureTab] = useState('ledger'); // 'ledger' | 'pos' | 'stock'
   
   const [stats, setStats] = useState({
     sales: 0,
@@ -33,6 +35,8 @@ const DashboardLegacy = () => {
     customers: 0,
     lowStock: 0,
     recentSales: [],
+    productsList: [],
+    lowStockList: [],
     pendingTasks: 3,
     leaveBalance: 12
   });
@@ -65,19 +69,21 @@ const DashboardLegacy = () => {
           }
         });
 
-        const lowStock = products.filter(p => (p.stockQuantity || 0) <= (p.minimumStock || 5)).length;
+        const lowStockItems = products.filter(p => (p.stockQuantity || 0) <= (p.minimumStock || 5));
 
         const recentSales = [...sales]
           .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, 6);
+          .slice(0, 7);
 
         setStats(prev => ({
           ...prev,
           sales: todaySales,
           orders: todayOrders,
           customers: customers.length,
-          lowStock,
-          recentSales
+          lowStock: lowStockItems.length,
+          recentSales,
+          productsList: products.slice(0, 8),
+          lowStockList: lowStockItems.slice(0, 6)
         }));
 
         // Revenue Chart Data (Last 7 days)
@@ -86,7 +92,7 @@ const DashboardLegacy = () => {
         
         for (let i = 6; i >= 0; i--) {
           const d = startOfDay(subDays(today, i));
-          labels.push(format(d, 'MMM dd'));
+          labels.push(format(d, 'dd MMM'));
           const dayTotal = sales
             .filter(s => startOfDay(new Date(s.date)).getTime() === d.getTime())
             .reduce((sum, s) => sum + (s.total || 0), 0);
@@ -98,18 +104,18 @@ const DashboardLegacy = () => {
           labels,
           datasets: [
             {
-              label: 'Daily Revenue',
+              label: 'Gross Revenue',
               data,
               borderColor: isDark ? '#ffffff' : '#09090b',
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(9, 9, 11, 0.04)',
-              borderWidth: 2.5,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(9, 9, 11, 0.04)',
+              borderWidth: 2,
               pointBackgroundColor: isDark ? '#ffffff' : '#09090b',
               pointBorderColor: isDark ? '#09090b' : '#ffffff',
               pointBorderWidth: 2,
               pointRadius: 4,
               pointHoverRadius: 6,
               fill: true,
-              tension: 0.35,
+              tension: 0.3,
             }
           ]
         });
@@ -130,11 +136,11 @@ const DashboardLegacy = () => {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: isDark ? '#1e1e24' : '#09090b',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        padding: 10,
-        cornerRadius: 8,
+        backgroundColor: isDark ? '#ffffff' : '#09090b',
+        titleColor: isDark ? '#09090b' : '#ffffff',
+        bodyColor: isDark ? '#09090b' : '#ffffff',
+        padding: 8,
+        cornerRadius: 6,
         displayColors: false,
         callbacks: {
           label: (context) => `Revenue: ${currencySymbol}${context.parsed.y.toFixed(2)}`
@@ -144,7 +150,7 @@ const DashboardLegacy = () => {
     scales: {
       y: {
         beginAtZero: true,
-        grid: { color: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)' },
+        grid: { color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' },
         ticks: { 
           color: isDark ? '#a1a1aa' : '#71717a',
           callback: (value) => `${currencySymbol}${value}` 
@@ -161,67 +167,75 @@ const DashboardLegacy = () => {
 
   if (isStaffRole) {
     return (
-      <div className="legacy-dashboard-container">
-        <div className="legacy-header-strip">
-          <div className="legacy-header-title">
+      <div className="legacy-root">
+        <div className="legacy-header-bar">
+          <div className="legacy-brand-group">
             <h1>Good Morning, {currentUser?.name?.split(' ')[0] || userRole}</h1>
-            <p>{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
+            <p>{format(new Date(), 'EEEE, MMMM do, yyyy')} • Shift Operations</p>
           </div>
-          <div className="legacy-header-meta">
-            <span className="legacy-status-badge">
-              <span className="legacy-status-dot"></span>
+          <div className="legacy-header-controls">
+            <span className="legacy-status-tag">
+              <span className="legacy-status-tag-dot"></span>
               Shift Active
             </span>
+            <button 
+              onClick={() => onSwitchMode && onSwitchMode('premium')} 
+              className="legacy-mode-switch-btn"
+              title="Switch to Premium Mode"
+            >
+              <Sparkles size={13} />
+              <span>Switch to Premium 💎</span>
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-4">
-          <div className="legacy-card p-6 flex flex-col items-center justify-center text-center bg-[#09090b] text-white border-[#09090b]">
-            <Clock size={44} className="mb-3 opacity-90" />
-            <h3 className="text-xl font-bold mb-1">Today's Attendance</h3>
-            <p className="text-zinc-400 mb-6 text-sm">You have not clocked in yet today.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-2">
+          <div className="legacy-box p-6 flex flex-col items-center justify-center text-center bg-[#09090b] text-white border-[#09090b]">
+            <Clock size={40} className="mb-2 opacity-90" />
+            <h3 className="text-lg font-bold mb-1">Today's Attendance</h3>
+            <p className="text-zinc-400 mb-5 text-xs">You have not clocked in yet today.</p>
             <button 
-              className="w-full py-3 px-6 rounded-xl font-bold bg-white text-[#09090b] hover:bg-zinc-100 transition-all shadow-md cursor-pointer"
+              className="w-full h-10 rounded-lg font-bold bg-white text-[#09090b] hover:bg-zinc-100 transition-all cursor-pointer text-sm"
               onClick={() => window.location.href='#/attendance'}
             >
               CLOCK IN NOW
             </button>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="legacy-card p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700">
-                  <CheckSquare size={24} />
+          <div className="flex flex-col gap-3">
+            <div className="legacy-box p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700">
+                  <CheckSquare size={20} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-text-main">Assigned Tasks</h3>
-                  <p className="text-xs text-text-secondary">{stats.pendingTasks} pending tasks today</p>
+                  <h3 className="text-sm font-bold text-text-main">Assigned Tasks</h3>
+                  <p className="text-xs text-text-secondary">{stats.pendingTasks} tasks today</p>
                 </div>
               </div>
               <button 
-                className="text-xs font-bold text-text-main hover:underline cursor-pointer"
+                className="text-xs font-bold text-text-main underline cursor-pointer"
                 onClick={() => window.location.href='#/tasks'}
               >
-                View &rarr;
+                View
               </button>
             </div>
 
-            <div className="legacy-card p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700">
-                  <CalendarOff size={24} />
+            <div className="legacy-box p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700">
+                  <CalendarOff size={20} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-text-main">Leave Balance</h3>
+                  <h3 className="text-sm font-bold text-text-main">Leave Balance</h3>
                   <p className="text-xs text-text-secondary">{stats.leaveBalance} days remaining</p>
                 </div>
               </div>
               <button 
-                className="text-xs font-bold text-text-main hover:underline cursor-pointer"
+                className="text-xs font-bold text-text-main underline cursor-pointer"
                 onClick={() => window.location.href='#/leave'}
               >
-                Apply &rarr;
+                Apply
               </button>
             </div>
           </div>
@@ -230,230 +244,312 @@ const DashboardLegacy = () => {
     );
   }
 
-  // Management / Executive Workspace
+  // Management / Executive Desk
   return (
-    <div className="legacy-dashboard-container">
-      {/* 1. Executive Status Header */}
-      <div className="legacy-header-strip">
-        <div className="legacy-header-title">
-          <h1>{currentBusiness?.name || 'Business Executive Desk'}</h1>
-          <p>Real-time overview & operations command center</p>
+    <div className="legacy-root">
+      {/* 1. Header Bar with Mode Switcher */}
+      <div className="legacy-header-bar">
+        <div className="legacy-brand-group">
+          <h1>{currentBusiness?.name || 'SAS CAFETERIA'}</h1>
+          <p>Legacy Fast-Track Desk • Instant Business Operations</p>
         </div>
-        <div className="legacy-header-meta">
-          <span className="legacy-status-badge">
-            <span className="legacy-status-dot"></span>
+        <div className="legacy-header-controls">
+          <span className="legacy-status-tag">
+            <span className="legacy-status-tag-dot"></span>
             Operational
           </span>
-          <span className="legacy-date-badge">
-            {format(new Date(), 'EEEE, dd MMM yyyy')}
+          <span className="text-xs font-bold text-text-secondary hidden sm:inline">
+            {format(new Date(), 'EEE, dd MMM yyyy')}
           </span>
+          {/* Transition Button to Switch to Premium Mode */}
+          <button 
+            onClick={() => onSwitchMode && onSwitchMode('premium')} 
+            className="legacy-mode-switch-btn"
+            title="Switch layout to Premium Command Center"
+          >
+            <Sparkles size={13} />
+            <span>Switch to Premium Mode 💎</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. Completely Redesigned, Different Buttons (Executive Action Dock) */}
-      <div className="legacy-actions-wrapper">
-        <div className="flex items-center justify-between">
-          <span className="legacy-actions-label">Operations Launchpad</span>
-          <span className="text-xs text-text-secondary font-medium hidden sm:inline">Tap to launch module</span>
-        </div>
-        <div className="legacy-actions-deck">
-          {/* Button 1: Primary New Sale */}
-          <div 
-            className="legacy-action-tile primary"
-            onClick={() => window.location.href='#/pos'}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="legacy-action-tile-icon">
-              <ShoppingBag size={20} />
-            </div>
-            <div className="legacy-action-tile-content">
-              <span className="legacy-action-tile-title">+ New Sale</span>
-              <span className="legacy-action-tile-subtitle">Terminal & POS Register</span>
-            </div>
-            <span className="legacy-action-tile-badge">F2</span>
-          </div>
+      {/* 2. Fit-to-Page Action Buttons (100% width, No horizontal overflow) */}
+      <div className="legacy-actions-strip">
+        <button 
+          className="legacy-btn primary"
+          onClick={() => window.location.href='#/pos'}
+          title="Open POS Terminal [F2]"
+        >
+          <ShoppingBag size={16} />
+          <span>+ New Sale</span>
+          <span className="legacy-btn-kbd">F2</span>
+        </button>
 
-          {/* Button 2: Add Customer */}
-          <div 
-            className="legacy-action-tile"
-            onClick={() => window.location.href='#/customers'}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="legacy-action-tile-icon">
-              <UserPlus size={20} />
-            </div>
-            <div className="legacy-action-tile-content">
-              <span className="legacy-action-tile-title">+ Add Customer</span>
-              <span className="legacy-action-tile-subtitle">Client Directory & Khata</span>
-            </div>
-            <ArrowUpRight size={16} className="opacity-40" />
-          </div>
+        <button 
+          className="legacy-btn secondary"
+          onClick={() => window.location.href='#/customers'}
+          title="Add Customer & Khata"
+        >
+          <UserPlus size={16} />
+          <span>+ Add Customer</span>
+        </button>
 
-          {/* Button 3: Record Expense */}
-          <div 
-            className="legacy-action-tile"
-            onClick={() => window.location.href='#/expenses'}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="legacy-action-tile-icon">
-              <Receipt size={20} />
-            </div>
-            <div className="legacy-action-tile-content">
-              <span className="legacy-action-tile-title">Record Expense</span>
-              <span className="legacy-action-tile-subtitle">Cash & Bank Outflow</span>
-            </div>
-            <ArrowUpRight size={16} className="opacity-40" />
-          </div>
+        <button 
+          className="legacy-btn secondary"
+          onClick={() => window.location.href='#/expenses'}
+          title="Record Expense Outflow"
+        >
+          <Receipt size={16} />
+          <span>Record Expense</span>
+        </button>
 
-          {/* Button 4: Mark Attendance */}
-          <div 
-            className="legacy-action-tile"
-            onClick={() => window.location.href='#/attendance'}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="legacy-action-tile-icon">
-              <Clock size={20} />
-            </div>
-            <div className="legacy-action-tile-content">
-              <span className="legacy-action-tile-title">Mark Attendance</span>
-              <span className="legacy-action-tile-subtitle">Staff Shift Clock-In</span>
-            </div>
-            <ArrowUpRight size={16} className="opacity-40" />
-          </div>
-        </div>
+        <button 
+          className="legacy-btn secondary"
+          onClick={() => window.location.href='#/attendance'}
+          title="Staff Clock-In"
+        >
+          <Clock size={16} />
+          <span>Mark Attendance</span>
+        </button>
       </div>
 
-      <GettingStartedGuide />
+      {/* 3. Feature Mode Selector Tabs (Unique modular features in Legacy Mode) */}
+      <div className="legacy-feature-nav">
+        <button 
+          className={`legacy-feature-tab ${activeFeatureTab === 'ledger' ? 'active' : ''}`}
+          onClick={() => setActiveFeatureTab('ledger')}
+        >
+          📊 Daily Ledger & Trend
+        </button>
+        <button 
+          className={`legacy-feature-tab ${activeFeatureTab === 'pos' ? 'active' : ''}`}
+          onClick={() => setActiveFeatureTab('pos')}
+        >
+          ⚡ Fast Catalog Glance
+        </button>
+        <button 
+          className={`legacy-feature-tab ${activeFeatureTab === 'stock' ? 'active' : ''}`}
+          onClick={() => setActiveFeatureTab('stock')}
+        >
+          📦 Stock Reorder Guard ({stats.lowStock})
+        </button>
+      </div>
 
-      {/* 3. Distinct Architectural Metric Cards (Strictly Black & White) */}
-      <div className="legacy-metrics-grid">
-        {/* KPI 1: Total Revenue */}
-        <div className="legacy-metric-card">
-          <div className="legacy-metric-header">
-            <span className="legacy-metric-label">Today's Revenue</span>
-            <div className="legacy-metric-icon-box">
-              <DollarSign size={18} />
+      {/* 4. Fit-to-Page Compact KPI Metric Cards (Strictly Black & White) */}
+      <div className="legacy-grid-4">
+        {/* KPI 1: Today's Revenue */}
+        <div className="legacy-kpi-card">
+          <div className="legacy-kpi-top">
+            <span className="legacy-kpi-label">Today's Revenue</span>
+            <div className="legacy-kpi-icon">
+              <DollarSign size={15} />
             </div>
           </div>
-          <div className="legacy-metric-value">
+          <div className="legacy-kpi-val">
             {currencySymbol}{stats.sales.toFixed(2)}
           </div>
-          <div className="legacy-metric-footer">
-            <span>Gross Sales</span>
-            <span className="legacy-metric-pill">Today</span>
+          <div className="legacy-kpi-bottom">
+            <span>Gross Inflow</span>
+            <span className="legacy-tag">TODAY</span>
           </div>
         </div>
 
-        {/* KPI 2: Total Orders */}
-        <div className="legacy-metric-card">
-          <div className="legacy-metric-header">
-            <span className="legacy-metric-label">Today's Orders</span>
-            <div className="legacy-metric-icon-box">
-              <ShoppingBag size={18} />
+        {/* KPI 2: Today's Orders */}
+        <div className="legacy-kpi-card">
+          <div className="legacy-kpi-top">
+            <span className="legacy-kpi-label">Today's Orders</span>
+            <div className="legacy-kpi-icon">
+              <ShoppingBag size={15} />
             </div>
           </div>
-          <div className="legacy-metric-value">
+          <div className="legacy-kpi-val">
             {stats.orders}
           </div>
-          <div className="legacy-metric-footer">
+          <div className="legacy-kpi-bottom">
             <span>Completed Tickets</span>
-            <span className="legacy-metric-pill">Volume</span>
+            <span className="legacy-tag">ORDERS</span>
           </div>
         </div>
 
-        {/* KPI 3: Total Customers */}
-        <div className="legacy-metric-card">
-          <div className="legacy-metric-header">
-            <span className="legacy-metric-label">Customer Base</span>
-            <div className="legacy-metric-icon-box">
-              <Users size={18} />
+        {/* KPI 3: Customer Base */}
+        <div className="legacy-kpi-card">
+          <div className="legacy-kpi-top">
+            <span className="legacy-kpi-label">Customer Base</span>
+            <div className="legacy-kpi-icon">
+              <Users size={15} />
             </div>
           </div>
-          <div className="legacy-metric-value">
+          <div className="legacy-kpi-val">
             {stats.customers}
           </div>
-          <div className="legacy-metric-footer">
-            <span>Profiles Active</span>
-            <span className="legacy-metric-pill">Verified</span>
+          <div className="legacy-kpi-bottom">
+            <span>Active Profiles</span>
+            <span className="legacy-tag">CLIENTS</span>
           </div>
         </div>
 
-        {/* KPI 4: Low Stock Alerts */}
-        <div className="legacy-metric-card">
-          <div className="legacy-metric-header">
-            <span className="legacy-metric-label">Stock Monitor</span>
-            <div className="legacy-metric-icon-box">
-              <Package size={18} />
+        {/* KPI 4: Stock Alerts */}
+        <div className="legacy-kpi-card">
+          <div className="legacy-kpi-top">
+            <span className="legacy-kpi-label">Stock Monitor</span>
+            <div className="legacy-kpi-icon">
+              <Package size={15} />
             </div>
           </div>
-          <div className="legacy-metric-value">
+          <div className="legacy-kpi-val">
             {stats.lowStock}
           </div>
-          <div className="legacy-metric-footer">
+          <div className="legacy-kpi-bottom">
             <span>Critical Items</span>
-            {stats.lowStock > 0 ? (
-              <span className="legacy-metric-pill alert flex items-center gap-1">
-                <AlertCircle size={10} /> Reorder
-              </span>
-            ) : (
-              <span className="legacy-metric-pill">Optimal</span>
-            )}
+            <span className="legacy-tag">
+              {stats.lowStock > 0 ? 'REORDER' : 'OPTIMAL'}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* 4. Executive Workspace (Monochrome Trend Chart & Ledger Stream) */}
-      <div className="legacy-workspace-grid">
-        {/* Left: 7-Day Revenue Trajectory Chart */}
-        <div className="legacy-card">
-          <div className="legacy-card-header">
-            <h2 className="legacy-card-title">Revenue Trajectory (Last 7 Days)</h2>
-            <span className="legacy-card-badge">Trend Analysis</span>
+      {/* 5. Dynamic Feature Tab View (Completely different from Premium) */}
+      {activeFeatureTab === 'ledger' && (
+        <div className="legacy-split-grid">
+          {/* Revenue Trajectory Chart */}
+          <div className="legacy-box">
+            <div className="legacy-box-header">
+              <h2 className="legacy-box-title">Revenue Trajectory (Last 7 Days)</h2>
+              <span className="legacy-box-badge">Trend Analysis</span>
+            </div>
+            <div className="legacy-box-body" style={{ minHeight: '280px' }}>
+              <Line data={revenueData} options={chartOptions} />
+            </div>
           </div>
-          <div className="legacy-card-body" style={{ minHeight: '320px', position: 'relative' }}>
-            <Line data={revenueData} options={chartOptions} />
-          </div>
-        </div>
 
-        {/* Right: Recent Transactions Stream */}
-        <div className="legacy-card">
-          <div className="legacy-card-header">
-            <h2 className="legacy-card-title">Recent Transactions</h2>
-            <span className="legacy-card-badge">Live Stream</span>
-          </div>
-          <div className="legacy-ledger-list">
-            {stats.recentSales.map(sale => (
-              <div key={sale.id} className="legacy-ledger-item">
-                <div className="legacy-ledger-left">
-                  <span className="legacy-ledger-id">
-                    {sale.invoiceNumber || (typeof sale.id === 'string' ? sale.id.substring(0, 8).toUpperCase() : 'SALE')}
-                  </span>
-                  <span className="legacy-ledger-time">
-                    <Clock size={11} /> {format(new Date(sale.date), 'MMM dd, hh:mm a')}
-                  </span>
+          {/* Recent Sales Stream */}
+          <div className="legacy-box">
+            <div className="legacy-box-header">
+              <h2 className="legacy-box-title">Recent Transactions</h2>
+              <span className="legacy-box-badge">Live Stream</span>
+            </div>
+            <div>
+              {stats.recentSales.map(sale => (
+                <div key={sale.id} className="legacy-row">
+                  <div>
+                    <div className="legacy-row-id">
+                      {sale.invoiceNumber || (typeof sale.id === 'string' ? sale.id.substring(0, 8).toUpperCase() : 'SALE')}
+                    </div>
+                    <div className="legacy-row-date">
+                      <Clock size={11} /> {format(new Date(sale.date), 'MMM dd, hh:mm a')}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="legacy-row-amt">
+                      {currencySymbol}{(sale.total || 0).toFixed(2)}
+                    </div>
+                    <span className="legacy-row-status">
+                      {sale.status || 'PAID'}
+                    </span>
+                  </div>
                 </div>
-                <div className="legacy-ledger-right">
-                  <span className="legacy-ledger-amount">
-                    {currencySymbol}{(sale.total || 0).toFixed(2)}
-                  </span>
-                  <span className="legacy-ledger-pill">
-                    {sale.status || 'PAID'}
-                  </span>
+              ))}
+              {stats.recentSales.length === 0 && (
+                <div className="p-8 text-center text-xs font-bold text-text-secondary">
+                  No transactions recorded today.
                 </div>
-              </div>
-            ))}
-            {stats.recentSales.length === 0 && (
-              <div className="legacy-ledger-empty">
-                No recent transactions recorded today.
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {activeFeatureTab === 'pos' && (
+        <div className="legacy-box">
+          <div className="legacy-box-header">
+            <div>
+              <h2 className="legacy-box-title">Fast Catalog Glance</h2>
+              <p className="text-xs text-text-secondary mt-1">1-Tap product shortcuts for fast billing</p>
+            </div>
+            <button 
+              className="legacy-btn primary"
+              style={{ width: 'auto', height: '34px', fontSize: '0.775rem' }}
+              onClick={() => window.location.href='#/pos'}
+            >
+              Open Full POS Register &rarr;
+            </button>
+          </div>
+          <div className="legacy-box-body">
+            <div className="legacy-pos-grid">
+              {stats.productsList.map(product => (
+                <div 
+                  key={product.id} 
+                  className="legacy-pos-item"
+                  onClick={() => window.location.href='#/pos'}
+                  title={`Tap to ring up ${product.name}`}
+                >
+                  <span className="legacy-pos-item-name">{product.name}</span>
+                  <span className="legacy-pos-item-price">{currencySymbol}{(product.sellingPrice || product.price || 0).toFixed(2)}</span>
+                </div>
+              ))}
+              {stats.productsList.length === 0 && (
+                <div className="col-span-full py-8 text-center text-xs font-bold text-text-secondary">
+                  No products found. Add products in the inventory page.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeFeatureTab === 'stock' && (
+        <div className="legacy-box">
+          <div className="legacy-box-header">
+            <div>
+              <h2 className="legacy-box-title">Stock Reorder Guard</h2>
+              <p className="text-xs text-text-secondary mt-1">Items below minimum stock threshold requiring replenishment</p>
+            </div>
+            <button 
+              className="legacy-btn secondary"
+              style={{ width: 'auto', height: '34px', fontSize: '0.775rem' }}
+              onClick={() => window.location.href='#/inventory'}
+            >
+              Open Inventory &rarr;
+            </button>
+          </div>
+          <div className="legacy-box-body p-0">
+            <table className="legacy-stock-table">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>Current Stock</th>
+                  <th>Min Level</th>
+                  <th className="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.lowStockList.map(item => (
+                  <tr key={item.id}>
+                    <td className="font-bold">{item.name}</td>
+                    <td className="font-bold">{item.stockQuantity || 0} {item.unit || 'units'}</td>
+                    <td>{item.minimumStock || 5} {item.unit || 'units'}</td>
+                    <td className="text-right">
+                      <button 
+                        className="legacy-tag cursor-pointer hover:opacity-80"
+                        onClick={() => window.location.href='#/purchases'}
+                      >
+                        Reorder Now
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {stats.lowStockList.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="py-8 text-center text-xs font-bold text-text-secondary">
+                      All products are currently stocked at optimal levels.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

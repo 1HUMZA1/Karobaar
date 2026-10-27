@@ -1,0 +1,154 @@
+/* ==========================================================================
+   Dashboard Mode Transition Loading Screen (Strictly Monochrome)
+   ========================================================================== */
+
+.mode-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  animation: modeOverlayFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  user-select: none;
+}
+
+[data-theme="dark"] .mode-transition-overlay {
+  background-color: rgba(9, 9, 11, 0.95);
+}
+
+.mode-transition-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  text-align: center;
+  max-width: 380px;
+  padding: 2rem 2.5rem;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: modeBoxScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-theme="dark"] .mode-transition-box {
+  background: #141416;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.mode-transition-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background-color: #09090b;
+  color: #ffffff;
+  border: 2px solid #09090b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  font-weight: 800;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+[data-theme="dark"] .mode-transition-logo {
+  background-color: #ffffff;
+  color: #09090b;
+  border-color: #ffffff;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.25);
+}
+
+.mode-transition-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(0, 0, 0, 0.12);
+  border-top-color: #09090b;
+  border-radius: 50%;
+  animation: modeSpin 0.7s linear infinite;
+}
+
+[data-theme="dark"] .mode-transition-spinner {
+  border-color: rgba(255, 255, 255, 0.15);
+  border-top-color: #ffffff;
+}
+
+.mode-transition-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #09090b;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+[data-theme="dark"] .mode-transition-title {
+  color: #ffffff;
+}
+
+.mode-transition-sub {
+  font-size: 0.825rem;
+  color: #71717a;
+  margin: 0;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .mode-transition-sub {
+  color: #a1a1aa;
+}
+
+.mode-transition-bar {
+  width: 140px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+[data-theme="dark"] .mode-transition-bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-transition-bar-fill {
+  width: 45%;
+  height: 100%;
+  background: #09090b;
+  border-radius: 9999px;
+  animation: modeProgress 0.8s ease-in-out infinite;
+}
+
+[data-theme="dark"] .mode-transition-bar-fill {
+  background: #ffffff;
+}
+
+@keyframes modeSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes modeProgress {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(120%); }
+  100% { transform: translateX(250%); }
+}
+
+@keyframes modeOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modeBoxScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
