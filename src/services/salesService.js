@@ -1,7 +1,27 @@
 import { db } from './databaseService';
 
 export const salesService = {
-  async createSale({ items, customerId, employeeId, employeeName, paymentMethod, subtotal, tax, discount, total, amountPaid, balanceDue, dueDate, businessId }) {
+  async createSale({ 
+    items, 
+    customerId, 
+    employeeId, 
+    employeeName, 
+    paymentMethod, 
+    subtotal, 
+    tax, 
+    discount, 
+    total, 
+    amountPaid, 
+    balanceDue, 
+    dueDate, 
+    businessId,
+    notes,
+    orderType,
+    splitDetails,
+    tokenNumber,
+    discountType,
+    discountValue
+  }) {
     if (!businessId) throw new Error("businessId is required to create a sale");
     
     // Default values if not provided (e.g. legacy calls)

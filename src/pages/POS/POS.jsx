@@ -1,43 +1,101 @@
-import React, { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Plus, Minus, X, CreditCard, Banknote, User, Printer, Trash2, Package, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Search, 
+  ShoppingCart, 
+  Plus, 
+  Minus, 
+  X, 
+  CreditCard, 
+  Banknote, 
+  User, 
+  Printer, 
+  Trash2, 
+  Package, 
+  ArrowRight,
+  LayoutGrid,
+  List,
+  Clock,
+  QrCode,
+  Split,
+  PackagePlus,
+  UserPlus,
+  Check,
+  Tag,
+  Utensils,
+  ShoppingBag,
+  Truck,
+  Keyboard,
+  CheckCircle2,
+  RotateCcw
+} from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { salesService } from '../../services/salesService';
 import { initializeDemoData } from '../../services/demoData';
-import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAppContext } from '../../context/AppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobilePOS } from './MobilePOS';
+import { UPIModal } from './UPIModal';
+import { HeldOrdersModal } from './HeldOrdersModal';
+import { CustomItemModal } from './CustomItemModal';
+import { QuickCustomerModal } from './QuickCustomerModal';
 import './POS.css';
 
 const POS = () => {
   const isMobile = useIsMobile();
   const { currentUser, currentBusiness } = useAppContext();
+  const searchInputRef = useRef(null);
+
+  // Core Data
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('karobaar_pos_view_mode') || 'table');
+
+  // Cart & Order State
   const [cart, setCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Cash');
-  const [discount, setDiscount] = useState(0);
+  const [orderType, setOrderType] = useState('Takeaway'); // Dine-in, Takeaway, Delivery
+  const [orderNotes, setOrderNotes] = useState('');
+  const [tokenNumber, setTokenNumber] = useState(() => `T-${Math.floor(100 + Math.random() * 900)}`);
+
+  // Discount
+  const [discountType, setDiscountType] = useState('fixed'); // 'fixed' | 'percent'
+  const [discountValue, setDiscountValue] = useState(0);
   const [taxRate] = useState(10); // 10% demo tax
-  
+
+  // Payment Details
   const [amountPaid, setAmountPaid] = useState('');
   const [dueDate, setDueDate] = useState('');
-  
+  const [cashTendered, setCashTendered] = useState('');
+  const [splitDetails, setSplitDetails] = useState({ cash: '', upi: '', card: '' });
+
+  // Held Orders
+  const [heldOrders, setHeldOrders] = useState([]);
+
+  // Modals & UI Controls
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isUPIModalOpen, setIsUPIModalOpen] = useState(false);
+  const [isHeldOrdersModalOpen, setIsHeldOrdersModalOpen] = useState(false);
+  const [isCustomItemModalOpen, setIsCustomItemModalOpen] = useState(false);
+  const [isQuickCustomerModalOpen, setIsQuickCustomerModalOpen] = useState(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
 
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
+  // Load Data & Held Orders
   useEffect(() => {
     if (currentUser?.activeBusinessId) {
       loadData(currentUser.activeBusinessId);
+      loadHeldOrders(currentUser.activeBusinessId);
     }
   }, [currentUser?.activeBusinessId]);
 
@@ -54,21 +112,111 @@ const POS = () => {
     setEmployees((e || []).filter(emp => emp.status === 'Active'));
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (p.barcode && p.barcode.includes(searchTerm))
-  );
+  const loadHeldOrders = (businessId) => {
+    try {
+      const stored = localStorage.getItem(`karobaar_held_orders_${businessId}`);
+      if (stored) {
+        setHeldOrders(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error('Error loading held orders:', e);
+    }
+  };
 
+  const saveHeldOrders = (orders, businessId) => {
+    setHeldOrders(orders);
+    if (businessId) {
+      localStorage.setItem(`karobaar_held_orders_${businessId}`, JSON.stringify(orders));
+    }
+  };
+
+  // View Mode Persistence
+  const toggleViewMode = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('karobaar_pos_view_mode', mode);
+  };
+
+  // Toast Helper
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+
+  // Keyboard Shortcuts (F2: Search, F4: Hold, F8: Discount, F9: Checkout, Esc: Clear)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't trigger if typing in an input unless it's a specific function key
+      if (e.key === 'F2') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        showToast('Search focused (F2)');
+      } else if (e.key === 'F4') {
+        e.preventDefault();
+        handleHoldOrder();
+      } else if (e.key === 'F9') {
+        e.preventDefault();
+        if (cart.length > 0 && !processing) {
+          handleCheckout();
+        }
+      } else if (e.key === 'Escape') {
+        if (isInvoiceModalOpen) setIsInvoiceModalOpen(false);
+        else if (isUPIModalOpen) setIsUPIModalOpen(false);
+        else if (isHeldOrdersModalOpen) setIsHeldOrdersModalOpen(false);
+        else if (isCustomItemModalOpen) setIsCustomItemModalOpen(false);
+        else if (isQuickCustomerModalOpen) setIsQuickCustomerModalOpen(false);
+        else if (isShortcutsModalOpen) setIsShortcutsModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
+
+  // Extract Categories
+  const categories = ['All', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+
+  // Filter Products
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
+    const s = searchTerm.toLowerCase().trim();
+    const matchesSearch = !s || 
+      p.name.toLowerCase().includes(s) || 
+      (p.sku && p.sku.toLowerCase().includes(s)) ||
+      (p.barcode && p.barcode.includes(s));
+    return matchesCategory && matchesSearch;
+  });
+
+  // Barcode Instant Add on Enter
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      const query = searchTerm.trim().toLowerCase();
+      const exactMatch = products.find(p => 
+        (p.barcode && p.barcode.toLowerCase() === query) ||
+        (p.sku && p.sku.toLowerCase() === query) ||
+        p.name.toLowerCase() === query
+      );
+
+      if (exactMatch) {
+        addToCart(exactMatch);
+        setSearchTerm('');
+        showToast(`Added: ${exactMatch.name}`);
+      }
+    }
+  };
+
+  // Add to Cart
   const addToCart = (product) => {
-    if (product.stockQuantity <= 0) {
+    if (!product.isCustom && product.stockQuantity <= 0) {
       alert('Out of stock!');
       return;
     }
     setCart(prev => {
       const existing = prev.find(item => item.productId === product.id);
       if (existing) {
-        if (existing.quantity >= product.stockQuantity) return prev;
+        if (!product.isCustom && existing.quantity >= product.stockQuantity) {
+          showToast(`Stock limit reached for ${product.name}`);
+          return prev;
+        }
         return prev.map(item => item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item);
       }
       return [...prev, { 
@@ -76,16 +224,37 @@ const POS = () => {
         name: product.name, 
         price: parseFloat(product.sellingPrice || product.price || 0), 
         quantity: 1, 
-        stock: product.stockQuantity 
+        stock: product.stockQuantity || 9999,
+        imageUrl: product.imageUrl || null,
+        isCustom: !!product.isCustom,
+        category: product.category || 'General'
       }];
     });
+  };
+
+  // Add Custom / Open Item
+  const handleAddCustomItem = (customItem) => {
+    setCart(prev => [...prev, {
+      productId: customItem.id,
+      name: customItem.name,
+      price: customItem.price,
+      quantity: customItem.quantity,
+      stock: 9999,
+      isCustom: true,
+      category: customItem.category
+    }]);
+    showToast(`Added custom item: ${customItem.name}`);
   };
 
   const updateQuantity = (productId, delta) => {
     setCart(prev => prev.map(item => {
       if (item.productId === productId) {
         const newQ = item.quantity + delta;
-        if (newQ < 1 || newQ > item.stock) return item;
+        if (newQ < 1) return item;
+        if (!item.isCustom && newQ > item.stock) {
+          showToast(`Only ${item.stock} in stock`);
+          return item;
+        }
         return { ...item, quantity: newQ };
       }
       return item;
@@ -97,31 +266,151 @@ const POS = () => {
   };
 
   const clearCart = () => {
-    if (window.confirm('Clear all items from the cart?')) {
+    if (cart.length === 0) return;
+    if (window.confirm('Clear all items from the current cart?')) {
       setCart([]);
-      setDiscount(0);
+      setDiscountValue(0);
       setAmountPaid('');
       setDueDate('');
+      setCashTendered('');
+      setOrderNotes('');
+      setSplitDetails({ cash: '', upi: '', card: '' });
+      showToast('Cart cleared');
     }
   };
 
+  // Calculations
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const taxAmount = (subtotal * taxRate) / 100;
-  const total = subtotal + taxAmount - discount;
+  
+  // Calculate discount based on type
+  const calculatedDiscount = discountType === 'percent'
+    ? (subtotal * Math.min(100, Math.max(0, parseFloat(discountValue) || 0))) / 100
+    : Math.min(subtotal, Math.max(0, parseFloat(discountValue) || 0));
 
+  const total = Math.max(0, subtotal + taxAmount - calculatedDiscount);
+
+  // Cash change calculation
+  const parsedCashTendered = parseFloat(cashTendered) || 0;
+  const changeDue = Math.max(0, parsedCashTendered - total);
+
+  // Split payment sum calculation
+  const splitCash = parseFloat(splitDetails.cash) || 0;
+  const splitUpi = parseFloat(splitDetails.upi) || 0;
+  const splitCard = parseFloat(splitDetails.card) || 0;
+  const splitTotalAllocated = splitCash + splitUpi + splitCard;
+  const splitRemaining = Math.max(0, total - splitTotalAllocated);
+
+  // Hold / Park Order
+  const handleHoldOrder = () => {
+    if (cart.length === 0) {
+      showToast('Cannot hold an empty cart');
+      return;
+    }
+
+    const customerObj = customers.find(c => c.id === selectedCustomer);
+    const orderTag = prompt('Enter a note or table for this held order:', orderNotes || (customerObj ? customerObj.name : `Order #${heldOrders.length + 1}`));
+    if (orderTag === null) return; // cancelled
+
+    const newHeldOrder = {
+      id: `HOLD-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      note: orderTag.trim() || `Order #${heldOrders.length + 1}`,
+      customerName: customerObj ? customerObj.name : null,
+      selectedCustomer,
+      selectedEmployee,
+      cart: [...cart],
+      discountType,
+      discountValue,
+      orderType,
+      orderNotes,
+      total
+    };
+
+    const updated = [newHeldOrder, ...heldOrders];
+    saveHeldOrders(updated, currentUser?.activeBusinessId);
+
+    // Reset current active cart
+    setCart([]);
+    setDiscountValue(0);
+    setAmountPaid('');
+    setDueDate('');
+    setCashTendered('');
+    setOrderNotes('');
+    setSplitDetails({ cash: '', upi: '', card: '' });
+    showToast(`Order parked (${updated.length} held)`);
+  };
+
+  // Resume Held Order
+  const handleResumeOrder = (order) => {
+    if (cart.length > 0) {
+      if (!window.confirm('Active cart has items. Replace with this held order?')) return;
+    }
+
+    setCart(order.cart || []);
+    setSelectedCustomer(order.selectedCustomer || '');
+    setSelectedEmployee(order.selectedEmployee || '');
+    setDiscountType(order.discountType || 'fixed');
+    setDiscountValue(order.discountValue || 0);
+    setOrderType(order.orderType || 'Takeaway');
+    setOrderNotes(order.orderNotes || '');
+
+    // Remove from held orders
+    const updated = heldOrders.filter(h => h.id !== order.id);
+    saveHeldOrders(updated, currentUser?.activeBusinessId);
+    setIsHeldOrdersModalOpen(false);
+    showToast('Held order restored to cart');
+  };
+
+  // Discard Held Order
+  const handleDeleteHeldOrder = (orderId) => {
+    if (window.confirm('Discard this held order?')) {
+      const updated = heldOrders.filter(h => h.id !== orderId);
+      saveHeldOrders(updated, currentUser?.activeBusinessId);
+      showToast('Held order removed');
+    }
+  };
+
+  // Customer created quick-handler
+  const handleCustomerCreated = (newCust) => {
+    setCustomers(prev => [newCust, ...prev]);
+    setSelectedCustomer(newCust.id);
+    showToast(`Customer added: ${newCust.name}`);
+  };
+
+  // Checkout Handler
   const handleCheckout = async () => {
     if (cart.length === 0 || !currentUser?.activeBusinessId) return;
     
     if (paymentMethod === 'Udhaar' && !selectedCustomer) {
-      alert('Please select a customer first to give Udhaar/Credit.');
+      alert('Please select a customer first to provide Udhaar / Credit.');
       return;
     }
-    
+
+    if (paymentMethod === 'Split' && splitRemaining > 0.01) {
+      alert(`Split payment incomplete. Still remaining: ${currencySymbol}${splitRemaining.toFixed(2)}`);
+      return;
+    }
+
+    if (paymentMethod === 'UPI') {
+      setIsUPIModalOpen(true);
+      return;
+    }
+
+    await finalizeCheckout();
+  };
+
+  const finalizeCheckout = async () => {
     setProcessing(true);
     try {
-      const finalAmountPaid = paymentMethod === 'Udhaar' ? (parseFloat(amountPaid) || 0) : total;
-      const balanceDue = paymentMethod === 'Udhaar' ? Math.max(0, total - finalAmountPaid) : 0;
-      
+      let finalAmountPaid = total;
+      let balanceDue = 0;
+
+      if (paymentMethod === 'Udhaar') {
+        finalAmountPaid = parseFloat(amountPaid) || 0;
+        balanceDue = Math.max(0, total - finalAmountPaid);
+      }
+
       const emp = employees.find(e => e.id === selectedEmployee);
       await salesService.createSale({
         items: cart,
@@ -131,26 +420,40 @@ const POS = () => {
         paymentMethod,
         subtotal,
         tax: taxAmount,
-        discount,
+        discount: calculatedDiscount,
+        discountType,
+        discountValue,
         total,
         amountPaid: finalAmountPaid,
         balanceDue,
         dueDate: paymentMethod === 'Udhaar' && dueDate ? dueDate : null,
-        businessId: currentUser.activeBusinessId
+        businessId: currentUser.activeBusinessId,
+        notes: orderNotes,
+        orderType,
+        tokenNumber,
+        splitDetails: paymentMethod === 'Split' ? splitDetails : null
       });
+
       setSuccess(true);
       setCart([]);
       setSelectedCustomer('');
       setSelectedEmployee('');
-      setDiscount(0);
+      setDiscountValue(0);
       setAmountPaid('');
       setDueDate('');
+      setCashTendered('');
+      setOrderNotes('');
+      setSplitDetails({ cash: '', upi: '', card: '' });
       setPaymentMethod('Cash');
-      loadData(currentUser.activeBusinessId); // refresh stock
-      setTimeout(() => setSuccess(false), 3000);
+      setTokenNumber(`T-${Math.floor(100 + Math.random() * 900)}`);
+      setIsUPIModalOpen(false);
+      
+      loadData(currentUser.activeBusinessId); // refresh inventory counts
+      showToast('Sale recorded successfully!');
+      setTimeout(() => setSuccess(false), 3500);
     } catch (error) {
       console.error(error);
-      alert('Checkout failed');
+      alert('Checkout failed. Please check connection or details.');
     } finally {
       setProcessing(false);
     }
@@ -162,44 +465,50 @@ const POS = () => {
 
   const executePrint = () => {
     setIsInvoiceModalOpen(false);
+    const selectedCustObj = customers.find(c => c.id === selectedCustomer);
+    const selectedEmpObj = employees.find(e => e.id === selectedEmployee);
+
     const printContent = `
       <html>
         <head>
           <title>Receipt - ${currentBusiness?.name || 'Karobaar'}</title>
           <style>
-            body { font-family: 'Courier New', Courier, monospace; padding: 20px; color: #000; width: 320px; margin: 0 auto; background: #fff; }
-            .header { text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 15px; }
-            .header h2 { margin: 0 0 5px 0; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-            .header p { margin: 0; font-size: 12px; color: #333; }
-            .meta { margin-bottom: 15px; font-size: 12px; border-bottom: 2px dashed #000; padding-bottom: 10px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-            th { text-align: left; padding: 5px 0; border-bottom: 1px solid #000; font-size: 12px; text-transform: uppercase; }
-            td { padding: 8px 0; font-size: 12px; border-bottom: 1px dashed #eee; vertical-align: top; }
+            body { font-family: 'Courier New', Courier, monospace; padding: 15px; color: #000; width: 300px; margin: 0 auto; background: #fff; }
+            .header { text-align: center; margin-bottom: 12px; border-bottom: 2px dashed #000; padding-bottom: 12px; }
+            .header h2 { margin: 0 0 4px 0; font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+            .header p { margin: 0; font-size: 11px; color: #222; }
+            .meta { margin-bottom: 12px; font-size: 11px; border-bottom: 2px dashed #000; padding-bottom: 10px; }
+            .badge { display: inline-block; padding: 2px 6px; border: 1px solid #000; font-size: 10px; font-weight: bold; text-transform: uppercase; margin-top: 4px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+            th { text-align: left; padding: 4px 0; border-bottom: 1px solid #000; font-size: 11px; text-transform: uppercase; }
+            td { padding: 6px 0; font-size: 11px; border-bottom: 1px dashed #ddd; vertical-align: top; }
             .text-right { text-align: right; }
-            .totals { border-top: 2px solid #000; padding-top: 10px; margin-top: 10px; }
-            .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; font-weight: bold; }
-            .total-row.grand-total { font-size: 18px; margin-top: 10px; padding-top: 10px; border-top: 2px dashed #000; }
-            .footer { text-align: center; margin-top: 20px; font-size: 12px; border-top: 2px dashed #000; padding-top: 15px; font-weight: bold; }
-            .barcode { text-align: center; margin-top: 15px; font-family: monospace; font-size: 12px; letter-spacing: 2px; }
+            .totals { border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
+            .total-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; font-weight: bold; }
+            .total-row.grand-total { font-size: 16px; margin-top: 8px; padding-top: 8px; border-top: 2px dashed #000; }
+            .footer { text-align: center; margin-top: 15px; font-size: 11px; border-top: 2px dashed #000; padding-top: 12px; font-weight: bold; }
+            .barcode { text-align: center; margin-top: 10px; font-family: monospace; font-size: 12px; letter-spacing: 3px; font-weight: bold; }
           </style>
         </head>
         <body>
           <div class="header">
             <h2>${currentBusiness?.name || 'KAROBAAR'}</h2>
-            <p>Official Receipt</p>
+            <p>Official Sales Receipt</p>
             ${currentBusiness?.phone || currentUser?.phone ? `<p style="margin-top: 4px; font-weight: bold;">Ph: ${currentBusiness?.phone || currentUser?.phone}</p>` : ''}
+            <div class="badge">Token: ${tokenNumber} • ${orderType}</div>
           </div>
           
           <div class="meta">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
               <span><strong>Date:</strong> ${new Date().toLocaleDateString()}</span>
               <span>${new Date().toLocaleTimeString()}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span><strong>Pay:</strong> ${paymentMethod}</span>
-              <span><strong>Cashier:</strong> Admin</span>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+              <span><strong>Pay Mode:</strong> ${paymentMethod}</span>
+              <span><strong>Cashier:</strong> ${selectedEmpObj ? selectedEmpObj.name : 'Admin'}</span>
             </div>
-            ${selectedCustomer ? `<div style="margin-top: 4px;"><strong>Customer:</strong> ${selectedCustomer}</div>` : ''}
+            ${selectedCustObj ? `<div style="margin-top: 3px;"><strong>Customer:</strong> ${selectedCustObj.name} (${selectedCustObj.phone || 'No phone'})</div>` : ''}
+            ${orderNotes ? `<div style="margin-top: 3px; font-style: italic;"><strong>Note:</strong> ${orderNotes}</div>` : ''}
           </div>
 
           <table>
@@ -214,7 +523,7 @@ const POS = () => {
             <tbody>
               ${cart.map(item => `
                 <tr>
-                  <td>${item.name}</td>
+                  <td>${item.name}${item.isCustom ? ' *' : ''}</td>
                   <td>${item.quantity}</td>
                   <td class="text-right">${currencySymbol}${item.price.toFixed(2)}</td>
                   <td class="text-right">${currencySymbol}${(item.price * item.quantity).toFixed(2)}</td>
@@ -232,20 +541,39 @@ const POS = () => {
               <span>Tax (${taxRate}%)</span>
               <span>${currencySymbol}${taxAmount.toFixed(2)}</span>
             </div>
-            ${discount > 0 ? `
+            ${calculatedDiscount > 0 ? `
             <div class="total-row">
-              <span>Discount</span>
-              <span>-${currencySymbol}${discount.toFixed(2)}</span>
+              <span>Discount ${discountType === 'percent' ? `(${discountValue}%)` : ''}</span>
+              <span>-${currencySymbol}${calculatedDiscount.toFixed(2)}</span>
             </div>` : ''}
             <div class="total-row grand-total">
               <span>TOTAL</span>
-              <span>${currencySymbol}${Math.max(0, total).toFixed(2)}</span>
+              <span>${currencySymbol}${total.toFixed(2)}</span>
             </div>
+            ${paymentMethod === 'Cash' && parsedCashTendered > 0 ? `
+              <div class="total-row" style="margin-top: 6px; font-weight: normal;">
+                <span>Cash Tendered:</span>
+                <span>${currencySymbol}${parsedCashTendered.toFixed(2)}</span>
+              </div>
+              <div class="total-row" style="font-weight: bold;">
+                <span>Change Returned:</span>
+                <span>${currencySymbol}${changeDue.toFixed(2)}</span>
+              </div>
+            ` : ''}
+            ${paymentMethod === 'Split' ? `
+              <div class="total-row" style="margin-top: 6px; font-weight: normal;">
+                <span>Split: Cash ${currencySymbol}${splitCash} | UPI ${currencySymbol}${splitUpi} | Card ${currencySymbol}${splitCard}</span>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="barcode">
+            *${tokenNumber}*
           </div>
 
           <div class="footer">
-            <p>Thank you for buying</p>
-            <p>Visit again..!!</p>
+            <p style="margin: 0 0 4px 0;">Thank you for your business!</p>
+            <p style="margin: 0;">Visit Again</p>
           </div>
         </body>
       </html>
@@ -289,112 +617,226 @@ const POS = () => {
         customers={customers}
         selectedCustomer={selectedCustomer}
         setSelectedCustomer={setSelectedCustomer}
-        discount={discount}
-        setDiscount={setDiscount}
+        discount={calculatedDiscount}
+        setDiscount={setDiscountValue}
         success={success}
       />
     );
   }
 
+  const selectedCustObj = customers.find(c => c.id === selectedCustomer);
+
   return (
     <div className="pos-container hidden-mobile">
-      {/* Left side: Products Grid */}
-      <div className="pos-products-section">
-        <div className="pos-search-bar py-4 px-2 mt-2">
-          <Input 
-            placeholder="Search by name, SKU or barcode..." 
-            icon={<Search size={18} />}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      {/* Toast Notification Pill */}
+      {toastMessage && (
+        <div className="pos-toast-banner">
+          <CheckCircle2 size={16} />
+          <span>{toastMessage}</span>
         </div>
-        <div className={products.length === 0 || filteredProducts.length === 0 ? "flex-1 overflow-y-auto flex flex-col items-center justify-center p-6 h-full" : "flex-1 overflow-y-auto px-2 pb-6"}>
+      )}
+
+      {/* Left side: Products Catalog & Actions */}
+      <div className="pos-products-section">
+        {/* Top Action Bar */}
+        <div className="pos-catalog-header">
+          {/* Search & Barcode Input */}
+          <div className="pos-search-wrapper">
+            <Search size={18} className="pos-search-icon" />
+            <input 
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search product, SKU, or scan barcode (Press Enter to add)... [F2]" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="pos-search-input"
+            />
+            {searchTerm && (
+              <button 
+                type="button" 
+                onClick={() => setSearchTerm('')} 
+                className="pos-clear-search-btn"
+                title="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          {/* Quick Action Buttons */}
+          <div className="pos-header-actions">
+            {/* View Mode Toggle */}
+            <div className="pos-view-toggle">
+              <button 
+                className={`pos-view-btn ${viewMode === 'table' ? 'active' : ''}`}
+                onClick={() => toggleViewMode('table')}
+                title="Table View"
+              >
+                <List size={16} />
+              </button>
+              <button 
+                className={`pos-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => toggleViewMode('grid')}
+                title="Touch POS Grid View"
+              >
+                <LayoutGrid size={16} />
+              </button>
+            </div>
+
+            {/* + Custom Item Button */}
+            <button 
+              className="pos-action-btn"
+              onClick={() => setIsCustomItemModalOpen(true)}
+              title="Add Custom Unlisted Item"
+            >
+              <PackagePlus size={16} />
+              <span>+ Custom Item</span>
+            </button>
+
+            {/* Park / Hold Order Button */}
+            <button 
+              className="pos-action-btn"
+              onClick={handleHoldOrder}
+              disabled={cart.length === 0}
+              title="Park Current Order (F4)"
+              style={{ opacity: cart.length === 0 ? 0.6 : 1 }}
+            >
+              <Clock size={16} />
+              <span>Hold Bill</span>
+            </button>
+
+            {/* Parked Orders Count Badge */}
+            {heldOrders.length > 0 && (
+              <button 
+                className="pos-action-btn pos-parked-badge-btn"
+                onClick={() => setIsHeldOrdersModalOpen(true)}
+                title="View Parked Orders"
+              >
+                <span>Parked ({heldOrders.length})</span>
+              </button>
+            )}
+
+            {/* Keyboard Shortcuts Hint */}
+            <button 
+              className="pos-action-btn pos-icon-only-btn"
+              onClick={() => setIsShortcutsModalOpen(true)}
+              title="Keyboard Shortcuts"
+            >
+              <Keyboard size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Category Filter Pills Bar */}
+        <div className="pos-category-bar custom-scrollbar">
+          {categories.map(cat => {
+            const count = cat === 'All' 
+              ? products.length 
+              : products.filter(p => p.category === cat).length;
+            const isActive = activeCategory === cat;
+
+            return (
+              <button 
+                key={cat} 
+                className={`pos-category-pill ${isActive ? 'active' : ''}`}
+                onClick={() => setActiveCategory(cat)}
+              >
+                <span>{cat}</span>
+                <span className="pos-category-count">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Product Catalog Display (Table or Grid) */}
+        <div className="pos-catalog-body custom-scrollbar">
           {products.length === 0 ? (
-            <div className="w-full max-w-md flex flex-col items-center justify-center text-center opacity-40 hover:opacity-80 transition-opacity duration-300 mx-auto -mt-24">
-              <div className="w-16 h-16 bg-[var(--bg-hover)] rounded-full flex items-center justify-center mb-6 shadow-sm">
-                <ShoppingCart size={28} className="text-text-muted" />
+            <div className="pos-empty-catalog">
+              <div className="pos-empty-icon-wrap">
+                <ShoppingCart size={32} />
               </div>
-              <h3 className="text-xl font-semibold text-text-secondary mb-3">Ready for your first sale?</h3>
-              <p className="text-sm text-text-muted leading-relaxed">
-                Add products from the <strong>Stock / Inventory</strong> tab to get started. <br/>
-                They will appear here so you can easily add them to your current order.
-              </p>
+              <h3>No products found</h3>
+              <p>Add products in Inventory to start billing, or use <strong>+ Custom Item</strong> above.</p>
+              <button 
+                className="pos-action-btn"
+                style={{ marginTop: '16px' }}
+                onClick={() => setIsCustomItemModalOpen(true)}
+              >
+                <PackagePlus size={16} /> Add Custom Item
+              </button>
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-text-muted">
-              <p>No products found matching "{searchTerm}"</p>
+            <div className="pos-empty-catalog">
+              <p>No products match "{searchTerm}" {activeCategory !== 'All' ? `in ${activeCategory}` : ''}</p>
+              <button 
+                className="pos-action-btn"
+                style={{ marginTop: '12px' }}
+                onClick={() => { setSearchTerm(''); setActiveCategory('All'); }}
+              >
+                <RotateCcw size={14} /> Reset Filters
+              </button>
             </div>
-          ) : (
-            <div className="w-full bg-[var(--bg-card)] rounded-xl overflow-hidden shadow-md">
-              <table className="w-full text-left border-collapse">
+          ) : viewMode === 'table' ? (
+            /* TABLE VIEW */
+            <div className="pos-table-card">
+              <table className="pos-table">
                 <thead>
-                  <tr className="border-b border-gray-200 text-sm text-gray-500">
-                    <th className="py-4 px-6 font-semibold w-2/5">Product</th>
-                    <th className="py-4 px-6 font-semibold">Category</th>
-                    <th className="py-4 px-6 font-semibold">Price</th>
-                    <th className="py-4 px-6 font-semibold">Stock</th>
-                    <th className="py-4 px-6 font-semibold text-center w-48">Action</th>
+                  <tr>
+                    <th className="w-2/5">Product</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th className="text-center w-40">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody>
                   {filteredProducts.map(product => {
                     const cartItem = cart.find(item => item.productId === product.id);
                     const quantityInCart = cartItem ? cartItem.quantity : 0;
                     const availableStock = Math.max(0, product.stockQuantity - quantityInCart);
 
                     return (
-                      <tr key={product.id} className={`hover:bg-[var(--bg-hover)] transition-colors ${availableStock <= 0 ? 'opacity-60 grayscale' : ''}`}>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-4">
-                            <div 
-                              className="bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 p-1 rounded-sm shadow-sm flex-shrink-0"
-                              style={{ width: '56px', height: '56px', minWidth: '56px', minHeight: '56px' }}
-                            >
+                      <tr key={product.id} className={availableStock <= 0 ? 'out-of-stock-row' : ''}>
+                        <td>
+                          <div className="pos-product-col">
+                            <div className="pos-thumb-box">
                               {product.imageUrl && product.imageUrl.trim() !== '' ? (
-                                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
+                                <img src={product.imageUrl} alt={product.name} />
                               ) : (
-                                <ShoppingCart size={20} className="text-gray-300" />
+                                <Package size={20} className="text-muted" />
                               )}
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-sm text-text-main leading-snug line-clamp-2">{product.name}</span>
-                              <span className="text-xs text-text-tertiary mt-0.5">{product.sku || 'No SKU'}</span>
+                            <div className="pos-name-col">
+                              <span className="pos-prod-name">{product.name}</span>
+                              <span className="pos-prod-sku">{product.sku || 'No SKU'}</span>
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-6">
-                          <span className="text-sm text-text-secondary">{product.category || 'Uncategorized'}</span>
+                        <td>
+                          <span className="pos-prod-category">{product.category || 'General'}</span>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-baseline">
-                            <span className="text-xs text-text-secondary font-bold mr-1">{currencySymbol}</span>
-                            <span className="font-bold text-text-main text-base tracking-tight">{product.sellingPrice || product.price || 0}</span>
+                        <td>
+                          <div className="pos-price-val">
+                            <span className="currency">{currencySymbol}</span>
+                            <span className="amount">{product.sellingPrice || product.price || 0}</span>
                           </div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="flex flex-col">
+                        <td>
+                          <div className="pos-stock-badge-col">
                             {(() => {
                               const threshold = currentBusiness?.settings?.lowStockThreshold || 10;
                               const isLow = availableStock > 0 && availableStock <= threshold;
                               const isOut = availableStock <= 0;
-                              let stockColor = '#16a34a'; // Green
-                              if (isOut || isLow) stockColor = '#dc2626'; // Red
-                              
                               return (
-                                <>
-                                  <span className="text-[11px] font-bold" style={{ color: stockColor }}>
-                                    {isOut ? 'Out of stock' : (isLow ? 'Low Stock' : 'In Stock')}
-                                  </span>
-                                  <span className="text-[10px] font-bold mt-0.5" style={{ color: stockColor }}>
-                                    ({availableStock})
-                                  </span>
-                                </>
+                                <span className={`pos-stock-tag ${isOut ? 'out' : isLow ? 'low' : 'in'}`}>
+                                  {isOut ? 'Out of stock' : isLow ? `Low (${availableStock})` : `In Stock (${availableStock})`}
+                                </span>
                               );
                             })()}
                           </div>
                         </td>
-                        <td className="py-4 px-6">
-                          {/* Action Button/Toggle */}
+                        <td>
                           {quantityInCart > 0 ? (
                             <div className="pos-qty-toggle">
                               <button 
@@ -410,8 +852,8 @@ const POS = () => {
                               
                               <button 
                                 className="pos-qty-btn"
-                                style={{ opacity: availableStock > 0 ? 1 : 0.5, cursor: availableStock > 0 ? 'pointer' : 'not-allowed' }}
-                                onClick={() => { if(availableStock > 0) addToCart(product); }}
+                                disabled={availableStock <= 0}
+                                onClick={() => { if (availableStock > 0) addToCart(product); }}
                               >
                                 <Plus size={14} strokeWidth={3} />
                               </button>
@@ -421,12 +863,11 @@ const POS = () => {
                               className="pos-add-btn"
                               onClick={() => addToCart(product)}
                             >
-                              <ShoppingCart size={16} strokeWidth={2.5} /> 
-                              <span>Add to Cart</span>
+                              <ShoppingCart size={15} strokeWidth={2.5} /> 
+                              <span>Add</span>
                             </button>
                           ) : (
                             <div className="pos-unavailable-btn">
-                              <ShoppingCart size={16} strokeWidth={2.5} /> 
                               <span>Unavailable</span>
                             </div>
                           )}
@@ -437,312 +878,693 @@ const POS = () => {
                 </tbody>
               </table>
             </div>
+          ) : (
+            /* TOUCH GRID VIEW */
+            <div className="pos-touch-grid">
+              {filteredProducts.map(product => {
+                const cartItem = cart.find(item => item.productId === product.id);
+                const quantityInCart = cartItem ? cartItem.quantity : 0;
+                const availableStock = Math.max(0, product.stockQuantity - quantityInCart);
+                const isOut = availableStock <= 0;
+
+                return (
+                  <div 
+                    key={product.id}
+                    className={`pos-grid-card ${quantityInCart > 0 ? 'in-cart' : ''} ${isOut ? 'is-out' : ''}`}
+                    onClick={() => { if (!isOut && quantityInCart === 0) addToCart(product); }}
+                  >
+                    <div className="pos-grid-thumb">
+                      {product.imageUrl && product.imageUrl.trim() !== '' ? (
+                        <img src={product.imageUrl} alt={product.name} />
+                      ) : (
+                        <Package size={28} className="text-muted" />
+                      )}
+                      <span className="pos-grid-cat-tag">{product.category || 'General'}</span>
+                    </div>
+
+                    <div className="pos-grid-info">
+                      <h4 className="pos-grid-title" title={product.name}>{product.name}</h4>
+                      <div className="pos-grid-meta">
+                        <div className="pos-grid-price">
+                          {currencySymbol}{product.sellingPrice || product.price || 0}
+                        </div>
+                        <span className={`pos-stock-tag ${isOut ? 'out' : availableStock <= 10 ? 'low' : 'in'}`}>
+                          {isOut ? 'Out' : `${availableStock} left`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions on Card */}
+                    <div className="pos-grid-actions" onClick={e => e.stopPropagation()}>
+                      {quantityInCart > 0 ? (
+                        <div className="pos-qty-toggle" style={{ width: '100%', height: '34px' }}>
+                          <button 
+                            className="pos-qty-btn"
+                            onClick={() => { if (quantityInCart === 1) removeFromCart(product.id); else updateQuantity(product.id, -1); }}
+                          >
+                            <Minus size={13} strokeWidth={3} />
+                          </button>
+                          <div className="pos-qty-val" style={{ fontSize: '13px' }}>
+                            {quantityInCart}
+                          </div>
+                          <button 
+                            className="pos-qty-btn"
+                            disabled={availableStock <= 0}
+                            onClick={() => { if (availableStock > 0) addToCart(product); }}
+                          >
+                            <Plus size={13} strokeWidth={3} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          className="pos-add-btn" 
+                          style={{ width: '100%', height: '34px', fontSize: '13px' }}
+                          disabled={isOut}
+                          onClick={() => addToCart(product)}
+                        >
+                          <Plus size={15} /> Add
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
-      {/* Right side: Cart & Checkout */}
-      <div className="pos-cart-section" style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
-          {/* Cart Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '20px', borderBottom: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Cart <ShoppingCart size={20} color="var(--text-muted)" />
-            </h3>
-            {cart.length > 0 && (
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', fontSize: '10px', fontWeight: '900', borderRadius: '50%', marginLeft: '4px' }}>
-                {cart.length}
-              </span>
-            )}
+
+      {/* Right side: Cart & Checkout Section */}
+      <div className="pos-cart-section">
+        {/* Cart Header */}
+        <div className="pos-cart-header">
+          <div className="pos-cart-title-row">
+            <div className="pos-cart-title">
+              <span>Current Order</span>
+              <span className="pos-cart-token">{tokenNumber}</span>
+              {cart.length > 0 && (
+                <span className="pos-cart-count-pill">{cart.reduce((a, b) => a + b.quantity, 0)}</span>
+              )}
+            </div>
+
             <button 
-              style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', cursor: 'pointer', outline: 'none' }}
+              className="pos-cart-clear-btn"
               onClick={clearCart}
+              disabled={cart.length === 0}
             >
-              Clear all
+              Clear
             </button>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }} className="custom-scrollbar">
-            {cart.length === 0 ? (
-              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', opacity: 0.5 }}>
-                <ShoppingCart size={48} strokeWidth={1} style={{ marginBottom: '16px' }} />
-                <p style={{ fontSize: '14px', fontWeight: '500', margin: 0 }}>Your cart is empty</p>
-                <p style={{ fontSize: '12px', marginTop: '4px', textAlign: 'center', maxWidth: '200px' }}>Add products from the left to start a sale.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {cart.map(item => (
-                  <div key={item.productId} style={{ display: 'flex', gap: '16px' }}>
-                    {/* Item Image */}
-                    <div style={{ width: '64px', height: '64px', backgroundColor: 'var(--bg-body)', borderRadius: '8px', border: '1px solid var(--border-color)', padding: '4px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                      ) : (
-                        <Package size={24} color="var(--border-color)" />
-                      )}
-                    </div>
-                    
-                    {/* Item Details */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                        <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)', margin: 0, paddingRight: '8px' }}>{item.name}</h4>
-                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
-                          {currencySymbol}{item.price * item.quantity}
-                        </span>
+          {/* Order Type Selector Pills (Dine-in / Takeaway / Delivery) */}
+          <div className="pos-order-type-bar">
+            <button 
+              className={`pos-order-type-btn ${orderType === 'Takeaway' ? 'active' : ''}`}
+              onClick={() => setOrderType('Takeaway')}
+            >
+              <ShoppingBag size={14} /> Takeaway
+            </button>
+            <button 
+              className={`pos-order-type-btn ${orderType === 'Dine-in' ? 'active' : ''}`}
+              onClick={() => setOrderType('Dine-in')}
+            >
+              <Utensils size={14} /> Dine-in
+            </button>
+            <button 
+              className={`pos-order-type-btn ${orderType === 'Delivery' ? 'active' : ''}`}
+              onClick={() => setOrderType('Delivery')}
+            >
+              <Truck size={14} /> Delivery
+            </button>
+          </div>
+        </div>
+
+        {/* Cart Items List */}
+        <div className="pos-cart-items custom-scrollbar">
+          {cart.length === 0 ? (
+            <div className="pos-empty-cart">
+              <ShoppingCart size={42} strokeWidth={1.5} className="pos-empty-cart-icon" />
+              <p className="pos-empty-cart-title">Cart is empty</p>
+              <p className="pos-empty-cart-sub">Select products from the left or scan a barcode to begin.</p>
+            </div>
+          ) : (
+            <div className="pos-cart-list">
+              {cart.map(item => (
+                <div key={item.productId} className="pos-cart-row">
+                  {/* Item Image / Icon */}
+                  <div className="pos-cart-row-thumb">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} />
+                    ) : (
+                      <Package size={20} className="text-muted" />
+                    )}
+                  </div>
+
+                  {/* Item Info */}
+                  <div className="pos-cart-row-details">
+                    <div className="pos-cart-row-top">
+                      <div className="pos-cart-row-name">
+                        <span>{item.name}</span>
+                        {item.isCustom && <span className="pos-custom-badge">Custom</span>}
                       </div>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500', marginBottom: '12px' }}>
-                        {currencySymbol}{item.price}
+                      <span className="pos-cart-row-total">
+                        {currencySymbol}{(item.price * item.quantity).toFixed(2)}
                       </span>
-                      
-                      {/* Quantity & Delete Actions */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 'auto' }}>
-                        <div style={{ height: '32px', display: 'flex', alignItems: 'center', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
-                          <button 
-                            style={{ width: '32px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)' }}
-                            onClick={() => updateQuantity(item.productId, -1)}
-                          >
-                            <Minus size={14} strokeWidth={3} color="var(--text-main)" />
-                          </button>
-                          <div style={{ width: '32px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                            {item.quantity}
-                          </div>
-                          <button 
-                            style={{ width: '32px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid var(--border-color)' }}
-                            onClick={() => updateQuantity(item.productId, 1)}
-                          >
-                            <Plus size={14} strokeWidth={3} color="var(--text-main)" />
-                          </button>
-                        </div>
-                        
+                    </div>
+
+                    <div className="pos-cart-row-unit-price">
+                      {currencySymbol}{item.price.toFixed(2)} each
+                    </div>
+
+                    {/* Quantity & Delete Controls */}
+                    <div className="pos-cart-row-bottom">
+                      <div className="pos-qty-toggle" style={{ width: '100px', height: '30px' }}>
                         <button 
-                          style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)', color: 'var(--text-secondary)' }}
-                          onClick={() => removeFromCart(item.productId)}
+                          className="pos-qty-btn"
+                          onClick={() => { if (item.quantity === 1) removeFromCart(item.productId); else updateQuantity(item.productId, -1); }}
                         >
-                          <Trash2 size={14} />
+                          <Minus size={12} strokeWidth={3} />
+                        </button>
+                        <div className="pos-qty-val" style={{ fontSize: '12px' }}>
+                          {item.quantity}
+                        </div>
+                        <button 
+                          className="pos-qty-btn"
+                          onClick={() => updateQuantity(item.productId, 1)}
+                        >
+                          <Plus size={12} strokeWidth={3} />
                         </button>
                       </div>
+
+                      {/* Quick multipliers */}
+                      <button 
+                        className="pos-quick-mult-btn"
+                        onClick={() => updateQuantity(item.productId, 5)}
+                        title="Add 5 more"
+                      >
+                        +5
+                      </button>
+
+                      <button 
+                        className="pos-cart-del-btn"
+                        onClick={() => removeFromCart(item.productId)}
+                        title="Remove item"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Cart Bottom / Checkout Panel */}
+        <div className="pos-checkout-panel">
+          {/* Order Note / Table # */}
+          <div className="pos-order-note-row">
+            <input 
+              type="text"
+              placeholder="Table # or Order note (e.g. Table 4, Less spicy)..."
+              value={orderNotes}
+              onChange={e => setOrderNotes(e.target.value)}
+              className="pos-order-note-input"
+            />
           </div>
 
-          <div style={{ backgroundColor: 'var(--bg-body)', borderTop: '1px solid var(--border-color)', padding: '20px' }}>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ flex: 1 }}>
+          {/* Customer & Rep Dropdowns */}
+          <div className="pos-actors-row">
+            <div className="pos-actor-col">
+              <div className="pos-customer-select-wrap">
                 <select 
                   value={selectedCustomer} 
                   onChange={(e) => setSelectedCustomer(e.target.value)}
-                  style={{ width: '100%', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px', color: 'var(--text-main)', outline: 'none', fontSize: '12px' }}
+                  className="pos-select"
                 >
                   <option value="">Walk-in Customer</option>
-                  {customers.map(c => <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>)}
+                  {customers.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.phone ? `(${c.phone})` : ''}
+                    </option>
+                  ))}
                 </select>
-              </div>
-              <div style={{ flex: 1 }}>
-                <select 
-                  value={selectedEmployee} 
-                  onChange={(e) => setSelectedEmployee(e.target.value)}
-                  style={{ width: '100%', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px', color: 'var(--text-main)', outline: 'none', fontSize: '12px' }}
+                <button 
+                  type="button" 
+                  className="pos-quick-add-cust-btn"
+                  onClick={() => setIsQuickCustomerModalOpen(true)}
+                  title="Add new customer"
                 >
-                  <option value="">Sales Rep (Admin)</option>
-                  {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.role})</option>)}
-                </select>
+                  <UserPlus size={14} />
+                </button>
               </div>
+
+              {selectedCustObj && (selectedCustObj.outstandingBalance > 0) && (
+                <div className="pos-cust-balance-hint">
+                  Khata Due: {currencySymbol}{selectedCustObj.outstandingBalance.toFixed(2)}
+                </div>
+              )}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '14px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>Subtotal</span>
-              <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{currencySymbol}{subtotal.toFixed(2)}</span>
+            <div className="pos-actor-col">
+              <select 
+                value={selectedEmployee} 
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+                className="pos-select"
+              >
+                <option value="">Rep: Admin</option>
+                {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.role})</option>)}
+              </select>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '14px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>Tax ({taxRate}%)</span>
-              <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{currencySymbol}{taxAmount.toFixed(2)}</span>
+          </div>
+
+          {/* Pricing Summary */}
+          <div className="pos-pricing-summary">
+            <div className="pos-summary-row">
+              <span>Subtotal</span>
+              <span className="font-bold">{currencySymbol}{subtotal.toFixed(2)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', fontSize: '14px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>Discount</span>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <span style={{ color: 'var(--text-muted)', marginRight: '8px' }}>{currencySymbol}</span>
+
+            <div className="pos-summary-row">
+              <span>Tax ({taxRate}%)</span>
+              <span className="font-bold">{currencySymbol}{taxAmount.toFixed(2)}</span>
+            </div>
+
+            {/* Discount Control Row */}
+            <div className="pos-discount-control-row">
+              <div className="pos-discount-label-col">
+                <span className="pos-discount-title">Discount</span>
+                <div className="pos-discount-toggle">
+                  <button 
+                    className={`pos-disc-toggle-btn ${discountType === 'fixed' ? 'active' : ''}`}
+                    onClick={() => setDiscountType('fixed')}
+                  >
+                    {currencySymbol}
+                  </button>
+                  <button 
+                    className={`pos-disc-toggle-btn ${discountType === 'percent' ? 'active' : ''}`}
+                    onClick={() => setDiscountType('percent')}
+                  >
+                    %
+                  </button>
+                </div>
+              </div>
+
+              <div className="pos-discount-inputs">
                 <input 
                   type="number" 
-                  value={discount} 
-                  onChange={(e) => setDiscount(Number(e.target.value))}
-                  style={{ width: '80px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '4px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--text-main)', outline: 'none' }}
+                  value={discountValue} 
+                  onChange={(e) => setDiscountValue(Math.max(0, parseFloat(e.target.value) || 0))}
+                  className="pos-discount-input"
                   min="0"
-                  max={subtotal}
+                  placeholder="0"
                 />
               </div>
             </div>
-            
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)' }}>Total</span>
-                <span style={{ fontSize: '24px', fontWeight: '900', color: 'var(--text-main)' }}>{currencySymbol}{Math.max(0, total).toFixed(2)}</span>
-              </div>
+
+            {/* Quick Discount Presets */}
+            <div className="pos-discount-presets">
+              {[5, 10, 15, 20].map(pct => (
+                <button 
+                  key={pct}
+                  className="pos-discount-preset-btn"
+                  onClick={() => { setDiscountType('percent'); setDiscountValue(pct); }}
+                >
+                  {pct}%
+                </button>
+              ))}
+              {discountValue > 0 && (
+                <button 
+                  className="pos-discount-preset-btn clear"
+                  onClick={() => setDiscountValue(0)}
+                >
+                  Reset
+                </button>
+              )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              <button 
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '40px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', border: paymentMethod === 'Cash' ? 'none' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'Cash' ? 'var(--text-main)' : 'var(--bg-card)', color: paymentMethod === 'Cash' ? 'var(--bg-body)' : 'var(--text-secondary)' }}
-                onClick={() => setPaymentMethod('Cash')}
-              >
-                <Banknote size={16} /> Cash
-              </button>
-              <button 
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '40px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', border: paymentMethod === 'Card' ? 'none' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'Card' ? 'var(--text-main)' : 'var(--bg-card)', color: paymentMethod === 'Card' ? 'var(--bg-body)' : 'var(--text-secondary)' }}
-                onClick={() => setPaymentMethod('Card')}
-              >
-                <CreditCard size={16} /> Card
-              </button>
-              <button 
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '40px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', border: paymentMethod === 'Udhaar' ? 'none' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'Udhaar' ? 'var(--danger)' : 'var(--bg-card)', color: paymentMethod === 'Udhaar' ? 'var(--danger-bg)' : 'var(--text-secondary)' }}
-                onClick={() => setPaymentMethod('Udhaar')}
-              >
-                <User size={16} /> Udhaar
-              </button>
-            </div>
-
-            {paymentMethod === 'Udhaar' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', backgroundColor: 'var(--bg-elevated)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Advance Paid</span>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-muted)', marginRight: '8px', fontSize: '12px' }}>{currencySymbol}</span>
-                    <input 
-                      type="number" 
-                      value={amountPaid} 
-                      onChange={(e) => setAmountPaid(e.target.value)}
-                      placeholder="0.00"
-                      style={{ width: '80px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '4px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--text-main)', outline: 'none', fontSize: '12px' }}
-                      min="0"
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Due Date</span>
-                  <input 
-                    type="date" 
-                    value={dueDate} 
-                    onChange={(e) => setDueDate(e.target.value)}
-                    style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '4px 8px', color: 'var(--text-main)', outline: 'none', fontSize: '12px' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border-color)', paddingTop: '8px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--danger)' }}>Balance Pending</span>
-                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--danger)' }}>
-                    {currencySymbol}{Math.max(0, total - (parseFloat(amountPaid) || 0)).toFixed(2)}
-                  </span>
-                </div>
+            {calculatedDiscount > 0 && (
+              <div className="pos-summary-row text-discount">
+                <span>Discount Applied</span>
+                <span>-{currencySymbol}{calculatedDiscount.toFixed(2)}</span>
               </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button 
-                style={{ width: '100%', height: '48px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: cart.length === 0 ? 'var(--bg-elevated)' : 'var(--text-main)', color: cart.length === 0 ? 'var(--text-muted)' : 'var(--bg-body)', cursor: cart.length === 0 ? 'not-allowed' : 'pointer', border: 'none' }}
-                onClick={handleCheckout}
-                disabled={cart.length === 0 || processing}
-              >
-                {processing ? 'Processing...' : success ? 'Sale Saved!' : (
-                  <>Checkout <ArrowRight size={18} style={{ marginLeft: '8px' }} /></>
-                )}
-              </button>
-              
-              <button 
-                style={{ width: '100%', height: '48px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', color: cart.length === 0 ? 'var(--text-muted)' : 'var(--text-main)', cursor: cart.length === 0 ? 'not-allowed' : 'pointer' }}
-                onClick={handlePrint}
-                disabled={cart.length === 0 || processing}
-              >
-                <Printer size={18} style={{ marginRight: '8px' }} /> Print Bill
-              </button>
+            {/* Grand Total */}
+            <div className="pos-grand-total-row">
+              <span className="pos-total-label">Payable Total</span>
+              <span className="pos-total-val">{currencySymbol}{total.toFixed(2)}</span>
             </div>
-
-            {success && (
-              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--text-main)', color: 'var(--bg-body)', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                Sale has been recorded successfully!
-              </div>
-            )}
           </div>
+
+          {/* Payment Method Selector */}
+          <div className="pos-payment-methods">
+            <button 
+              className={`pos-pay-btn ${paymentMethod === 'Cash' ? 'active' : ''}`}
+              onClick={() => setPaymentMethod('Cash')}
+            >
+              <Banknote size={15} /> Cash
+            </button>
+            <button 
+              className={`pos-pay-btn ${paymentMethod === 'Card' ? 'active' : ''}`}
+              onClick={() => setPaymentMethod('Card')}
+            >
+              <CreditCard size={15} /> Card
+            </button>
+            <button 
+              className={`pos-pay-btn ${paymentMethod === 'UPI' ? 'active' : ''}`}
+              onClick={() => setPaymentMethod('UPI')}
+            >
+              <QrCode size={15} /> UPI / QR
+            </button>
+            <button 
+              className={`pos-pay-btn ${paymentMethod === 'Split' ? 'active' : ''}`}
+              onClick={() => setPaymentMethod('Split')}
+            >
+              <Split size={15} /> Split
+            </button>
+            <button 
+              className={`pos-pay-btn ${paymentMethod === 'Udhaar' ? 'active' : ''}`}
+              onClick={() => setPaymentMethod('Udhaar')}
+            >
+              <User size={15} /> Udhaar
+            </button>
+          </div>
+
+          {/* Conditional Payment Controls */}
+          {/* 1. Cash Tendered & Change Due */}
+          {paymentMethod === 'Cash' && cart.length > 0 && (
+            <div className="pos-payment-subpanel">
+              <div className="pos-subpanel-row">
+                <span className="pos-subpanel-title">Cash Tendered</span>
+                <input 
+                  type="number" 
+                  value={cashTendered} 
+                  onChange={e => setCashTendered(e.target.value)}
+                  placeholder={total.toFixed(0)}
+                  className="pos-subpanel-input"
+                  min="0"
+                />
+              </div>
+              <div className="pos-cash-presets">
+                <button className="pos-cash-preset-btn" onClick={() => setCashTendered(total.toFixed(0))}>Exact</button>
+                <button className="pos-cash-preset-btn" onClick={() => setCashTendered('500')}>₹500</button>
+                <button className="pos-cash-preset-btn" onClick={() => setCashTendered('1000')}>₹1000</button>
+                <button className="pos-cash-preset-btn" onClick={() => setCashTendered('2000')}>₹2000</button>
+              </div>
+              {parsedCashTendered > 0 && (
+                <div className="pos-change-due-row">
+                  <span>Change to Return:</span>
+                  <span className="pos-change-val">{currencySymbol}{changeDue.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2. Split Payment Inputs */}
+          {paymentMethod === 'Split' && (
+            <div className="pos-payment-subpanel">
+              <div className="pos-subpanel-row">
+                <span className="pos-subpanel-title">Cash Portion</span>
+                <input 
+                  type="number" 
+                  value={splitDetails.cash} 
+                  onChange={e => setSplitDetails(prev => ({ ...prev, cash: e.target.value }))}
+                  placeholder="0.00"
+                  className="pos-subpanel-input"
+                />
+              </div>
+              <div className="pos-subpanel-row">
+                <span className="pos-subpanel-title">UPI Portion</span>
+                <input 
+                  type="number" 
+                  value={splitDetails.upi} 
+                  onChange={e => setSplitDetails(prev => ({ ...prev, upi: e.target.value }))}
+                  placeholder="0.00"
+                  className="pos-subpanel-input"
+                />
+              </div>
+              <div className="pos-subpanel-row">
+                <span className="pos-subpanel-title">Card Portion</span>
+                <input 
+                  type="number" 
+                  value={splitDetails.card} 
+                  onChange={e => setSplitDetails(prev => ({ ...prev, card: e.target.value }))}
+                  placeholder="0.00"
+                  className="pos-subpanel-input"
+                />
+              </div>
+              <div className="pos-split-status-row">
+                <span>Remaining: {currencySymbol}{splitRemaining.toFixed(2)}</span>
+                <button 
+                  className="pos-quick-fill-btn"
+                  onClick={() => setSplitDetails(prev => ({ ...prev, upi: Math.max(0, total - (parseFloat(prev.cash) || 0) - (parseFloat(prev.card) || 0)).toFixed(2) }))}
+                >
+                  Balance to UPI
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 3. Udhaar Controls */}
+          {paymentMethod === 'Udhaar' && (
+            <div className="pos-payment-subpanel">
+              <div className="pos-subpanel-row">
+                <span className="pos-subpanel-title">Advance Paid</span>
+                <input 
+                  type="number" 
+                  value={amountPaid} 
+                  onChange={(e) => setAmountPaid(e.target.value)}
+                  placeholder="0.00"
+                  className="pos-subpanel-input"
+                  min="0"
+                />
+              </div>
+              <div className="pos-subpanel-row">
+                <span className="pos-subpanel-title">Due Date</span>
+                <input 
+                  type="date" 
+                  value={dueDate} 
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="pos-subpanel-input"
+                />
+              </div>
+              <div className="pos-change-due-row">
+                <span>Balance to Khata:</span>
+                <span className="pos-change-val">{currencySymbol}{Math.max(0, total - (parseFloat(amountPaid) || 0)).toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Primary Checkout Actions */}
+          <div className="pos-checkout-actions">
+            <button 
+              className="pos-checkout-btn"
+              onClick={handleCheckout}
+              disabled={cart.length === 0 || processing}
+            >
+              {processing ? 'Processing Sale...' : success ? 'Sale Completed!' : (
+                <>Checkout ({currencySymbol}{total.toFixed(2)}) <ArrowRight size={18} /></>
+              )}
+            </button>
+            
+            <button 
+              className="pos-print-btn"
+              onClick={handlePrint}
+              disabled={cart.length === 0 || processing}
+            >
+              <Printer size={17} /> Print Bill
+            </button>
+          </div>
+
+          {success && (
+            <div className="pos-success-banner">
+              Sale recorded successfully!
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Invoice Modal Popup */}
-      {isInvoiceModalOpen && (
-        <div className="biz-modal-overlay" onClick={() => setIsInvoiceModalOpen(false)}>
-          <div className="biz-modal-content" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-            <div className="biz-modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-              <h2 className="text-xl font-bold">Invoice Preview</h2>
+      {/* UPI / QR Payment Modal */}
+      <UPIModal 
+        isOpen={isUPIModalOpen}
+        onClose={() => setIsUPIModalOpen(false)}
+        onConfirm={finalizeCheckout}
+        total={total}
+        currencySymbol={currencySymbol}
+        businessName={currentBusiness?.name || 'Karobaar'}
+      />
+
+      {/* Held Orders Modal */}
+      <HeldOrdersModal 
+        isOpen={isHeldOrdersModalOpen}
+        onClose={() => setIsHeldOrdersModalOpen(false)}
+        heldOrders={heldOrders}
+        onResumeOrder={handleResumeOrder}
+        onDeleteOrder={handleDeleteHeldOrder}
+        currencySymbol={currencySymbol}
+      />
+
+      {/* Custom Item Modal */}
+      <CustomItemModal 
+        isOpen={isCustomItemModalOpen}
+        onClose={() => setIsCustomItemModalOpen(false)}
+        onAddCustomItem={handleAddCustomItem}
+        currencySymbol={currencySymbol}
+      />
+
+      {/* Quick Customer Modal */}
+      <QuickCustomerModal 
+        isOpen={isQuickCustomerModalOpen}
+        onClose={() => setIsQuickCustomerModalOpen(false)}
+        onCustomerCreated={handleCustomerCreated}
+        businessId={currentUser?.activeBusinessId}
+      />
+
+      {/* Keyboard Shortcuts Reference Modal */}
+      {isShortcutsModalOpen && (
+        <div className="biz-modal-overlay" onClick={() => setIsShortcutsModalOpen(false)} style={{ zIndex: 1100 }}>
+          <div 
+            className="biz-modal-content" 
+            style={{ maxWidth: '420px', padding: '24px', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', borderRadius: '14px', border: '1px solid var(--border-color)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Keyboard size={20} />
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>POS Keyboard Shortcuts</h3>
+              </div>
+              <button onClick={() => setIsShortcutsModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                <X size={18} />
+              </button>
             </div>
-            <div className="biz-modal-body flex flex-col gap-4">
-              <div style={{ fontFamily: "'Courier New', Courier, monospace", padding: "20px", color: "#000", background: "#fff", border: "1px solid var(--border-color)", borderRadius: "8px", boxShadow: "var(--shadow-sm)" }}>
-                <div style={{ textAlign: "center", marginBottom: "15px", borderBottom: "2px dashed #000", paddingBottom: "15px" }}>
-                  <h2 style={{ margin: "0 0 5px 0", fontSize: "24px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }}>{currentBusiness?.name || 'KAROBAAR'}</h2>
-                  <p style={{ margin: 0, fontSize: "12px", color: "#333" }}>Official Receipt</p>
-                  {currentBusiness?.phone || currentUser?.phone ? <p style={{ margin: "4px 0 0 0", fontWeight: "bold", fontSize: "12px" }}>Ph: {currentBusiness?.phone || currentUser?.phone}</p> : null}
-                </div>
-                
-                <div style={{ marginBottom: "15px", fontSize: "12px", borderBottom: "2px dashed #000", paddingBottom: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                    <span><strong>Date:</strong> {new Date().toLocaleDateString()}</span>
-                    <span>{new Date().toLocaleTimeString()}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                    <span><strong>Pay:</strong> {paymentMethod}</span>
-                    <span><strong>Cashier:</strong> Admin</span>
-                  </div>
-                  {selectedCustomer ? <div style={{ marginTop: "4px" }}><strong>Customer:</strong> {selectedCustomer}</div> : null}
-                </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className="pos-shortcut-row">
+                <kbd className="pos-kbd">F2</kbd>
+                <span>Focus search bar & barcode reader</span>
+              </div>
+              <div className="pos-shortcut-row">
+                <kbd className="pos-kbd">Enter</kbd>
+                <span>Auto-add matched barcode / SKU to cart</span>
+              </div>
+              <div className="pos-shortcut-row">
+                <kbd className="pos-kbd">F4</kbd>
+                <span>Park / Hold current bill</span>
+              </div>
+              <div className="pos-shortcut-row">
+                <kbd className="pos-kbd">F9</kbd>
+                <span>Quick Checkout / Finalize Sale</span>
+              </div>
+              <div className="pos-shortcut-row">
+                <kbd className="pos-kbd">Esc</kbd>
+                <span>Close any open modal or preview</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsShortcutsModalOpen(false)}
+              style={{ marginTop: '20px', width: '100%', height: '38px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
-                <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: "left", padding: "5px 0", borderBottom: "1px solid #000", fontSize: "12px", textTransform: "uppercase" }}>Item</th>
-                      <th style={{ textAlign: "left", padding: "5px 0", borderBottom: "1px solid #000", fontSize: "12px", textTransform: "uppercase" }}>Qty</th>
-                      <th style={{ textAlign: "right", padding: "5px 0", borderBottom: "1px solid #000", fontSize: "12px", textTransform: "uppercase" }}>Price</th>
-                      <th style={{ textAlign: "right", padding: "5px 0", borderBottom: "1px solid #000", fontSize: "12px", textTransform: "uppercase" }}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cart.map(item => (
-                      <tr key={item.productId}>
-                        <td style={{ padding: "8px 0", fontSize: "12px", borderBottom: "1px dashed #eee", verticalAlign: "top" }}>{item.name}</td>
-                        <td style={{ padding: "8px 0", fontSize: "12px", borderBottom: "1px dashed #eee", verticalAlign: "top" }}>{item.quantity}</td>
-                        <td style={{ padding: "8px 0", fontSize: "12px", borderBottom: "1px dashed #eee", verticalAlign: "top", textAlign: "right" }}>{currencySymbol}{item.price.toFixed(2)}</td>
-                        <td style={{ padding: "8px 0", fontSize: "12px", borderBottom: "1px dashed #eee", verticalAlign: "top", textAlign: "right" }}>{currencySymbol}{(item.price * item.quantity).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      {/* Invoice Modal Preview Popup */}
+      {isInvoiceModalOpen && (
+        <div className="biz-modal-overlay" onClick={() => setIsInvoiceModalOpen(false)} style={{ zIndex: 1100 }}>
+          <div className="biz-modal-content" style={{ maxWidth: '420px', width: '92%', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: 'var(--text-main)' }}>Thermal Receipt Preview</h3>
+              <button onClick={() => setIsInvoiceModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                <X size={18} />
+              </button>
+            </div>
 
-                <div style={{ borderTop: "2px solid #000", paddingTop: "10px", margin: "10px 0" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", fontSize: "12px", fontWeight: "bold" }}>
-                    <span>Subtotal</span>
-                    <span>{currencySymbol}{subtotal.toFixed(2)}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", fontSize: "12px", fontWeight: "bold" }}>
-                    <span>Tax ({taxRate}%)</span>
-                    <span>{currencySymbol}{taxAmount.toFixed(2)}</span>
-                  </div>
-                  {discount > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", fontSize: "12px", fontWeight: "bold" }}>
-                      <span>Discount</span>
-                      <span>-{currencySymbol}{discount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "18px", marginTop: "10px", paddingTop: "10px", borderTop: "2px dashed #000", fontWeight: "bold" }}>
-                    <span>TOTAL</span>
-                    <span>{currencySymbol}{Math.max(0, total).toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <div style={{ textAlign: "center", marginTop: "20px", fontSize: "12px", borderTop: "2px dashed #000", paddingTop: "15px", fontWeight: "bold" }}>
-                  <p style={{ margin: "0 0 5px 0" }}>Thank you for buying</p>
-                  <p style={{ margin: 0 }}>Visit again..!!</p>
+            <div style={{ fontFamily: "'Courier New', Courier, monospace", padding: "16px", color: "#000", background: "#fff", border: "1px solid #000", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", fontSize: '12px' }}>
+              <div style={{ textAlign: "center", marginBottom: "12px", borderBottom: "2px dashed #000", paddingBottom: "12px" }}>
+                <h2 style={{ margin: "0 0 4px 0", fontSize: "20px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }}>{currentBusiness?.name || 'KAROBAAR'}</h2>
+                <p style={{ margin: 0, fontSize: "11px", color: "#333" }}>Official Sales Receipt</p>
+                {currentBusiness?.phone || currentUser?.phone ? <p style={{ margin: "4px 0 0 0", fontWeight: "bold", fontSize: "11px" }}>Ph: {currentBusiness?.phone || currentUser?.phone}</p> : null}
+                <div style={{ display: "inline-block", padding: "2px 6px", border: "1px solid #000", fontSize: "10px", fontWeight: "bold", marginTop: "6px" }}>
+                  Token: {tokenNumber} • {orderType}
                 </div>
               </div>
               
-              <div className="flex gap-3 pt-2">
-                <Button className="flex-1 flex items-center justify-center gap-2" onClick={executePrint}>
-                  <Printer size={18} /> Print Now
-                </Button>
+              <div style={{ marginBottom: "12px", fontSize: "11px", borderBottom: "2px dashed #000", paddingBottom: "8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                  <span><strong>Date:</strong> {new Date().toLocaleDateString()}</span>
+                  <span>{new Date().toLocaleTimeString()}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                  <span><strong>Pay:</strong> {paymentMethod}</span>
+                  <span><strong>Cashier:</strong> {employees.find(e => e.id === selectedEmployee)?.name || 'Admin'}</span>
+                </div>
+                {selectedCustObj ? <div style={{ marginTop: "3px" }}><strong>Customer:</strong> {selectedCustObj.name}</div> : null}
+                {orderNotes ? <div style={{ marginTop: "3px", fontStyle: "italic" }}><strong>Note:</strong> {orderNotes}</div> : null}
               </div>
+
+              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "12px" }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: "4px 0", borderBottom: "1px solid #000", fontSize: "11px", textTransform: "uppercase" }}>Item</th>
+                    <th style={{ textAlign: "left", padding: "4px 0", borderBottom: "1px solid #000", fontSize: "11px", textTransform: "uppercase" }}>Qty</th>
+                    <th style={{ textAlign: "right", padding: "4px 0", borderBottom: "1px solid #000", fontSize: "11px", textTransform: "uppercase" }}>Price</th>
+                    <th style={{ textAlign: "right", padding: "4px 0", borderBottom: "1px solid #000", fontSize: "11px", textTransform: "uppercase" }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cart.map(item => (
+                    <tr key={item.productId}>
+                      <td style={{ padding: "6px 0", fontSize: "11px", borderBottom: "1px dashed #ddd", verticalAlign: "top" }}>{item.name}{item.isCustom ? ' *' : ''}</td>
+                      <td style={{ padding: "6px 0", fontSize: "11px", borderBottom: "1px dashed #ddd", verticalAlign: "top" }}>{item.quantity}</td>
+                      <td style={{ padding: "6px 0", fontSize: "11px", borderBottom: "1px dashed #ddd", verticalAlign: "top", textAlign: "right" }}>{currencySymbol}{item.price.toFixed(2)}</td>
+                      <td style={{ padding: "6px 0", fontSize: "11px", borderBottom: "1px dashed #ddd", verticalAlign: "top", textAlign: "right" }}>{currencySymbol}${(item.price * item.quantity).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div style={{ borderTop: "2px solid #000", paddingTop: "8px", margin: "8px 0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "11px", fontWeight: "bold" }}>
+                  <span>Subtotal</span>
+                  <span>{currencySymbol}{subtotal.toFixed(2)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "11px", fontWeight: "bold" }}>
+                  <span>Tax ({taxRate}%)</span>
+                  <span>{currencySymbol}{taxAmount.toFixed(2)}</span>
+                </div>
+                {calculatedDiscount > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "11px", fontWeight: "bold" }}>
+                    <span>Discount {discountType === 'percent' ? `(${discountValue}%)` : ''}</span>
+                    <span>-{currencySymbol}{calculatedDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "16px", marginTop: "8px", paddingTop: "8px", borderTop: "2px dashed #000", fontWeight: "bold" }}>
+                  <span>TOTAL</span>
+                  <span>{currencySymbol}{total.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div style={{ textAlign: "center", marginTop: "14px", fontSize: "11px", borderTop: "2px dashed #000", paddingTop: "10px", fontWeight: "bold" }}>
+                <p style={{ margin: "0 0 3px 0" }}>Thank you for buying</p>
+                <p style={{ margin: 0 }}>Visit again..!!</p>
+              </div>
+            </div>
+            
+            <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+              <button 
+                onClick={() => setIsInvoiceModalOpen(false)}
+                style={{ flex: 1, height: "42px", borderRadius: "8px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-card)", color: "var(--text-main)", fontWeight: "bold", cursor: "pointer" }}
+              >
+                Close
+              </button>
+              <button 
+                onClick={executePrint}
+                style={{ flex: 2, height: "42px", borderRadius: "8px", border: "none", backgroundColor: "var(--text-main)", color: "var(--bg-card)", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+              >
+                <Printer size={18} /> Print Thermal Bill
+              </button>
             </div>
           </div>
         </div>
