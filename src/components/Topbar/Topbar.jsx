@@ -180,6 +180,14 @@ const Topbar = () => {
           subtitle: 'Automate tasks & ask business queries',
           icon: Sparkles,
           action: () => window.dispatchEvent(new CustomEvent('karobaar_open_ai_assistant', { detail: { query: q } }))
+        },
+        {
+          id: 'act-onboard',
+          type: 'Action',
+          title: 'Run AI Store Setup Wizard',
+          subtitle: 'Step-by-step automated store configuration',
+          icon: Sparkles,
+          action: () => window.dispatchEvent(new CustomEvent('karobaar_start_ai_onboarding'))
         }
       ];
 

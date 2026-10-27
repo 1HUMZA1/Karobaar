@@ -4,6 +4,7 @@ import Sidebar from '../Sidebar/Sidebar';
 import Topbar from '../Topbar/Topbar';
 import BottomNav from '../BottomNav/BottomNav';
 import { CustomizeAIChatbot } from '../AI/CustomizeAIChatbot';
+import { AIOnboardingConcierge } from '../AI/AIOnboardingConcierge';
 import { ErrorBoundary } from '../ErrorBoundary';
 import './Layout.css';
 
@@ -40,6 +41,7 @@ const Layout = () => {
       </div>
       <BottomNav />
       <CustomizeAIChatbot />
+      <AIOnboardingConcierge />
     </div>
   );
 };

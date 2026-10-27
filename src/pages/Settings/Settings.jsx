@@ -18,6 +18,7 @@ import {
   Download,
   RotateCcw,
   Sparkles,
+  Bot,
   CheckSquare,
   Square,
   Monitor,
@@ -719,16 +720,29 @@ const Settings = () => {
                   </p>
                 </div>
 
-                <button 
-                  type="button" 
-                  onClick={() => window.dispatchEvent(new CustomEvent('karobaar_open_ai_assistant'))}
-                  className="settings-btn-primary"
-                  style={{ height: '36px', fontSize: '0.8rem', padding: '0 1rem' }}
-                  title="Open live AI assistant"
-                >
-                  <Sparkles size={14} />
-                  <span>Test Customize AI</span>
-                </button>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => window.dispatchEvent(new CustomEvent('karobaar_start_ai_onboarding'))}
+                    className="settings-btn-primary"
+                    style={{ height: '36px', fontSize: '0.8rem', padding: '0 1rem' }}
+                    title="Launch step-by-step AI store setup"
+                  >
+                    <Bot size={14} />
+                    <span>Run AI Setup Wizard</span>
+                  </button>
+
+                  <button 
+                    type="button" 
+                    onClick={() => window.dispatchEvent(new CustomEvent('karobaar_open_ai_assistant'))}
+                    className="settings-btn-primary"
+                    style={{ height: '36px', fontSize: '0.8rem', padding: '0 1rem' }}
+                    title="Open live AI assistant"
+                  >
+                    <Sparkles size={14} />
+                    <span>Test Customize AI</span>
+                  </button>
+                </div>
               </div>
 
               {/* Section 1: AI Assistant Parameters */}

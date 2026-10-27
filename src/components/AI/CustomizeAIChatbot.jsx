@@ -48,6 +48,18 @@ export const CustomizeAIChatbot = () => {
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
+  // Sync refs for uninterrupted voice callbacks
+  const voiceModeActiveRef = useRef(voiceModeActive);
+  const voiceSpeechEnabledRef = useRef(voiceSpeechEnabled);
+
+  useEffect(() => {
+    voiceModeActiveRef.current = voiceModeActive;
+  }, [voiceModeActive]);
+
+  useEffect(() => {
+    voiceSpeechEnabledRef.current = voiceSpeechEnabled;
+  }, [voiceSpeechEnabled]);
+
   // Settings for Customize AI
   const [aiSettings, setAiSettings] = useState(() => {
     try {
@@ -144,8 +156,30 @@ export const CustomizeAIChatbot = () => {
     utterance.rate = 1.05;
     utterance.pitch = 1.0;
 
+    const voices = window.speechSynthesis.getVoices();
+    const isHindi = /[\u0900-\u097F]/.test(sentences) || /(namaste|dhanyawad|aapka|shukriya|kar diya|kardo|hai|kripya|bhejo|aaj|kamayi|bikri|dukan|maal|batao|udhaar)/i.test(sentences);
+    if (isHindi) {
+      const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('swara') || v.name.toLowerCase().includes('madhur'));
+      if (hiVoice) utterance.voice = hiVoice;
+      utterance.lang = 'hi-IN';
+    } else {
+      const inVoice = voices.find(v => v.lang === 'en-IN' || v.name.toLowerCase().includes('india') || v.name.toLowerCase().includes('neerja'));
+      if (inVoice) utterance.voice = inVoice;
+      utterance.lang = 'en-IN';
+    }
+
     utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      // Hands-Free Conversational Loop: automatically resumes listening when speaking ends
+      if (voiceModeActiveRef.current && voiceSpeechEnabledRef.current && recognitionRef.current) {
+        setTimeout(() => {
+          try {
+            recognitionRef.current.start();
+          } catch (e) {}
+        }, 400);
+      }
+    };
     utterance.onerror = () => setIsSpeaking(false);
 
     window.speechSynthesis.speak(utterance);
@@ -252,25 +286,37 @@ export const CustomizeAIChatbot = () => {
       let botActionData = null;
 
       try {
+        // 0. Business Setup & AI Store Onboarding Concierge
+        if (lower.includes('setup') || lower.includes('onboard') || lower.includes('shuru karo') || lower.includes('store setup') || lower.includes('business setup') || lower.includes('dukan setup') || lower.includes('meri dukan') || lower.includes('mera business')) {
+          setIsOpen(false);
+          stopSpeaking();
+          window.dispatchEvent(new CustomEvent('karobaar_start_ai_onboarding'));
+          botResponse = `मैंने आपकी दुकान का लाइव सेटअप विज़ार्ड शुरू कर दिया है। चलिए मिलकर आपका स्टोर कॉन्फ़िगर करते हैं!`;
+          botActionData = { type: 'action_confirmed', badge: 'AI Store Setup Launched' };
+        }
+
         // 1. Sales & Revenue Live Automation
-        if (lower.includes('today sale') || lower.includes('today\'s sale') || lower.includes('aaj ki sale') || (lower.includes('sale') && !lower.includes('new sale') && !lower.includes('add') && !lower.includes('sell') && !lower.includes('bill')) || lower.includes('revenue') || lower.includes('income') || lower.includes('kamayi') || lower.includes('earning')) {
+        else if (lower.includes('today sale') || lower.includes('today\'s sale') || lower.includes('aaj ki sale') || (lower.includes('sale') && !lower.includes('new sale') && !lower.includes('add') && !lower.includes('sell') && !lower.includes('bill')) || lower.includes('revenue') || lower.includes('income') || lower.includes('kamayi') || lower.includes('earning')) {
           const sales = await db.getCollection('sales', businessId);
           const today = new Date().toISOString().split('T')[0];
           const todaySales = sales.filter(s => (s.date || '').startsWith(today));
           const totalRev = todaySales.reduce((sum, s) => sum + (s.total || 0), 0);
           const ordersCount = todaySales.length;
 
-          botResponse = `Here is today's sales report for **${currentBusiness?.name || 'Karobaar'}**:\n\n• **Today's Revenue:** ₹${totalRev.toFixed(2)}\n• **Orders Count:** ${ordersCount} orders\n• **Total Lifetime Sales:** ${sales.length} transactions`;
+          const isHindiQuery = /(aaj|kamayi|bikri|kitna|kya)/i.test(lower);
+          botResponse = isHindiQuery
+            ? `**${currentBusiness?.name || 'Karobaar'}** की आज की बिक्री रिपोर्ट:\n\n• **आज का रेवेन्यू:** ₹${totalRev.toFixed(2)}\n• **कुल ऑर्डर्स:** ${ordersCount} ऑर्डर्स\n• **लाइफटाइम बिक्री:** ${sales.length} ट्रांसैक्शन्स`
+            : `Here is today's sales report for **${currentBusiness?.name || 'Karobaar'}**:\n\n• **Today's Revenue:** ₹${totalRev.toFixed(2)}\n• **Orders Count:** ${ordersCount} orders\n• **Total Lifetime Sales:** ${sales.length} transactions`;
           
           botActionData = {
             type: 'metrics',
-            title: "Live Sales Performance",
+            title: isHindiQuery ? "लाइव बिक्री रिपोर्ट" : "Live Sales Performance",
             metrics: [
-              { label: 'Today Revenue', value: `₹${totalRev.toFixed(2)}` },
-              { label: 'Orders Count', value: ordersCount },
-              { label: 'Lifetime Sales', value: sales.length }
+              { label: isHindiQuery ? 'आज की कमाई' : 'Today Revenue', value: `₹${totalRev.toFixed(2)}` },
+              { label: isHindiQuery ? 'ऑर्डर्स' : 'Orders Count', value: ordersCount },
+              { label: isHindiQuery ? 'कुल बिक्री' : 'Lifetime Sales', value: sales.length }
             ],
-            cta: { label: 'View All Orders', path: '/orders' }
+            cta: { label: isHindiQuery ? 'सभी ऑर्डर्स देखें' : 'View All Orders', path: '/orders' }
           };
         }
 
@@ -389,28 +435,37 @@ export const CustomizeAIChatbot = () => {
         else if (lower.includes('stock') || lower.includes('inventory') || lower.includes('maal') || (lower.includes('product') && lower.includes('low'))) {
           const products = await db.getCollection('products', businessId);
           const lowStock = products.filter(p => (p.stockQuantity || 0) <= 10);
+          const isHindiQuery = /(maal|kam|kitna|batao|dukan)/i.test(lower);
 
           if (lowStock.length === 0) {
-            botResponse = `Great news! All your inventory is well-stocked. Total ${products.length} products tracked, and none are below minimum threshold.`;
+            botResponse = isHindiQuery 
+              ? `बहुत बढ़िया! आपकी दुकान का सारा माल भरपूर स्टॉक में है। कुल ${products.length} प्रोडक्ट्स सुरक्षित हैं।`
+              : `Great news! All your inventory is well-stocked. Total ${products.length} products tracked, and none are below minimum threshold.`;
           } else {
-            botResponse = `Audit complete. Found **${lowStock.length} items** requiring re-order attention:\n` +
-              lowStock.slice(0, 5).map(p => `• **${p.name}**: Only ${p.stockQuantity || 0} units left (Price: ₹${p.sellingPrice || p.price || 0})`).join('\n') +
-              (lowStock.length > 5 ? `\n...and ${lowStock.length - 5} more items.` : '');
+            botResponse = isHindiQuery
+              ? `इन्वेंट्री ऑडिट पूरा हुआ। **${lowStock.length} प्रोडक्ट्स** का स्टॉक कम है और री-ऑर्डर की ज़रूरत है:\n` +
+                lowStock.slice(0, 5).map(p => `• **${p.name}**: सिर्फ ${p.stockQuantity || 0} पीस बचे हैं (रेट: ₹${p.sellingPrice || p.price || 0})`).join('\n')
+              : `Audit complete. Found **${lowStock.length} items** requiring re-order attention:\n` +
+                lowStock.slice(0, 5).map(p => `• **${p.name}**: Only ${p.stockQuantity || 0} units left (Price: ₹${p.sellingPrice || p.price || 0})`).join('\n') +
+                (lowStock.length > 5 ? `\n...and ${lowStock.length - 5} more items.` : '');
             
             botActionData = {
               type: 'inventory_alert',
-              title: 'Low Stock Reorder Guard',
+              title: isHindiQuery ? 'लो स्टॉक चेतावनी' : 'Low Stock Reorder Guard',
               items: lowStock.slice(0, 4),
-              cta: { label: 'Open Inventory', path: '/products' }
+              cta: { label: isHindiQuery ? 'इन्वेंट्री खोलें' : 'Open Inventory', path: '/products' }
             };
           }
         }
 
         // 3. Theme Toggle Live App Control
-        else if (lower.includes('dark') || lower.includes('light') || lower.includes('theme') || (lower.includes('mode') && (lower.includes('change') || lower.includes('toggle') || lower.includes('switch') || lower.includes('kardo')))) {
+        else if (lower.includes('dark') || lower.includes('light') || lower.includes('theme') || (lower.includes('mode') && (lower.includes('change') || lower.includes('toggle') || lower.includes('switch') || lower.includes('kardo') || lower.includes('badlo') || lower.includes('lagao')))) {
           toggleTheme();
           const newTheme = theme === 'light' ? 'Dark' : 'Light';
-          botResponse = `Switched theme to **${newTheme} Mode**! The monochrome high-contrast styling has been updated across the entire workspace.`;
+          const isHindiQuery = /(badlo|lagao|kardo|rang|mod)/i.test(lower);
+          botResponse = isHindiQuery
+            ? `थीम को **${newTheme === 'Dark' ? 'डार्क' : 'लाइट'} मोड** में बदल दिया गया है! ब्लैक एंड व्हाइट स्टाइलिंग तुरंत अपडेट हो चुकी है।`
+            : `Switched theme to **${newTheme} Mode**! The monochrome high-contrast styling has been updated across the entire workspace.`;
           botActionData = {
             type: 'action_confirmed',
             badge: `${newTheme} Theme Activated`
@@ -448,19 +503,24 @@ export const CustomizeAIChatbot = () => {
         }
 
         // 6. Customers & Khata Udhaar Live Audit
-        else if (lower.includes('customer') || lower.includes('khata') || lower.includes('udhaar') || lower.includes('dues') || lower.includes('credit')) {
+        else if (lower.includes('customer') || lower.includes('khata') || lower.includes('udhaar') || lower.includes('dues') || lower.includes('credit') || lower.includes('baki')) {
           const customers = await db.getCollection('customers', businessId);
           const withDues = customers.filter(c => (c.outstandingBalance || 0) > 0);
           const totalDues = withDues.reduce((sum, c) => sum + (c.outstandingBalance || 0), 0);
+          const isHindiQuery = /(udhaar|baki|khata|kaun|grahak)/i.test(lower);
 
-          botResponse = `You have **${withDues.length} customers** with pending Udhaar balance totaling **₹${totalDues.toFixed(2)}**:\n` +
-            withDues.slice(0, 4).map(c => `• **${c.name}**: Due ₹${c.outstandingBalance.toFixed(2)} (${c.phone || 'No phone'})`).join('\n') +
-            (withDues.length > 4 ? `\n...and ${withDues.length - 4} more customers.` : '');
+          botResponse = isHindiQuery
+            ? `आपके **${withDues.length} ग्राहकों** पर कुल **₹${totalDues.toFixed(2)}** का उधार बाकी है:\n` +
+              withDues.slice(0, 4).map(c => `• **${c.name}**: ₹${c.outstandingBalance.toFixed(2)} बाकी (${c.phone || 'फ़ोन नहीं है'})`).join('\n') +
+              (withDues.length > 4 ? `\n...और ${withDues.length - 4} अन्य ग्राहक।` : '')
+            : `You have **${withDues.length} customers** with pending Udhaar balance totaling **₹${totalDues.toFixed(2)}**:\n` +
+              withDues.slice(0, 4).map(c => `• **${c.name}**: Due ₹${c.outstandingBalance.toFixed(2)} (${c.phone || 'No phone'})`).join('\n') +
+              (withDues.length > 4 ? `\n...and ${withDues.length - 4} more customers.` : '');
           
           botActionData = {
             type: 'dues_alert',
-            title: 'Udhaar Outstanding Ledger',
-            cta: { label: 'View Customer Khata', path: '/customers' }
+            title: isHindiQuery ? 'उधार खाता लेजर' : 'Udhaar Outstanding Ledger',
+            cta: { label: isHindiQuery ? 'ग्राहक खाता खोलें' : 'View Customer Khata', path: '/customers' }
           };
         }
 
@@ -605,7 +665,19 @@ export const CustomizeAIChatbot = () => {
             {voiceModeActive ? (
               <div className="customize-voice-orb-view">
                 <div className="voice-orb-container">
-                  <div className={`voice-main-orb ${isListening ? 'listening' : isSpeaking ? 'speaking' : 'idle'}`}>
+                  <div 
+                    className={`voice-main-orb ${isListening ? 'listening' : isSpeaking ? 'speaking' : 'idle'}`}
+                    onClick={() => {
+                      if (isSpeaking) {
+                        stopSpeaking();
+                        try { recognitionRef.current?.start(); } catch (e) {}
+                      } else {
+                        toggleVoiceInput();
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    title={isSpeaking ? "Tap to interrupt & speak" : isListening ? "Tap to pause mic" : "Tap to speak"}
+                  >
                     <div className="orb-core" />
                     <div className="orb-wave wave-1" />
                     <div className="orb-wave wave-2" />
@@ -615,7 +687,11 @@ export const CustomizeAIChatbot = () => {
 
                 <div className="voice-status-text-wrap">
                   <h4 className="voice-status-headline">
-                    {isListening ? 'Listening to your voice...' : isSpeaking ? 'Customize AI is speaking...' : 'Tap the microphone or speak'}
+                    {isListening 
+                      ? 'Listening to your voice...' 
+                      : isSpeaking 
+                      ? 'Customize AI is speaking (Tap orb to interrupt)' 
+                      : 'Hands-Free Loop Active • Speak anytime'}
                   </h4>
                   <p className="voice-interim-sub">
                     {interimTranscript ? `"${interimTranscript}"` : messages[messages.length - 1]?.text.replace(/[*#_`]/g, '').slice(0, 100) + '...'}

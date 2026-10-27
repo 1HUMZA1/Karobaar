@@ -127,6 +127,11 @@ const Login = () => {
 
       if (result?.user) {
         console.log("[AUTH] Google sign-in verified:", result.user.email);
+        const userEmail = result.user.email;
+        const alreadyOnboarded = localStorage.getItem('karobaar_onboarding_completed_' + userEmail) === 'true';
+        if (!alreadyOnboarded) {
+          sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
+        }
         try {
           const sessionUser = {
             id: result.user.uid,
@@ -135,7 +140,7 @@ const Login = () => {
             role: 'Owner',
             activeBusinessId: 'demo-business-1',
             memberships: ['demo-business-1'],
-            onboardingCompleted: true
+            onboardingCompleted: alreadyOnboarded
           };
           localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
         } catch (e) {}
@@ -192,8 +197,14 @@ const Login = () => {
     try {
       if (isRegistering) {
         await createUserWithEmailAndPassword(auth, email.trim(), password);
+        sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
+        const userEmail = email.trim().toLowerCase();
+        const alreadyOnboarded = localStorage.getItem('karobaar_onboarding_completed_' + userEmail) === 'true';
+        if (!alreadyOnboarded && userEmail !== 'owner@sascafeteria.com') {
+          sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
+        }
       }
     } catch (error) {
       console.warn("Auth note (attempting seamless workspace fallback):", error);
@@ -210,6 +221,10 @@ const Login = () => {
         error.code === 'auth/invalid-credential'
       ) {
         try {
+          const alreadyOnboarded = localStorage.getItem('karobaar_onboarding_completed_' + normalizedEmail) === 'true';
+          if (!alreadyOnboarded && (isRegistering || (!normalizedEmail.includes('sascafeteria') && !normalizedEmail.includes('owner')))) {
+            sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
+          }
           if (launchReadyToUseWorkspace) {
             await launchReadyToUseWorkspace();
           }
