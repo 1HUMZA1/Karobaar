@@ -1,0 +1,575 @@
+/* ==========================================================================
+   KAROBAAR AI OVERLAY — TRANSLUCENT JARVIS HUD ON MAIN SCREEN
+   Allows users to see through the AI directly to their business app
+   Strict Monochrome: Pure Black, Charcoal, White & Subtle Grey
+   ========================================================================== */
+
+/* Full Viewport Translucent Backdrop */
+.karobaar-hud-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(9, 9, 11, 0.78);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: hudFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+}
+
+@keyframes hudFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Main HUD Window */
+.karobaar-hud-overlay-window {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: transparent;
+}
+
+/* --------------------------------------------------------------------------
+   1. TOP HUD HEADER
+   -------------------------------------------------------------------------- */
+.karobaar-hud-header {
+  height: 68px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 15, 20, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.karobaar-hud-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.karobaar-hud-brand-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.karobaar-hud-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.karobaar-hud-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #ffffff;
+}
+
+.karobaar-hud-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 8px #ffffff;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+.karobaar-hud-pulse-dot.listening {
+  background-color: #ffffff;
+  box-shadow: 0 0 12px #ffffff;
+  animation: pulseDot 0.8s infinite;
+}
+
+.karobaar-hud-pulse-dot.thinking {
+  background-color: #a1a1aa;
+  animation: pulseDot 1.2s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+.karobaar-hud-state-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.karobaar-hud-tagline {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+}
+
+/* Header Actions */
+.karobaar-hud-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.karobaar-hud-view-toggle {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  padding: 2px;
+}
+
+.hud-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 16px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hud-mode-btn:hover {
+  color: #ffffff;
+}
+
+.hud-mode-btn.active {
+  background: #ffffff;
+  color: #09090b;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.karobaar-hud-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.karobaar-hud-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: scale(1.04);
+}
+
+.karobaar-hud-icon-btn.muted {
+  opacity: 0.5;
+}
+
+.karobaar-hud-icon-btn.close-btn {
+  width: auto;
+  border-radius: 18px;
+  padding: 0 12px;
+  gap: 6px;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.esc-hint {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   2. HUD BODY LAYOUT (Visualizer Core & Transcript)
+   -------------------------------------------------------------------------- */
+.karobaar-hud-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Visualizer Only Mode: Center Focus */
+.karobaar-hud-body.visualizer {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.karobaar-hud-body.visualizer .karobaar-hud-visualizer-section {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+}
+
+/* Split Mode: Left Visualizer, Right Transcript */
+.karobaar-hud-body.split {
+  flex-direction: row;
+}
+
+.karobaar-hud-body.split .karobaar-hud-visualizer-section {
+  width: 46%;
+  min-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.karobaar-hud-body.split .karobaar-hud-transcript-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Quick Action Chips */
+.karobaar-hud-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  max-width: 520px;
+}
+
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.15s ease;
+}
+
+.hud-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   3. TRANSLUCENT MESSAGES TRANSCRIPT
+   -------------------------------------------------------------------------- */
+.karobaar-hud-messages-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hud-empty-transcript {
+  margin: auto;
+  text-align: center;
+  max-width: 360px;
+  padding: 40px 20px;
+}
+
+.hud-empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 6px;
+}
+
+.hud-empty-sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
+}
+
+.hud-message-row {
+  display: flex;
+  width: 100%;
+}
+
+.hud-message-row.user {
+  justify-content: flex-end;
+}
+
+.hud-message-row.assistant {
+  justify-content: flex-start;
+}
+
+.hud-bubble {
+  max-width: 82%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+
+.hud-message-row.user .hud-bubble {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.hud-message-row.assistant .hud-bubble {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+  border-bottom-left-radius: 4px;
+}
+
+.hud-tool-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.hud-tool-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Sensitive Confirmation Card */
+.hud-confirm-card {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+}
+
+.hud-confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #ffffff;
+}
+
+.hud-confirm-summary {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.hud-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #09090b;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hud-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   4. BOTTOM TRANSLUCENT INPUT BAR
+   -------------------------------------------------------------------------- */
+.karobaar-hud-footer {
+  padding: 16px 32px 24px 32px;
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 14, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  flex-shrink: 0;
+}
+
+.karobaar-hud-input-bar {
+  width: 100%;
+  max-width: 780px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  padding: 6px 8px 6px 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.karobaar-hud-input-bar:focus-within {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 8px 36px rgba(255, 255, 255, 0.12);
+}
+
+.hud-input-mic-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-input-mic-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.hud-input-mic-btn.listening {
+  background: #ffffff;
+  color: #09090b;
+  border-color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+}
+
+.mic-ripple {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  animation: micRingPulse 1.2s infinite ease-out;
+}
+
+@keyframes micRingPulse {
+  0% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.hud-input-field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 14.5px;
+  font-weight: 500;
+  padding: 0 6px;
+}
+
+.hud-input-field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.hud-input-send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #09090b;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-input-send-btn:hover:not(:disabled) {
+  transform: scale(1.06);
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.35);
+}
+
+.hud-input-send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   5. RESPONSIVE DESIGN (Mobile & Tablets)
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .karobaar-hud-body.split {
+    flex-direction: column;
+  }
+
+  .karobaar-hud-body.split .karobaar-hud-visualizer-section {
+    width: 100%;
+    min-width: unset;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 16px;
+  }
+
+  .karobaar-hud-header {
+    padding: 0 16px;
+  }
+
+  .karobaar-hud-footer {
+    padding: 12px 16px 16px 16px;
+  }
+}

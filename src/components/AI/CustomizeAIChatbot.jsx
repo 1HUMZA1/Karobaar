@@ -37,6 +37,7 @@ import { db } from '../../services/databaseService';
 import { processJarvisQuery, cleanSpokenQuery } from './jarvisEngine';
 import { aiModelService } from '../../services/aiModelService';
 import { executeKarobaarTool } from '../../services/aiToolsService';
+import KarobaarAIOverlay from './KarobaarAIOverlay';
 import './CustomizeAIChatbot.css';
 
 export const CustomizeAIChatbot = () => {
@@ -62,6 +63,7 @@ export const CustomizeAIChatbot = () => {
   }, [isAiPage]);
 
   // Simple, Non-Intrusive UI States
+  const [isHudOverlayOpen, setIsHudOverlayOpen] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const [isBarMinimized, setIsBarMinimized] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -414,20 +416,18 @@ export const CustomizeAIChatbot = () => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'j' || e.key === 'J')) {
         e.preventDefault();
         playWakeChime();
-        setIsBarMinimized(false);
-        setIsChatDrawerOpen(prev => !prev);
+        setIsHudOverlayOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleGlobalShortcuts);
     return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, []);
 
-  // Listen to wake event from Dedicated Topbar Button
+  // Listen to wake event from Dedicated Topbar Button -> Opens See-Through HUD Overlay
   useEffect(() => {
     const handleWakeEvent = (e) => {
       playWakeChime();
-      setIsBarMinimized(false);
-      setIsChatDrawerOpen(true);
+      setIsHudOverlayOpen(true);
 
       // Start voice listening if enabled
       if (recognitionRef.current && isListeningEnabledRef.current && !isSpeakingRef.current) {
@@ -791,8 +791,8 @@ export const CustomizeAIChatbot = () => {
         <button 
           type="button"
           className="jarvis-minimized-pill"
-          onClick={() => setIsBarMinimized(false)}
-          title={`Expand ${assistantName} Voice Bar (Listening from everywhere • Press Ctrl+J)`}
+          onClick={() => setIsHudOverlayOpen(true)}
+          title={`Open Karobaar AI JARVIS HUD Overlay (Listening from everywhere • Press Ctrl+J)`}
         >
           <span className={`jarvis-bar-dot ${isListening ? 'listening' : isSpeaking ? 'speaking' : !voiceEnabled ? 'muted' : 'idle'}`} />
           <Sparkles size={14} />
@@ -879,12 +879,22 @@ export const CustomizeAIChatbot = () => {
                 {isListening ? <Mic size={14} /> : <MicOff size={14} />}
               </button>
 
+              {/* Futuristic JARVIS HUD Overlay Toggle Button */}
+              <button 
+                type="button" 
+                onClick={() => setIsHudOverlayOpen(true)}
+                className={`jarvis-bar-icon-btn ${isHudOverlayOpen ? 'active' : ''}`}
+                title="Open See-Through Karobaar AI JARVIS HUD [Ctrl+J]"
+              >
+                <Sparkles size={14} />
+              </button>
+
               {/* Side Chat Drawer Toggle Button */}
               <button 
                 type="button" 
                 onClick={() => setIsChatDrawerOpen(!isChatDrawerOpen)}
                 className={`jarvis-bar-icon-btn ${isChatDrawerOpen ? 'active' : ''}`}
-                title="View Full Chat History & Details [Ctrl+J]"
+                title="View Chat Transcript Drawer"
               >
                 <MessageSquare size={14} />
               </button>
@@ -1121,6 +1131,12 @@ export const CustomizeAIChatbot = () => {
           </div>
         </div>
       )}
+
+      {/* Translucent JARVIS HUD Overlay on Main Screen */}
+      <KarobaarAIOverlay 
+        isOpen={isHudOverlayOpen}
+        onClose={() => setIsHudOverlayOpen(false)}
+      />
     </>
   );
 };

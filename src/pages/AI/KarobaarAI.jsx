@@ -28,6 +28,9 @@ import { db } from '../../services/databaseService';
 import { aiConversationService } from '../../services/aiConversationService';
 import { aiModelService } from '../../services/aiModelService';
 import { executeKarobaarTool } from '../../services/aiToolsService';
+import { KarobaarAIVisualizer } from '../../components/AI/KarobaarAIVisualizer';
+import { useKarobaarAIAudio } from '../../components/AI/useKarobaarAIAudio';
+import { Volume2, VolumeX } from 'lucide-react';
 import './KarobaarAI.css';
 
 export const KarobaarAI = () => {
@@ -65,9 +68,31 @@ export const KarobaarAI = () => {
     }
   });
 
-  // Speech Recognition State
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef(null);
+  // Speech Recognition & Audio State
+  const [voiceOutputEnabled, setVoiceOutputEnabled] = useState(true);
+
+  const handleFinalSpeechTranscript = (finalText) => {
+    if (finalText && finalText.trim()) {
+      handleSendMessage(finalText.trim());
+    }
+  };
+
+  const {
+    visualizerState,
+    setVisualizerState,
+    audioLevel,
+    isListening,
+    isSpeaking,
+    interimTranscript,
+    errorMessage: audioError,
+    startListening,
+    stopListening,
+    toggleListening,
+    speakText,
+    stopSpeaking
+  } = useKarobaarAIAudio({
+    onFinalTranscript: handleFinalSpeechTranscript
+  });
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -210,6 +235,7 @@ export const KarobaarAI = () => {
 
     setIsLoading(true);
     setStatusText('Thinking...');
+    setVisualizerState('thinking');
     setActiveToolPills([]);
 
     try {
@@ -229,22 +255,43 @@ export const KarobaarAI = () => {
         callbacks: {
           onToolStart: ({ name, args }) => {
             setStatusText(`Executing tool: ${name}...`);
+            setVisualizerState('thinking');
             setActiveToolPills(prev => [...prev, { name, args, status: 'running' }]);
           },
           onToolEnd: ({ name, result }) => {
             setActiveToolPills(prev => prev.map(p => p.name === name ? { ...p, status: 'done', result } : p));
           },
-          onStatusChange: (status) => setStatusText(status)
+          onStatusChange: (status) => {
+            setStatusText(status);
+            setVisualizerState('thinking');
+          }
         },
         customApiKey: aiSettings.apiKey || '',
         provider: aiSettings.provider || 'auto',
         model: aiSettings.model || ''
       });
 
+      const replyText = result.text || 'I analyzed that request.';
+
+      // Extract spoken sentence
+      let spokenSentence = result.spokenText;
+      if (!spokenSentence) {
+        const cleanForSpeech = replyText
+          .replace(new RegExp('```[\s\S]*?```', 'g'), 'Code block output.')
+          .replace(/[*#_`]/g, '')
+          .replace(/•/g, '')
+          .replace(/\|.*?\|/g, '')
+          .replace(/\n+/g, ' ')
+          .trim();
+        const sentences = cleanForSpeech.split(/[.?!]\s+/);
+        spokenSentence = (sentences.slice(0, 2).join('. ') + '.').slice(0, 240);
+      }
+
       const aiMessage = {
         id: 'msg-' + Date.now(),
         role: 'assistant',
-        content: result.text || 'I analyzed that request.',
+        content: replyText,
+        spokenText: spokenSentence,
         timestamp: new Date().toISOString(),
         toolLogs: result.toolLogs || null,
         requiresConfirmation: result.requiresConfirmation || false,
@@ -256,8 +303,17 @@ export const KarobaarAI = () => {
       setMessages(prev => [...prev, aiMessage]);
       aiConversationService.addMessage(activeConvId, aiMessage);
 
+      // Play audio response if voice enabled
+      if (voiceOutputEnabled && spokenSentence) {
+        speakText(spokenSentence);
+      } else {
+        setVisualizerState('done');
+        setTimeout(() => setVisualizerState('idle'), 1500);
+      }
+
     } catch (err) {
       console.error('Chat error:', err);
+      setVisualizerState('error');
       const errorMessage = {
         id: 'msg-' + Date.now(),
         role: 'assistant',
@@ -266,6 +322,7 @@ export const KarobaarAI = () => {
       };
       setMessages(prev => [...prev, errorMessage]);
       aiConversationService.addMessage(activeConvId, errorMessage);
+      setTimeout(() => setVisualizerState('idle'), 2500);
     } finally {
       setIsLoading(false);
       setStatusText('');
@@ -545,13 +602,18 @@ export const KarobaarAI = () => {
         <div className="karobaar-ai-messages-scroll custom-scrollbar">
           <div className="karobaar-ai-messages-container">
             {messages.length === 0 ? (
-              /* Welcome Screen */
+              /* Welcome Screen with Futuristic JARVIS AI Visualizer */
               <div className="karobaar-ai-welcome-state">
-                <div className="karobaar-ai-welcome-emblem">K</div>
-                <h1 className="karobaar-ai-welcome-title">Karobaar AI</h1>
-                <p className="karobaar-ai-welcome-subtitle">
-                  Hello! I'm Karobaar AI. Ask me anything, or tell me what you want to do in your business.
-                </p>
+                <KarobaarAIVisualizer 
+                  state={visualizerState}
+                  audioLevel={audioLevel}
+                  statusText={audioError || statusText || (isListening ? 'Listening to your voice...' : undefined)}
+                  spokenText={interimTranscript}
+                  size="large"
+                  onMicClick={toggleListening}
+                  onStopSpeaking={stopSpeaking}
+                  showBranding={true}
+                />
 
                 <div className="karobaar-ai-prompt-cards-grid">
                   <div 
@@ -747,12 +809,30 @@ export const KarobaarAI = () => {
               <div className="karobaar-ai-controls-right">
                 <button 
                   type="button" 
-                  onClick={handleToggleVoice}
+                  onClick={() => {
+                    if (voiceOutputEnabled) stopSpeaking();
+                    setVoiceOutputEnabled(!voiceOutputEnabled);
+                  }}
                   className="karobaar-ai-icon-btn-tiny"
-                  style={{ color: isListening ? '#ffffff' : '#a1a1aa' }}
-                  title={isListening ? 'Stop Listening' : 'Voice Dictation'}
+                  style={{ color: voiceOutputEnabled ? '#ffffff' : '#71717a' }}
+                  title={voiceOutputEnabled ? 'Mute Voice Responses' : 'Enable Voice Responses'}
                 >
-                  {isListening ? <Mic size={15} /> : <MicOff size={15} />}
+                  {voiceOutputEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                </button>
+
+                <button 
+                  type="button" 
+                  onClick={handleToggleVoice}
+                  className={`karobaar-ai-icon-btn-tiny ${isListening ? 'active-listening-btn' : ''}`}
+                  style={{ 
+                    color: isListening ? '#09090b' : '#ffffff',
+                    backgroundColor: isListening ? '#ffffff' : 'transparent',
+                    boxShadow: isListening ? '0 0 16px rgba(255,255,255,0.4)' : 'none',
+                    borderRadius: '50%'
+                  }}
+                  title={isListening ? 'Stop Listening' : 'Start Voice Input'}
+                >
+                  <Mic size={15} />
                 </button>
 
                 {isLoading ? (
