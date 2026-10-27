@@ -253,6 +253,8 @@ export const CustomizeAIChatbot = () => {
     recognition.onerror = (event) => {
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         setIsListening(false);
+        isListeningEnabledRef.current = false;
+        setVoiceEnabled(false);
       }
     };
 
