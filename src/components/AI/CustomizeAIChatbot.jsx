@@ -798,6 +798,9 @@ export const CustomizeAIChatbot = () => {
             </div>
 
             <div className="customize-ai-header-actions">
+              <button onClick={() => { setIsChatDrawerOpen(false); navigate('/ai'); }} className="customize-ai-icon-btn" title="Open Full Karobaar AI Workspace">
+                <Maximize2 size={14} />
+              </button>
               <button onClick={handleClearHistory} className="customize-ai-icon-btn" title="Clear chat history">
                 <Trash2 size={14} />
               </button>

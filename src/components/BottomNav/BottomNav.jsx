@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutGrid, TrendingUp, Package, ShoppingBag, MoreHorizontal } from 'lucide-react';
+import { LayoutGrid, TrendingUp, Sparkles, Package, ShoppingBag, MoreHorizontal } from 'lucide-react';
 import './BottomNav.css';
 
 const BottomNav = () => {
@@ -51,6 +51,16 @@ const BottomNav = () => {
           <span className="k-nav-label">Orders</span>
         </NavLink>
 
+                <NavLink 
+          to="/ai" 
+          className={({ isActive }) => 'k-pill-nav-item ' + (isActive ? 'active' : '')}
+          title="Karobaar AI"
+        >
+          <div className="k-nav-icon-wrap">
+            <Sparkles size={18} />
+          </div>
+          <span className="k-nav-label">AI</span>
+        </NavLink>
         <NavLink 
           to="/more" 
           className={({ isActive }) => 'k-pill-nav-item ' + (isActive ? 'active' : '')}

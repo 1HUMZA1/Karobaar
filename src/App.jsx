@@ -29,6 +29,7 @@ import Landing from './pages/Landing/Landing';
 import Branches from './pages/Branches/Branches';
 import HQAnalytics from './pages/Branches/HQAnalytics';
 import MobileMenu from './pages/Settings/MobileMenu';
+import KarobaarAI from './pages/AI/KarobaarAI';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
@@ -268,6 +269,7 @@ const AppContent = () => {
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="ai" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="core"><KarobaarAI /></ProtectedRoute>} />
           <Route path="sales" element={<Navigate to="/pos" replace />} />
           
           <Route path="pos" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS} moduleId="pos"><POS /></ProtectedRoute>} />

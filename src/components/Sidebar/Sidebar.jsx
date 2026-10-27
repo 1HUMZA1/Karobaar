@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  LayoutDashboard, ShoppingCart, Calculator, ClipboardList, 
+  LayoutDashboard, Sparkles, ShoppingCart, Calculator, ClipboardList, 
   Users, Package, Box, ShoppingBag, Truck, UserCircle, 
   Clock, CalendarOff, Banknote, Receipt, FileText, 
   BarChart3, CheckSquare, Bell, Settings, X, CreditCard,
@@ -23,6 +23,7 @@ const navGroups = [
     title: 'OVERVIEW',
     items: [
       { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} />, roles: ALL_ROLES, moduleId: 'core' },
+      { name: 'Karobaar AI', path: '/ai', icon: <Sparkles size={20} />, roles: ALL_ROLES, moduleId: 'core' },
     ]
   },
   {
