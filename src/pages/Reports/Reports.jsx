@@ -73,8 +73,8 @@ const Reports = () => {
       datasets: [{
         label: 'Daily Revenue',
         data: last30Days.map(d => d.amount),
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: 'var(--text-main, #ffffff)',
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
         fill: true,
         tension: 0.4
       }]
@@ -94,7 +94,7 @@ const Reports = () => {
       datasets: [{
         label: 'Amount',
         data: [totalRevenue, totalExp, profit],
-        backgroundColor: ['#10b981', '#ef4444', profit >= 0 ? '#3b82f6' : '#ef4444']
+        backgroundColor: ['#ffffff', '#71717a', '#a1a1aa']
       }]
     };
 
@@ -373,7 +373,7 @@ const Reports = () => {
                       labels: ['Repeat Customers', 'One-time Buyers'],
                       datasets: [{
                         data: [repeatCustomers, oneTimeCustomers],
-                        backgroundColor: ['#3b82f6', '#94a3b8'],
+                        backgroundColor: ['#ffffff', '#71717a'],
                         borderWidth: 0
                       }]
                     }}

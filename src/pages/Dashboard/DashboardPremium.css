@@ -171,14 +171,14 @@
 .bg-slate-900 { background-color: #0f172a; }
 
 /* Soft Modern Pastel Badges (No Harsh Outlines) */
-.bg-emerald-50 { background-color: #ecfdf5 !important; }
-.text-emerald-700 { color: #047857 !important; }
-.bg-rose-50 { background-color: #fff1f2 !important; }
-.text-rose-700 { color: #be123c !important; }
-.bg-amber-50 { background-color: #fffbeb !important; }
-.text-amber-700 { color: #b45309 !important; }
-.bg-blue-50 { background-color: #eff6ff !important; }
-.text-blue-700 { color: #1d4ed8 !important; }
+.bg-emerald-50 { background-color: var(--bg-hover) !important; border: 1px solid var(--border-color) !important; }
+.text-emerald-700 { color: var(--text-main) !important; }
+.bg-rose-50 { background-color: var(--bg-hover) !important; border: 1px solid var(--border-color) !important; }
+.text-rose-700 { color: var(--text-main) !important; }
+.bg-amber-50 { background-color: var(--bg-hover) !important; border: 1px solid var(--border-color) !important; }
+.text-amber-700 { color: var(--text-main) !important; }
+.bg-blue-50 { background-color: var(--bg-hover) !important; border: 1px solid var(--border-color) !important; }
+.text-blue-700 { color: var(--text-main) !important; }
 
 /* Borders & Radii - Defaulting to soft subtle variables, NEVER harsh black */
 .border { border: 1px solid var(--border-color); }
@@ -443,32 +443,18 @@
   border-color: rgba(255, 255, 255, 0.16);
 }
 
-[data-theme="dark"] .bg-emerald-50 {
-  background-color: rgba(16, 185, 129, 0.16) !important;
-}
-[data-theme="dark"] .text-emerald-700 {
-  color: #34d399 !important;
-}
-
-[data-theme="dark"] .bg-rose-50 {
-  background-color: rgba(244, 63, 94, 0.16) !important;
-}
-[data-theme="dark"] .text-rose-700 {
-  color: #fb7185 !important;
-}
-
-[data-theme="dark"] .bg-amber-50 {
-  background-color: rgba(245, 158, 11, 0.16) !important;
-}
-[data-theme="dark"] .text-amber-700 {
-  color: #fbbf24 !important;
-}
-
+[data-theme="dark"] .bg-emerald-50,
+[data-theme="dark"] .bg-rose-50,
+[data-theme="dark"] .bg-amber-50,
 [data-theme="dark"] .bg-blue-50 {
-  background-color: rgba(59, 130, 246, 0.16) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
 }
+[data-theme="dark"] .text-emerald-700,
+[data-theme="dark"] .text-rose-700,
+[data-theme="dark"] .text-amber-700,
 [data-theme="dark"] .text-blue-700 {
-  color: #60a5fa !important;
+  color: #f4f4f5 !important;
 }
 
 [data-theme="dark"] .quick-action-primary {

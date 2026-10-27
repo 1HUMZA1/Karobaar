@@ -47,9 +47,7 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
                     </td>
                     <td className="p-4 text-center">
                       <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider
-                        ${order.status === 'Completed' || order.status === 'Paid' ? 'bg-emerald-50 text-emerald-700' 
-                        : order.status === 'Pending' ? 'bg-amber-50 text-amber-700' 
-                        : 'bg-[var(--bg-hover)] text-text-secondary'}`}
+                        bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)]`}
                       >
                         {order.status || 'Completed'}
                       </span>

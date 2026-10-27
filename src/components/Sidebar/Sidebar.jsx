@@ -127,7 +127,7 @@ const Sidebar = () => {
           >
             <KarobaarLogo 
               size="sm" 
-              theme="dark" 
+              theme="auto" 
               showTagline={false} 
               showText={!isEffectivelyCollapsed} 
             />

@@ -275,14 +275,14 @@ const Dashboard = ({ onSwitchMode }) => {
           <div className="executive-health-dock flex items-center gap-3 bg-[var(--bg-card)] px-4 py-2.5 rounded-2xl border border-[var(--border-color)] shadow-sm">
             <div className="flex items-center gap-2.5">
               <div className="relative flex items-center justify-center">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span className="absolute w-4 h-4 rounded-full bg-emerald-400/30 animate-ping"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[var(--text-main)]"></span>
+                <span className="absolute w-4 h-4 rounded-full bg-[var(--text-main)]/20 animate-ping"></span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold leading-none mb-1">Business Health</span>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-extrabold text-text-main leading-none">{healthScore}<span className="text-text-muted font-medium text-xs">/100</span></span>
-                  <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full leading-none">{healthLabel}</span>
+                  <span className="text-[10px] font-bold bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)] px-2 py-0.5 rounded-full leading-none">{healthLabel}</span>
                 </div>
               </div>
             </div>
@@ -316,8 +316,8 @@ const Dashboard = ({ onSwitchMode }) => {
       {/* Operations Quick Command Dock */}
       <div className="operations-command-dock flex flex-wrap items-center justify-between gap-3 p-3.5 mb-6 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)] text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-[var(--text-main)] animate-pulse"></span>
             <span className="uppercase tracking-wider">Register Live</span>
           </div>
           <div className="hidden sm:flex items-center gap-2 text-xs text-text-secondary">
@@ -336,7 +336,7 @@ const Dashboard = ({ onSwitchMode }) => {
             className="cmd-primary-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
             title="Open POS (F2)"
           >
-            <Zap size={14} className="fill-current text-amber-400" />
+            <Zap size={14} className="fill-current text-text-main" />
             <span>New Sale</span>
             <kbd className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold ml-1">F2</kbd>
           </button>

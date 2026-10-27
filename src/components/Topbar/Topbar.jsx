@@ -60,23 +60,41 @@ const Topbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Assistant Name (Default: Jarvis, or Mr. H / Custom from settings)
+  // Assistant Name (Default: Jarvis, or Mr. H / Custom from settings - strictly never 'Customize')
   const [assistantName, setAssistantName] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-      return saved.assistantName || 'Jarvis';
+      const name = saved.assistantName;
+      return (!name || name === 'Customize') ? 'Jarvis' : name;
     } catch { return 'Jarvis'; }
   });
 
+  // Auto-migrate any legacy 'Customize' to 'Jarvis' in localStorage
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem('karobaar_customize_ai_settings');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!parsed.assistantName || parsed.assistantName === 'Customize') {
+          parsed.assistantName = 'Jarvis';
+          localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(parsed));
+          setAssistantName('Jarvis');
+        }
+      }
+    } catch {}
+
     const handleSettingsUpdate = (e) => {
-      if (e?.detail?.assistantName) {
-        setAssistantName(e.detail.assistantName);
+      const rawName = e?.detail?.assistantName;
+      if (rawName && rawName !== 'Customize') {
+        setAssistantName(rawName);
       } else {
         try {
           const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-          if (saved.assistantName) setAssistantName(saved.assistantName);
-        } catch {}
+          const name = saved.assistantName;
+          setAssistantName((!name || name === 'Customize') ? 'Jarvis' : name);
+        } catch {
+          setAssistantName('Jarvis');
+        }
       }
     };
     window.addEventListener('karobaar_settings_updated', handleSettingsUpdate);
@@ -354,7 +372,7 @@ const Topbar = () => {
           style={{ display: 'flex', alignItems: 'center', marginLeft: '10px', cursor: 'pointer' }}
           onClick={() => navigate('/dashboard')}
         >
-          <KarobaarLogo size="sm" theme={theme === 'dark' ? 'light' : 'dark'} showTagline={false} />
+          <KarobaarLogo size="sm" theme="auto" showTagline={false} />
         </div>
       </div>
 

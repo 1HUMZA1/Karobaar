@@ -44,7 +44,7 @@ export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
         </h3>
         <div className="flex items-center justify-between pt-3 border-t border-[var(--border-light)] text-xs">
           <div className="flex items-center gap-1 font-bold">
-            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${trends.revTrend.isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)]`}>
               {trends.revTrend.isPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
               {trends.revTrend.value}%
             </span>
@@ -70,13 +70,13 @@ export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
         </h3>
         <div className="flex items-center justify-between pt-3 border-t border-[var(--border-light)] text-xs">
           <div className="flex items-center gap-1 font-bold">
-            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${trends.ordTrend.isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)]`}>
               {trends.ordTrend.isPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
               {trends.ordTrend.value}%
             </span>
             <span className="text-text-muted text-[11px] font-medium hidden sm:inline">vs yest.</span>
           </div>
-          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+          <span className="text-[11px] font-semibold text-text-secondary bg-[var(--bg-hover)] border border-[var(--border-color)] px-2.5 py-0.5 rounded-full">
             100% Fulfilled
           </span>
         </div>
@@ -96,7 +96,7 @@ export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
         </h3>
         <div className="flex items-center justify-between pt-3 border-t border-[var(--border-light)] text-xs">
           <div className="flex items-center gap-1 font-bold">
-            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${trends.profTrend.isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)]`}>
               {trends.profTrend.isPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
               {trends.profTrend.value}%
             </span>
@@ -122,7 +122,7 @@ export const DashboardKPIs = ({ stats, trends, currencySymbol }) => {
         </h3>
         <div className="flex items-center justify-between pt-3 border-t border-[var(--border-light)] text-xs">
           <div className="flex items-center gap-1 font-bold">
-            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${!trends.expTrend.isPositive ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>
+            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)]`}>
               {!trends.expTrend.isPositive ? <ArrowDownRight size={13} /> : <ArrowUpRight size={13} />}
               {trends.expTrend.value}%
             </span>

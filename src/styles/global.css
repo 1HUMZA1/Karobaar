@@ -76,14 +76,15 @@
   --primary-light: #27272a;
   --primary-text: #09090b;
 
-  --success-color: #22c55e;
-  --success-light: rgba(34, 197, 94, 0.18);
-  --warning-color: #f59e0b;
-  --warning-light: rgba(245, 158, 11, 0.18);
-  --danger-color: #ef4444;
-  --danger-light: rgba(239, 68, 68, 0.18);
-  --info-color: #3b82f6;
-  --info-light: rgba(59, 130, 246, 0.18);
+  /* Strict Monochrome in Dark Mode: Zero green, zero blue, zero amber */
+  --success-color: #f4f4f5;
+  --success-light: rgba(255, 255, 255, 0.08);
+  --warning-color: #e4e4e7;
+  --warning-light: rgba(255, 255, 255, 0.08);
+  --danger-color: #f4f4f5;
+  --danger-light: rgba(255, 255, 255, 0.08);
+  --info-color: #f4f4f5;
+  --info-light: rgba(255, 255, 255, 0.08);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);

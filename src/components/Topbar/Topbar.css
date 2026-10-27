@@ -367,8 +367,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  background-color: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.65);
   animation: wakeDotPulse 1.6s infinite ease-in-out;
 }
 
@@ -478,9 +478,9 @@
   gap: 6px;
 }
 
-.sync-offline { background: #fff1f2; color: #be123c; border: none; }
-.sync-syncing { background: #fffbeb; color: #b45309; border: none; animation: pulse 2s infinite; }
-.sync-synced { background: #ecfdf5; color: #047857; border: none; }
+.sync-offline { background: var(--bg-hover); color: var(--text-main); border: 1px solid var(--border-color); }
+.sync-syncing { background: var(--bg-hover); color: var(--text-main); border: 1px solid var(--border-color); animation: pulse 2s infinite; }
+.sync-synced { background: var(--bg-hover); color: var(--text-main); border: 1px solid var(--border-color); }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
@@ -711,15 +711,10 @@
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.2);
 }
-[data-theme="dark"] .sync-synced {
-  background: rgba(16, 185, 129, 0.16);
-  color: #34d399;
-}
-[data-theme="dark"] .sync-syncing {
-  background: rgba(245, 158, 11, 0.16);
-  color: #fbbf24;
-}
+[data-theme="dark"] .sync-synced,
+[data-theme="dark"] .sync-syncing,
 [data-theme="dark"] .sync-offline {
-  background: rgba(244, 63, 94, 0.16);
-  color: #fb7185;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4f4f5;
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }

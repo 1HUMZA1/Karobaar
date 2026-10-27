@@ -23,8 +23,8 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 9999px;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   margin-bottom: 0.5rem;
 }
 
@@ -32,8 +32,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  background: var(--text-main);
+  box-shadow: 0 0 6px var(--text-main);
   animation: pulseDot 2s infinite;
 }
 
@@ -189,12 +189,12 @@
 .k-metric-trend {
   font-size: 0.68rem;
   font-weight: 600;
-  color: #10b981;
+  color: var(--text-main);
   display: inline-flex;
   align-items: center;
   gap: 3px;
   margin: 0;
-  background: rgba(16, 185, 129, 0.08);
+  background: var(--bg-hover);
   padding: 2px 7px;
   border-radius: 9999px;
 }

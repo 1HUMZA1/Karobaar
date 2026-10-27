@@ -174,7 +174,7 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
       <div className="lg:col-span-1 bg-[var(--bg-card)] rounded-xl shadow-md flex flex-col">
         <div className="p-6 flex justify-between items-center">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
-            <Zap size={18} className="text-warning"/> Quick Actions
+            <Zap size={18} className="text-text-main"/> Quick Actions
           </h2>
           <button 
             onClick={openEditModal}
@@ -206,7 +206,7 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
       <div className="lg:col-span-1 bg-[var(--bg-card)] rounded-xl shadow-md flex flex-col">
         <div className="p-6">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
-            <Activity size={18} className="text-info"/> Business Status
+            <Activity size={18} className="text-text-main"/> Business Status
           </h2>
         </div>
         <div className="p-6 pt-0 flex-1 flex flex-col gap-3">
@@ -215,7 +215,7 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
               <p className="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Pending Receivables</p>
               <p className="text-xl font-extrabold text-text-main">{stats.receivables === '***' ? '***' : `${currencySymbol}${Number(stats.receivables || 0).toLocaleString()}`}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)] flex items-center justify-center font-bold">
               <DollarSign size={18} strokeWidth={2.5} />
             </div>
           </div>
@@ -225,7 +225,7 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
               <p className="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Total Customers</p>
               <p className="text-xl font-extrabold text-text-main">{stats.totalCustomers || 0}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)] flex items-center justify-center font-bold">
               <Users size={18} strokeWidth={2.5} />
             </div>
           </div>
@@ -233,11 +233,11 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
           <div className="flex justify-between items-center bg-[var(--bg-hover)] p-4 rounded-2xl transition-all hover:bg-[var(--bg-card)] hover:shadow-sm border border-transparent hover:border-[var(--border-color)]">
             <div>
               <p className="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Low Stock Items</p>
-              <p className={`text-xl font-extrabold ${(stats.lowStockCount || 0) > 0 ? 'text-danger' : 'text-success'}`}>
+              <p className={`text-xl font-extrabold ${'text-text-main'}`}>
                 {stats.lowStockCount || 0}
               </p>
             </div>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${(stats.lowStockCount || 0) > 0 ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${'bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)]'}`}>
               <Package size={18} strokeWidth={2.5} />
             </div>
           </div>

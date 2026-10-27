@@ -553,7 +553,7 @@ export const MobileDashboard = ({
             <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl mb-4">
               <p className="text-xs font-semibold text-gray-500 mb-1">Total Sales</p>
               <h2 className="text-2xl font-black mb-1">{currencySymbol}{formatSafeNumber(activeRevenue)}</h2>
-              <p className="text-xs text-emerald-600 font-bold mb-3">↑ 0% vs. yesterday</p>
+              <p className="text-xs text-text-main font-bold mb-3">↑ 0% vs. yesterday</p>
               <div style={{ height: '160px' }}>
                 <Line data={salesOverviewChartData} options={salesOverviewChartOptions} />
               </div>

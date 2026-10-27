@@ -8,15 +8,24 @@ import './KarobaarLogo.css';
  */
 export const KarobaarLogo = ({ 
   size = 'md', // 'sm' | 'md' | 'lg' | 'xl'
-  theme = 'dark', // 'dark' (black symbol/text on light bg) | 'light' (white symbol/text on dark bg)
+  theme = 'auto', // 'auto' (adapts to dark/light) | 'dark' (black on light) | 'light' (white on dark)
   showTagline = false,
   showText = true,
   layout = 'horizontal', // 'horizontal' | 'vertical'
   className = ''
 }) => {
+  // Pure monochrome adaptive theme: auto uses CSS var(--text-main) for perfect contrast in both dark & light modes
   const isLight = theme === 'light';
-  const fillColor = isLight ? '#ffffff' : '#09090b';
-  const taglineColor = isLight ? 'rgba(255, 255, 255, 0.75)' : '#71717a';
+  const fillColor = theme === 'light' 
+    ? '#ffffff' 
+    : theme === 'dark' 
+    ? '#09090b' 
+    : 'var(--text-main, #ffffff)';
+  const taglineColor = theme === 'light' 
+    ? 'rgba(255, 255, 255, 0.75)' 
+    : theme === 'dark' 
+    ? '#71717a' 
+    : 'var(--text-secondary, #a1a1aa)';
 
   const badgeDimensions = {
     sm: { box: 28, radius: 7, fontSize: '0.95rem', border: 2 },
