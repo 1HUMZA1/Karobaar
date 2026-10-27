@@ -67,13 +67,13 @@ export const CustomizeAIChatbot = () => {
     try {
       const saved = localStorage.getItem('karobaar_customize_ai_settings');
       return saved ? JSON.parse(saved) : {
-        assistantName: 'Customize',
+        assistantName: 'Mr. H',
         showFloatingBubble: true,
         autoExecute: true,
         voiceFeedback: true
       };
     } catch {
-      return { assistantName: 'Customize', showFloatingBubble: true, autoExecute: true };
+      return { assistantName: 'Mr. H', showFloatingBubble: true, autoExecute: true };
     }
   });
 
@@ -89,7 +89,7 @@ export const CustomizeAIChatbot = () => {
       {
         id: 'welcome-1',
         sender: 'bot',
-        text: `Hello! I am **Customize**, your Realtime Voice AI Assistant for ${currentBusiness?.name || 'Karobaar'}. I can operate the app live for you: talk to me to create sales, audit inventory, switch modes, or analyze finances.`,
+        text: `Hello! I am **${aiSettings.assistantName || 'Mr. H'}**, your Realtime Voice AI Assistant for ${currentBusiness?.name || 'Karobaar'}. I can operate the app live for you: talk to me to create sales, audit inventory, switch modes, or highlight app features on screen.`,
         timestamp: new Date().toISOString(),
         quickActions: [
           { label: '🎙️ Voice: "Today\'s Sales"', query: 'Show today sales summary' },
@@ -214,6 +214,158 @@ export const CustomizeAIChatbot = () => {
     }
   };
 
+
+  // Web Audio Synthesizer: 2-Tone Wake Chime
+  const playWakeChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.14); // A5
+
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {
+      // Handled silently
+    }
+  };
+
+  // Trigger Assistant Wake
+  const triggerAssistantWake = (queryAfterWake = '') => {
+    playWakeChime();
+    setIsOpen(true);
+    setVoiceModeActive(true);
+    const name = aiSettings.assistantName || 'Mr. H';
+
+    if (queryAfterWake) {
+      setTimeout(() => {
+        handleUserQuery(queryAfterWake);
+      }, 300);
+    } else {
+      const isHi = aiLanguage === 'hi';
+      const isEn = aiLanguage === 'en';
+      const greeting = isHi
+        ? `जी सर, ${name} हाज़िर है! कहिए, क्या सहायता करूँ?`
+        : isEn
+        ? `Yes sir, ${name} is online and listening. How can I assist you?`
+        : `Ji sir, ${name} hazir hai! Boliye, main aapke liye kya kar sakta hoon?`;
+
+      setTimeout(() => {
+        speakText(greeting);
+      }, 200);
+    }
+  };
+
+  // Listen to wake event from Dedicated Topbar Button
+  useEffect(() => {
+    const handleWakeEvent = (e) => {
+      triggerAssistantWake(e?.detail?.query || '');
+    };
+    window.addEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
+    return () => window.removeEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
+  }, [aiSettings.assistantName, aiLanguage]);
+
+  // Sync settings dynamically when changed in Settings tab
+  useEffect(() => {
+    const handleSettingsSync = (e) => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
+        setAiSettings(prev => ({
+          ...prev,
+          assistantName: e?.detail?.assistantName || saved.assistantName || 'Mr. H',
+          ...saved
+        }));
+      } catch {}
+    };
+    window.addEventListener('karobaar_settings_updated', handleSettingsSync);
+    window.addEventListener('storage', handleSettingsSync);
+    return () => {
+      window.removeEventListener('karobaar_settings_updated', handleSettingsSync);
+      window.removeEventListener('storage', handleSettingsSync);
+    };
+  }, []);
+
+  // Background Speech Recognition for Hands-Free Wake Words ("Hey Mr. H", "Hey Jarvis", etc.)
+  const bgRecognitionRef = useRef(null);
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    if (isOpen || aiSettings.backgroundWake === false) {
+      if (bgRecognitionRef.current) {
+        try { bgRecognitionRef.current.abort(); } catch {}
+      }
+      return;
+    }
+
+    let isComponentMounted = true;
+    try {
+      const bgRec = new SpeechRecognition();
+      bgRec.continuous = true;
+      bgRec.interimResults = false;
+      bgRec.lang = 'en-IN';
+
+      bgRec.onresult = (event) => {
+        const lastIdx = event.results.length - 1;
+        const transcript = (event.results[lastIdx][0]?.transcript || '').toLowerCase().trim();
+        const currentName = (aiSettings.assistantName || 'Mr. H').toLowerCase();
+
+        const wakeTriggers = [
+          currentName,
+          `hey ${currentName}`,
+          `ok ${currentName}`,
+          'mr h',
+          'hey mr h',
+          'mr. h',
+          'hey mr. h',
+          'jarvis',
+          'hey jarvis',
+          'customize'
+        ];
+
+        const matchedTrigger = wakeTriggers.find(t => transcript.includes(t));
+        if (matchedTrigger) {
+          try { bgRec.stop(); } catch {}
+          let queryPart = transcript.substring(transcript.indexOf(matchedTrigger) + matchedTrigger.length).trim();
+          triggerAssistantWake(queryPart);
+        }
+      };
+
+      bgRec.onerror = () => {};
+
+      bgRec.onend = () => {
+        if (isComponentMounted && !isOpen && aiSettings.backgroundWake !== false) {
+          setTimeout(() => {
+            try { bgRec.start(); } catch {}
+          }, 1500);
+        }
+      };
+
+      bgRec.start();
+      bgRecognitionRef.current = bgRec;
+    } catch (e) {
+      // Permission or autoplay restriction
+    }
+
+    return () => {
+      isComponentMounted = false;
+      if (bgRecognitionRef.current) {
+        try { bgRecognitionRef.current.abort(); } catch {}
+      }
+    };
+  }, [isOpen, aiSettings.assistantName, aiSettings.backgroundWake]);
+
   // Listen to open event from Topbar or Global Search
   useEffect(() => {
     const handleOpenAi = (e) => {
@@ -288,6 +440,21 @@ export const CustomizeAIChatbot = () => {
       let botActionData = null;
 
       try {
+
+        // 0.0 Live Feature Spotlight & Outlining Tour
+        if (lower.includes('tour') || lower.includes('spotlight') || lower.includes('feature') || lower.includes('outline') || lower.includes('guide') || lower.includes('sikhao') || lower.includes('dikhao') || lower.includes('samjhao')) {
+          setIsOpen(false);
+          stopSpeaking();
+          const isHinglish = aiLanguage === 'hinglish' || !/[\u0900-\u097F]/.test(lower);
+          botResponse = isHinglish
+            ? `Main aapke liye Live Feature Outlining Tour shuru kar raha hoon. Screen par highlighted boxes dekhiye!`
+            : `मैं आपके लिए लाइव फ़ीचर स्पॉटलाइट शुरू कर रहा हूँ। स्क्रीन पर आउटलाइन्स देखिए!`;
+          botActionData = { type: 'action_confirmed', badge: 'Live Feature Spotlight Active' };
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('karobaar_start_spotlight_tour', { detail: { stepIndex: 0 } }));
+          }, 350);
+        }
+
         // 0. Business Setup & AI Store Onboarding Concierge
         if (lower.includes('setup') || lower.includes('onboard') || lower.includes('shuru karo') || lower.includes('store setup') || lower.includes('business setup') || lower.includes('dukan setup') || lower.includes('meri dukan') || lower.includes('mera business')) {
           setIsOpen(false);
@@ -599,7 +766,7 @@ export const CustomizeAIChatbot = () => {
         >
           <div className="customize-trigger-orb" />
           <Sparkles size={16} className="customize-sparkle-icon" />
-          <span className="customize-trigger-text">Customize Voice AI</span>
+          <span className="customize-trigger-text">{aiSettings.assistantName || "Mr. H"} Voice AI</span>
         </button>
       )}
 

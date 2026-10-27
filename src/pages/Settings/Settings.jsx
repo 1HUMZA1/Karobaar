@@ -25,7 +25,9 @@ import {
   Laptop,
   Tablet,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Target,
+  Volume2
 } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { auth } from '../../services/firebase';
@@ -85,12 +87,24 @@ const Settings = () => {
   const [isChangingSettings, setIsChangingSettings] = useState(false);
   const [settingsChangedSuccess, setSettingsChangedSuccess] = useState(false);
 
-  // Customize (AI & Automations) State
+  // Customize (AI & Automations) State - Default Mr. H
   const [aiAssistantName, setAiAssistantName] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-      return saved.assistantName || 'Customize';
-    } catch { return 'Customize'; }
+      return saved.assistantName || 'Mr. H';
+    } catch { return 'Mr. H'; }
+  });
+  const [aiWakeWord, setAiWakeWord] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
+      return saved.wakeWord || 'Hey Mr. H';
+    } catch { return 'Hey Mr. H'; }
+  });
+  const [aiBackgroundWake, setAiBackgroundWake] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
+      return saved.backgroundWake !== false;
+    } catch { return true; }
   });
   const [aiEnabled, setAiEnabled] = useState(true);
   const [aiFloatingBubble, setAiFloatingBubble] = useState(true);
@@ -324,7 +338,9 @@ const Settings = () => {
 
     try {
       const aiConfig = {
-        assistantName: aiAssistantName || 'Customize',
+        assistantName: aiAssistantName || 'Mr. H',
+        wakeWord: aiWakeWord || `Hey ${aiAssistantName || 'Mr. H'}`,
+        backgroundWake: aiBackgroundWake,
         aiEnabled,
         showFloatingBubble: aiFloatingBubble,
         autoExecute: aiAutoExecute,
@@ -334,6 +350,7 @@ const Settings = () => {
         rapidBarcodeAdd
       };
       localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(aiConfig));
+      window.dispatchEvent(new CustomEvent('karobaar_settings_updated', { detail: { assistantName: aiAssistantName || 'Mr. H' } }));
       localStorage.setItem('karobaar_ai_language', aiLanguage);
       localStorage.setItem('karobaar_custom_upi_id', storeUpiId);
       if (storeUpiQrImage) localStorage.setItem('karobaar_custom_upi_qr_img', storeUpiQrImage);
@@ -736,13 +753,24 @@ const Settings = () => {
 
                   <button 
                     type="button" 
-                    onClick={() => window.dispatchEvent(new CustomEvent('karobaar_open_ai_assistant'))}
+                    onClick={() => window.dispatchEvent(new CustomEvent('karobaar_start_spotlight_tour', { detail: { stepIndex: 0 } }))}
                     className="settings-btn-primary"
                     style={{ height: '36px', fontSize: '0.8rem', padding: '0 1rem' }}
-                    title="Open live AI assistant"
+                    title="Start Live Feature Outlining & Spotlight Tour"
+                  >
+                    <Target size={14} />
+                    <span>Live Feature Spotlight</span>
+                  </button>
+
+                  <button 
+                    type="button" 
+                    onClick={() => window.dispatchEvent(new CustomEvent('karobaar_wake_ai_assistant'))}
+                    className="settings-btn-primary"
+                    style={{ height: '36px', fontSize: '0.8rem', padding: '0 1rem' }}
+                    title="Wake assistant in live voice mode"
                   >
                     <Sparkles size={14} />
-                    <span>Test Customize AI</span>
+                    <span>Wake {aiAssistantName || 'Mr. H'}</span>
                   </button>
                 </div>
               </div>
@@ -750,14 +778,53 @@ const Settings = () => {
               {/* Section 1: AI Assistant Parameters */}
               <div className="settings-grid-2" style={{ marginBottom: '1.5rem' }}>
                 <div className="settings-input-group">
-                  <label>Assistant Display Name</label>
+                  <label>Assistant Name (Wake Identity)</label>
                   <input 
                     type="text" 
                     className="settings-input-field" 
                     value={aiAssistantName} 
-                    onChange={e => setAiAssistantName(e.target.value)}
-                    placeholder="Customize"
+                    onChange={e => {
+                      setAiAssistantName(e.target.value);
+                      setAiWakeWord(`Hey ${e.target.value}`);
+                    }}
+                    placeholder="Mr. H"
                   />
+                  {/* Preset Assistant Names */}
+                  <div className="flex items-center gap-2 mt-2">
+                    {[
+                      { name: 'Mr. H', badge: 'Default' },
+                      { name: 'Jarvis', badge: 'AI Preset' },
+                      { name: 'Customize', badge: 'Classic' }
+                    ].map(preset => (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => {
+                          setAiAssistantName(preset.name);
+                          setAiWakeWord(`Hey ${preset.name}`);
+                        }}
+                        className={`px-2.5 py-1 text-xs rounded-md border font-bold transition-all ${
+                          aiAssistantName === preset.name
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-sm'
+                            : 'bg-transparent text-text-secondary border-border-color hover:text-text-main'
+                        }`}
+                      >
+                        {preset.name} ({preset.badge})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="settings-input-group">
+                  <label>Voice Wake-Up Call Phrase</label>
+                  <input 
+                    type="text" 
+                    className="settings-input-field" 
+                    value={aiWakeWord} 
+                    onChange={e => setAiWakeWord(e.target.value)}
+                    placeholder="Hey Mr. H"
+                  />
+                  <span className="text-[11px] text-text-muted mt-1 block">Say this phrase aloud anytime to wake the AI hands-free.</span>
                 </div>
 
                 <div className="settings-input-group">
@@ -793,6 +860,18 @@ const Settings = () => {
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
                 <h3 className="text-sm font-bold text-text-main mb-3">Automated Business Triggers</h3>
                 <div className="space-y-3">
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">Hands-Free Voice Wake-Up ("Hey {aiAssistantName || 'Mr. H'}")</div>
+                      <div className="text-xs text-text-secondary">AI listens continuously in the background for your voice wake call and triggers live conversation</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={aiBackgroundWake} 
+                      onChange={e => setAiBackgroundWake(e.target.checked)} 
+                    />
+                  </label>
+
                   <label className="settings-toggle-row">
                     <div>
                       <div className="font-semibold text-sm">Floating AI Launcher Bubble</div>

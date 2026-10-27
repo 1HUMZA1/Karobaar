@@ -23,7 +23,8 @@ import {
   Layers,
   ArrowRight,
   Plus,
-  X
+  X,
+  Target
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -58,6 +59,37 @@ const Topbar = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Assistant Name (Default: Mr. H, or Jarvis/Custom from settings)
+  const [assistantName, setAssistantName] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
+      return saved.assistantName || 'Mr. H';
+    } catch { return 'Mr. H'; }
+  });
+
+  useEffect(() => {
+    const handleSettingsUpdate = (e) => {
+      if (e?.detail?.assistantName) {
+        setAssistantName(e.detail.assistantName);
+      } else {
+        try {
+          const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
+          if (saved.assistantName) setAssistantName(saved.assistantName);
+        } catch {}
+      }
+    };
+    window.addEventListener('karobaar_settings_updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleSettingsUpdate);
+    return () => {
+      window.removeEventListener('karobaar_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleSettingsUpdate);
+    };
+  }, []);
+
+  const handleWakeAiAssistant = () => {
+    window.dispatchEvent(new CustomEvent('karobaar_wake_ai_assistant'));
+  };
 
   const profileRef = useRef(null);
   const searchContainerRef = useRef(null);
@@ -327,7 +359,7 @@ const Topbar = () => {
       </div>
 
       {/* Center Omni-Search Bar */}
-      <div className="topbar-center hidden-mobile" ref={searchContainerRef}>
+      <div className="topbar-center hidden-mobile" ref={searchContainerRef} data-tour="omni-search">
         <div className={`global-search-container relative ${isFocused ? 'is-focused' : ''}`}>
           <Search size={16} className="global-search-icon" style={{ zIndex: 10 }} />
           <input 
@@ -470,14 +502,26 @@ const Topbar = () => {
 
       {/* Topbar Right Actions */}
       <div className="topbar-right">
-        {/* Customize AI Assistant Launch Button */}
+        {/* Dedicated Mr. H / Voice AI Wake Button */}
         <button 
-          className="topbar-customize-ai-btn hidden-mobile"
-          onClick={() => handleOpenAiAssistant()}
-          title="Open Customize AI Automator & Assistant"
+          data-tour="mr-h-btn"
+          className="topbar-mr-h-wake-btn"
+          onClick={handleWakeAiAssistant}
+          title={`Wake ${assistantName} Voice AI Assistant (Press or say "Hey ${assistantName}")`}
         >
+          <span className="wake-pulse-dot" />
           <Sparkles size={14} />
-          <span>Customize AI</span>
+          <span>Wake {assistantName}</span>
+        </button>
+
+        {/* Live Feature Spotlight & Outlining Tour */}
+        <button 
+          className="topbar-spotlight-tour-btn hidden-mobile"
+          onClick={() => window.dispatchEvent(new CustomEvent('karobaar_start_spotlight_tour', { detail: { stepIndex: 0 } }))}
+          title="Start Live Feature Outlining & Walkthrough"
+        >
+          <Target size={13} />
+          <span>Live Guide</span>
         </button>
 
         {/* 1-Click Fast POS Access */}
@@ -502,7 +546,7 @@ const Topbar = () => {
           )}
         </div>
 
-        <button className="icon-btn" onClick={toggleTheme} title="Toggle Theme" aria-label="Toggle theme">
+        <button className="icon-btn" data-tour="theme-toggle" onClick={toggleTheme} title="Toggle Theme" aria-label="Toggle theme">
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
 

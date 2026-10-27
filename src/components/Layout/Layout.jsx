@@ -5,6 +5,7 @@ import Topbar from '../Topbar/Topbar';
 import BottomNav from '../BottomNav/BottomNav';
 import { CustomizeAIChatbot } from '../AI/CustomizeAIChatbot';
 import { AIOnboardingConcierge } from '../AI/AIOnboardingConcierge';
+import { LiveFeatureSpotlight } from '../AI/LiveFeatureSpotlight';
 import { ErrorBoundary } from '../ErrorBoundary';
 import './Layout.css';
 
@@ -42,6 +43,7 @@ const Layout = () => {
       <BottomNav />
       <CustomizeAIChatbot />
       <AIOnboardingConcierge />
+      <LiveFeatureSpotlight />
     </div>
   );
 };

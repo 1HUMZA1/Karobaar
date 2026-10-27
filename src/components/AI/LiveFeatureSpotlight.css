@@ -1,0 +1,288 @@
+/* Live Feature Spotlight & Outlining Engine (Karobaar Monochrome HUD) */
+
+.live-spotlight-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(2px);
+  animation: spotlightFadeIn 0.25s ease-out;
+  cursor: default;
+}
+
+@keyframes spotlightFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 1. Pulsing HUD Reticle Outline over Target Element */
+.live-spotlight-outline {
+  position: fixed;
+  z-index: 99992;
+  border-radius: 8px;
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55), 0 0 24px rgba(255, 255, 255, 0.25);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .live-spotlight-outline {
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.6), 0 0 24px rgba(15, 23, 42, 0.2);
+  border: 2px solid #0f172a;
+}
+
+/* Corner Reticle Brackets */
+.spotlight-bracket {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: #ffffff;
+  pointer-events: none;
+}
+
+[data-theme="light"] .spotlight-bracket {
+  border-color: #0f172a;
+}
+
+.bracket-tl {
+  top: -3px;
+  left: -3px;
+  border-top: 3px solid currentColor;
+  border-left: 3px solid currentColor;
+  border-top-left-radius: 4px;
+}
+
+.bracket-tr {
+  top: -3px;
+  right: -3px;
+  border-top: 3px solid currentColor;
+  border-right: 3px solid currentColor;
+  border-top-right-radius: 4px;
+}
+
+.bracket-bl {
+  bottom: -3px;
+  left: -3px;
+  border-bottom: 3px solid currentColor;
+  border-left: 3px solid currentColor;
+  border-bottom-left-radius: 4px;
+}
+
+.bracket-br {
+  bottom: -3px;
+  right: -3px;
+  border-bottom: 3px solid currentColor;
+  border-right: 3px solid currentColor;
+  border-bottom-right-radius: 4px;
+}
+
+.spotlight-radar-pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+  animation: spotlightPulseRing 2s infinite ease-out;
+  pointer-events: none;
+}
+
+@keyframes spotlightPulseRing {
+  0% {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+}
+
+/* 2. Side-By-Side Interactive Instructions Card */
+.live-spotlight-card {
+  position: fixed;
+  z-index: 99995;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-card, #141416);
+  color: var(--text-main, #ffffff);
+  border: 1px solid var(--border-color, #27272a);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: cardSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.spotlight-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.spotlight-card-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-main, #ffffff);
+}
+
+[data-theme="light"] .spotlight-card-badge {
+  background: rgba(15, 23, 42, 0.06);
+  border-color: rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+.spotlight-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: dotGlow 1.8s infinite ease-in-out;
+}
+
+@keyframes dotGlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.spotlight-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spotlight-step-counter {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #94a3b8);
+  margin-right: 4px;
+}
+
+.spotlight-icon-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.spotlight-icon-btn:hover {
+  background: var(--bg-hover, #27272a);
+  color: var(--text-main, #ffffff);
+  border-color: var(--border-color, #3f3f46);
+}
+
+.spotlight-icon-btn.muted {
+  color: var(--danger, #ef4444);
+}
+
+.spotlight-card-body {
+  margin-bottom: 16px;
+}
+
+.spotlight-feature-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px 0;
+  color: var(--text-main, #ffffff);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spotlight-feature-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary, #cbd5e1);
+  margin: 0;
+}
+
+[data-theme="light"] .spotlight-feature-text {
+  color: #475569;
+}
+
+.spotlight-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color, #27272a);
+}
+
+.spotlight-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 7px;
+  background: transparent;
+  border: 1px solid var(--border-color, #3f3f46);
+  color: var(--text-secondary, #cbd5e1);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.spotlight-btn-secondary:hover {
+  background: var(--bg-hover, #27272a);
+  color: var(--text-main, #ffffff);
+}
+
+.spotlight-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 7px;
+  background: var(--text-main, #ffffff);
+  color: var(--bg-body, #09090b);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.spotlight-btn-primary:hover {
+  filter: brightness(0.92);
+  transform: translateY(-1px);
+}
+
+[data-theme="light"] .spotlight-btn-primary {
+  background: #0f172a;
+  color: #ffffff;
+}
