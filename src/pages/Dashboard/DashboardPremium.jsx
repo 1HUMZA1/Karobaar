@@ -10,7 +10,7 @@ import { DashboardOperations } from '../../components/Dashboard/DashboardOperati
 import { DashboardFeed } from '../../components/Dashboard/DashboardFeed';
 import { GettingStartedGuide } from '../../components/Dashboard/GettingStartedGuide';
 import { Button } from '../../components/ui/Button';
-import { RefreshCw, Zap, Package, Users, Receipt } from 'lucide-react';
+import { RefreshCw, Zap, Package, Users, Receipt, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileDashboard } from './MobileDashboard';
