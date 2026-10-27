@@ -749,7 +749,7 @@ const Settings = () => {
                   <button 
                     type="button"
                     onClick={handleDeselectAllModules}
-                    className="settings-btn-secondary"
+                    className="settings-btn-primary"
                     style={{ height: '34px', fontSize: '0.75rem', padding: '0 0.85rem' }}
                     title="Disable all modules"
                   >
