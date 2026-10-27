@@ -475,6 +475,11 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
+.customize-ai-bubble-text strong {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
 .customize-ai-bubble-text p:last-child {
   margin-bottom: 0 !important;
 }
