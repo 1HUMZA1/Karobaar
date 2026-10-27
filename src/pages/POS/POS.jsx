@@ -381,18 +381,18 @@ const POS = () => {
   // Live AI Assistant POS Automation Engine (Voice commands & Omni-Search)
   const executeAiPosAction = (actionDetail) => {
     if (!actionDetail) return;
-    const { action, product, productName, quantity, discount, clear, hold, paymentMethod: payMethod } = actionDetail;
+    const { action, product, productName, quantity, discount, clear, hold, paymentMethod: payMethod, checkout, customerName, orderType: oType } = actionDetail;
 
     if (clear) {
       setCart([]);
       setDiscountValue(0);
-      showToast('POS cart cleared by Customize AI');
+      showToast('POS cart cleared by Jarvis AI');
       return;
     }
 
     if (discount !== undefined && discount !== null) {
       setDiscountValue(Number(discount) || 0);
-      showToast(`Discount ₹${discount} applied by Customize AI`);
+      showToast(`Discount ₹${discount} applied by Jarvis AI`);
       return;
     }
 
@@ -404,7 +404,19 @@ const POS = () => {
     if (payMethod) {
       setPaymentMethod(payMethod);
       showToast(`Payment method set to ${payMethod}`);
-      return;
+    }
+
+    if (oType) {
+      setOrderType(oType);
+      showToast(`Order type set to ${oType}`);
+    }
+
+    if (customerName) {
+      const matchedCust = customers.find(c => (c.name || '').toLowerCase().includes(customerName.toLowerCase()));
+      if (matchedCust) {
+        setSelectedCustomer(matchedCust.id);
+        showToast(`Customer linked: ${matchedCust.name}`);
+      }
     }
 
     if (action === 'add_item' || (!action && (product || productName))) {
@@ -426,6 +438,17 @@ const POS = () => {
       } else {
         showToast(`Product not found in catalog`);
       }
+    }
+
+    if (checkout) {
+      setTimeout(() => {
+        if (cart.length > 0 && !processing) {
+          handleCheckout();
+        } else {
+          showToast('Checkout ready. Add items to cart to finalize bill.');
+        }
+      }, 150);
+      return;
     }
   };
 
