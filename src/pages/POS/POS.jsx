@@ -1393,6 +1393,7 @@ const POS = () => {
         total={total}
         currencySymbol={currencySymbol}
         businessName={currentBusiness?.name || 'Karobaar'}
+        businessId={currentUser?.activeBusinessId}
       />
 
       {/* Held Orders Modal */}

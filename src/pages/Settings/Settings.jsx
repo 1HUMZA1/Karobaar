@@ -99,6 +99,28 @@ const Settings = () => {
   const [dailySummaryNotification, setDailySummaryNotification] = useState(true);
   const [rapidBarcodeAdd, setRapidBarcodeAdd] = useState(true);
 
+  // Store Custom UPI ID & Google Pay QR Image State
+  const [storeUpiId, setStoreUpiId] = useState(() => {
+    return currentBusiness?.settings?.upiId || localStorage.getItem('karobaar_custom_upi_id') || 'karobaar.pay@upi';
+  });
+  const [storeUpiQrImage, setStoreUpiQrImage] = useState(() => {
+    return currentBusiness?.settings?.upiQrImage || localStorage.getItem('karobaar_custom_upi_qr_img') || null;
+  });
+  const [storeUpiMode, setStoreUpiMode] = useState(() => {
+    return currentBusiness?.settings?.upiDefaultMode || localStorage.getItem('karobaar_custom_upi_mode') || 'dynamic';
+  });
+
+  const handleSettingsQrUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setStoreUpiQrImage(event.target.result);
+      setStoreUpiMode('custom_image');
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Business Profile State
   const [businessName, setBusinessName] = useState('');
   const [businessEmail, setBusinessEmail] = useState('');
@@ -310,6 +332,10 @@ const Settings = () => {
         rapidBarcodeAdd
       };
       localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(aiConfig));
+      localStorage.setItem('karobaar_custom_upi_id', storeUpiId);
+      if (storeUpiQrImage) localStorage.setItem('karobaar_custom_upi_qr_img', storeUpiQrImage);
+      else localStorage.removeItem('karobaar_custom_upi_qr_img');
+      localStorage.setItem('karobaar_custom_upi_mode', storeUpiMode);
 
       await db.update('businesses', currentUser.activeBusinessId, {
         name: businessName,
@@ -330,7 +356,10 @@ const Settings = () => {
           theme,
           accent: 'monochrome',
           appUiVersion,
-          aiSettings: aiConfig
+          aiSettings: aiConfig,
+          upiId: storeUpiId,
+          upiQrImage: storeUpiQrImage,
+          upiDefaultMode: storeUpiMode
         },
         modules: enabledModules
       });
@@ -791,6 +820,88 @@ const Settings = () => {
                       onChange={e => setRapidBarcodeAdd(e.target.checked)} 
                     />
                   </label>
+                </div>
+              </div>
+
+              {/* Section: Custom UPI ID & Google Pay QR Code */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+                <h3 className="text-sm font-bold text-text-main mb-1">Custom UPI ID & Google Pay QR Code</h3>
+                <p className="text-xs text-text-secondary mb-3">Configure your merchant UPI ID and upload your Google Pay or store standee QR code for instant POS billing</p>
+                
+                <div className="settings-grid-2" style={{ marginBottom: '12px' }}>
+                  <div className="settings-input-group">
+                    <label>Store / Google Pay UPI ID</label>
+                    <input 
+                      type="text" 
+                      className="settings-input-field" 
+                      value={storeUpiId} 
+                      onChange={e => setStoreUpiId(e.target.value)}
+                      placeholder="e.g. yourbusiness@okaxis, 9876543210@paytm"
+                    />
+                  </div>
+
+                  <div className="settings-input-group">
+                    <label>Default QR Presentation in POS</label>
+                    <select 
+                      className="settings-input-field"
+                      value={storeUpiMode}
+                      onChange={e => setStoreUpiMode(e.target.value)}
+                    >
+                      <option value="dynamic">Dynamic QR (Auto-encodes exact bill amount)</option>
+                      <option value="custom_image">Uploaded Shop QR Image (Google Pay Standee)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Upload QR Image Box */}
+                <div>
+                  <label className="text-xs font-bold text-text-secondary block mb-1.5">Shop Standee QR Code Image</label>
+                  <input 
+                    type="file" 
+                    id="settings-qr-upload" 
+                    accept="image/*" 
+                    style={{ display: 'none' }} 
+                    onChange={handleSettingsQrUpload}
+                  />
+
+                  {storeUpiQrImage ? (
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border-color bg-[var(--bg-body)]">
+                      <div className="w-14 h-14 rounded-md border border-border-color bg-white flex items-center justify-center overflow-hidden shrink-0">
+                        <img src={storeUpiQrImage} alt="Shop QR" className="w-full h-full object-contain" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-xs text-text-main">Custom Google Pay / Standee QR Active</div>
+                        <div className="text-[11px] text-text-secondary">Used in POS Checkout when customer scans to pay</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          type="button" 
+                          onClick={() => document.getElementById('settings-qr-upload')?.click()}
+                          className="settings-btn-secondary"
+                          style={{ height: '30px', fontSize: '11px', padding: '0 8px' }}
+                        >
+                          Replace
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setStoreUpiQrImage(null)}
+                          className="settings-btn-secondary"
+                          style={{ height: '30px', fontSize: '11px', padding: '0 8px', color: 'var(--danger)' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => document.getElementById('settings-qr-upload')?.click()}
+                      className="border-2 border-dashed border-border-color rounded-lg p-4 text-center cursor-pointer bg-[var(--bg-body)] hover:bg-[var(--bg-hover)] transition-colors"
+                    >
+                      <Upload size={20} className="mx-auto text-text-muted mb-1" />
+                      <div className="text-xs font-bold text-text-main">Click to upload your Google Pay or Shop QR Code image</div>
+                      <div className="text-[11px] text-text-muted mt-0.5">PNG, JPG, or WEBP (Standee or Screenshot)</div>
+                    </div>
+                  )}
                 </div>
               </div>
 
