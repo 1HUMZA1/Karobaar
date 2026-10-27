@@ -519,3 +519,178 @@
 [data-theme="dark"] .settings-module-item input[type="checkbox"] {
   accent-color: #ffffff;
 }
+
+/* ==========================================================================
+   Action Notification Banner & Settings Loading Screen Transition
+   ========================================================================== */
+
+.settings-action-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.settings-action-banner-close {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-left: 4px;
+  opacity: 0.85;
+}
+
+.settings-action-banner-close:hover {
+  opacity: 1;
+}
+
+/* Loading Screen Transition Overlay */
+.settings-transition-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.18s ease-out;
+}
+
+.settings-transition-card {
+  background-color: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 16px;
+  padding: 28px 32px;
+  width: 90%;
+  max-width: 440px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: scaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.settings-transition-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3.5px solid var(--border-color);
+  border-top-color: var(--text-main);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.settings-transition-check {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  animation: checkPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.settings-transition-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+}
+
+.settings-transition-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0 0 20px 0;
+  max-width: 340px;
+}
+
+.settings-transition-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.settings-transition-btn {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 10px;
+  border: none;
+  background-color: var(--text-main);
+  color: var(--bg-card);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.15s ease;
+}
+
+.settings-transition-btn:hover {
+  opacity: 0.9;
+}
+
+/* Toggle Row in Customize AI Tab */
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-body);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-toggle-row:hover {
+  border-color: var(--text-main);
+  background-color: var(--bg-card);
+}
+
+.settings-toggle-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--text-main);
+  cursor: pointer;
+}
+

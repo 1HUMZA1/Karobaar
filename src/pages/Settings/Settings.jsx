@@ -79,6 +79,25 @@ const Settings = () => {
 
   const [saving, setSaving] = useState(false);
   const [saveBanner, setSaveBanner] = useState('');
+  
+  // Loading Transition Overlay State
+  const [isChangingSettings, setIsChangingSettings] = useState(false);
+  const [settingsChangedSuccess, setSettingsChangedSuccess] = useState(false);
+
+  // Customize (AI & Automations) State
+  const [aiAssistantName, setAiAssistantName] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
+      return saved.assistantName || 'Customize';
+    } catch { return 'Customize'; }
+  });
+  const [aiEnabled, setAiEnabled] = useState(true);
+  const [aiFloatingBubble, setAiFloatingBubble] = useState(true);
+  const [aiAutoExecute, setAiAutoExecute] = useState(true);
+  const [autoAlertLowStock, setAutoAlertLowStock] = useState(true);
+  const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
+  const [dailySummaryNotification, setDailySummaryNotification] = useState(true);
+  const [rapidBarcodeAdd, setRapidBarcodeAdd] = useState(true);
 
   // Business Profile State
   const [businessName, setBusinessName] = useState('');
@@ -276,7 +295,22 @@ const Settings = () => {
     if (!currentUser?.activeBusinessId) return;
     setSaving(true);
     setSaveBanner('');
+    setIsChangingSettings(true);
+    setSettingsChangedSuccess(false);
+
     try {
+      const aiConfig = {
+        assistantName: aiAssistantName || 'Customize',
+        aiEnabled,
+        showFloatingBubble: aiFloatingBubble,
+        autoExecute: aiAutoExecute,
+        autoAlertLowStock,
+        autoPrintReceipt,
+        dailySummaryNotification,
+        rapidBarcodeAdd
+      };
+      localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(aiConfig));
+
       await db.update('businesses', currentUser.activeBusinessId, {
         name: businessName,
         email: businessEmail,
@@ -295,7 +329,8 @@ const Settings = () => {
           notifyDailyReport,
           theme,
           accent: 'monochrome',
-          appUiVersion
+          appUiVersion,
+          aiSettings: aiConfig
         },
         modules: enabledModules
       });
@@ -311,10 +346,20 @@ const Settings = () => {
       }
 
       await refreshUserProfile();
-      setSaveBanner('Preferences saved successfully!');
-      setTimeout(() => setSaveBanner(''), 3000);
+      
+      // Stage 2: Success state on loading screen with action
+      setSettingsChangedSuccess(true);
+      setSaveBanner('This settings has been changed');
+
+      setTimeout(() => {
+        setIsChangingSettings(false);
+        setSettingsChangedSuccess(false);
+      }, 2000);
+
+      setTimeout(() => setSaveBanner(''), 5000);
     } catch (err) {
       console.error(err);
+      setIsChangingSettings(false);
       setSaveBanner('Failed to save settings.');
     } finally {
       setSaving(false);
@@ -406,9 +451,17 @@ const Settings = () => {
         </div>
         <div className="settings-header-actions">
           {saveBanner && (
-            <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700">
-              {saveBanner}
-            </span>
+            <div className="settings-action-banner">
+              <CheckCircle2 size={15} />
+              <span>{saveBanner}</span>
+              <button 
+                type="button" 
+                className="settings-action-banner-close"
+                onClick={() => setSaveBanner('')}
+              >
+                Dismiss
+              </button>
+            </div>
           )}
           <button 
             className="settings-btn-primary"
@@ -429,6 +482,9 @@ const Settings = () => {
           </button>
           <button className={`settings-nav-btn ${activeTab === 'appearance' ? 'active' : ''}`} onClick={() => setActiveTab('appearance')}>
             <Palette size={16} /> Appearance & Mode
+          </button>
+          <button className={`settings-nav-btn ${activeTab === 'customize' ? 'active' : ''}`} onClick={() => setActiveTab('customize')}>
+            <Sparkles size={16} /> Customize (AI & Automations)
           </button>
           <button className={`settings-nav-btn ${activeTab === 'preferences' ? 'active' : ''}`} onClick={() => setActiveTab('preferences')}>
             <Settings2 size={16} /> Preferences & Tax
@@ -613,6 +669,155 @@ const Settings = () => {
                     </div>
                     <p className="text-xs text-text-secondary">Multi-metric executive workspace with dual charts and radar health monitor.</p>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: Customize (AI & Automations) */}
+          {activeTab === 'customize' && (
+            <div className="settings-content-card">
+              <div className="settings-card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="settings-card-title">Customize (AI & Automations)</h2>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">
+                      AI AGENT
+                    </span>
+                  </div>
+                  <p className="settings-card-subtitle">
+                    Configure the in-app AI assistant, automated operations, and trigger rules
+                  </p>
+                </div>
+
+                <button 
+                  type="button" 
+                  onClick={() => window.dispatchEvent(new CustomEvent('karobaar_open_ai_assistant'))}
+                  className="settings-btn-primary"
+                  style={{ height: '36px', fontSize: '0.8rem', padding: '0 1rem' }}
+                  title="Open live AI assistant"
+                >
+                  <Sparkles size={14} />
+                  <span>Test Customize AI</span>
+                </button>
+              </div>
+
+              {/* Section 1: AI Assistant Parameters */}
+              <div className="settings-grid-2" style={{ marginBottom: '1.5rem' }}>
+                <div className="settings-input-group">
+                  <label>Assistant Display Name</label>
+                  <input 
+                    type="text" 
+                    className="settings-input-field" 
+                    value={aiAssistantName} 
+                    onChange={e => setAiAssistantName(e.target.value)}
+                    placeholder="Customize"
+                  />
+                </div>
+
+                <div className="settings-input-group">
+                  <label>Automation Mode</label>
+                  <select 
+                    className="settings-input-field"
+                    value={aiAutoExecute ? 'auto' : 'confirm'}
+                    onChange={e => setAiAutoExecute(e.target.value === 'auto')}
+                  >
+                    <option value="auto">Auto-Execute Commands (Recommended)</option>
+                    <option value="confirm">Ask Confirmation Before Executing</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Section 2: Automated Business Triggers */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+                <h3 className="text-sm font-bold text-text-main mb-3">Automated Business Triggers</h3>
+                <div className="space-y-3">
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">Floating AI Launcher Bubble</div>
+                      <div className="text-xs text-text-secondary">Display the quick-action Customize AI button on the bottom right of the screen</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={aiFloatingBubble} 
+                      onChange={e => setAiFloatingBubble(e.target.checked)} 
+                    />
+                  </label>
+
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">Automatic Low-Stock Re-Order Alerts</div>
+                      <div className="text-xs text-text-secondary">AI actively audits inventory and notifies when items fall below threshold</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={autoAlertLowStock} 
+                      onChange={e => setAutoAlertLowStock(e.target.checked)} 
+                    />
+                  </label>
+
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">Auto-Print Thermal Receipt on POS Checkout</div>
+                      <div className="text-xs text-text-secondary">Immediately triggers receipt print dialogue upon recording a sale</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={autoPrintReceipt} 
+                      onChange={e => setAutoPrintReceipt(e.target.checked)} 
+                    />
+                  </label>
+
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">Daily Evening Sales Summary Notification</div>
+                      <div className="text-xs text-text-secondary">Summarizes total revenue, transactions count, and top-selling items at closing</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={dailySummaryNotification} 
+                      onChange={e => setDailySummaryNotification(e.target.checked)} 
+                    />
+                  </label>
+
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">POS Barcode Rapid-Add on Enter</div>
+                      <div className="text-xs text-text-secondary">Auto-adds matched barcode items into current cart immediately without clicking</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={rapidBarcodeAdd} 
+                      onChange={e => setRapidBarcodeAdd(e.target.checked)} 
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Section 3: Pre-configured AI Workflows */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
+                <h3 className="text-sm font-bold text-text-main mb-3">Pre-Configured Automation Workflows</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { title: "📊 Today's Total Sales", desc: "Instantly sums all transactions recorded today and calculates revenue", prompt: "Show today sales summary" },
+                    { title: "⚠️ Low Stock Re-Order Audit", desc: "Scans catalog for items at or below minimum threshold", prompt: "Which items are low in stock?" },
+                    { title: "👥 Outstanding Khata Ledger", desc: "Filters all customers who have pending credit or balance due", prompt: "Show customers with pending dues" },
+                    { title: "⚡ Switch to Legacy Operations Desk", desc: "Instantly reconfigures workspace to fast-track legacy view", prompt: "Switch to legacy operations desk" }
+                  ].map((wf, idx) => (
+                    <div key={idx} className="p-3 rounded-lg border border-border-color bg-[var(--bg-body)] flex flex-col justify-between">
+                      <div>
+                        <div className="font-bold text-xs text-text-main mb-1">{wf.title}</div>
+                        <div className="text-[11px] text-text-secondary leading-snug">{wf.desc}</div>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent('karobaar_open_ai_assistant', { detail: { query: wf.prompt } }))}
+                        className="mt-3 text-xs font-bold py-1.5 px-3 rounded border border-border-color bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-text-main inline-flex items-center justify-center gap-1.5"
+                      >
+                        <Sparkles size={12} /> Run Automation
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1164,6 +1369,42 @@ const Settings = () => {
           )}
         </div>
       </div>
+
+      {/* Settings Change Loading Transition Overlay with Action Notification */}
+    {isChangingSettings && (
+      <div className="settings-transition-overlay">
+        <div className="settings-transition-card">
+          {!settingsChangedSuccess ? (
+            <>
+              <div className="settings-transition-spinner" />
+              <h3 className="settings-transition-title">Saving Workspace Settings...</h3>
+              <p className="settings-transition-sub">Applying business parameters & operational rules</p>
+            </>
+          ) : (
+            <>
+              <div className="settings-transition-check">
+                <CheckCircle2 size={32} />
+              </div>
+              <h3 className="settings-transition-title">This settings has been changed</h3>
+              <p className="settings-transition-sub">Workspace configuration and preferences have been successfully updated.</p>
+              <div className="settings-transition-actions">
+                <button 
+                  type="button"
+                  className="settings-transition-btn"
+                  onClick={() => {
+                    setIsChangingSettings(false);
+                    setSettingsChangedSuccess(false);
+                  }}
+                >
+                  <Check size={14} />
+                  <span>Done / Dismiss</span>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    )}
     </div>
   );
 };

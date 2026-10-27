@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../Sidebar/Sidebar';
 import Topbar from '../Topbar/Topbar';
 import BottomNav from '../BottomNav/BottomNav';
+import { CustomizeAIChatbot } from '../AI/CustomizeAIChatbot';
 import { ErrorBoundary } from '../ErrorBoundary';
 import './Layout.css';
 
@@ -38,6 +39,7 @@ const Layout = () => {
         </main>
       </div>
       <BottomNav />
+      <CustomizeAIChatbot />
     </div>
   );
 };
