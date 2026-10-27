@@ -108,9 +108,10 @@
 }
 
 [data-theme='dark'] .k-dash-seg-item.active {
-  background: #ffffff;
-  color: #09090b;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 /* 3. 2x2 Metric Cards Grid (Linear / Apple Minimalist) */
@@ -563,9 +564,10 @@
 }
 
 [data-theme='dark'] .k-sheet-btn-primary {
-  background: #ffffff;
-  color: #09090b;
-  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+  background: #27272a;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
 .k-sheet-btn-primary:active {

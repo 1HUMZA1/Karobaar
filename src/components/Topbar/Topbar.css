@@ -397,25 +397,29 @@
   color: #94a3b8;
 }
 [data-theme="dark"] .topbar-quick-sale-btn {
-  background-color: #ffffff;
-  color: #09090b;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+  background-color: #1e2025;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 [data-theme="dark"] .topbar-quick-sale-btn:hover {
-  background-color: #f4f4f5;
+  background-color: #272830;
+  border-color: rgba(255, 255, 255, 0.35);
 }
 [data-theme="dark"] .topbar-kbd {
-  background: rgba(0, 0, 0, 0.15);
-  border-color: rgba(0, 0, 0, 0.25);
-  color: #09090b;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 [data-theme="dark"] .icon-btn {
   background: #1e1e24;
   color: #f4f4f5;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 [data-theme="dark"] .icon-btn:hover {
-  background: #ffffff;
-  color: #09090b;
+  background: #272830;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 [data-theme="dark"] .sync-synced {
   background: rgba(16, 185, 129, 0.16);

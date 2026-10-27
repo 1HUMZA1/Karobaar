@@ -90,32 +90,75 @@
   --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.7);
 }
 
-/* Accent Colors (Strictly Black & White Monochrome matching Login Theme) */
-[data-accent="default"], 
-[data-accent="ocean"], 
-[data-accent="midnight"], 
-[data-accent="coffee"],
-[data-accent="monochrome"] {
-  --primary-color: #000000;
-  --primary-hover: #262626;
-  --primary-light: #f5f5f5;
+/* Dynamic Accent Colors - Balanced Contrast */
+[data-accent="default"] {
+  --primary-color: #10b981;
+  --primary-hover: #059669;
+  --primary-light: rgba(16, 185, 129, 0.12);
+  --primary-text: #ffffff;
+}
+[data-theme="dark"] [data-accent="default"],
+[data-theme="dark"][data-accent="default"] {
+  --primary-color: #10b981;
+  --primary-hover: #34d399;
+  --primary-light: rgba(16, 185, 129, 0.2);
   --primary-text: #ffffff;
 }
 
-[data-theme="dark"] [data-accent="default"],
+[data-accent="ocean"] {
+  --primary-color: #0ea5e9;
+  --primary-hover: #0284c7;
+  --primary-light: rgba(14, 165, 233, 0.12);
+  --primary-text: #ffffff;
+}
 [data-theme="dark"] [data-accent="ocean"],
+[data-theme="dark"][data-accent="ocean"] {
+  --primary-color: #38bdf8;
+  --primary-hover: #0ea5e9;
+  --primary-light: rgba(14, 165, 233, 0.2);
+  --primary-text: #ffffff;
+}
+
+[data-accent="midnight"] {
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-light: rgba(99, 102, 241, 0.12);
+  --primary-text: #ffffff;
+}
 [data-theme="dark"] [data-accent="midnight"],
+[data-theme="dark"][data-accent="midnight"] {
+  --primary-color: #818cf8;
+  --primary-hover: #6366f1;
+  --primary-light: rgba(99, 102, 241, 0.2);
+  --primary-text: #ffffff;
+}
+
+[data-accent="coffee"] {
+  --primary-color: #f59e0b;
+  --primary-hover: #d97706;
+  --primary-light: rgba(245, 158, 11, 0.12);
+  --primary-text: #ffffff;
+}
 [data-theme="dark"] [data-accent="coffee"],
+[data-theme="dark"][data-accent="coffee"] {
+  --primary-color: #fbbf24;
+  --primary-hover: #f59e0b;
+  --primary-light: rgba(245, 158, 11, 0.2);
+  --primary-text: #ffffff;
+}
+
+[data-accent="monochrome"] {
+  --primary-color: #0f172a;
+  --primary-hover: #1e293b;
+  --primary-light: #f1f5f9;
+  --primary-text: #ffffff;
+}
 [data-theme="dark"] [data-accent="monochrome"],
-[data-theme="dark"][data-accent="default"],
-[data-theme="dark"][data-accent="ocean"],
-[data-theme="dark"][data-accent="midnight"],
-[data-theme="dark"][data-accent="coffee"],
 [data-theme="dark"][data-accent="monochrome"] {
-  --primary-color: #ffffff;
-  --primary-hover: #e5e5e5;
-  --primary-light: #262626;
-  --primary-text: #000000;
+  --primary-color: #27272a;
+  --primary-hover: #3f3f46;
+  --primary-light: rgba(255, 255, 255, 0.08);
+  --primary-text: #f8fafc;
 }
 
 input[type="checkbox"], input[type="radio"] {

@@ -422,12 +422,14 @@
 }
 
 [data-theme="dark"] .cmd-primary-btn {
-  background-color: #ffffff !important;
-  color: #09090b !important;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+  background-color: #27272a !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 [data-theme="dark"] .cmd-primary-btn:hover {
-  background-color: #f4f4f5 !important;
+  background-color: #3f3f46 !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
 [data-theme="dark"] .cmd-ghost-btn {
@@ -470,14 +472,15 @@
 }
 
 [data-theme="dark"] .quick-action-primary {
-  background-color: #ffffff !important;
-  color: #09090b !important;
-  border: 1px solid #ffffff !important;
-  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.18) !important;
+  background-color: #27272a !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
 }
 [data-theme="dark"] .quick-action-primary:hover {
-  background-color: #f4f4f5 !important;
-  color: #09090b !important;
+  background-color: #3f3f46 !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .quick-action-btn {
@@ -510,8 +513,8 @@
   color: #f4f4f5;
 }
 [data-theme="dark"] .executive-health-dock button:hover {
-  background-color: #ffffff;
-  color: #09090b;
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 [data-theme="dark"] .operations-command-dock {

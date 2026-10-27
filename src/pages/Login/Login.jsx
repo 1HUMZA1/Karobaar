@@ -18,7 +18,7 @@ import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { authStatus, authError, launchReadyToUseWorkspace } = useAppContext();
+  const { authStatus, authError, launchReadyToUseWorkspace, theme } = useAppContext();
 
   // Navigation: 'auth' | 'forgot_password'
   const [viewMode, setViewMode] = useState('auth');
@@ -337,7 +337,7 @@ const Login = () => {
             
             {/* Karobaar Official 3-Bar Brand Logo & Tagline */}
             <div className="login-brand-header">
-              <KarobaarLogo size="md" theme="dark" layout="vertical" showTagline={true} />
+              <KarobaarLogo size="md" theme={theme === "dark" ? "light" : "dark"} layout="vertical" showTagline={true} />
             </div>
 
             {(generalError || authError) && (

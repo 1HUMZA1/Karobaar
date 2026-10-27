@@ -480,13 +480,14 @@
 }
 
 [data-theme="dark"] .nav-link.active {
-  background-color: #ffffff !important;
-  color: #09090b !important;
-  border: 1px solid #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 [data-theme="dark"] .nav-link.active svg {
-  color: #09090b !important;
+  color: #38bdf8 !important;
 }
 
 [data-theme="dark"] .sidebar-toggle-btn.hidden-mobile {
