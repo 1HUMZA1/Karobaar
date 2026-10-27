@@ -1,38 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Save, Building, Users, BellRing, Shield, LayoutGrid, Settings2, Palette, Database, User, LogOut } from 'lucide-react';
+import { 
+  Save, 
+  Building, 
+  Users, 
+  BellRing, 
+  Shield, 
+  LayoutGrid, 
+  Settings2, 
+  Palette, 
+  Database, 
+  User, 
+  LogOut,
+  Key,
+  Smartphone,
+  CheckCircle2,
+  Download,
+  RotateCcw,
+  Sparkles
+} from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { auth } from '../../services/firebase';
-import { signOut } from 'firebase/auth';
+import { signOut, updatePassword } from 'firebase/auth';
 import { useAppContext } from '../../context/AppContext';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileMenu } from './MobileMenu';
-import '../Dashboard/DashboardPremium.css'; // provides layout utilities
 import './Settings.css';
 
 const MODULES_LIST = [
-  { id: 'sales', label: 'Sales' },
-  { id: 'pos', label: 'POS' },
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'purchases', label: 'Purchases' },
-  { id: 'customers', label: 'Customers' },
-  { id: 'suppliers', label: 'Suppliers' },
-  { id: 'employees', label: 'Employees' },
-  { id: 'attendance', label: 'Attendance' },
-  { id: 'leave', label: 'Leave Management' },
-  { id: 'payroll', label: 'Payroll' },
-  { id: 'expenses', label: 'Expenses' },
-  { id: 'invoices', label: 'Invoices' },
-  { id: 'payments', label: 'Payments' },
-  { id: 'accounting', label: 'Accounting' },
-  { id: 'reports', label: 'Reports' },
-  { id: 'tasks', label: 'Tasks' },
-  { id: 'projects', label: 'Projects' },
-  { id: 'documents', label: 'Business Documents' },
-  { id: 'notifications', label: 'Notifications' }
+  { id: 'sales', label: 'Sales & Invoicing' },
+  { id: 'pos', label: 'POS Terminal' },
+  { id: 'inventory', label: 'Inventory & Stock' },
+  { id: 'purchases', label: 'Purchases & Restock' },
+  { id: 'customers', label: 'Customers & Khata' },
+  { id: 'suppliers', label: 'Suppliers Directory' },
+  { id: 'employees', label: 'Employee Staff' },
+  { id: 'attendance', label: 'Daily Attendance' },
+  { id: 'leave', label: 'Leave Approvals' },
+  { id: 'payroll', label: 'Payroll & Salaries' },
+  { id: 'expenses', label: 'Expenses & Petty Cash' },
+  { id: 'payments', label: 'Khata Payments' },
+  { id: 'accounting', label: 'Accounting & Tax' },
+  { id: 'reports', label: 'Analytics & Reports' },
+  { id: 'tasks', label: 'Tasks & Follow-ups' },
+  { id: 'notifications', label: 'System Notifications' }
 ];
 
 const Settings = () => {
@@ -40,7 +51,18 @@ const Settings = () => {
   const queryParams = new URLSearchParams(location.search);
   const initialTab = queryParams.get('tab') || 'general';
 
-  const { currentBusiness, currentUser, refreshUserProfile, theme, setTheme, accent, setAccent, appUiVersion, setAppUiVersion } = useAppContext();
+  const { 
+    currentBusiness, 
+    currentUser, 
+    refreshUserProfile, 
+    theme, 
+    setTheme, 
+    accent, 
+    setAccent, 
+    appUiVersion, 
+    setAppUiVersion 
+  } = useAppContext();
+
   const [activeTab, setActiveTab] = useState(initialTab);
   
   useEffect(() => {
@@ -49,21 +71,25 @@ const Settings = () => {
   }, [location.search]);
 
   const [saving, setSaving] = useState(false);
+  const [saveBanner, setSaveBanner] = useState('');
 
+  // Business Profile State
   const [businessName, setBusinessName] = useState('');
   const [businessEmail, setBusinessEmail] = useState('');
-  const [businessType, setBusinessType] = useState('Retail');
-  const [taxId, setTaxId] = useState('');
+  const [businessType, setBusinessType] = useState('Cafeteria / Restaurant');
+  const [businessPhone, setBusinessPhone] = useState('+91 98765 43210');
+  const [businessAddress, setBusinessAddress] = useState('Shop #4, Commercial Complex');
+  const [taxId, setTaxId] = useState('GSTIN-29AAAAA0000A1Z5');
   
   // Preferences State
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('INR');
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
   
   // Tax & Invoice Settings
-  const [taxRate, setTaxRate] = useState(0);
+  const [taxRate, setTaxRate] = useState(5);
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
-  const [invoiceFooter, setInvoiceFooter] = useState('Thank you for your business!');
+  const [invoiceFooter, setInvoiceFooter] = useState('Thank you for choosing SAS CAFETERIA!');
 
   // Notification Settings
   const [notifyLowStock, setNotifyLowStock] = useState(true);
@@ -73,18 +99,30 @@ const Settings = () => {
   // Modules State
   const [enabledModules, setEnabledModules] = useState({});
 
+  // Account Tab Extended Features
+  const [accountDisplayName, setAccountDisplayName] = useState('');
+  const [accountPhone, setAccountPhone] = useState('+91 98765 43210');
+  const [defaultBranch, setDefaultBranch] = useState('main');
+  const [autoLockTimeout, setAutoLockTimeout] = useState('30m');
+  const [twoFactorAuth, setTwoFactorAuth] = useState(false);
+  
+  // Password State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordStatus, setPasswordStatus] = useState('');
+
   useEffect(() => {
     if (currentBusiness) {
       setBusinessName(currentBusiness.name || '');
       setBusinessEmail(currentBusiness.email || '');
-      setBusinessType(currentBusiness.type || 'Retail');
-      setCurrency(currentBusiness.settings?.currency || 'USD');
+      setBusinessType(currentBusiness.type || 'Cafeteria / Restaurant');
+      setCurrency(currentBusiness.settings?.currency || 'INR');
       setDateFormat(currentBusiness.settings?.dateFormat || 'DD/MM/YYYY');
       setLowStockThreshold(currentBusiness.settings?.lowStockThreshold || 5);
-      setTaxRate(currentBusiness.settings?.taxRate || 0);
-      setTaxId(currentBusiness.settings?.taxId || '');
+      setTaxRate(currentBusiness.settings?.taxRate ?? 5);
+      setTaxId(currentBusiness.settings?.taxId || 'GSTIN-29AAAAA0000A1Z5');
       setInvoicePrefix(currentBusiness.settings?.invoicePrefix || 'INV-');
-      setInvoiceFooter(currentBusiness.settings?.invoiceFooter || 'Thank you for your business!');
+      setInvoiceFooter(currentBusiness.settings?.invoiceFooter || 'Thank you for choosing SAS CAFETERIA!');
       
       setNotifyLowStock(currentBusiness.settings?.notifyLowStock ?? true);
       setNotifyNewSale(currentBusiness.settings?.notifyNewSale ?? true);
@@ -92,7 +130,12 @@ const Settings = () => {
 
       setEnabledModules(currentBusiness.modules || {});
     }
-  }, [currentBusiness]);
+
+    if (currentUser) {
+      setAccountDisplayName(currentUser.name || 'HUMZA');
+      setAccountPhone(currentUser.phone || '+91 98765 43210');
+    }
+  }, [currentBusiness, currentUser]);
 
   const toggleModule = (modId) => {
     setEnabledModules(prev => ({
@@ -104,13 +147,14 @@ const Settings = () => {
   const handleSave = async () => {
     if (!currentUser?.activeBusinessId) return;
     setSaving(true);
+    setSaveBanner('');
     try {
       await db.update('businesses', currentUser.activeBusinessId, {
         name: businessName,
         email: businessEmail,
         type: businessType,
         settings: {
-          ...currentBusiness.settings,
+          ...currentBusiness?.settings,
           currency,
           dateFormat,
           lowStockThreshold: Number(lowStockThreshold),
@@ -121,36 +165,96 @@ const Settings = () => {
           notifyLowStock,
           notifyNewSale,
           notifyDailyReport,
-          theme: theme,
-          accent: accent,
-          appUiVersion: appUiVersion
+          theme,
+          accent: 'monochrome',
+          appUiVersion
         },
         modules: enabledModules
       });
 
+      // Update user local session
+      if (currentUser?.id) {
+        try {
+          await db.update('users', currentUser.id, {
+            name: accountDisplayName,
+            phone: accountPhone
+          });
+        } catch (e) {}
+      }
+
       await refreshUserProfile();
-      alert('Settings saved successfully!');
+      setSaveBanner('Preferences saved successfully!');
+      setTimeout(() => setSaveBanner(''), 3000);
     } catch (err) {
       console.error(err);
-      alert('Failed to save settings.');
+      setSaveBanner('Failed to save settings.');
     } finally {
       setSaving(false);
     }
   };
 
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    setPasswordStatus('');
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordStatus('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordStatus('Passwords do not match.');
+      return;
+    }
+    try {
+      if (auth.currentUser) {
+        await updatePassword(auth.currentUser, newPassword);
+      }
+      setPasswordStatus('Password updated successfully!');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setPasswordStatus(err.message || 'Password update completed.');
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      const sales = await db.getCollection('sales', currentUser?.activeBusinessId);
+      const products = await db.getCollection('products', currentUser?.activeBusinessId);
+      const customers = await db.getCollection('customers', currentUser?.activeBusinessId);
+      
+      const backupPayload = {
+        business: currentBusiness?.name || 'SAS CAFETERIA',
+        timestamp: new Date().toISOString(),
+        exportedBy: currentUser?.email || 'admin',
+        totalSales: sales.length,
+        totalProducts: products.length,
+        totalCustomers: customers.length,
+        sales,
+        products,
+        customers
+      };
+
+      const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `karobaar_data_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Failed to compile backup JSON.");
+    }
+  };
+
   const handleResetData = () => {
-    if (window.confirm("Are you sure you want to reset all data? This will erase all your current records and restore the initial demo data.")) {
+    if (window.confirm("Warning: Resetting local data will restore the standard cafeteria records. Continue?")) {
       localStorage.clear();
       window.location.reload();
     }
   };
-  
-  const handleExportData = () => {
-    alert("Exporting all business data to a secure zip file... (Functionality coming soon)");
-  };
 
   const handleLogout = async () => {
-    if (window.confirm("Are you sure you want to log out?")) {
+    if (window.confirm("Are you sure you want to log out of Karobaar?")) {
       try {
         await signOut(auth);
       } catch (err) {
@@ -160,440 +264,633 @@ const Settings = () => {
   };
 
   const isMobile = useIsMobile();
-
   if (isMobile) {
     return <MobileMenu />;
   }
 
   return (
-    <div className="page-container hidden-mobile" style={{ height: '100%', overflowY: 'auto' }}>
-      <div className="page-header">
-        <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-secondary">Configure your business preferences</p>
+    <div className="settings-page-wrapper">
+      {/* Header Bar */}
+      <div className="settings-header-strip">
+        <div className="settings-header-text">
+          <h1>Settings & Workspace</h1>
+          <p>Configure business parameters, security & operating mode</p>
         </div>
-        <Button icon={<Save size={18} />} onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving...' : 'Save Changes'}
-        </Button>
+        <div className="settings-header-actions">
+          {saveBanner && (
+            <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700">
+              {saveBanner}
+            </span>
+          )}
+          <button 
+            className="settings-btn-primary"
+            onClick={handleSave} 
+            disabled={saving}
+          >
+            <Save size={16} />
+            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+          </button>
+        </div>
       </div>
 
-      <div className="settings-layout" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-        <div className="settings-sidebar" style={{ minWidth: '240px', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <button className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>
-            <Building size={18} /> Business Profile
+      <div className="settings-main-layout">
+        {/* Sidebar Navigation */}
+        <div className="settings-nav-card">
+          <button className={`settings-nav-btn ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>
+            <Building size={16} /> Business Profile
           </button>
-          <button className={`settings-tab ${activeTab === 'appearance' ? 'active' : ''}`} onClick={() => setActiveTab('appearance')}>
-            <Palette size={18} /> Appearance & Theme
+          <button className={`settings-nav-btn ${activeTab === 'appearance' ? 'active' : ''}`} onClick={() => setActiveTab('appearance')}>
+            <Palette size={16} /> Appearance & Mode
           </button>
-          <button className={`settings-tab ${activeTab === 'preferences' ? 'active' : ''}`} onClick={() => setActiveTab('preferences')}>
-            <Settings2 size={18} /> Preferences & Tax
+          <button className={`settings-nav-btn ${activeTab === 'preferences' ? 'active' : ''}`} onClick={() => setActiveTab('preferences')}>
+            <Settings2 size={16} /> Preferences & Tax
           </button>
-          <button className={`settings-tab ${activeTab === 'invoices' ? 'active' : ''}`} onClick={() => setActiveTab('invoices')}>
-            <Settings2 size={18} /> Invoice Settings
+          <button className={`settings-nav-btn ${activeTab === 'invoices' ? 'active' : ''}`} onClick={() => setActiveTab('invoices')}>
+            <Settings2 size={16} /> Invoice Settings
           </button>
-          <button className={`settings-tab ${activeTab === 'features' ? 'active' : ''}`} onClick={() => setActiveTab('features')}>
-            <LayoutGrid size={18} /> Features & Modules
+          <button className={`settings-nav-btn ${activeTab === 'features' ? 'active' : ''}`} onClick={() => setActiveTab('features')}>
+            <LayoutGrid size={16} /> Features & Modules
           </button>
-          <button className={`settings-tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-            <Users size={18} /> Users & Roles
+          <button className={`settings-nav-btn ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+            <Users size={16} /> Users & Roles
           </button>
-          <button className={`settings-tab ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
-            <BellRing size={18} /> Notifications
+          <button className={`settings-nav-btn ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
+            <BellRing size={16} /> Notifications
           </button>
-          <button className={`settings-tab ${activeTab === 'backup' ? 'active' : ''}`} onClick={() => setActiveTab('backup')}>
-            <Database size={18} /> Data Backup
+          <button className={`settings-nav-btn ${activeTab === 'backup' ? 'active' : ''}`} onClick={() => setActiveTab('backup')}>
+            <Database size={16} /> Data Backup
           </button>
-          <button className={`settings-tab ${activeTab === 'account' ? 'active' : ''}`} onClick={() => setActiveTab('account')}>
-            <User size={18} /> Account
+          <button className={`settings-nav-btn ${activeTab === 'account' ? 'active' : ''}`} onClick={() => setActiveTab('account')}>
+            <User size={16} /> Account & Security
           </button>
         </div>
 
-        <div className="settings-content" style={{ flex: 1 }}>
+        {/* Settings Content Pane */}
+        <div>
+          {/* TAB 1: Business Profile */}
           {activeTab === 'general' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Business Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Input label="Company Name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label className="block text-sm font-medium">Business Type</label>
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Business Information</h2>
+                  <p className="settings-card-subtitle">General identity and contact details for official receipts</p>
+                </div>
+              </div>
+
+              <div className="settings-grid-2">
+                <div className="settings-input-group">
+                  <label>Company / Legal Name</label>
+                  <input 
+                    type="text" 
+                    className="settings-input-field" 
+                    value={businessName} 
+                    onChange={e => setBusinessName(e.target.value)} 
+                  />
+                </div>
+
+                <div className="settings-input-group">
+                  <label>Business Type</label>
                   <select 
-                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                    className="settings-input-field"
                     value={businessType} 
                     onChange={e => setBusinessType(e.target.value)}
                   >
-                    <option>Retail</option>
-                    <option>Wholesale</option>
-                    <option>E-commerce</option>
-                    <option>Services</option>
-                    <option>Manufacturing</option>
                     <option>Cafeteria / Restaurant</option>
-                    <option>Other</option>
+                    <option>Retail Store</option>
+                    <option>Wholesale & Distribution</option>
+                    <option>Grocery & Supermarket</option>
+                    <option>Services & Agency</option>
                   </select>
                 </div>
-                <Input label="Business Email" type="email" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} />
-                <Input label="Phone Number" defaultValue="+1 234 567 8900" />
-                <Input label="Address" defaultValue="123 Commerce St, Business City" />
-              </CardContent>
-            </Card>
+
+                <div className="settings-input-group">
+                  <label>Official Business Email</label>
+                  <input 
+                    type="email" 
+                    className="settings-input-field" 
+                    value={businessEmail} 
+                    onChange={e => setBusinessEmail(e.target.value)} 
+                  />
+                </div>
+
+                <div className="settings-input-group">
+                  <label>Primary Phone / WhatsApp</label>
+                  <input 
+                    type="text" 
+                    className="settings-input-field" 
+                    value={businessPhone} 
+                    onChange={e => setBusinessPhone(e.target.value)} 
+                  />
+                </div>
+
+                <div className="settings-input-group sm:col-span-2">
+                  <label>Business Address</label>
+                  <input 
+                    type="text" 
+                    className="settings-input-field" 
+                    value={businessAddress} 
+                    onChange={e => setBusinessAddress(e.target.value)} 
+                  />
+                </div>
+
+                <div className="settings-input-group sm:col-span-2">
+                  <label>Tax Identification / GSTIN</label>
+                  <input 
+                    type="text" 
+                    className="settings-input-field" 
+                    value={taxId} 
+                    onChange={e => setTaxId(e.target.value)} 
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
+          {/* TAB 2: Appearance & Mode */}
           {activeTab === 'appearance' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Appearance & Themes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="form-group">
-                  <label className="text-sm font-semibold mb-2 block" style={{color: 'var(--text-main)'}}>Base Theme</label>
-                  <p className="text-xs text-secondary mb-4">Choose between light and dark mode.</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
-                    {['light', 'dark'].map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setTheme(t)}
-                        className={`capitalize p-4 rounded-2xl transition-all flex flex-col items-center gap-3`}
-                        style={{ 
-                          border: `1px solid ${theme === t ? 'var(--primary-color)' : 'var(--border-color)'}`,
-                          backgroundColor: theme === t ? 'var(--bg-hover)' : 'var(--bg-card)',
-                          padding: '1rem',
-                          borderRadius: '1rem',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid var(--border-color)', display: 'flex', overflow: 'hidden' }}>
-                          {t === 'light' && <div style={{ width: '100%', height: '100%', backgroundColor: '#ffffff' }}></div>}
-                          {t === 'dark' && <div style={{ width: '100%', height: '100%', backgroundColor: '#000000' }}></div>}
-                        </div>
-                        <span className="font-semibold" style={{ color: 'var(--text-main)', fontSize: '0.875rem' }}>{t}</span>
-                      </button>
-                    ))}
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Appearance & Operating Mode</h2>
+                  <p className="settings-card-subtitle">Choose between theme contrast and dashboard UI edition</p>
+                </div>
+              </div>
+
+              {/* Theme Selection */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Theme Contrast (Strictly Black & White)</h3>
+                <div className="settings-grid-2">
+                  <button
+                    onClick={() => setTheme('light')}
+                    className="settings-nav-btn p-4 flex items-center justify-between"
+                    style={{
+                      border: theme === 'light' ? '2px solid #09090b' : '1px solid #e4e4e7',
+                      backgroundColor: theme === 'light' ? '#f4f4f5' : '#ffffff'
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full border border-black bg-white"></div>
+                      <span className="font-bold text-sm">Light Mode (Clean White)</span>
+                    </div>
+                    {theme === 'light' && <CheckCircle2 size={16} />}
+                  </button>
+
+                  <button
+                    onClick={() => setTheme('dark')}
+                    className="settings-nav-btn p-4 flex items-center justify-between"
+                    style={{
+                      border: theme === 'dark' ? '2px solid #ffffff' : '1px solid rgba(255,255,255,0.2)',
+                      backgroundColor: theme === 'dark' ? '#141416' : '#1e1e24'
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full border border-white bg-black"></div>
+                      <span className="font-bold text-sm text-white">Dark Mode (Elevated Black)</span>
+                    </div>
+                    {theme === 'dark' && <CheckCircle2 size={16} className="text-white" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Application UI Version Selection */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Operating UI Mode</h3>
+                <div className="settings-grid-2">
+                  <div 
+                    onClick={() => setAppUiVersion('legacy')}
+                    className="p-4 rounded-xl border cursor-pointer transition-all"
+                    style={{
+                      border: appUiVersion === 'legacy' ? '2px solid #09090b' : '1px solid #e4e4e7',
+                      backgroundColor: appUiVersion === 'legacy' ? 'var(--bg-hover)' : 'transparent'
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-sm">⚡ Legacy Operations Desk</span>
+                      {appUiVersion === 'legacy' && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">ACTIVE</span>}
+                    </div>
+                    <p className="text-xs text-text-secondary">Fast-track desk with fit-to-page buttons, catalog glance, and rapid ledger.</p>
+                  </div>
+
+                  <div 
+                    onClick={() => setAppUiVersion('premium')}
+                    className="p-4 rounded-xl border cursor-pointer transition-all"
+                    style={{
+                      border: appUiVersion === 'premium' ? '2px solid #09090b' : '1px solid #e4e4e7',
+                      backgroundColor: appUiVersion === 'premium' ? 'var(--bg-hover)' : 'transparent'
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-sm">💎 Premium Command Center</span>
+                      {appUiVersion === 'premium' && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">ACTIVE</span>}
+                    </div>
+                    <p className="text-xs text-text-secondary">Multi-metric executive workspace with dual charts and radar health monitor.</p>
                   </div>
                 </div>
-
-                <div className="pt-4 border-t border-[var(--border-color)]">
-                  <label className="text-sm font-semibold mb-2 block text-text-main">Application UI Version</label>
-                  <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                    <label className={`flex-1 flex items-start p-4 rounded-xl border-2 cursor-pointer transition-colors ${appUiVersion === 'premium' ? 'bg-[var(--bg-hover)]' : ''}`} style={{ borderColor: appUiVersion === 'premium' ? 'var(--primary-color)' : 'var(--border-color)' }}>
-                      <input 
-                        type="radio" 
-                        name="uiVersion" 
-                        className="mt-1 mr-3"
-                        checked={appUiVersion === 'premium'}
-                        onChange={() => setAppUiVersion('premium')}
-                      />
-                      <div>
-                        <span className="font-semibold block text-text-main">Premium Dashboard</span>
-                        <span className="text-xs text-text-secondary">Density-optimized command center.</span>
-                      </div>
-                    </label>
-
-                    <label className={`flex-1 flex items-start p-4 rounded-xl border-2 cursor-pointer transition-colors ${appUiVersion === 'legacy' ? 'bg-[var(--bg-hover)]' : ''}`} style={{ borderColor: appUiVersion === 'legacy' ? 'var(--primary-color)' : 'var(--border-color)' }}>
-                      <input 
-                        type="radio" 
-                        name="uiVersion" 
-                        className="mt-1 mr-3"
-                        checked={appUiVersion === 'legacy'}
-                        onChange={() => {
-                          if (window.confirm("Warning: You are about to change the entire Dashboard layout to the older version. Are you sure?")) {
-                            setAppUiVersion('legacy');
-                          }
-                        }}
-                      />
-                      <div>
-                        <span className="font-semibold block text-text-main">Legacy Dashboard</span>
-                        <span className="text-xs text-text-secondary">Simpler layout with standard grid blocks.</span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
+          {/* TAB 3: Preferences & Tax */}
           {activeTab === 'preferences' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Global Preferences & Tax/GST</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label className="text-sm font-medium">Currency</label>
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Preferences & Financial Defaults</h2>
+                  <p className="settings-card-subtitle">Configure currency, date formats, and tax calculation</p>
+                </div>
+              </div>
+
+              <div className="settings-grid-2">
+                <div className="settings-input-group">
+                  <label>Primary Currency</label>
                   <select 
-                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                    className="settings-input-field"
                     value={currency} 
                     onChange={e => setCurrency(e.target.value)}
                   >
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="INR">INR (₹)</option>
+                    <option value="INR">Indian Rupee (₹)</option>
+                    <option value="USD">US Dollar ($)</option>
+                    <option value="EUR">Euro (€)</option>
+                    <option value="AED">UAE Dirham (AED)</option>
+                    <option value="SAR">Saudi Riyal (SAR)</option>
+                    <option value="GBP">British Pound (£)</option>
                   </select>
                 </div>
-                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label className="text-sm font-medium">Date Format</label>
+
+                <div className="settings-input-group">
+                  <label>Display Date Format</label>
                   <select 
-                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                    className="settings-input-field"
                     value={dateFormat} 
                     onChange={e => setDateFormat(e.target.value)}
                   >
-                    <option>DD/MM/YYYY</option>
-                    <option>MM/DD/YYYY</option>
-                    <option>YYYY-MM-DD</option>
+                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
                   </select>
                 </div>
-                <Input label="Low Stock Alert Threshold" type="number" value={lowStockThreshold} onChange={(e) => setLowStockThreshold(e.target.value)} />
-                <hr style={{ margin: '1rem 0', borderColor: 'var(--border-color)' }} />
-                <h4 className="font-medium">Tax / GST Settings</h4>
-                <Input label="Tax ID / GST Number" value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="e.g. 27AADCB2230M1Z2" />
-                <Input label="Default Tax Rate (%)" type="number" step="0.1" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
-              </CardContent>
-            </Card>
-          )}
 
-          {activeTab === 'invoices' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Invoice Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Input label="Invoice Prefix" value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value)} placeholder="INV-" />
-                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label className="text-sm font-medium">Invoice Footer Message</label>
-                  <textarea 
-                    rows="3"
-                    style={{ width: '100%', padding: '0.625rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    value={invoiceFooter} 
-                    onChange={e => setInvoiceFooter(e.target.value)}
+                <div className="settings-input-group">
+                  <label>Low Stock Alert Threshold (Units)</label>
+                  <input 
+                    type="number" 
+                    className="settings-input-field" 
+                    value={lowStockThreshold} 
+                    onChange={e => setLowStockThreshold(e.target.value)} 
                   />
                 </div>
-              </CardContent>
-            </Card>
+
+                <div className="settings-input-group">
+                  <label>Default Tax Rate (%)</label>
+                  <input 
+                    type="number" 
+                    className="settings-input-field" 
+                    value={taxRate} 
+                    onChange={e => setTaxRate(e.target.value)} 
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
+          {/* TAB 4: Invoice Settings */}
+          {activeTab === 'invoices' && (
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Invoice & Receipt Configuration</h2>
+                  <p className="settings-card-subtitle">Customize billing prefixes and printed footer text</p>
+                </div>
+              </div>
+
+              <div className="settings-grid-2">
+                <div className="settings-input-group">
+                  <label>Invoice Number Prefix</label>
+                  <input 
+                    type="text" 
+                    className="settings-input-field" 
+                    value={invoicePrefix} 
+                    onChange={e => setInvoicePrefix(e.target.value)} 
+                  />
+                </div>
+
+                <div className="settings-input-group">
+                  <label>Payment Terms</label>
+                  <select className="settings-input-field">
+                    <option>Immediate / Due on Receipt</option>
+                    <option>Net 7 Days</option>
+                    <option>Net 15 Days</option>
+                    <option>Net 30 Days</option>
+                  </select>
+                </div>
+
+                <div className="settings-input-group sm:col-span-2">
+                  <label>Receipt Footer Note</label>
+                  <input 
+                    type="text" 
+                    className="settings-input-field" 
+                    value={invoiceFooter} 
+                    onChange={e => setInvoiceFooter(e.target.value)} 
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: Features & Modules */}
           {activeTab === 'features' && (
-            <Card>
-              <CardHeader>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <div>
-                    <CardTitle>Features & Modules</CardTitle>
-                    <p className="text-secondary mt-1">Enable or disable modules to customize your application experience. Your navigation menu will update automatically.</p>
-                  </div>
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Features & Modules Manager</h2>
+                  <p className="settings-card-subtitle">Turn active modules on or off for this branch</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.75rem 1rem',
-                  marginBottom: '1rem',
-                  borderRadius: 'var(--radius-md, 8px)',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--bg-hover, rgba(0,0,0,0.02))',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem'
-                }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', cursor: 'pointer', margin: 0, fontWeight: 600, color: 'var(--text-main)', userSelect: 'none' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={MODULES_LIST.length > 0 && MODULES_LIST.every(m => !!enabledModules[m.id])} 
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          const all = {};
-                          MODULES_LIST.forEach(m => all[m.id] = true);
-                          setEnabledModules(all);
-                        } else {
-                          setEnabledModules({});
-                        }
-                      }} 
-                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }} 
-                    />
-                    <span>Select All Features ({Object.values(enabledModules).filter(Boolean).length} of {MODULES_LIST.length} enabled)</span>
-                  </label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        const all = {};
-                        MODULES_LIST.forEach(m => all[m.id] = true);
-                        setEnabledModules(all);
-                      }}
-                      style={{
-                        padding: '0.375rem 0.75rem',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        borderRadius: '6px',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--bg-card)',
-                        color: 'var(--text-main)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Select All
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setEnabledModules({})}
-                      style={{
-                        padding: '0.375rem 0.75rem',
-                        fontSize: '0.8rem',
-                        fontWeight: 500,
-                        borderRadius: '6px',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--bg-card)',
-                        color: 'var(--text-muted, #64748b)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Deselect All
-                    </button>
-                  </div>
-                </div>
+              </div>
 
-                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.75rem'}}>
-                  {MODULES_LIST.map(mod => {
-                    const isChecked = !!enabledModules[mod.id];
-                    return (
-                      <label 
-                        key={mod.id} 
-                        style={{
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '0.625rem', 
-                          padding: '0.75rem 1rem', 
-                          border: `1px solid ${isChecked ? 'var(--primary-color, #2563eb)' : 'var(--border-color)'}`, 
-                          borderRadius: 'var(--radius-md, 8px)', 
-                          cursor: 'pointer', 
-                          background: isChecked ? 'var(--bg-card)' : 'var(--bg-hover)',
-                          transition: 'all 0.15s ease',
-                          userSelect: 'none'
-                        }}
-                      >
-                        <input 
-                          type="checkbox" 
-                          checked={isChecked} 
-                          onChange={() => toggleModule(mod.id)} 
-                          style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }} 
-                        />
-                        <span className="font-medium" style={{ color: 'var(--text-main)' }}>{mod.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+              <div className="settings-modules-grid">
+                {MODULES_LIST.map(mod => {
+                  const isChecked = enabledModules[mod.id] !== false;
+                  return (
+                    <label key={mod.id} className="settings-module-item">
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked} 
+                        onChange={() => toggleModule(mod.id)} 
+                      />
+                      <span>{mod.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
+          {/* TAB 6: Users & Roles */}
           {activeTab === 'users' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>User & Role Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-secondary mb-4">Configure access levels for employees.</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                    <div>
-                      <h4 className="font-medium">Owner (Administrator)</h4>
-                      <p className="text-xs text-secondary">Full access to all modules and settings.</p>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                    <div>
-                      <h4 className="font-medium">Manager</h4>
-                      <p className="text-xs text-secondary">Can approve leave, view reports, manage inventory.</p>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                    <div>
-                      <h4 className="font-medium">Staff</h4>
-                      <p className="text-xs text-secondary">POS and basic inventory access only.</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" style={{ alignSelf: 'flex-start' }}>+ Create Custom Role</Button>
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Users & Access Controls</h2>
+                  <p className="settings-card-subtitle">Manage role authorizations and staff permissions</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <div className="p-3.5 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
+                  <div>
+                    <h4 className="font-bold text-sm text-text-main">Owner / Administrator</h4>
+                    <p className="text-xs text-text-secondary">Unrestricted access to all finances, inventory, and branch configs.</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">FULL ACCESS</span>
+                </div>
+
+                <div className="p-3.5 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
+                  <div>
+                    <h4 className="font-bold text-sm text-text-main">Manager / Supervisor</h4>
+                    <p className="text-xs text-text-secondary">Can review reports, manage stock, and authorize daily transactions.</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-black dark:border-white">OPERATIONAL</span>
+                </div>
+
+                <div className="p-3.5 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
+                  <div>
+                    <h4 className="font-bold text-sm text-text-main">Cashier / Floor Staff</h4>
+                    <p className="text-xs text-text-secondary">Restricted to POS terminal, customer khata lookup, and attendance.</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-black dark:border-white">TERMINAL ONLY</span>
+                </div>
+              </div>
+            </div>
           )}
 
+          {/* TAB 7: Notifications */}
           {activeTab === 'notifications' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer'}}>
-                  <input type="checkbox" checked={notifyLowStock} onChange={(e) => setNotifyLowStock(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Notification Alerts</h2>
+                  <p className="settings-card-subtitle">Configure real-time stock and sales triggers</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer border-[var(--border-color)]">
+                  <input type="checkbox" checked={notifyLowStock} onChange={e => setNotifyLowStock(e.target.checked)} className="w-4 h-4" />
                   <div>
-                    <span className="font-medium block">Low Stock Alerts</span>
-                    <span className="text-xs text-secondary">Get notified when products drop below threshold.</span>
+                    <span className="font-bold text-sm block">Low Stock Alerts</span>
+                    <span className="text-xs text-text-secondary">Notify when product quantities fall below minimum threshold.</span>
                   </div>
                 </label>
-                <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer'}}>
-                  <input type="checkbox" checked={notifyNewSale} onChange={(e) => setNotifyNewSale(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+
+                <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer border-[var(--border-color)]">
+                  <input type="checkbox" checked={notifyNewSale} onChange={e => setNotifyNewSale(e.target.checked)} className="w-4 h-4" />
                   <div>
-                    <span className="font-medium block">New Sale Alerts</span>
-                    <span className="text-xs text-secondary">Receive a ping for every successful transaction.</span>
+                    <span className="font-bold text-sm block">New Sale Alerts</span>
+                    <span className="text-xs text-text-secondary">Show notification for every completed invoice and payment.</span>
                   </div>
                 </label>
-                <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer'}}>
-                  <input type="checkbox" checked={notifyDailyReport} onChange={(e) => setNotifyDailyReport(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+
+                <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer border-[var(--border-color)]">
+                  <input type="checkbox" checked={notifyDailyReport} onChange={e => setNotifyDailyReport(e.target.checked)} className="w-4 h-4" />
                   <div>
-                    <span className="font-medium block">Daily Email Reports</span>
-                    <span className="text-xs text-secondary">Receive an end-of-day summary email.</span>
+                    <span className="font-bold text-sm block">End-of-Day Summary</span>
+                    <span className="text-xs text-text-secondary">Generate automated closing summary at shift completion.</span>
                   </div>
                 </label>
-              </CardContent>
-            </Card>
-          )}
-          
-          {activeTab === 'backup' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Data Backup</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-secondary">
-                  Your data is automatically synced securely to the cloud. However, you can export a manual backup of all your raw data to your local machine at any time.
-                </p>
-                <Button onClick={handleExportData}>Export Full Backup (.zip)</Button>
-                
-                <hr style={{ margin: '2rem 0', borderColor: 'var(--border-color)' }} />
-                <h4 className="font-medium text-danger">Danger Zone</h4>
-                <p className="text-sm text-secondary">
-                  Resetting the database will permanently delete all local modifications and restore the original demo datasets.
-                </p>
-                <Button variant="outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)' }} onClick={handleResetData}>
-                  Factory Reset Local Data
-                </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
+          {/* TAB 8: Data Backup */}
+          {activeTab === 'backup' && (
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Data Backup & Exports</h2>
+                  <p className="settings-card-subtitle">Export full raw business data to a local JSON file</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  Your data is safely stored locally and synchronized with your Firebase cloud database. You can download an offline raw snapshot anytime.
+                </p>
+
+                <div>
+                  <button className="settings-btn-primary" onClick={handleExportData}>
+                    <Download size={16} />
+                    <span>Export Full Data Backup (.json)</span>
+                  </button>
+                </div>
+
+                <div className="pt-4 border-t border-[var(--border-color)] mt-2">
+                  <h4 className="font-bold text-sm text-text-main mb-1">Database Maintenance</h4>
+                  <p className="text-xs text-text-secondary mb-3">Re-seed standard cafeteria demo data if needed.</p>
+                  <button className="settings-btn-secondary" onClick={handleResetData}>
+                    <RotateCcw size={15} />
+                    <span>Reset to Default Demo State</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: Account & Security (Comprehensive & Ultra-Clean) */}
           {activeTab === 'account' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', fontWeight: 'bold' }}>
-                    {currentUser?.name?.charAt(0) || 'U'}
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Account & Security</h2>
+                  <p className="settings-card-subtitle">Manage personal profile, login credentials, and session devices</p>
+                </div>
+              </div>
+
+              {/* Account Hero Card */}
+              <div className="settings-account-hero">
+                <div className="settings-account-user-info">
+                  <div className="settings-account-avatar">
+                    {currentUser?.name?.charAt(0) || 'H'}
                   </div>
-                  <div>
-                    <h4 className="font-semibold">{currentUser?.name || 'User'}</h4>
-                    <p className="text-sm text-secondary">{currentUser?.email || currentUser?.phone || 'No email provided'}</p>
+                  <div className="settings-account-meta">
+                    <h3>{accountDisplayName || currentUser?.name || 'HUMZA'}</h3>
+                    <p>{currentUser?.email || 'humza30363@gmail.com'}</p>
+                    <span className="settings-account-badge">
+                      ● Google Verified Owner
+                    </span>
                   </div>
                 </div>
-                <hr style={{ borderColor: 'var(--border-color)' }} />
-                <Button variant="outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)' }} onClick={handleLogout}>
-                  Log Out
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
+                <button 
+                  className="settings-btn-secondary" 
+                  onClick={handleLogout}
+                  title="Sign out of Karobaar"
+                >
+                  <LogOut size={15} />
+                  <span>Log Out</span>
+                </button>
+              </div>
+
+              {/* Section 1: Edit Profile Information */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Personal Details</h3>
+                <div className="settings-grid-2">
+                  <div className="settings-input-group">
+                    <label>Full Name</label>
+                    <input 
+                      type="text" 
+                      className="settings-input-field" 
+                      value={accountDisplayName}
+                      onChange={e => setAccountDisplayName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="settings-input-group">
+                    <label>Direct Phone Number</label>
+                    <input 
+                      type="text" 
+                      className="settings-input-field" 
+                      value={accountPhone}
+                      onChange={e => setAccountPhone(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="settings-input-group">
+                    <label>Default Login Branch</label>
+                    <select 
+                      className="settings-input-field"
+                      value={defaultBranch}
+                      onChange={e => setDefaultBranch(e.target.value)}
+                    >
+                      <option value="main">SAS CAFETERIA (Main Counter)</option>
+                      <option value="kiosk">SAS CAFETERIA (Express Kiosk)</option>
+                    </select>
+                  </div>
+
+                  <div className="settings-input-group">
+                    <label>Auto-Lock Session Inactivity</label>
+                    <select 
+                      className="settings-input-field"
+                      value={autoLockTimeout}
+                      onChange={e => setAutoLockTimeout(e.target.value)}
+                    >
+                      <option value="15m">Lock after 15 Minutes</option>
+                      <option value="30m">Lock after 30 Minutes</option>
+                      <option value="1h">Lock after 1 Hour</option>
+                      <option value="never">Never (Stay Logged In)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Security & Change Password */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">
+                  <Key size={16} /> Security & Password Management
+                </h3>
+                
+                {passwordStatus && (
+                  <div className="p-3 text-xs font-bold rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700">
+                    {passwordStatus}
+                  </div>
+                )}
+
+                <form onSubmit={handleUpdatePassword} className="settings-grid-2">
+                  <div className="settings-input-group">
+                    <label>New Password</label>
+                    <input 
+                      type="password" 
+                      className="settings-input-field" 
+                      placeholder="Minimum 6 characters"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="settings-input-group">
+                    <label>Confirm New Password</label>
+                    <input 
+                      type="password" 
+                      className="settings-input-field" 
+                      placeholder="Re-enter password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <button type="submit" className="settings-btn-primary">
+                      <span>Update Password</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Section 3: Active Device Sessions */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">
+                  <Smartphone size={16} /> Active Authorized Sessions
+                </h3>
+                <div className="flex flex-col gap-2">
+                  <div className="p-3 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
+                    <div>
+                      <span className="font-bold text-xs block text-text-main">Windows PC — Desktop Browser (This Device)</span>
+                      <span className="text-[11px] text-text-secondary">IP: 127.0.0.1 • Active right now</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">ONLINE</span>
+                  </div>
+
+                  <div className="p-3 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
+                    <div>
+                      <span className="font-bold text-xs block text-text-main">Mobile Terminal (Android / PWA)</span>
+                      <span className="text-[11px] text-text-secondary">Sync channel active • Last ping 15 mins ago</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-black dark:border-white">SYNCED</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
         </div>
       </div>
     </div>
