@@ -99,6 +99,7 @@ const Settings = () => {
   const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
   const [dailySummaryNotification, setDailySummaryNotification] = useState(true);
   const [rapidBarcodeAdd, setRapidBarcodeAdd] = useState(true);
+  const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish');
 
   // Store Custom UPI ID & Google Pay QR Image State
   const [storeUpiId, setStoreUpiId] = useState(() => {
@@ -333,6 +334,7 @@ const Settings = () => {
         rapidBarcodeAdd
       };
       localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(aiConfig));
+      localStorage.setItem('karobaar_ai_language', aiLanguage);
       localStorage.setItem('karobaar_custom_upi_id', storeUpiId);
       if (storeUpiQrImage) localStorage.setItem('karobaar_custom_upi_qr_img', storeUpiQrImage);
       else localStorage.removeItem('karobaar_custom_upi_qr_img');
@@ -767,6 +769,22 @@ const Settings = () => {
                   >
                     <option value="auto">Auto-Execute Commands (Recommended)</option>
                     <option value="confirm">Ask Confirmation Before Executing</option>
+                  </select>
+                </div>
+
+                <div className="settings-input-group">
+                  <label>Voice & Chat Language (Hinglish / Roman English)</label>
+                  <select 
+                    className="settings-input-field"
+                    value={aiLanguage}
+                    onChange={e => {
+                      setAiLanguage(e.target.value);
+                      localStorage.setItem('karobaar_ai_language', e.target.value);
+                    }}
+                  >
+                    <option value="hinglish">Hinglish (Roman English - e.g. "Aaj ki sale ₹...", "1 Chai add kardi")</option>
+                    <option value="en">Pure English (e.g. "Today's sales report...", "Added 1 Tea")</option>
+                    <option value="hi">हिंदी (Devanagari script)</option>
                   </select>
                 </div>
               </div>

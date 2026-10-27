@@ -42,8 +42,10 @@ const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
     return <Navigate to="/setup" replace />;
   }
   
-  // Role Check
-  const hasRole = allowedRoles ? (allowedRoles.includes(userRole) || userRole === 'OWNER') : true;
+  // Role Check (Case-insensitive comparison)
+  const normalizedRole = (userRole || 'OWNER').toUpperCase();
+  const normalizedAllowed = allowedRoles ? allowedRoles.map(r => r.toUpperCase()) : [];
+  const hasRole = allowedRoles ? (normalizedAllowed.includes(normalizedRole) || normalizedRole === 'OWNER') : true;
   if (!hasRole) {
     return <Navigate to="/dashboard" replace />;
   }

@@ -99,7 +99,7 @@ export const AIOnboardingConcierge = () => {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
-  const [languagePreference, setLanguagePreference] = useState('hi'); // 'hi' (Hindi/Hinglish) | 'en' (English)
+  const [languagePreference, setLanguagePreference] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish'); // 'hinglish' (Roman English) | 'en' (English) | 'hi' (Hindi)
 
   // Form states collected step-by-step
   const [ownerName, setOwnerName] = useState(() => currentUser?.name || 'Shop Owner');
@@ -118,13 +118,11 @@ export const AIOnboardingConcierge = () => {
 
   const recognitionRef = useRef(null);
 
-  // Check on mount if onboarding is required
+  // Check on mount if onboarding is required (Never blocks existing working sessions)
   useEffect(() => {
-    const userEmail = currentUser?.email || 'default';
-    const hasCompletedOnboarding = localStorage.getItem(`karobaar_onboarding_completed_${userEmail}`) === 'true';
     const isTriggered = sessionStorage.getItem('karobaar_trigger_ai_onboarding') === 'true';
 
-    if (isTriggered || (!hasCompletedOnboarding && currentUser)) {
+    if (isTriggered) {
       setIsOpen(true);
       sessionStorage.removeItem('karobaar_trigger_ai_onboarding');
     }
@@ -136,7 +134,7 @@ export const AIOnboardingConcierge = () => {
 
     window.addEventListener('karobaar_start_ai_onboarding', handleCustomTrigger);
     return () => window.removeEventListener('karobaar_start_ai_onboarding', handleCustomTrigger);
-  }, [currentUser]);
+  }, []);
 
   // Speech Recognition initialization
   useEffect(() => {
@@ -195,27 +193,37 @@ export const AIOnboardingConcierge = () => {
     if (!isOpen) return;
 
     if (step === 1) {
-      const greeting = languagePreference === 'hi' 
+      const greeting = languagePreference === 'hinglish'
+        ? "Namaste! Karobaar me aapka swagat hai. Main Customize AI hoon. Chaliye aapki dukaan ka pura setup step-by-step karte hain. Kripya apna naam aur phone number batayein ya type karein."
+        : languagePreference === 'hi'
         ? "नमस्ते! करोबार में आपका स्वागत है। मैं कस्टमाइज़ AI हूँ। चलिए आपकी दुकान का पूरा सेटअप स्टेप-बाय-स्टेप करते हैं। कृपया अपना नाम और फ़ोन नंबर बताएँ।"
         : "Welcome to Karobaar! I am Customize AI, your business assistant. Let's set up your store step-by-step. What is your full name and contact number?";
       speakAI(greeting);
     } else if (step === 2) {
-      const prompt = languagePreference === 'hi'
+      const prompt = languagePreference === 'hinglish'
+        ? `Bahut badhiya, ${ownerName}! Ab apni dukaan ya business ka naam batayein ya neeche se select karein:`
+        : languagePreference === 'hi'
         ? "बहुत बढ़िया! अब अपनी दुकान या बिज़नेस का नाम बताएँ या नीचे से सेलेक्ट करें।"
         : "Great! What is the name of your shop or business?";
       speakAI(prompt);
     } else if (step === 3) {
-      const prompt = languagePreference === 'hi'
+      const prompt = languagePreference === 'hinglish'
+        ? "Aapka business kis type ka hai? Jaise Cafeteria, Kirana store, ya Kapde ki dukaan? Select karte hi main ready-to-sell inventory apne aap load kar dunga."
+        : languagePreference === 'hi'
         ? "आपकी दुकान किस तरह की है? जैसे कैफेटेरिया, किराना स्टोर, या कपड़े की दुकान? मैं आपके लिए रेडी-टू-सेल माल तुरंत लोड कर दूँगा।"
         : "What type of business do you run? Select your category, and I will preload ready-to-sell products with prices for you.";
       speakAI(prompt);
     } else if (step === 4) {
-      const prompt = languagePreference === 'hi'
+      const prompt = languagePreference === 'hinglish'
+        ? "QR code se customer payments lene ke liye apni UPI ID enter karein (jaise naam@okaxis), aur apni billing currency chunein:"
+        : languagePreference === 'hi'
         ? "QR कोड से पेमेंट्स लेने के लिए अपनी UPI ID डालें, जैसे नाम @ ओकेएक्सिस, और अपनी करंसी चुनें।"
         : "Enter your UPI ID for QR code payments, and choose your business currency.";
       speakAI(prompt);
     } else if (step === 5) {
-      const prompt = languagePreference === 'hi'
+      const prompt = languagePreference === 'hinglish'
+        ? "Apni pasand ki Black and White monochrome theme aur dashboard desk select karein:"
+        : languagePreference === 'hi'
         ? "अपनी पसंद की ब्लैक एंड व्हाइट थीम और डैशबोर्ड स्टाइल चुनें।"
         : "Choose your monochrome theme and dashboard operating style.";
       speakAI(prompt);
@@ -406,18 +414,21 @@ export const AIOnboardingConcierge = () => {
           </div>
 
           <div className="ai-onboarding-header-actions">
-            {/* Language toggle: Hindi / English */}
+            {/* Language toggle: Hinglish (Roman English) / English / Hindi */}
             <button 
               type="button" 
               className="ai-lang-pill-btn"
               onClick={() => {
-                const nextLang = languagePreference === 'hi' ? 'en' : 'hi';
+                const nextLang = languagePreference === 'hinglish' ? 'en' : languagePreference === 'en' ? 'hi' : 'hinglish';
                 setLanguagePreference(nextLang);
+                localStorage.setItem('karobaar_ai_language', nextLang);
               }}
-              title="Change spoken language"
+              title="Change spoken language (Hinglish / English / Hindi)"
             >
               <Globe size={13} />
-              <span>{languagePreference === 'hi' ? 'हिंदी (Hindi)' : 'English'}</span>
+              <span>
+                {languagePreference === 'hinglish' ? 'Hinglish (Roman)' : languagePreference === 'hi' ? 'हिंदी (Hindi)' : 'English'}
+              </span>
             </button>
 
             {/* Mute toggle */}
@@ -474,7 +485,9 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hi'
+                  {languagePreference === 'hinglish'
+                    ? "Namaste! Karobaar me aapka swagat hai. Main Customize AI hoon. Aapki dukaan ka pura setup main khud step-by-step karunga. Kripya apna naam aur phone number batayein ya type karein."
+                    : languagePreference === 'hi'
                     ? "नमस्ते! करोबार में आपका स्वागत है। मैं कस्टमाइज़ AI हूँ। आपकी दुकान का पूरा सेटअप मैं खुद करूँगा। कृपया अपना नाम और फ़ोन नंबर दर्ज करें या बोलें।"
                     : "Welcome to Karobaar! I am Customize AI. I will configure your entire store for you. Please enter or speak your full name and contact number."}
                 </p>
@@ -545,7 +558,9 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hi'
+                  {languagePreference === 'hinglish'
+                    ? `Bahut khoob, ${ownerName}! Ab apni dukaan, cafe ya enterprise ka naam batayein:`
+                    : languagePreference === 'hi'
                     ? `बहुत खूब, ${ownerName}! अब अपनी दुकान, कैफे या व्यापार का नाम बताएँ:`
                     : `Awesome, ${ownerName}! What is the name of your shop or enterprise?`}
                 </p>
@@ -626,7 +641,9 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hi'
+                  {languagePreference === 'hinglish'
+                    ? "Aapki dukaan kis category me aati hai? Select karte hi AI aapke liye ready-to-sell maal, barcodes aur prices apne aap load kar dega."
+                    : languagePreference === 'hi'
                     ? "आपकी दुकान किस केटेगरी में आती है? सेलेक्ट करते ही AI आपके लिए तैयार माल, बारकोड और कीमतें अपने आप लोड कर देगा।"
                     : "What is your industry? Customize AI will automatically generate ready-to-sell inventory with barcodes and prices for this category."}
                 </p>
@@ -692,7 +709,9 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hi'
+                  {languagePreference === 'hinglish'
+                    ? "Dukaan me QR code se payment lene ke liye apni UPI ID enter karein (jaise naam@okaxis), aur apni billing currency chunein:"
+                    : languagePreference === 'hi'
                     ? "दुकान में QR कोड से पैसे लेने के लिए अपनी UPI ID डालें, जैसे नाम @ ओकेएक्सिस, और अपनी बिलिंग करंसी चुनें:"
                     : "Enter your UPI ID so customers can pay via instant Google Pay / PhonePe QR code, and select your currency:"}
                 </p>
@@ -780,7 +799,9 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hi'
+                  {languagePreference === 'hinglish'
+                    ? "Apni pasand ki theme aur speed mode select karein. Iske baad Customize AI pura setup live kar dega."
+                    : languagePreference === 'hi'
                     ? "अपनी पसंद की थीम और स्पीड मोड चुनें। इसके बाद AI अपने आप पूरा सेटअप लाइव कर देगा।"
                     : "Choose your workspace monochrome style and dashboard layout. Then Customize AI will execute the entire setup live!"}
                 </p>
@@ -856,7 +877,7 @@ export const AIOnboardingConcierge = () => {
               >
                 <Sparkles size={16} />
                 <span>
-                  {languagePreference === 'hi' ? 'AI सेटअप शुरू करो (Execute All Live)' : 'Execute AI Autonomous Setup Live'}
+                  {languagePreference === 'hinglish' ? 'AI Setup Shuru Karo (Execute All Live)' : languagePreference === 'hi' ? 'AI सेटअप शुरू करो (Execute All Live)' : 'Execute AI Autonomous Setup Live'}
                 </span>
               </button>
             </div>
@@ -907,12 +928,16 @@ export const AIOnboardingConcierge = () => {
                 <CheckCircle size={28} />
               </div>
               <h2>
-                {languagePreference === 'hi' 
+                {languagePreference === 'hinglish'
+                  ? `Badhai Ho! Aapki dukaan ${businessName} ab 100% live aur ready hai!`
+                  : languagePreference === 'hi' 
                   ? `बधाई हो! आपकी दुकान ${businessName} पूरी तरह चालू हो चुकी है!` 
                   : `Congratulations! ${businessName} is 100% Live & Ready!`}
               </h2>
               <p className="celebrate-sub">
-                {languagePreference === 'hi'
+                {languagePreference === 'hinglish'
+                  ? "Customize AI ne aapka pura store configure kar diya hai. Ye 3 main features aapko turant use karne chahiye:"
+                  : languagePreference === 'hi'
                   ? "AI ने आपका पूरा बिज़नेस सेटअप कर दिया है। यहाँ 3 मुख्य फीचर्स हैं जो आपको तुरंत इस्तेमाल करने चाहिए:"
                   : "Customize AI has executed your setup. Here is your quick 3-step walkthrough to start operating immediately:"}
               </p>
@@ -945,7 +970,7 @@ export const AIOnboardingConcierge = () => {
                 onClick={handleFinishOnboarding}
                 className="ai-btn-primary full-cta"
               >
-                <span>{languagePreference === 'hi' ? 'दुकान में प्रवेश करें (Enter My Live Store)' : 'Open My Dashboard & Start Selling'}</span>
+                <span>{languagePreference === 'hinglish' ? 'Dukaan Me Pravesh Karein (Enter Live Store)' : languagePreference === 'hi' ? 'दुकान में प्रवेश करें (Enter My Live Store)' : 'Open My Dashboard & Start Selling'}</span>
                 <ArrowRight size={16} />
               </button>
             </div>

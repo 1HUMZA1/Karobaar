@@ -24,6 +24,7 @@ import {
   VolumeX,
   Radio,
   Play,
+  Globe,
   Maximize2,
   Minimize2
 } from 'lucide-react';
@@ -45,6 +46,7 @@ export const CustomizeAIChatbot = () => {
   const [voiceSpeechEnabled, setVoiceSpeechEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish'); // 'hinglish' | 'en' | 'hi'
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
@@ -291,7 +293,10 @@ export const CustomizeAIChatbot = () => {
           setIsOpen(false);
           stopSpeaking();
           window.dispatchEvent(new CustomEvent('karobaar_start_ai_onboarding'));
-          botResponse = `मैंने आपकी दुकान का लाइव सेटअप विज़ार्ड शुरू कर दिया है। चलिए मिलकर आपका स्टोर कॉन्फ़िगर करते हैं!`;
+          const isHinglish = aiLanguage === 'hinglish' || !/[ऀ-ॿ]/.test(lower);
+          botResponse = isHinglish
+            ? `Maine aapke liye Live Store Setup Concierge shuru kar diya hai. Chaliye step-by-step aapki dukaan setup karte hain!`
+            : `मैंने आपकी दुकान का लाइव सेटअप विज़ार्ड शुरू कर दिया है। चलिए मिलकर आपका स्टोर कॉन्फ़िगर करते हैं!`;
           botActionData = { type: 'action_confirmed', badge: 'AI Store Setup Launched' };
         }
 
@@ -416,7 +421,15 @@ export const CustomizeAIChatbot = () => {
               }));
             }, 300);
             const totalCost = (targetProduct.sellingPrice || targetProduct.price || 0) * targetQty;
-            botResponse = `Added **${targetQty}x ${targetProduct.name}** (₹${totalCost.toFixed(2)}) directly to your POS cart! Opening billing counter.`;
+            const isHinglish = aiLanguage === 'hinglish' || /(kardo|daal|becho|jodo|chai|maal)/i.test(lower);
+            const isHindi = aiLanguage === 'hi';
+            
+            botResponse = isHinglish
+              ? `Added **${targetQty}x ${targetProduct.name}** (₹${totalCost.toFixed(2)}) directly aapke POS cart me! Billing counter open ho gaya hai.`
+              : isHindi
+              ? `जी, **${targetQty}x ${targetProduct.name}** (₹${totalCost.toFixed(2)}) आपके बिल में जोड़ दिया गया है।`
+              : `Added **${targetQty}x ${targetProduct.name}** (₹${totalCost.toFixed(2)}) directly to your POS cart! Opening billing counter.`;
+
             botActionData = {
               type: 'action_confirmed',
               badge: `Added ${targetQty}x ${targetProduct.name} (₹${totalCost.toFixed(2)})`
@@ -622,6 +635,22 @@ export const CustomizeAIChatbot = () => {
 
               {/* Action Buttons in Header */}
               <div className="customize-ai-header-actions">
+                {/* Language Mode Selector: Hinglish (Roman English) / English / Hindi */}
+                <button 
+                  type="button" 
+                  className="customize-ai-icon-btn"
+                  onClick={() => {
+                    const next = aiLanguage === 'hinglish' ? 'en' : aiLanguage === 'en' ? 'hi' : 'hinglish';
+                    setAiLanguage(next);
+                    localStorage.setItem('karobaar_ai_language', next);
+                  }}
+                  style={{ width: 'auto', padding: '0 8px', fontSize: '11px', fontWeight: 700, gap: '4px' }}
+                  title="Toggle Language: Hinglish (Roman English) / English / Hindi"
+                >
+                  <Globe size={13} />
+                  <span>{aiLanguage === 'hinglish' ? 'Hinglish' : aiLanguage === 'hi' ? 'हिंदी' : 'EN'}</span>
+                </button>
+
                 {/* Voice Mode Toggle (ChatGPT Voice Orb vs Text View) */}
                 <button 
                   onClick={() => setVoiceModeActive(!voiceModeActive)}
