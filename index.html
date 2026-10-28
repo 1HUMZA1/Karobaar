@@ -9,13 +9,27 @@
     <title>Karobaar — Turn Work Into Growth</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --splash-bg: #f1f3f6;
+        --splash-text: #09090b;
+        --splash-subtext: #52525b;
+        --splash-bar-bg: rgba(9, 9, 11, 0.12);
+        --splash-bar-fill: #09090b;
+      }
+      [data-theme="dark"] {
+        --splash-bg: #09090b;
+        --splash-text: #ffffff;
+        --splash-subtext: #a1a1aa;
+        --splash-bar-bg: rgba(255, 255, 255, 0.15);
+        --splash-bar-fill: #ffffff;
+      }
       html, body {
         margin: 0;
         padding: 0;
-        background-color: #f1f3f6;
-        color: #09090b;
+        background-color: var(--splash-bg);
+        color: var(--splash-text);
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         height: 100%;
         width: 100%;
@@ -24,7 +38,22 @@
       #root {
         min-height: 100vh;
         width: 100vw;
-        background-color: #f1f3f6;
+        background-color: var(--splash-bg);
+      }
+      @keyframes karobaarShimmer {
+        0% { transform: translateX(-100%); width: 35%; }
+        50% { transform: translateX(65%); width: 55%; }
+        100% { transform: translateX(260%); width: 35%; }
+      }
+      @keyframes pulseLogo {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.03); opacity: 0.92; }
+      }
+      .splash-logo-box {
+        animation: pulseLogo 2.4s ease-in-out infinite;
+      }
+      .splash-loading-bar-fill {
+        animation: karobaarShimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       }
     </style>
     <script>
@@ -45,10 +74,17 @@
   </head>
   <body>
     <div id="root">
-      <div style="height:100vh;width:100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f1f3f6;color:#09090b;user-select:none;">
-        <div style="width:48px;height:48px;border:3px solid #09090b;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;margin-bottom:16px;">K</div>
-        <div style="font-size:1.4rem;font-weight:700;letter-spacing:0.02em;">Karobaar</div>
-        <div style="font-size:0.8rem;color:#71717a;margin-top:6px;letter-spacing:0.02em;">Turn Work Into Growth.</div>
+      <div style="height:100vh;width:100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--splash-bg);color:var(--splash-text);user-select:none;padding:24px;box-sizing:border-box;">
+        <div class="splash-logo-box" style="width:78px;height:78px;border:3.5px solid var(--splash-text);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:2.6rem;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,0.06);line-height:1;">K</div>
+        <div style="font-size:2.5rem;font-weight:800;letter-spacing:-0.03em;color:var(--splash-text);margin-bottom:8px;line-height:1.1;">Karobaar</div>
+        <div style="font-size:1.18rem;font-weight:500;color:var(--splash-subtext);letter-spacing:0.01em;margin-bottom:28px;">Turn Work Into Growth.</div>
+        
+        <!-- Loading Progress Bar -->
+        <div style="width:240px;height:6px;background:var(--splash-bar-bg);border-radius:9999px;overflow:hidden;position:relative;">
+          <div class="splash-loading-bar-fill" style="height:100%;background:var(--splash-bar-fill);border-radius:9999px;position:absolute;"></div>
+        </div>
+        
+        <div style="font-size:0.85rem;font-weight:500;color:var(--splash-subtext);margin-top:12px;letter-spacing:0.02em;">Loading workspace...</div>
       </div>
     </div>
     <script type="module" src="/src/main.jsx"></script>

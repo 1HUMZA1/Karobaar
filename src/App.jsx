@@ -166,68 +166,99 @@ const AppContent = () => {
         top: 0, 
         left: 0, 
         zIndex: 9999,
-        backgroundColor: '#000000',
-        color: '#ffffff',
+        backgroundColor: 'var(--bg-body, #f1f3f6)',
+        color: 'var(--text-main, #09090b)',
         overflow: 'hidden',
-        userSelect: 'none'
+        userSelect: 'none',
+        padding: '24px',
+        boxSizing: 'border-box'
       }}>
-        {/* Subtle radial ambient background light */}
+        {/* Center: Brand Logo + Large Typography */}
         <div style={{
-          position: 'absolute',
-          top: '30%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '500px',
-          height: '500px',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0) 70%)',
-          borderRadius: '50%',
-          pointerEvents: 'none'
-        }} />
-
-        {/* Center: Brand Logo + Tagline */}
-        <div style={{
-          position: 'relative',
-          zIndex: 2,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           textAlign: 'center',
-          animation: 'fadeIn 0.6s ease-out'
+          animation: 'fadeIn 0.5s ease-out',
+          maxWidth: '420px',
+          width: '100%'
         }}>
-          <KarobaarLogo 
-            size="xl" 
-            theme="light" 
-            layout="vertical" 
-            showTagline={true} 
-          />
-        </div>
+          {/* Signature "K" Logo Emblem */}
+          <div 
+            style={{
+              width: '78px',
+              height: '78px',
+              borderRadius: '20px',
+              border: '3.5px solid var(--text-main, #09090b)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-main, #09090b)',
+              fontWeight: 800,
+              fontSize: '2.6rem',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif',
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+              marginBottom: '18px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
+            }}
+          >
+            K
+          </div>
 
-        {/* Bottom: Minimalist pill progress bar matching Screen 1 */}
-        <div style={{
-          position: 'absolute',
-          bottom: '48px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '140px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
+          <h1 style={{
+            margin: '0 0 8px 0',
+            fontWeight: 800,
+            fontSize: '2.5rem',
+            letterSpacing: '-0.03em',
+            color: 'var(--text-main, #09090b)',
+            lineHeight: 1.1
+          }}>
+            Karobaar
+          </h1>
+
+          <p style={{
+            margin: '0 0 28px 0',
+            fontSize: '1.18rem',
+            color: 'var(--text-secondary, #52525b)',
+            fontWeight: 500,
+            letterSpacing: '0.01em'
+          }}>
+            Turn Work Into Growth.
+          </p>
+
+          {/* Sleek Loading Progress Bar */}
           <div style={{
-            width: '100%',
-            height: '4px',
-            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            width: '240px',
+            height: '6px',
+            backgroundColor: 'var(--border-color, rgba(9, 9, 11, 0.12))',
             borderRadius: '9999px',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            position: 'relative',
+            marginBottom: '12px'
           }}>
             <div style={{
               width: `${progress}%`,
               height: '100%',
-              backgroundColor: '#ffffff',
+              backgroundColor: 'var(--text-main, #09090b)',
               borderRadius: '9999px',
-              transition: 'width 0.2s ease-out'
+              transition: 'width 0.25s ease-out'
             }} />
+          </div>
+
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '240px',
+            fontSize: '0.82rem',
+            color: 'var(--text-muted, #71717a)',
+            fontWeight: 500
+          }}>
+            <span>{SYSTEM_MESSAGES[sysMsgIndex]}</span>
+            <span style={{ fontWeight: 600, color: 'var(--text-main, #09090b)', fontVariantNumeric: 'tabular-nums' }}>
+              {Math.floor(progress)}%
+            </span>
           </div>
 
           {isSlow && (
@@ -235,18 +266,18 @@ const AppContent = () => {
               type="button"
               onClick={() => window.location.reload()}
               style={{
-                marginTop: '12px',
-                padding: '6px 14px',
-                fontSize: '0.72rem',
+                marginTop: '20px',
+                padding: '6px 16px',
+                fontSize: '0.75rem',
                 fontWeight: 600,
                 borderRadius: '9999px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                background: 'rgba(255, 255, 255, 0.1)',
-                color: '#ffffff',
+                border: '1px solid var(--border-color)',
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-main)',
                 cursor: 'pointer'
               }}
             >
-              Refresh App
+              Refresh Workspace
             </button>
           )}
         </div>
