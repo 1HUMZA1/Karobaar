@@ -56,14 +56,6 @@ export const CustomizeAIChatbot = () => {
   } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
-  const isAiPage = location.pathname === '/ai';
-
-  // Automatically close floating drawer when navigating to full-page AI workspace
-  useEffect(() => {
-    if (isAiPage) {
-      setIsChatDrawerOpen(false);
-    }
-  }, [isAiPage]);
 
   // Simple, Non-Intrusive UI States
   const [isHudOverlayOpen, setIsHudOverlayOpen] = useState(false);
@@ -1008,9 +1000,6 @@ export const CustomizeAIChatbot = () => {
   const latestBotText = latestBotMsg
     ? latestBotMsg.text.replace(/[*#_`]/g, '').trim().slice(0, 110) + (latestBotMsg.text.replace(/[*#_`]/g, '').trim().length > 110 ? '...' : '')
     : '';
-
-  // Do not render floating Jarvis bar when user is directly in full-page Karobaar AI workspace
-  if (isAiPage) return null;
 
   return (
     <>

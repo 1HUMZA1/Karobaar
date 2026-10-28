@@ -93,6 +93,61 @@
   overflow: visible;
 }
 
+/* Orb Avatar Visual Style */
+.orb-ring-outer {
+  transform-origin: 50px 50px;
+  animation: orbRotateClockwise 12s linear infinite;
+}
+.orb-ring-mid {
+  transform-origin: 50px 50px;
+  animation: orbRotateCounter 8s linear infinite;
+}
+.orb-core {
+  transform-origin: 50px 50px;
+  animation: orbCorePulse 2.4s ease-in-out infinite;
+}
+.state-listening .orb-ring-outer {
+  animation-duration: 4s;
+}
+.state-listening .orb-ring-mid {
+  animation-duration: 3s;
+}
+.state-thinking .orb-ring-outer {
+  animation-duration: 2s;
+}
+
+@keyframes orbRotateClockwise {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes orbRotateCounter {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+@keyframes orbCorePulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 6px #ffffff); }
+}
+
+/* Pulse Bar Equalizer Style */
+.pulse-bar-1, .pulse-bar-5 {
+  transform-origin: 50px 50px;
+  animation: pulseBarDance 1.1s ease-in-out infinite alternate;
+}
+.pulse-bar-2, .pulse-bar-4 {
+  transform-origin: 50px 50px;
+  animation: pulseBarDance 0.9s ease-in-out 0.2s infinite alternate;
+}
+.pulse-bar-3 {
+  transform-origin: 50px 50px;
+  animation: pulseBarDance 0.75s ease-in-out 0.4s infinite alternate;
+}
+
+@keyframes pulseBarDance {
+  0% { transform: scaleY(0.7); }
+  100% { transform: scaleY(1.2); }
+}
+
 /* Idle Breathing */
 .jarvis-character-svg.state-idle {
   animation: charBreathe 3.6s infinite ease-in-out;

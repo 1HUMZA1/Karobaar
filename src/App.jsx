@@ -29,7 +29,6 @@ import Landing from './pages/Landing/Landing';
 import Branches from './pages/Branches/Branches';
 import HQAnalytics from './pages/Branches/HQAnalytics';
 import MobileMenu from './pages/Settings/MobileMenu';
-import KarobaarAI from './pages/AI/KarobaarAI';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {

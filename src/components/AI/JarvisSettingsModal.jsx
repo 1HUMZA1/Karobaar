@@ -303,27 +303,30 @@ export const JarvisSettingsModal = ({
                 <label className="setting-label">Conversational Persona</label>
                 <p className="setting-desc">How Jarvis communicates with you</p>
                 <div className="persona-cards-grid">
-                  <div 
+                  <button 
+                    type="button"
                     onClick={() => handleChange('persona', 'friendly')}
                     className={`persona-option-card ${settings.persona === 'friendly' ? 'selected' : ''}`}
                   >
                     <h5>🤝 Friendly Coworker</h5>
                     <p>Warm, conversational tone, explains business details simply and answers like a real human.</p>
-                  </div>
-                  <div 
+                  </button>
+                  <button 
+                    type="button"
                     onClick={() => handleChange('persona', 'concise')}
                     className={`persona-option-card ${settings.persona === 'concise' ? 'selected' : ''}`}
                   >
                     <h5>⚡ Concise & Direct</h5>
                     <p>Minimal words, exact numbers, fastest response time.</p>
-                  </div>
-                  <div 
+                  </button>
+                  <button 
+                    type="button"
                     onClick={() => handleChange('persona', 'advisor')}
                     className={`persona-option-card ${settings.persona === 'advisor' ? 'selected' : ''}`}
                   >
                     <h5>📊 Strategic Executive</h5>
                     <p>In-depth insights, margin calculations, and profit optimization suggestions.</p>
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -388,32 +391,35 @@ export const JarvisSettingsModal = ({
               <div className="setting-input-block">
                 <label className="setting-label">Character Visual Style</label>
                 <div className="character-styles-grid">
-                  <div 
+                  <button 
+                    type="button"
                     onClick={() => handleChange('characterStyle', 'robot')}
                     className={`char-style-card ${settings.characterStyle === 'robot' ? 'selected' : ''}`}
                   >
                     <div className="char-preview-icon">🤖</div>
                     <strong>Mini Robot Buddy</strong>
                     <span>Expressive eyes, animated antenna, living digital face</span>
-                  </div>
+                  </button>
 
-                  <div 
+                  <button 
+                    type="button"
                     onClick={() => handleChange('characterStyle', 'orb')}
                     className={`char-style-card ${settings.characterStyle === 'orb' ? 'selected' : ''}`}
                   >
                     <div className="char-preview-icon">🌐</div>
                     <strong>Futuristic Core Orb</strong>
                     <span>Concentric rotating rings & glowing central core</span>
-                  </div>
+                  </button>
 
-                  <div 
+                  <button 
+                    type="button"
                     onClick={() => handleChange('characterStyle', 'pulse')}
                     className={`char-style-card ${settings.characterStyle === 'pulse' ? 'selected' : ''}`}
                   >
                     <div className="char-preview-icon">⚡</div>
                     <strong>Minimalist Sound Bar</strong>
                     <span>Subtle audio equalizer dots</span>
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
