@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { db } from '../../services/databaseService';
 import { Button } from '../../components/ui/Button';
 import { auth } from '../../services/firebase';
 import { signOut, RecaptchaVerifier, linkWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { Country, City } from 'country-state-city';
+import { Building2, Link, Users, CheckCircle2, AlertCircle } from 'lucide-react';
 import './BusinessSetup.css';
 
 const MODULES_LIST = [
@@ -185,12 +186,80 @@ const CustomSelect = ({ value, onChange, options, placeholder }) => {
 const BusinessSetup = () => {
   const { authStatus, currentUser, refreshUserProfile } = useAppContext();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const joinParam = searchParams.get('join') || '';
+  const newParam = searchParams.get('new') === 'true';
+
+  const [setupMode, setSetupMode] = useState(() => joinParam ? 'join' : 'create'); // 'create' | 'join'
+  const [joinCodeInput, setJoinCodeInput] = useState(joinParam);
+  const [invitePreview, setInvitePreview] = useState(null);
+  const [isVerifyingInvite, setIsVerifyingInvite] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [joinSuccess, setJoinSuccess] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
 
   const isAuthLoading = authStatus === 'loading';
 
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Auto-verify if joinParam exists
+  useEffect(() => {
+    if (joinParam) {
+      verifyInviteCode(joinParam);
+    }
+  }, [joinParam]);
+
+  const verifyInviteCode = async (codeToVerify) => {
+    const clean = (codeToVerify || joinCodeInput || '').trim().toUpperCase();
+    if (!clean) return;
+    setIsVerifyingInvite(true);
+    setInviteError('');
+    try {
+      const found = await db.getInvitationByCode(clean);
+      if (!found) {
+        setInviteError('Invitation not found. Please verify the code or ask your owner for a new one.');
+        setInvitePreview(null);
+      } else if (found.status === 'revoked') {
+        setInviteError('This invitation has been revoked by the business owner.');
+        setInvitePreview(null);
+      } else if (found.status === 'accepted') {
+        setInviteError('This invitation has already been accepted.');
+        setInvitePreview(null);
+      } else if (found.expiresAt && new Date(found.expiresAt) < new Date()) {
+        setInviteError('This invitation has expired.');
+        setInvitePreview(null);
+      } else {
+        setInvitePreview(found);
+      }
+    } catch (e) {
+      setInviteError(e.message || 'Error checking invitation.');
+    } finally {
+      setIsVerifyingInvite(false);
+    }
+  };
+
+  const handleJoinInviteSubmit = async (e) => {
+    e.preventDefault();
+    const clean = joinCodeInput.trim().toUpperCase();
+    if (!clean) return;
+    setIsJoining(true);
+    setInviteError('');
+    try {
+      const res = await db.acceptInvitation(clean, currentUser || { uid: auth.currentUser?.uid, email: auth.currentUser?.email });
+      setJoinSuccess(`Joined ${res.businessName || 'business'} successfully!`);
+      localStorage.setItem('karobaar-active-business', res.businessId);
+      setTimeout(() => {
+        window.location.hash = '#/dashboard';
+        window.location.reload();
+      }, 1000);
+    } catch (e) {
+      setInviteError(e.message || 'Failed to accept invitation.');
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   // Step 1: Personal Profile
   const [personal, setPersonal] = useState({
@@ -332,7 +401,7 @@ const BusinessSetup = () => {
   const [submitState, setSubmitState] = useState(''); // '', 'Saving locally...', 'Saved locally', 'Opening your dashboard...'
 
   // Early returns strictly AFTER all hooks are called
-  if (authStatus === 'authenticated') {
+  if (authStatus === 'authenticated' && !joinParam && !newParam && currentUser?.onboardingCompleted && setupMode === 'create') {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -521,6 +590,169 @@ const BusinessSetup = () => {
       {/* Right Panel - Form content */}
       <div className="setup-container">
         <div className="setup-card">
+          {/* Mode Switcher: Create vs Join */}
+          <div style={{
+            display: 'flex',
+            borderBottom: '1px solid var(--border-color, #e2e8f0)',
+            marginBottom: '24px',
+            gap: '8px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setSetupMode('create')}
+              style={{
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                borderBottom: setupMode === 'create' ? '2.5px solid var(--text-main, #09090b)' : '2.5px solid transparent',
+                color: setupMode === 'create' ? 'var(--text-main, #09090b)' : 'var(--text-secondary, #64748b)',
+                fontWeight: 700,
+                fontSize: '0.92rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <Building2 size={16} />
+              <span>Create New Business</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSetupMode('join')}
+              style={{
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                borderBottom: setupMode === 'join' ? '2.5px solid var(--text-main, #09090b)' : '2.5px solid transparent',
+                color: setupMode === 'join' ? 'var(--text-main, #09090b)' : 'var(--text-secondary, #64748b)',
+                fontWeight: 700,
+                fontSize: '0.92rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <Link size={16} />
+              <span>Join with Invite Code</span>
+            </button>
+          </div>
+
+          {setupMode === 'join' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="setup-header" style={{ marginBottom: '12px' }}>
+                <h2>Join an Existing Workspace</h2>
+                <p>Enter the invitation code provided by your business owner.</p>
+              </div>
+
+              {inviteError && (
+                <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600 }}>
+                  {inviteError}
+                </div>
+              )}
+
+              {joinSuccess && (
+                <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>
+                  {joinSuccess} Redirecting to your dashboard...
+                </div>
+              )}
+
+              <form onSubmit={handleJoinInviteSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="setup-form-group full-width">
+                  <label>Invitation Code</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      className="setup-input"
+                      value={joinCodeInput}
+                      onChange={e => {
+                        const val = e.target.value.toUpperCase();
+                        setJoinCodeInput(val);
+                        if (val.length >= 6) verifyInviteCode(val);
+                      }}
+                      placeholder="KB-INV-XXXXX"
+                      style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '0.05em' }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => verifyInviteCode()}
+                      disabled={isVerifyingInvite}
+                      style={{
+                        padding: '0 16px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'transparent',
+                        color: 'var(--text-main)',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {isVerifyingInvite ? 'Checking...' : 'Verify'}
+                    </button>
+                  </div>
+                </div>
+
+                {invitePreview && (
+                  <div style={{
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '1.5px solid var(--text-main)',
+                    backgroundColor: 'rgba(0,0,0,0.02)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                        Invitation Verified
+                      </span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--text-main)', color: 'var(--bg-body)' }}>
+                        {invitePreview.role}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                      {invitePreview.businessName || 'Business Workspace'}
+                    </div>
+
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                      Invited by: <strong>{invitePreview.invitedByName || 'Owner'}</strong>
+                    </div>
+
+                    {invitePreview.notes && (
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                        "{invitePreview.notes}"
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isJoining || !invitePreview}
+                  style={{
+                    padding: '14px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--text-main)',
+                    color: 'var(--bg-body)',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    cursor: (!invitePreview || isJoining) ? 'not-allowed' : 'pointer',
+                    opacity: (!invitePreview || isJoining) ? 0.6 : 1,
+                    marginTop: '8px'
+                  }}
+                >
+                  {isJoining ? 'Joining Workspace...' : 'Accept Invitation & Enter Dashboard'}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <>
           <div className="setup-header">
             <h2>{stepsList[step - 1].title}</h2>
             <p>{stepsList[step - 1].desc}</p>
@@ -860,6 +1092,8 @@ const BusinessSetup = () => {
               </button>
             </div>
           </form>
+          </>
+          )}
         </div>
       </div>
     </div>

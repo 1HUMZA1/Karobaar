@@ -29,10 +29,12 @@ import Landing from './pages/Landing/Landing';
 import Branches from './pages/Branches/Branches';
 import HQAnalytics from './pages/Branches/HQAnalytics';
 import MobileMenu from './pages/Settings/MobileMenu';
+import AccessDenied from './components/AccessDenied/AccessDenied';
+import { hasPermission, normalizeRole, PERMISSIONS } from './utils/permissions';
 
-// Protected Route Component
-const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
-  const { authStatus, userRole, currentBusiness } = useAppContext();
+// Protected Route Component with Role & Permission Enforcement
+const ProtectedRoute = ({ children, allowedRoles, requiredPermission, moduleId }) => {
+  const { authStatus, userRole, currentUser, currentBusiness } = useAppContext();
   
   if (authStatus === 'unauthenticated') {
     return <Navigate to="/login" replace />;
@@ -42,12 +44,22 @@ const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
     return <Navigate to="/setup" replace />;
   }
   
-  // Role Check (Case-insensitive comparison)
-  const normalizedRole = (userRole || 'OWNER').toUpperCase();
-  const normalizedAllowed = allowedRoles ? allowedRoles.map(r => r.toUpperCase()) : [];
-  const hasRole = allowedRoles ? (normalizedAllowed.includes(normalizedRole) || normalizedRole === 'OWNER') : true;
-  if (!hasRole) {
-    return <Navigate to="/dashboard" replace />;
+  // Role Check (Normalized role comparison, Owner always has access)
+  const normRole = normalizeRole(userRole);
+  const normalizedAllowed = allowedRoles ? allowedRoles.map(r => normalizeRole(r).toLowerCase()) : [];
+  const hasRole = allowedRoles ? (normalizedAllowed.includes(normRole.toLowerCase()) || normRole === 'Owner') : true;
+  
+  // Permission Check
+  const hasPerm = requiredPermission ? hasPermission(currentUser, requiredPermission) : true;
+
+  if (!hasRole || !hasPerm) {
+    return (
+      <AccessDenied 
+        requiredRole={allowedRoles?.[0]} 
+        requiredPermission={requiredPermission} 
+        moduleName={moduleId || 'this page'} 
+      />
+    );
   }
 
   // Module Check
@@ -65,13 +77,13 @@ const ProtectedRoute = ({ children, allowedRoles, moduleId }) => {
 
 // Route Groups for easy maintenance
 const ROLES = {
-  ALL: ['OWNER', 'MANAGER', 'STAFF', 'ACCOUNTANT', 'SALES', 'INVENTORY'],
+  ALL: ['OWNER', 'MANAGER', 'CASHIER', 'INVENTORY', 'ACCOUNTANT', 'CUSTOM', 'STAFF', 'SALES'],
   MANAGEMENT: ['OWNER', 'MANAGER'],
-  SALES_POS: ['OWNER', 'MANAGER', 'STAFF', 'SALES'],
-  WAREHOUSE_OPS: ['OWNER', 'MANAGER', 'STAFF', 'INVENTORY'],
+  SALES_POS: ['OWNER', 'MANAGER', 'CASHIER', 'SALES', 'STAFF'],
+  WAREHOUSE_OPS: ['OWNER', 'MANAGER', 'INVENTORY', 'STAFF'],
   FINANCE: ['OWNER', 'MANAGER', 'ACCOUNTANT'],
   HR_OPS: ['OWNER', 'MANAGER'],
-  SETTINGS_OPS: ['OWNER']
+  SETTINGS_OPS: ['OWNER', 'MANAGER']
 };
 
 const SLOGANS = [

@@ -7,6 +7,7 @@
 import { db } from './databaseService';
 import { salesService } from './salesService';
 import { localDb } from './localDb';
+import { hasPermission, PERMISSIONS } from '../utils/permissions';
 
 // Format currency helper
 export const formatCurrency = (amount) => {
@@ -552,21 +553,26 @@ export const executeKarobaarTool = async (toolName, toolArgs = {}, authContext =
   const activeBizId = businessId || currentUser?.activeBusinessId || 'demo-business-1';
   const userRole = (currentUser?.role || 'OWNER').toUpperCase();
 
-  // 1. Role-based permission check
-  const requiresManager = ['create_product', 'update_product', 'update_stock', 'create_supplier', 'update_order_status'];
-  const requiresOwner = ['delete_product', 'refund_sale', 'delete_record'];
+  // 1. Role-based granular permission check
+  const TOOL_PERMISSION_MAP = {
+    'create_product': PERMISSIONS.PRODUCTS_CREATE,
+    'update_product': PERMISSIONS.PRODUCTS_EDIT,
+    'delete_product': PERMISSIONS.PRODUCTS_DELETE,
+    'update_stock': PERMISSIONS.INVENTORY_ADJUST,
+    'create_supplier': PERMISSIONS.SUPPLIERS_MANAGE,
+    'update_order_status': PERMISSIONS.SALES_EDIT,
+    'refund_sale': PERMISSIONS.SALES_CANCEL,
+    'delete_record': PERMISSIONS.BUSINESS_DELETE,
+    'record_payment': PERMISSIONS.PAYMENTS_RECORD,
+    'record_expense': PERMISSIONS.EXPENSES_CREATE,
+    'get_pnl_report': PERMISSIONS.REPORTS_PROFIT_VIEW
+  };
 
-  if (requiresOwner.includes(toolName) && userRole !== 'OWNER' && userRole !== 'ADMIN') {
+  const requiredPerm = TOOL_PERMISSION_MAP[toolName];
+  if (requiredPerm && !hasPermission(currentUser, requiredPerm)) {
     return {
       success: false,
-      error: `Access Denied: Only business Owners can execute '${toolName}'. Current role: ${userRole}.`
-    };
-  }
-
-  if (requiresManager.includes(toolName) && userRole === 'STAFF') {
-    return {
-      success: false,
-      error: `Access Denied: Role '${userRole}' does not have permission to execute '${toolName}'. Requires Manager or Owner.`
+      error: `Access Denied: Your assigned role (${currentUser?.role || 'Staff'}) lacks the '${requiredPerm}' permission to execute '${toolName}'.`
     };
   }
 

@@ -718,3 +718,150 @@
   color: #f4f4f5;
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
+
+/* Multi-Business Switcher in Topbar */
+.topbar-biz-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.topbar-biz-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.topbar-biz-pill-btn:hover {
+  background-color: var(--border-color);
+  border-color: var(--text-secondary);
+}
+
+.topbar-biz-pill-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-biz-pill-role {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: var(--text-main);
+  color: var(--bg-body);
+  letter-spacing: 0.02em;
+}
+
+.topbar-biz-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.topbar-biz-dropdown-header {
+  padding: 12px 16px 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar-biz-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar-biz-item {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.topbar-biz-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.topbar-biz-item.active {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.topbar-biz-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topbar-biz-item-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.topbar-biz-item-role {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.topbar-biz-check {
+  color: var(--text-main);
+}
+
+.topbar-biz-dropdown-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 4px 0;
+}
+
+.topbar-biz-actions {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topbar-biz-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.topbar-biz-action-btn:hover {
+  background-color: var(--bg-hover);
+}
+

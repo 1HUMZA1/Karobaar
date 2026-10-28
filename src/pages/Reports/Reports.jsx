@@ -17,6 +17,7 @@ import {
   LineElement, BarElement, Title, Tooltip, Legend, Filler, ArcElement
 } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { hasPermission, PERMISSIONS } from '../../utils/permissions';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler, ArcElement);
 
@@ -24,9 +25,12 @@ const Reports = () => {
   const { currentUser, currentBusiness } = useAppContext();
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
   
+  // Permission Gate: Profit & Loss is restricted to Owner, Manager, and Accountant
+  const canViewProfit = hasPermission(currentUser, PERMISSIONS.REPORTS_PROFIT_VIEW);
+
   // Date filtering: 'today', 'yesterday', '7d', 'this_month', 'all_time'
   const [dateRange, setDateRange] = useState('this_month');
-  const [activeTab, setActiveTab] = useState('pnl'); // pnl, sales, cash, receivables, payables, inventory, exports
+  const [activeTab, setActiveTab] = useState(() => canViewProfit ? 'pnl' : 'cash'); // pnl, sales, cash, receivables, payables, inventory, exports
   const [exporting, setExporting] = useState(null);
 
   // Collections
@@ -466,10 +470,14 @@ const Reports = () => {
           <CardContent className="p-4">
             <span className="text-xs uppercase tracking-wider text-secondary font-semibold">Cost of Goods (COGS)</span>
             <h3 className="text-2xl font-bold font-mono text-[var(--text-secondary)] mt-1">
-              {currencySymbol}{pnlData.totalCOGS.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {canViewProfit ? `${currencySymbol}${pnlData.totalCOGS.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '••••••'}
             </h3>
             <span className="text-[11px] text-secondary mt-1 block">
-              Gross Profit: <strong className="text-emerald-400">{currencySymbol}{pnlData.grossProfit.toFixed(2)}</strong> ({pnlData.grossMargin.toFixed(1)}%)
+              {canViewProfit ? (
+                <>Gross Profit: <strong className="text-emerald-400">{currencySymbol}{pnlData.grossProfit.toFixed(2)}</strong> ({pnlData.grossMargin.toFixed(1)}%)</>
+              ) : (
+                <span className="text-zinc-500">Restricted to Owner/Finance</span>
+              )}
             </span>
           </CardContent>
         </Card>
@@ -489,11 +497,15 @@ const Reports = () => {
         <Card className="border border-[var(--border-color)]">
           <CardContent className="p-4">
             <span className="text-xs uppercase tracking-wider text-secondary font-semibold">Net Business Profit</span>
-            <h3 className={`text-2xl font-bold font-mono mt-1 ${pnlData.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {currencySymbol}{pnlData.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <h3 className={`text-2xl font-bold font-mono mt-1 ${canViewProfit ? (pnlData.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400') : 'text-zinc-400'}`}>
+              {canViewProfit ? `${currencySymbol}${pnlData.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '••••••'}
             </h3>
             <span className="text-[11px] text-secondary mt-1 block">
-              Net Margin: <strong>{pnlData.netMargin.toFixed(1)}%</strong>
+              {canViewProfit ? (
+                <>Net Margin: <strong>{pnlData.netMargin.toFixed(1)}%</strong></>
+              ) : (
+                <span className="text-zinc-500">Restricted to Owner/Finance</span>
+              )}
             </span>
           </CardContent>
         </Card>
@@ -502,7 +514,7 @@ const Reports = () => {
       {/* Tabs Switcher */}
       <div className="flex border-b border-[var(--border-color)] mb-6 gap-2 overflow-x-auto">
         {[
-          { id: 'pnl', label: 'Profit & Loss Statement' },
+          ...(canViewProfit ? [{ id: 'pnl', label: 'Profit & Loss Statement' }] : []),
           { id: 'cash', label: 'Cash Flow & Tenders' },
           { id: 'receivables', label: `Receivables (Udhaar: ${currencySymbol}${receivables.totalReceivable.toFixed(0)})` },
           { id: 'payables', label: `Payables (Suppliers: ${currencySymbol}${payables.totalPendingPO.toFixed(0)})` },

@@ -9,14 +9,15 @@ import {
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { KarobaarLogo } from '../KarobaarLogo/KarobaarLogo';
+import { normalizeRole, ROLES } from '../../utils/permissions';
 import './Sidebar.css';
 
-const ALL_ROLES = ['Owner', 'Admin', 'Manager', 'Sales Staff', 'Cashier', 'Warehouse', 'Accountant', 'HR', 'Employee', 'OWNER'];
-const MANAGEMENT = ['Owner', 'Admin', 'Manager', 'OWNER'];
-const SALES_POS = ['Owner', 'Admin', 'Manager', 'Sales Staff', 'Cashier', 'OWNER'];
-const WAREHOUSE_OPS = ['Owner', 'Admin', 'Manager', 'Warehouse', 'OWNER'];
-const FINANCE = ['Owner', 'Admin', 'Accountant', 'OWNER'];
-const HR_OPS = ['Owner', 'Admin', 'HR', 'Manager', 'OWNER'];
+const ALL_ROLES = [ROLES.OWNER, ROLES.MANAGER, ROLES.CASHIER, ROLES.INVENTORY, ROLES.ACCOUNTANT, ROLES.CUSTOM, 'STAFF', 'EMPLOYEE', 'ADMIN'];
+const MANAGEMENT = [ROLES.OWNER, ROLES.MANAGER, 'ADMIN'];
+const SALES_POS = [ROLES.OWNER, ROLES.MANAGER, ROLES.CASHIER, 'SALES STAFF', 'STAFF'];
+const WAREHOUSE_OPS = [ROLES.OWNER, ROLES.MANAGER, ROLES.INVENTORY, 'WAREHOUSE'];
+const FINANCE = [ROLES.OWNER, ROLES.MANAGER, ROLES.ACCOUNTANT];
+const HR_OPS = [ROLES.OWNER, ROLES.MANAGER, 'HR'];
 
 const navGroups = [
   {
@@ -184,7 +185,8 @@ const Sidebar = () => {
           {navGroups.map((group, groupIdx) => {
             // Filter items in this group
             const visibleItems = group.items.filter(item => {
-              const hasRole = item.roles.includes(userRole) || userRole === 'OWNER';
+              const normUserRole = normalizeRole(userRole);
+              const hasRole = normUserRole === ROLES.OWNER || item.roles.map(r => normalizeRole(r).toLowerCase()).includes(normUserRole.toLowerCase());
               const isModuleEnabled = item.moduleId === 'core' || enabledModules[item.moduleId] === true || enabledModules[item.moduleId] === "true";
               return hasRole && isModuleEnabled;
             });

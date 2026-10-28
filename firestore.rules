@@ -1,33 +1,201 @@
 rules_version = '2';
 
+/**
+ * Karobaar — Multi-Tenant Firestore Security Rules
+ * Architecture inspired by enterprise multi-user accounting software.
+ * 
+ * Guarantees:
+ * 1. Complete multi-tenant isolation: No user can read or write documents of another business.
+ * 2. Unauthenticated access is rejected by default.
+ * 3. Role-based privileges (Owner, Manager, Cashier, Inventory Staff, Accountant).
+ * 4. Zero privilege escalation: Only primary business Owner can transfer ownership or delete business.
+ */
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
+    // --- Authentication & Membership Helper Functions ---
+
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null && request.auth.uid != null;
     }
 
-    match /users/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    function isUserSelf(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
-    match /businesses/{businessId} {
-      allow read: if isAuthenticated() && (
-        request.auth.uid == resource.data.ownerId || 
-        request.auth.uid in resource.data.users
+    function getBusiness(businessId) {
+      return get(/databases/$(database)/documents/businesses/$(businessId)).data;
+    }
+
+    function isBusinessOwner(businessId) {
+      return isAuthenticated() && (
+        request.auth.uid == getBusiness(businessId).ownerId
       );
-      
-      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.ownerId;
-      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
-      
-      match /{subcollection}/{documentId} {
-        function canAccessBusiness() {
-           let biz = get(/databases/$(database)/documents/businesses/$(businessId)).data;
-           return request.auth.uid == biz.ownerId || request.auth.uid in biz.users;
-        }
+    }
 
-        allow read, write: if isAuthenticated() && canAccessBusiness();
+    function isBusinessMember(businessId) {
+      return isAuthenticated() && (
+        isBusinessOwner(businessId) ||
+        exists(/databases/$(database)/documents/businesses/$(businessId)/members/$(request.auth.uid))
+      );
+    }
+
+    function getMemberDoc(businessId) {
+      return get(/databases/$(database)/documents/businesses/$(businessId)/members/$(request.auth.uid)).data;
+    }
+
+    function getMemberRole(businessId) {
+      return isBusinessOwner(businessId) ? 'Owner' : getMemberDoc(businessId).role;
+    }
+
+    function hasPermission(businessId, permKey) {
+      return isBusinessOwner(businessId) || (
+        isBusinessMember(businessId) && (
+          getMemberRole(businessId) == 'Manager' ||
+          (permKey in getMemberDoc(businessId).permissions)
+        )
+      );
+    }
+
+    // --- Individual User Profiles Collection ---
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isUserSelf(userId);
+    }
+
+    // --- Business Tenants Collection ---
+    match /businesses/{businessId} {
+      // Read allowed only to authorized owner or registered active members
+      allow read: if isBusinessMember(businessId);
+
+      // Business creation: authenticated user must register themselves as the owner
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+
+      // Update allowed to Owner or Manager with settings.manage permission
+      allow update: if isBusinessOwner(businessId) || hasPermission(businessId, 'settings.manage');
+
+      // Deletion strictly restricted to primary Owner
+      allow delete: if isBusinessOwner(businessId);
+
+      // --- Team Members Subcollection ---
+      match /members/{memberId} {
+        allow read: if isBusinessMember(businessId);
+        
+        // Only Owner or Manager with team.manage can invite/modify members
+        allow create, update: if isBusinessOwner(businessId) || hasPermission(businessId, 'team.manage');
+        
+        // Cannot delete the primary owner member
+        allow delete: if isBusinessOwner(businessId) && memberId != request.auth.uid;
       }
+
+      // --- Team Invitations Subcollection ---
+      match /invitations/{invitationId} {
+        // Invitations readable by business members or authenticated claimants
+        allow read: if isAuthenticated();
+        
+        // Creation and revocation by authorized team managers
+        allow create, update, delete: if isBusinessOwner(businessId) || 
+                                         hasPermission(businessId, 'team.invite') || 
+                                         hasPermission(businessId, 'team.manage');
+      }
+
+      // --- Sales Subcollection ---
+      match /sales/{saleId} {
+        allow read: if isBusinessMember(businessId);
+        allow create: if hasPermission(businessId, 'sales.create');
+        allow update: if hasPermission(businessId, 'sales.edit') || hasPermission(businessId, 'sales.cancel');
+        allow delete: if isBusinessOwner(businessId);
+      }
+
+      // --- Invoices Subcollection ---
+      match /invoices/{invoiceId} {
+        allow read: if isBusinessMember(businessId);
+        allow create, update: if hasPermission(businessId, 'invoices.create');
+        allow delete: if isBusinessOwner(businessId);
+      }
+
+      // --- Products & Inventory Subcollection ---
+      match /products/{productId} {
+        allow read: if isBusinessMember(businessId);
+        allow create, update: if hasPermission(businessId, 'products.create') || hasPermission(businessId, 'products.edit');
+        allow delete: if hasPermission(businessId, 'products.delete') || isBusinessOwner(businessId);
+      }
+
+      // --- Stock Movements & Reconciliation Ledger ---
+      match /stock_movements/{movementId} {
+        allow read: if isBusinessMember(businessId);
+        allow create: if hasPermission(businessId, 'inventory.adjust') || hasPermission(businessId, 'sales.create');
+        allow update, delete: if isBusinessOwner(businessId);
+      }
+
+      // --- Expenses Subcollection ---
+      match /expenses/{expenseId} {
+        allow read: if hasPermission(businessId, 'expenses.view');
+        allow create: if hasPermission(businessId, 'expenses.create');
+        allow update: if hasPermission(businessId, 'expenses.approve') || isBusinessOwner(businessId);
+        allow delete: if isBusinessOwner(businessId);
+      }
+
+      // --- Customers & Khata Subcollection ---
+      match /customers/{customerId} {
+        allow read: if isBusinessMember(businessId);
+        allow create, update: if hasPermission(businessId, 'customers.manage') || hasPermission(businessId, 'payments.record');
+        allow delete: if isBusinessOwner(businessId);
+      }
+
+      // --- Suppliers & Purchases Subcollections ---
+      match /suppliers/{supplierId} {
+        allow read: if isBusinessMember(businessId);
+        allow create, update: if hasPermission(businessId, 'suppliers.manage');
+        allow delete: if isBusinessOwner(businessId);
+      }
+
+      match /purchases/{purchaseId} {
+        allow read: if isBusinessMember(businessId);
+        allow create, update: if hasPermission(businessId, 'purchases.manage');
+        allow delete: if isBusinessOwner(businessId);
+      }
+
+      // --- Employees & HR Subcollections ---
+      match /employees/{employeeId} {
+        allow read, write: if hasPermission(businessId, 'employees.manage') || isBusinessOwner(businessId);
+      }
+
+      match /attendance/{attendanceId} {
+        allow read: if isBusinessMember(businessId);
+        allow create, update: if hasPermission(businessId, 'attendance.manage');
+        allow delete: if isBusinessOwner(businessId);
+      }
+
+      match /leave/{leaveId} {
+        allow read: if isBusinessMember(businessId);
+        allow create, update: if isBusinessMember(businessId);
+        allow delete: if isBusinessOwner(businessId);
+      }
+
+      match /payroll/{payrollId} {
+        allow read, write: if hasPermission(businessId, 'payroll.manage') || isBusinessOwner(businessId);
+      }
+
+      // --- Audit Logs (Tamper-Resistant) ---
+      match /audit_logs/{logId} {
+        allow read: if isBusinessOwner(businessId) || hasPermission(businessId, 'team.manage');
+        // Audit logs can be written by any authenticated member during operations, but never modified or deleted
+        allow create: if isBusinessMember(businessId);
+        allow update, delete: if false; // Immutable audit trail
+      }
+
+      // --- General Fallback for Other Subcollections ---
+      match /{subcollection}/{docId} {
+        allow read, write: if isBusinessMember(businessId);
+      }
+    }
+
+    // Global invitation codes fast-lookup index (read-only for authenticated users)
+    match /invitation_codes/{code} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
   }
 }

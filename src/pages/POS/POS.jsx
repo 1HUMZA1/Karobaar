@@ -40,11 +40,13 @@ import { UPIModal } from './UPIModal';
 import { HeldOrdersModal } from './HeldOrdersModal';
 import { CustomItemModal } from './CustomItemModal';
 import { QuickCustomerModal } from './QuickCustomerModal';
+import { hasPermission, PERMISSIONS } from '../../utils/permissions';
 import './POS.css';
 
 const POS = () => {
   const isMobile = useIsMobile();
   const { currentUser, currentBusiness } = useAppContext();
+  const canCreateSale = hasPermission(currentUser, PERMISSIONS.SALES_CREATE);
   const searchInputRef = useRef(null);
   const isCheckoutLockedRef = useRef(false);
 
@@ -481,6 +483,10 @@ const POS = () => {
 
   // Checkout Handler (with immediate synchronous double-submission prevention)
   const handleCheckout = async () => {
+    if (!canCreateSale) {
+      alert(`Access Denied: Your assigned role (${currentUser?.role || 'Staff'}) does not have permission to create sales bills.`);
+      return;
+    }
     if (isCheckoutLockedRef.current || processing || cart.length === 0 || !currentUser?.activeBusinessId) return;
     
     if (paymentMethod === 'Udhaar' && !selectedCustomer) {
@@ -1467,7 +1473,8 @@ const POS = () => {
             <button 
               className="pos-checkout-btn"
               onClick={handleCheckout}
-              disabled={cart.length === 0 || processing}
+              disabled={!canCreateSale || cart.length === 0 || processing}
+              title={!canCreateSale ? "Permission Required: sales.create" : undefined}
             >
               {processing ? 'Processing Sale...' : success ? 'Sale Completed!' : (
                 <>Checkout ({currencySymbol}{total.toFixed(2)}) <ArrowRight size={18} /></>

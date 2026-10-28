@@ -12,13 +12,14 @@ import {
   updatePassword
 } from 'firebase/auth';
 import { localDb } from '../../services/localDb';
-import { Eye, EyeOff, Sparkles, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, ArrowLeft, Shield } from 'lucide-react';
 import { KarobaarLogo } from '../../components/KarobaarLogo/KarobaarLogo';
+import { ROLE_PERMISSIONS_MAP, ROLES } from '../../utils/permissions';
 import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { authStatus, authError, launchReadyToUseWorkspace, theme } = useAppContext();
+  const { authStatus, authError, launchReadyToUseWorkspace, setCurrentUser, theme } = useAppContext();
 
   // Navigation: 'auth' | 'forgot_password'
   const [viewMode, setViewMode] = useState('auth');
@@ -91,15 +92,15 @@ const Login = () => {
       if (launchReadyToUseWorkspace) {
         await launchReadyToUseWorkspace();
       }
-      if (role !== 'Owner') {
-        try {
-          const sessionUser = JSON.parse(localStorage.getItem('karobaar_session_user') || '{}');
-          sessionUser.role = role;
-          sessionUser.name = `SAS Cafeteria ${role}`;
-          sessionUser.email = `${role.toLowerCase()}@sascafeteria.com`;
-          localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
-        } catch (e) {}
-      }
+      try {
+        const sessionUser = JSON.parse(localStorage.getItem('karobaar_session_user') || '{}');
+        sessionUser.role = role;
+        sessionUser.permissions = ROLE_PERMISSIONS_MAP[role] || [];
+        sessionUser.name = `SAS Cafeteria ${role}`;
+        sessionUser.email = `${role.toLowerCase().replace(/\s+/g, '')}@sascafeteria.com`;
+        localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
+        if (setCurrentUser) setCurrentUser(sessionUser);
+      } catch (e) {}
       navigate('/dashboard');
     } catch (e) {
       console.error("Quick launch error:", e);
@@ -470,17 +471,47 @@ const Login = () => {
                   <span className="login-divider-line"></span>
                 </div>
 
-                {/* Clean Instant Demo Access Button */}
+                {/* Clean Instant Demo Access Button & Role Test Pills */}
                 {!isRegistering && (
-                  <button 
-                    type="button" 
-                    className="login-demo-btn"
-                    onClick={() => handleQuickRoleLogin('Owner')}
-                    disabled={isAuthenticating}
-                  >
-                    <Sparkles size={16} />
-                    <span>Instant Demo (SAS CAFETERIA)</span>
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <button 
+                      type="button" 
+                      className="login-demo-btn"
+                      onClick={() => handleQuickRoleLogin('Owner')}
+                      disabled={isAuthenticating}
+                    >
+                      <Sparkles size={16} />
+                      <span>Instant Demo (Owner Workspace)</span>
+                    </button>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>Test Roles:</span>
+                      {[
+                        { label: 'Manager', role: ROLES.MANAGER },
+                        { label: 'Cashier', role: ROLES.CASHIER },
+                        { label: 'Inventory', role: ROLES.INVENTORY },
+                        { label: 'Accountant', role: ROLES.ACCOUNTANT }
+                      ].map(r => (
+                        <button
+                          key={r.role}
+                          type="button"
+                          onClick={() => handleQuickRoleLogin(r.role)}
+                          style={{
+                            padding: '3px 8px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            borderRadius: '6px',
+                            border: '1px solid var(--border-color)',
+                            background: 'transparent',
+                            color: 'var(--text-main)',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {r.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {/* Switch Between Sign In and Sign Up */}

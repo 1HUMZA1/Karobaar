@@ -37,6 +37,7 @@ import { signOut, updatePassword } from 'firebase/auth';
 import { useAppContext } from '../../context/AppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileMenu } from './MobileMenu';
+import TeamManagement from './TeamManagement';
 import './Settings.css';
 
 const MODULES_LIST = [
@@ -546,8 +547,8 @@ const Settings = () => {
           <button className={`settings-nav-btn ${activeTab === 'features' ? 'active' : ''}`} onClick={() => setActiveTab('features')}>
             <LayoutGrid size={16} /> Features & Modules
           </button>
-          <button className={`settings-nav-btn ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-            <Users size={16} /> Users & Roles
+          <button className={`settings-nav-btn ${activeTab === 'users' || activeTab === 'team' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+            <Users size={16} /> Team & Permissions
           </button>
           <button className={`settings-nav-btn ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
             <BellRing size={16} /> Notifications
@@ -1210,42 +1211,9 @@ const Settings = () => {
             </div>
           )}
 
-          {/* TAB 6: Users & Roles */}
-          {activeTab === 'users' && (
-            <div className="settings-content-card">
-              <div className="settings-card-header">
-                <div>
-                  <h2 className="settings-card-title">Users & Access Controls</h2>
-                  <p className="settings-card-subtitle">Manage role authorizations and staff permissions</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <div className="p-3.5 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
-                  <div>
-                    <h4 className="font-bold text-sm text-text-main">Owner / Administrator</h4>
-                    <p className="text-xs text-text-secondary">Unrestricted access to all finances, inventory, and branch configs.</p>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">FULL ACCESS</span>
-                </div>
-
-                <div className="p-3.5 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
-                  <div>
-                    <h4 className="font-bold text-sm text-text-main">Manager / Supervisor</h4>
-                    <p className="text-xs text-text-secondary">Can review reports, manage stock, and authorize daily transactions.</p>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-black dark:border-white">OPERATIONAL</span>
-                </div>
-
-                <div className="p-3.5 border rounded-xl flex items-center justify-between border-[var(--border-color)]">
-                  <div>
-                    <h4 className="font-bold text-sm text-text-main">Cashier / Floor Staff</h4>
-                    <p className="text-xs text-text-secondary">Restricted to POS terminal, customer khata lookup, and attendance.</p>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-black dark:border-white">TERMINAL ONLY</span>
-                </div>
-              </div>
-            </div>
+          {/* TAB 6: Team & Role Permissions */}
+          {(activeTab === 'users' || activeTab === 'team') && (
+            <TeamManagement />
           )}
 
           {/* TAB 7: Notifications */}

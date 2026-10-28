@@ -24,7 +24,12 @@ import {
   ArrowRight,
   Plus,
   X,
-  Target
+  Target,
+  Building2,
+  ChevronDown,
+  Check,
+  Link,
+  ShieldCheck
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -50,7 +55,21 @@ const PAGES_LIST = [
 ];
 
 const Topbar = () => {
-  const { toggleSidebar, theme, toggleTheme, userRole, currentUser, currentBusiness, logout, appUiVersion, setAppUiVersion } = useAppContext();
+  const { 
+    toggleSidebar, 
+    theme, 
+    toggleTheme, 
+    userRole, 
+    currentUser, 
+    currentBusiness, 
+    userBusinesses = [],
+    switchBranch,
+    createNewBusiness,
+    joinBusinessWithCode,
+    logout, 
+    appUiVersion, 
+    setAppUiVersion 
+  } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('All'); // 'All' | 'Pages' | 'Products' | 'Orders' | 'Actions'
   const [searchResults, setSearchResults] = useState([]);
@@ -59,6 +78,75 @@ const Topbar = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Business Switcher & Multi-User State
+  const [isBizDropdownOpen, setIsBizDropdownOpen] = useState(false);
+  const [showCreateBizModal, setShowCreateBizModal] = useState(false);
+  const [showJoinBizModal, setShowJoinBizModal] = useState(false);
+  const [newBizName, setNewBizName] = useState('');
+  const [newBizType, setNewBizType] = useState('Cafeteria / Restaurant');
+  const [newBizCurrency, setNewBizCurrency] = useState('INR');
+  const [newBizCreating, setNewBizCreating] = useState(false);
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [joinError, setJoinError] = useState('');
+  const [joinSuccess, setJoinSuccess] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+  const bizDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleBizClickOutside = (e) => {
+      if (bizDropdownRef.current && !bizDropdownRef.current.contains(e.target)) {
+        setIsBizDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleBizClickOutside);
+    return () => document.removeEventListener('mousedown', handleBizClickOutside);
+  }, []);
+
+  const handleCreateBusiness = async (e) => {
+    e.preventDefault();
+    if (!newBizName.trim()) return;
+    setNewBizCreating(true);
+    try {
+      await createNewBusiness({
+        name: newBizName.trim(),
+        type: newBizType,
+        currency: newBizCurrency
+      });
+      setShowCreateBizModal(false);
+      setNewBizName('');
+      setIsBizDropdownOpen(false);
+    } catch (err) {
+      alert(err.message || 'Failed to create business.');
+    } finally {
+      setNewBizCreating(false);
+    }
+  };
+
+  const handleJoinBusiness = async (e) => {
+    e.preventDefault();
+    setJoinError('');
+    setJoinSuccess('');
+    if (!joinCodeInput.trim()) {
+      setJoinError('Please enter an invitation code.');
+      return;
+    }
+    setIsJoining(true);
+    try {
+      const result = await joinBusinessWithCode(joinCodeInput.trim());
+      setJoinSuccess(`Joined ${result?.name || 'business'} successfully!`);
+      setTimeout(() => {
+        setShowJoinBizModal(false);
+        setJoinCodeInput('');
+        setJoinSuccess('');
+        setIsBizDropdownOpen(false);
+      }, 1000);
+    } catch (err) {
+      setJoinError(err.message || 'Failed to join business.');
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   // Assistant Name (Default: Jarvis, or Mr. H / Custom from settings - strictly never 'Customize')
   const [assistantName, setAssistantName] = useState(() => {
@@ -575,6 +663,93 @@ const Topbar = () => {
 
         <div className="topbar-divider"></div>
 
+        {/* Multi-Business Switcher Dropdown */}
+        <div className="topbar-biz-trigger" ref={bizDropdownRef}>
+          <button 
+            type="button" 
+            className="topbar-biz-pill-btn"
+            onClick={() => setIsBizDropdownOpen(!isBizDropdownOpen)}
+            title="Switch Workspace / Multi-Business"
+          >
+            <Building2 size={14} />
+            <span className="topbar-biz-pill-name">{currentBusiness?.name || 'Workspace'}</span>
+            <span className="topbar-biz-pill-role">{currentUser?.role || 'Owner'}</span>
+            <ChevronDown size={12} style={{ transform: isBizDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+
+          {isBizDropdownOpen && (
+            <div className="topbar-biz-dropdown" onClick={e => e.stopPropagation()}>
+              <div className="topbar-biz-dropdown-header">
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                  Workspaces ({userBusinesses.length})
+                </span>
+              </div>
+
+              <div className="topbar-biz-list">
+                {userBusinesses.map(biz => {
+                  const isActive = biz.id === currentBusiness?.id;
+                  return (
+                    <div 
+                      key={biz.id}
+                      className={`topbar-biz-item ${isActive ? 'active' : ''}`}
+                      onClick={() => {
+                        setIsBizDropdownOpen(false);
+                        if (!isActive) switchBranch(biz.id);
+                      }}
+                    >
+                      <div className="topbar-biz-item-info">
+                        <span className="topbar-biz-item-name">{biz.name}</span>
+                        <span className="topbar-biz-item-role">{biz.userRoleInBusiness || (biz.ownerId === currentUser?.id ? 'Owner' : 'Member')}</span>
+                      </div>
+                      {isActive && <Check size={14} className="topbar-biz-check" />}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="topbar-biz-dropdown-divider" />
+
+              <div className="topbar-biz-actions">
+                <button
+                  type="button"
+                  className="topbar-biz-action-btn"
+                  onClick={() => {
+                    setIsBizDropdownOpen(false);
+                    setShowCreateBizModal(true);
+                  }}
+                >
+                  <Plus size={14} />
+                  <span>Create New Business</span>
+                </button>
+                <button
+                  type="button"
+                  className="topbar-biz-action-btn"
+                  onClick={() => {
+                    setIsBizDropdownOpen(false);
+                    setShowJoinBizModal(true);
+                  }}
+                >
+                  <Link size={14} />
+                  <span>Join via Invite Code</span>
+                </button>
+                <button
+                  type="button"
+                  className="topbar-biz-action-btn"
+                  onClick={() => {
+                    setIsBizDropdownOpen(false);
+                    navigate('/settings?tab=users');
+                  }}
+                >
+                  <Users size={14} />
+                  <span>Team & Permissions</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="topbar-divider"></div>
+
         {/* User Profile */}
         <div className="user-profile-trigger" ref={profileRef} onClick={() => setIsProfileOpen(!isProfileOpen)}>
           <div className="user-avatar">
@@ -608,6 +783,13 @@ const Topbar = () => {
 
               <div 
                 className="profile-dropdown-item"
+                onClick={() => { setIsProfileOpen(false); navigate('/settings?tab=users'); }}
+              >
+                <Users size={16} /> Team & Permissions
+              </div>
+
+              <div 
+                className="profile-dropdown-item"
                 onClick={() => { setIsProfileOpen(false); navigate('/settings?tab=customize'); }}
               >
                 <Sparkles size={16} /> Customize (AI Settings)
@@ -633,6 +815,288 @@ const Topbar = () => {
           )}
         </div>
       </div>
+
+      {/* ========================================================= */}
+      {/* MODAL: CREATE NEW BUSINESS */}
+      {/* ========================================================= */}
+      {showCreateBizModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.65)',
+          backdropFilter: 'blur(3px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: 'var(--bg-card, #ffffff)',
+            border: '1px solid var(--border-color, #e2e8f0)',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '480px',
+            padding: '24px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Building2 size={20} color="var(--text-main)" />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  Create New Business
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateBizModal(false)}
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateBusiness} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-main)' }}>
+                  Business / Store Name
+                </label>
+                <input
+                  type="text"
+                  value={newBizName}
+                  onChange={e => setNewBizName(e.target.value)}
+                  placeholder="e.g. Metro Retail Mart"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: 'transparent',
+                    color: 'var(--text-main)',
+                    fontSize: '0.9rem',
+                    boxSizing: 'border-box'
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-main)' }}>
+                  Business Category
+                </label>
+                <select
+                  value={newBizType}
+                  onChange={e => setNewBizType(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: 'transparent',
+                    color: 'var(--text-main)',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  <option value="Cafeteria / Restaurant">Cafeteria / Restaurant</option>
+                  <option value="Retail & Supermarket">Retail & Supermarket</option>
+                  <option value="Wholesale & Distribution">Wholesale & Distribution</option>
+                  <option value="Clothing & Apparel">Clothing & Apparel</option>
+                  <option value="Electronics & Hardware">Electronics & Hardware</option>
+                  <option value="Services & Consultancy">Services & Consultancy</option>
+                  <option value="Other">Other Enterprise</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-main)' }}>
+                  Default Currency
+                </label>
+                <select
+                  value={newBizCurrency}
+                  onChange={e => setNewBizCurrency(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: 'transparent',
+                    color: 'var(--text-main)',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  <option value="INR">INR (₹) - Indian Rupee</option>
+                  <option value="USD">USD ($) - US Dollar</option>
+                  <option value="AED">AED (د.إ) - UAE Dirham</option>
+                  <option value="PKR">PKR (Rs) - Pakistani Rupee</option>
+                  <option value="GBP">GBP (£) - British Pound</option>
+                  <option value="EUR">EUR (€) - Euro</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateBizModal(false)}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: 'transparent',
+                    color: 'var(--text-main)',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={newBizCreating}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--text-main)',
+                    color: 'var(--bg-body)',
+                    border: 'none',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {newBizCreating ? 'Creating...' : 'Create & Open Workspace'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: JOIN BUSINESS VIA CODE */}
+      {/* ========================================================= */}
+      {showJoinBizModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.65)',
+          backdropFilter: 'blur(3px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: 'var(--bg-card, #ffffff)',
+            border: '1px solid var(--border-color, #e2e8f0)',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '460px',
+            padding: '24px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link size={20} color="var(--text-main)" />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  Join Business Workspace
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowJoinBizModal(false)}
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ margin: '0 0 16px 0', fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+              Enter the 6-character invitation code provided by your business owner (e.g. <code>KB-INV-7X9B</code>).
+            </p>
+
+            {joinError && (
+              <div style={{ padding: '10px', borderRadius: '8px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: '0.84rem', marginBottom: '14px', fontWeight: 600 }}>
+                {joinError}
+              </div>
+            )}
+
+            {joinSuccess && (
+              <div style={{ padding: '10px', borderRadius: '8px', backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981', fontSize: '0.84rem', marginBottom: '14px', fontWeight: 600 }}>
+                {joinSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleJoinBusiness} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-main)' }}>
+                  Invitation Code
+                </label>
+                <input
+                  type="text"
+                  value={joinCodeInput}
+                  onChange={e => setJoinCodeInput(e.target.value.toUpperCase())}
+                  placeholder="KB-INV-XXXXX"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: 'transparent',
+                    color: 'var(--text-main)',
+                    fontSize: '1.1rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    boxSizing: 'border-box',
+                    textAlign: 'center'
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowJoinBizModal(false)}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: 'transparent',
+                    color: 'var(--text-main)',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isJoining}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--text-main)',
+                    color: 'var(--bg-body)',
+                    border: 'none',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {isJoining ? 'Verifying...' : 'Join Business'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

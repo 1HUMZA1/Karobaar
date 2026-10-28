@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { auth, googleProvider } from '../services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { db } from '../services/databaseService';
 import { localDb } from '../services/localDb';
 import { initializeDemoData } from '../services/demoData';
+import { hasPermission, normalizeRole } from '../utils/permissions';
 
 const AppContext = createContext();
 
@@ -192,8 +193,22 @@ export const AppProvider = ({ children }) => {
           setUserBusinesses([]);
           setAuthStatus('unauthenticated');
         } else {
-          // Keep active session alive
-          if (!currentUser || !currentBusiness) {
+          // Keep active session alive from localStorage
+          const savedUser = localStorage.getItem('karobaar_session_user');
+          const savedBiz = localStorage.getItem('karobaar_session_business');
+          if (savedUser) {
+            try {
+              setCurrentUser(JSON.parse(savedUser));
+              if (savedBiz) {
+                setCurrentBusiness(JSON.parse(savedBiz));
+              } else {
+                setCurrentBusiness(DEFAULT_BUSINESS);
+              }
+              setAuthStatus('authenticated');
+            } catch (e) {
+              launchReadyToUseWorkspace();
+            }
+          } else {
             launchReadyToUseWorkspace();
           }
         }
@@ -233,19 +248,87 @@ export const AppProvider = ({ children }) => {
   };
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
-  const switchBranch = (businessId) => {
+  const switchBranch = async (businessId) => {
     const newBiz = userBusinesses.find(b => b.id === businessId);
     if (newBiz && currentUser) {
       localStorage.setItem('karobaar-active-business', businessId);
-      setCurrentBusiness(newBiz);
-      setCurrentUser({
+      
+      // Resolve user's role in the target business
+      let resolvedRole = 'Owner';
+      let resolvedPermissions = [];
+      try {
+        if (newBiz.ownerId && newBiz.ownerId !== currentUser.id) {
+          const memberRecord = await db.getById('members', currentUser.id, businessId);
+          if (memberRecord) {
+            resolvedRole = memberRecord.role || 'Cashier';
+            resolvedPermissions = memberRecord.permissions || [];
+          } else {
+            resolvedRole = 'Cashier';
+          }
+        }
+      } catch (e) {}
+
+      const updatedUser = {
         ...currentUser,
-        activeBusinessId: businessId
-      });
+        activeBusinessId: businessId,
+        role: resolvedRole,
+        permissions: resolvedPermissions
+      };
+
+      setCurrentBusiness(newBiz);
+      setCurrentUser(updatedUser);
+
+      try {
+        localStorage.setItem('karobaar_session_user', JSON.stringify(updatedUser));
+        localStorage.setItem('karobaar_session_business', JSON.stringify(newBiz));
+      } catch (e) {}
+
       window.location.hash = '#/dashboard';
       window.location.reload();
     }
   };
+
+  const createNewBusiness = async (businessData) => {
+    try {
+      const created = await db.createNewBusiness(businessData, currentUser);
+      const updatedBusinesses = [...userBusinesses, created];
+      setUserBusinesses(updatedBusinesses);
+      try {
+        localStorage.setItem('karobaar_session_businesses', JSON.stringify(updatedBusinesses));
+      } catch (e) {}
+      await switchBranch(created.id);
+      return created;
+    } catch (e) {
+      console.error("Create business error:", e);
+      throw e;
+    }
+  };
+
+  const joinBusinessWithCode = async (inviteCode) => {
+    try {
+      const result = await db.acceptInvitation(inviteCode, currentUser);
+      if (result && result.businessId) {
+        const joinedBiz = await db.getById('businesses', result.businessId);
+        if (joinedBiz) {
+          const updatedBusinesses = [...userBusinesses.filter(b => b.id !== joinedBiz.id), joinedBiz];
+          setUserBusinesses(updatedBusinesses);
+          try {
+            localStorage.setItem('karobaar_session_businesses', JSON.stringify(updatedBusinesses));
+          } catch (e) {}
+          await switchBranch(joinedBiz.id);
+          return joinedBiz;
+        }
+      }
+      return result;
+    } catch (e) {
+      console.error("Join business error:", e);
+      throw e;
+    }
+  };
+
+  const hasUserPermission = useCallback((permissionKey) => {
+    return hasPermission(currentUser, permissionKey, currentUser?.permissions);
+  }, [currentUser]);
 
   const refreshUserProfile = async () => {
     if (currentUser?.id) {
@@ -303,6 +386,9 @@ export const AppProvider = ({ children }) => {
       setAuthError,
       logout,
       switchBranch,
+      createNewBusiness,
+      joinBusinessWithCode,
+      hasUserPermission,
       refreshUserProfile,
       launchReadyToUseWorkspace,
       appUiVersion,
