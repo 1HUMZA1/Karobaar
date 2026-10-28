@@ -1,6 +1,6 @@
 import { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore';
-import { dbFirestore } from './firebase';
-import { localDb } from './localDb';
+import { dbFirestore } from './firebase.js';
+import { localDb } from './localDb.js';
 import { v4 as uuidv4 } from 'uuid';
 
 /**

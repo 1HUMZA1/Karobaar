@@ -127,19 +127,31 @@ class LocalDB {
       this.db[collectionName] = {};
     }
 
+    let actualId = id;
+    let actualData = data;
+    let actualBizId = businessId;
+
+    // Support flexible signature: save(collectionName, dataObj, businessId)
+    if (typeof id === 'object' && id !== null) {
+      actualData = id;
+      actualId = actualData.id || `doc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      actualBizId = typeof data === 'string' ? data : (actualData.businessId || actualData._businessId || null);
+    }
+
     const record = {
-      ...data,
-      id,
-      _businessId: businessId, // internal reference
+      ...actualData,
+      id: actualId,
+      businessId: actualBizId || actualData?.businessId || actualData?._businessId,
+      _businessId: actualBizId || actualData?.businessId || actualData?._businessId,
       _syncStatus: queueForSync ? 'pending' : 'synced',
       _localUpdatedAt: new Date().toISOString()
     };
 
-    this.db[collectionName][id] = record;
+    this.db[collectionName][actualId] = record;
     this._saveDB();
 
-    if (queueForSync) {
-      this._enqueue(collectionName, id, 'SET', record, businessId);
+    if (queueForSync && typeof id === 'string') {
+      this._enqueue(collectionName, actualId, 'SET', record, actualBizId);
     }
 
     return record;

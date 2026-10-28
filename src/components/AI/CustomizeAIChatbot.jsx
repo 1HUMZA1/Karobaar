@@ -36,6 +36,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../services/databaseService';
 import { processJarvisQuery, cleanSpokenQuery, isSelfEcho } from './jarvisEngine';
 import { aiModelService } from '../../services/aiModelService';
+import { aiSettingsService } from '../../services/ai/aiSettingsService';
 import { executeKarobaarTool } from '../../services/aiToolsService';
 import KarobaarAIOverlay from './KarobaarAIOverlay';
 import JarvisMiniCharacter from './JarvisMiniCharacter';
@@ -1124,6 +1125,7 @@ export const CustomizeAIChatbot = () => {
         voiceEnabled={voiceEnabled}
         theme={theme}
         onSendMessage={(text) => handleUserQuery(text)}
+        onConfirmAction={(msgId, actionObj) => handleConfirmSensitiveAction(msgId, actionObj)}
         onToggleMic={toggleVoiceListening}
         onStopSpeaking={stopSpeaking}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
@@ -1145,6 +1147,8 @@ export const CustomizeAIChatbot = () => {
             localStorage.setItem('karobaar_ai_language', newSettings.aiLanguage);
           }
           localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(newSettings));
+          const activeBizId = currentUser?.activeBusinessId || 'demo-business-1';
+          aiSettingsService.saveSettings(activeBizId, newSettings);
         }}
         onClearHistory={handleClearHistory}
       />

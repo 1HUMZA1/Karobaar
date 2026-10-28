@@ -7,6 +7,17 @@ function karobaarAiDevPlugin() {
   return {
     name: 'karobaar-ai-dev-backend',
     configureServer(server) {
+      server.middlewares.use('/api/ai/models', async (req, res) => {
+        try {
+          const { handleAiModelsRequest } = await import('./server/ai-middleware.js');
+          await handleAiModelsRequest(req, res);
+        } catch (err) {
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      });
+
       server.middlewares.use('/api/ai/chat', async (req, res) => {
         try {
           const { handleAiChatRequest } = await import('./server/ai-middleware.js');

@@ -35,6 +35,7 @@ export const JarvisConversationBubble = ({
   voiceEnabled = true,
   theme = 'light',
   onSendMessage = () => {},
+  onConfirmAction = () => {},
   onToggleMic = () => {},
   onStopSpeaking = () => {},
   onOpenSettings = () => {},
@@ -168,6 +169,44 @@ export const JarvisConversationBubble = ({
                 ))}
               </div>
 
+              {msg.requiresConfirmation && msg.confirmationAction && (
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => onConfirmAction(msg.id, msg.confirmationAction)}
+                    style={{
+                      flex: 1,
+                      padding: '5px 8px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      borderRadius: '6px',
+                      backgroundColor: '#09090b',
+                      color: '#ffffff',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✓ Confirm Action
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSendMessage('Cancel this action')}
+                    style={{
+                      padding: '5px 8px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      borderRadius: '6px',
+                      backgroundColor: 'transparent',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-color)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+
               {msg.sender === 'bot' && isSpeaking && msg.spokenText && (
                 <div className="bubble-speaking-bar-indicator">
                   <span className="bar b1" />
@@ -216,9 +255,13 @@ export const JarvisConversationBubble = ({
           <AlertTriangle size={11} />
           <span>Low Stock</span>
         </button>
+        <button type="button" onClick={() => handleChipClick('Audit business health and recommendations')} className="bubble-chip">
+          <Sparkles size={11} />
+          <span>Audit</span>
+        </button>
         <button type="button" onClick={() => handleChipClick('Who owes me money?')} className="bubble-chip">
           <DollarSign size={11} />
-          <span>Debtors</span>
+          <span>Udhaar</span>
         </button>
         <button type="button" onClick={() => handleChipClick(theme === 'dark' ? 'switch to light mode' : 'switch to dark mode')} className="bubble-chip">
           {theme === 'dark' ? <Sun size={11} /> : <Moon size={11} />}

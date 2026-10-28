@@ -40,6 +40,8 @@ import { useAppContext, DEFAULT_BUSINESS } from '../../context/AppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileMenu } from './MobileMenu';
 import TeamManagement from './TeamManagement';
+import { aiEvaluationService } from '../../services/ai/aiEvaluationService';
+import { conversationService } from '../../services/ai/conversationService';
 import './Settings.css';
 
 const MODULES_LIST = [
@@ -125,6 +127,15 @@ const Settings = () => {
   const [dailySummaryNotification, setDailySummaryNotification] = useState(true);
   const [rapidBarcodeAdd, setRapidBarcodeAdd] = useState(true);
   const [aiLanguage, setAiLanguage] = useState('hinglish');
+  const [aiModel, setAiModel] = useState('gemini-2.5-flash');
+  const [aiResponseStyle, setAiResponseStyle] = useState('balanced');
+  const [aiConfirmSensitive, setAiConfirmSensitive] = useState(true);
+  const [aiStockoutAlerts, setAiStockoutAlerts] = useState(true);
+  const [aiSalesComparison, setAiSalesComparison] = useState(true);
+  const [aiExpenseAnomaly, setAiExpenseAnomaly] = useState(true);
+  const [aiDiagnosticsResult, setAiDiagnosticsResult] = useState(null);
+  const [aiDiagnosticsLoading, setAiDiagnosticsLoading] = useState(false);
+  const [aiMemoryNotice, setAiMemoryNotice] = useState('');
 
   // UPI & QR Presentation State
   const [storeUpiId, setStoreUpiId] = useState('karobaar.pay@upi');
@@ -427,6 +438,12 @@ const Settings = () => {
       setDailySummaryNotification(aDaily);
       setRapidBarcodeAdd(aRapid);
       setAiLanguage(aLang);
+      setAiModel(aiSettings.model || 'gemini-2.5-flash');
+      setAiResponseStyle(aiSettings.responseStyle || 'balanced');
+      setAiConfirmSensitive(aiSettings.confirmSensitive ?? true);
+      setAiStockoutAlerts(aiSettings.enableStockoutAlerts ?? true);
+      setAiSalesComparison(aiSettings.enableSalesComparisons ?? true);
+      setAiExpenseAnomaly(aiSettings.enableExpenseAnomalyAlerts ?? true);
 
       const uId = settings.upiId || localStorage.getItem('karobaar_custom_upi_id') || 'karobaar.pay@upi';
       const uImg = settings.upiQrImage || localStorage.getItem('karobaar_custom_upi_qr_img') || null;
@@ -619,7 +636,13 @@ const Settings = () => {
         autoPrintReceipt,
         dailySummaryNotification,
         rapidBarcodeAdd,
-        language: aiLanguage
+        language: aiLanguage,
+        model: aiModel,
+        responseStyle: aiResponseStyle,
+        confirmSensitive: aiConfirmSensitive,
+        enableStockoutAlerts: aiStockoutAlerts,
+        enableSalesComparisons: aiSalesComparison,
+        enableExpenseAnomalyAlerts: aiExpenseAnomaly
       };
 
       const updatedSettings = {
@@ -1278,6 +1301,34 @@ const Settings = () => {
                     <option value="hi">हिंदी (Devanagari script)</option>
                   </select>
                 </div>
+
+                <div className="settings-input-group">
+                  <label>Google Gemini Model</label>
+                  <select 
+                    className="settings-input-field"
+                    value={aiModel}
+                    onChange={e => setAiModel(e.target.value)}
+                  >
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended: Ultra-fast & High Accuracy)</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Business Analytics & Financial Audits)</option>
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legacy)</option>
+                  </select>
+                  <span className="text-[11px] text-text-muted mt-1 block">Powered by official Google GenAI SDK with zero browser API key exposure.</span>
+                </div>
+
+                <div className="settings-input-group">
+                  <label>Response Style & Depth</label>
+                  <select 
+                    className="settings-input-field"
+                    value={aiResponseStyle}
+                    onChange={e => setAiResponseStyle(e.target.value)}
+                  >
+                    <option value="balanced">Balanced (Recommended: Clear explanations with financial numbers)</option>
+                    <option value="concise">Concise (Fast bullet points & summaries)</option>
+                    <option value="detailed">Detailed (Full audit reports, calculation steps & breakdown)</option>
+                  </select>
+                </div>
               </div>
 
               {/* Section 2: Automated Business Triggers */}
@@ -1356,6 +1407,133 @@ const Settings = () => {
                     />
                   </label>
                 </div>
+              </div>
+
+              {/* Section 3: Autonomous Intelligence & Safety Controls */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+                <h3 className="text-sm font-bold text-text-main mb-3">Autonomous Intelligence & Safety Controls</h3>
+                <div className="space-y-3">
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">Require Explicit Confirmation for Consequential Writes</div>
+                      <div className="text-xs text-text-secondary">AI presents a reviewable draft before creating orders, adjusting stock, or recording payments</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={aiConfirmSensitive} 
+                      onChange={e => setAiConfirmSensitive(e.target.checked)} 
+                    />
+                  </label>
+
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">Autonomous Stockout Risk Analysis</div>
+                      <div className="text-xs text-text-secondary">Continuously monitors inventory turnover and predicts days of coverage remaining</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={aiStockoutAlerts} 
+                      onChange={e => setAiStockoutAlerts(e.target.checked)} 
+                    />
+                  </label>
+
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">Sales Velocity & Period-over-Period Comparisons</div>
+                      <div className="text-xs text-text-secondary">Automatically compares sales pace against previous weeks and months to highlight trends</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={aiSalesComparison} 
+                      onChange={e => setAiSalesComparison(e.target.checked)} 
+                    />
+                  </label>
+
+                  <label className="settings-toggle-row">
+                    <div>
+                      <div className="font-semibold text-sm">High Expense Anomaly Warnings</div>
+                      <div className="text-xs text-text-secondary">Flags operational expenditures that deviate unusually from store baseline averages</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={aiExpenseAnomaly} 
+                      onChange={e => setAiExpenseAnomaly(e.target.checked)} 
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Section 4: System Diagnostics & Conversation Memory */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+                <h3 className="text-sm font-bold text-text-main mb-3">AI Diagnostics & Conversation Memory</h3>
+                <div className="flex flex-wrap gap-3 items-center mb-3">
+                  <button
+                    type="button"
+                    disabled={aiDiagnosticsLoading}
+                    onClick={async () => {
+                      setAiDiagnosticsLoading(true);
+                      try {
+                        const res = await aiEvaluationService.runFullDiagnostics({ businessId: currentBusiness?.id });
+                        setAiDiagnosticsResult(res);
+                      } catch (err) {
+                        setAiDiagnosticsResult({ allPassed: false, checks: [{ name: 'Diagnostics', status: 'FAILED', details: err.message }] });
+                      } finally {
+                        setAiDiagnosticsLoading(false);
+                      }
+                    }}
+                    className="px-3.5 py-2 text-xs font-bold rounded-lg border border-border-color bg-[var(--bg-elevated)] hover:bg-[var(--bg-hover)] text-text-main transition-all flex items-center gap-1.5"
+                  >
+                    <RefreshCw size={13} className={aiDiagnosticsLoading ? 'animate-spin' : ''} />
+                    <span>{aiDiagnosticsLoading ? 'Running Diagnostics...' : 'Run Full AI Health Check'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Clear all conversation history and contextual references for this business?')) {
+                        conversationService.clearHistory(currentBusiness?.id);
+                        setAiMemoryNotice('Conversation memory successfully reset.');
+                        setTimeout(() => setAiMemoryNotice(''), 3000);
+                      }
+                    }}
+                    className="px-3.5 py-2 text-xs font-bold rounded-lg border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-all flex items-center gap-1.5"
+                  >
+                    <RotateCcw size={13} />
+                    <span>Reset Conversation Memory</span>
+                  </button>
+
+                  {aiMemoryNotice && (
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{aiMemoryNotice}</span>
+                  )}
+                </div>
+
+                {/* Diagnostics Result Card */}
+                {aiDiagnosticsResult && (
+                  <div className="p-3.5 rounded-xl border border-border-color bg-[var(--bg-card)] mt-2 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold border-b border-border-color pb-2">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck size={14} className={aiDiagnosticsResult.allPassed ? 'text-emerald-500' : 'text-amber-500'} />
+                        <span>System Health: {aiDiagnosticsResult.allPassed ? 'All Systems Operational' : 'Action Required'}</span>
+                      </span>
+                      <span className="text-text-muted">Active Model: {aiDiagnosticsResult.configuredModel}</span>
+                    </div>
+                    <div className="space-y-1.5 pt-1">
+                      {aiDiagnosticsResult.checks.map((chk, idx) => (
+                        <div key={idx} className="flex items-start justify-between text-[11px] gap-2">
+                          <span className="font-semibold text-text-main">{chk.name}:</span>
+                          <span className="text-right text-text-secondary flex-1">{chk.details}</span>
+                          <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${
+                            chk.status === 'PASSED' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                            chk.status === 'OFFLINE_FALLBACK' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
+                            'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                          }`}>
+                            {chk.status} {chk.latencyMs ? `(${chk.latencyMs}ms)` : ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Section: Custom UPI ID & Google Pay QR Code */}

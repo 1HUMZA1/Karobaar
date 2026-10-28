@@ -5,7 +5,7 @@
  */
 
 import http from 'http';
-import { handleAiChatRequest } from './ai-middleware.js';
+import { handleAiChatRequest, handleAiModelsRequest } from './ai-middleware.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -14,6 +14,8 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === '/api/ai/chat') {
     await handleAiChatRequest(req, res);
+  } else if (url.pathname === '/api/ai/models') {
+    await handleAiModelsRequest(req, res);
   } else if (url.pathname === '/api/health') {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
