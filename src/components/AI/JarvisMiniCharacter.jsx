@@ -30,9 +30,9 @@ export const JarvisMiniCharacter = ({
   const currentState = useMemo(() => {
     if (isSpeaking) return 'speaking';
     if (isThinking) return 'thinking';
-    if (isListening) return 'listening';
+    if (isListening && voiceEnabled) return 'listening';
     return 'idle';
-  }, [isSpeaking, isThinking, isListening]);
+  }, [isSpeaking, isThinking, isListening, voiceEnabled]);
 
   // Audio waveform bars (3 left, 3 right)
   const miniBars = useMemo(() => {
@@ -225,7 +225,13 @@ export const JarvisMiniCharacter = ({
           <span className={`status-dot ${currentState}`} />
           <span className="status-name">{assistantName}</span>
           <span className="status-state-desc">
-            {currentState === 'listening' ? 'Listening...' : currentState === 'speaking' ? 'Speaking...' : currentState === 'thinking' ? 'Thinking...' : 'Active'}
+            {currentState === 'listening' 
+              ? 'Listening...' 
+              : currentState === 'speaking' 
+                ? 'Speaking...' 
+                : currentState === 'thinking' 
+                  ? 'Thinking...' 
+                  : 'Ready'}
           </span>
         </button>
 

@@ -118,7 +118,7 @@ export const CustomizeAIChatbot = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
   const [audioLevel, setAudioLevel] = useState(0);
@@ -279,7 +279,7 @@ export const CustomizeAIChatbot = () => {
 
   // Global Continuous Speech Recognition Refs with Anti-Echo Hardware/State Locks
   const recognitionRef = useRef(null);
-  const isListeningEnabledRef = useRef(true);
+  const isListeningEnabledRef = useRef(false);
   const isSpeakingRef = useRef(false);
   const lastSpokenTextRef = useRef('');
   const recentSpokenListRef = useRef([]);

@@ -5,8 +5,8 @@
 
 .jarvis-mini-character-dock {
   position: fixed;
-  bottom: 20px;
-  left: 20px;
+  bottom: 24px;
+  left: 275px;
   z-index: 1050;
   display: flex;
   align-items: center;
@@ -14,6 +14,14 @@
   pointer-events: auto;
   user-select: none;
   animation: miniCharFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: left 0.3s ease, bottom 0.3s ease;
+}
+
+@media (max-width: 900px) {
+  .jarvis-mini-character-dock {
+    left: 20px;
+    bottom: 85px;
+  }
 }
 
 @keyframes miniCharFadeIn {

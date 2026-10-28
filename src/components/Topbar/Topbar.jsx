@@ -29,7 +29,8 @@ import {
   ChevronDown,
   Check,
   Link,
-  ShieldCheck
+  ShieldCheck,
+  MoreHorizontal
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -92,11 +93,16 @@ const Topbar = () => {
   const [joinSuccess, setJoinSuccess] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const bizDropdownRef = useRef(null);
+  const [isOverflowOpen, setIsOverflowOpen] = useState(false);
+  const overflowRef = useRef(null);
 
   useEffect(() => {
     const handleBizClickOutside = (e) => {
       if (bizDropdownRef.current && !bizDropdownRef.current.contains(e.target)) {
         setIsBizDropdownOpen(false);
+      }
+      if (overflowRef.current && !overflowRef.current.contains(e.target)) {
+        setIsOverflowOpen(false);
       }
     };
     document.addEventListener('mousedown', handleBizClickOutside);
@@ -484,13 +490,26 @@ const Topbar = () => {
           
           {searchQuery.length === 0 && !isFocused && (
             <div 
-              style={{ position: 'absolute', left: '42px', top: '0', bottom: '0', display: 'flex', alignItems: 'center', pointerEvents: 'none', zIndex: 10, color: 'var(--text-muted)' }}
+              style={{ 
+                position: 'absolute', 
+                left: '42px', 
+                top: '0', 
+                bottom: '0', 
+                display: 'flex', 
+                alignItems: 'center', 
+                pointerEvents: 'none', 
+                zIndex: 10, 
+                color: 'var(--text-muted)',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                maxWidth: 'calc(100% - 46px)'
+              }}
             >
-              <span className="mr-1">Search</span>
-              <span key={wordIndex} className="animate-fade-slide-up font-medium" style={{ color: 'var(--text-main)' }}>
+              <span className="mr-1 shrink-0">Search</span>
+              <span key={wordIndex} className="animate-fade-slide-up font-medium shrink-0" style={{ color: 'var(--text-main)' }}>
                 {searchWords[wordIndex]}...
               </span>
-              <span className="ml-2 text-xs opacity-60">(Ctrl+K)</span>
+              <span className="ml-2 text-xs opacity-60 shrink-0">(Ctrl+K)</span>
             </div>
           )}
 
@@ -622,7 +641,7 @@ const Topbar = () => {
 
         {/* Live Feature Spotlight & Outlining Tour */}
         <button 
-          className="topbar-spotlight-tour-btn hidden-mobile"
+          className="topbar-spotlight-tour-btn hidden-tablet-down"
           onClick={() => window.dispatchEvent(new CustomEvent('karobaar_start_spotlight_tour', { detail: { stepIndex: 0 } }))}
           title="Start Live Feature Outlining & Walkthrough"
         >
@@ -632,7 +651,7 @@ const Topbar = () => {
 
         {/* 1-Click Fast POS Access */}
         <button 
-          className="topbar-quick-sale-btn hidden-mobile"
+          className="topbar-quick-sale-btn"
           onClick={() => navigate('/pos')}
           title="Open POS Register (F2)"
         >
@@ -642,13 +661,47 @@ const Topbar = () => {
         </button>
 
         {/* Sync Indicator */}
-        <div className="topbar-sync-status hidden-mobile">
+        <div className="topbar-sync-status hidden-tablet-down">
           {!navigator.onLine ? (
             <span className="sync-offline">● Offline</span>
           ) : pendingCount > 0 ? (
             <span className="sync-syncing">↻ Syncing...</span>
           ) : (
             <span className="sync-synced">● Synced</span>
+          )}
+        </div>
+
+        {/* Overflow Menu for Intermediate Viewports */}
+        <div className="topbar-overflow-container hidden-desktop-wide" ref={overflowRef}>
+          <button 
+            type="button" 
+            className="icon-btn" 
+            onClick={() => setIsOverflowOpen(!isOverflowOpen)}
+            title="More actions"
+            aria-label="More actions"
+          >
+            <MoreHorizontal size={18} />
+          </button>
+          {isOverflowOpen && (
+            <div className="topbar-overflow-dropdown" onClick={e => e.stopPropagation()}>
+              <button 
+                type="button"
+                className="topbar-overflow-item"
+                onClick={() => {
+                  setIsOverflowOpen(false);
+                  window.dispatchEvent(new CustomEvent('karobaar_start_spotlight_tour', { detail: { stepIndex: 0 } }));
+                }}
+              >
+                <Target size={14} />
+                <span>Live Guide & Tour</span>
+              </button>
+              <div className="topbar-overflow-item sync-info">
+                <span>Sync Status:</span>
+                <span className="font-bold text-xs">
+                  {!navigator.onLine ? '● Offline' : pendingCount > 0 ? '↻ Syncing...' : '● Synced'}
+                </span>
+              </div>
+            </div>
           )}
         </div>
 

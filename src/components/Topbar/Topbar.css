@@ -19,11 +19,11 @@
 }
 
 .topbar-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  max-width: 600px;
-  margin: 0 2rem;
+  flex: 0 1 340px;
+  max-width: 360px;
+  min-width: 180px;
+  margin: 0 0.5rem;
+  position: relative;
 }
 
 .global-search-container {
@@ -35,26 +35,27 @@
 
 .global-search-icon {
   position: absolute;
-  left: 1rem;
-  color: #1e293b;
+  left: 0.85rem;
+  color: var(--text-muted);
 }
 
 .global-search-input {
   width: 100%;
-  height: 42px;
-  padding-left: 2.75rem;
-  padding-right: 4rem;
-  border-radius: 12px;
+  height: 38px;
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-hover);
   color: var(--text-main);
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   font-weight: 500;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
 .global-search-input::placeholder {
-  color: #475569;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -331,33 +332,35 @@
   color: var(--text-main);
 }
 
-/* Dedicated Mr. H / Voice AI Wake Button */
+/* Dedicated Voice AI Wake Button */
 .topbar-mr-h-wake-btn {
+  height: 38px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   background-color: #09090b;
   color: #ffffff;
-  padding: 7px 14px;
+  padding: 0 13px;
   border-radius: 10px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   border: 1.5px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  margin-right: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 [data-theme="light"] .topbar-mr-h-wake-btn {
-  background-color: #0f172a;
+  background-color: #09090b;
   color: #ffffff;
-  border-color: #334155;
+  border-color: #27272a;
 }
 
 .topbar-mr-h-wake-btn:hover {
-  filter: brightness(1.15);
+  background-color: #27272a;
   transform: translateY(-1px);
   border-color: #ffffff;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
@@ -379,20 +382,22 @@
 
 /* Live Feature Spotlight Tour Button */
 .topbar-spotlight-tour-btn {
+  height: 38px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   background-color: var(--bg-hover);
   color: var(--text-main);
-  padding: 7px 12px;
+  padding: 0 12px;
   border-radius: 10px;
-  font-size: 0.775rem;
+  font-size: 0.8rem;
   font-weight: 600;
   border: 1px solid var(--border-color);
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
-  margin-right: 0.25rem;
 }
 
 .topbar-spotlight-tour-btn:hover {
@@ -401,52 +406,35 @@
   transform: translateY(-1px);
 }
 
-/* Customize AI Topbar Button (Legacy fallback) */
-.topbar-customize-ai-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--bg-card);
-  color: var(--text-main);
-  padding: 7px 14px;
-  border-radius: 10px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border: 1.5px solid var(--border-color);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-  margin-right: 0.25rem;
-}
-
-.topbar-customize-ai-btn:hover {
-  background-color: var(--text-main);
-  color: var(--bg-card);
-  border-color: var(--text-main);
-  transform: translateY(-1px);
-}
-
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .topbar-quick-sale-btn {
+  height: 38px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   background-color: var(--text-main);
-  color: var(--bg-card);
-  padding: 7px 16px;
+  color: var(--bg-body, #ffffff);
+  padding: 0 14px;
   border-radius: 10px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   border: none;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  margin-right: 0.4rem;
   user-select: none;
+}
+
+[data-theme="light"] .topbar-quick-sale-btn {
+  background-color: #09090b;
+  color: #ffffff;
 }
 
 .topbar-quick-sale-btn:hover {
@@ -572,6 +560,7 @@
 .user-info {
   display: flex;
   flex-direction: column;
+  max-width: 110px;
 }
 
 .user-name {
@@ -579,6 +568,9 @@
   font-weight: 600;
   color: var(--text-main);
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-business {
@@ -586,6 +578,9 @@
   color: var(--text-muted);
   font-weight: 500;
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobile-menu-btn {
@@ -748,7 +743,7 @@
 }
 
 .topbar-biz-pill-name {
-  max-width: 140px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -864,4 +859,92 @@
 .topbar-biz-action-btn:hover {
   background-color: var(--bg-hover);
 }
+
+/* Topbar Overflow Dropdown */
+.topbar-overflow-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.topbar-overflow-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10001;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.topbar-overflow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.topbar-overflow-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.topbar-overflow-item.sync-info {
+  display: flex;
+  justify-content: space-between;
+  cursor: default;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+
+/* Responsive Visibility Helpers */
+@media (max-width: 1550px) {
+  .hidden-tablet-down {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1551px) {
+  .hidden-desktop-wide {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .user-info {
+    display: none !important;
+  }
+  .topbar-biz-pill-name {
+    max-width: 85px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar-center {
+    display: none !important;
+  }
+  .topbar-biz-pill-role {
+    display: none !important;
+  }
+}
+
 

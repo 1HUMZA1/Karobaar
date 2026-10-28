@@ -21,12 +21,15 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
+import { BusinessHealthModal, LegacyModeConfirmModal } from '../../components/Dashboard/DashboardModals';
+
 const DATE_RANGE_LABELS = {
   today: 'Today',
   yesterday: 'Yesterday',
   '7d': 'Last 7 Days',
   this_month: 'This Month',
-  all_time: 'All Time'
+  all_time: 'All Time',
+  custom: 'Custom Range'
 };
 
 const Dashboard = ({ onSwitchMode }) => {
@@ -36,6 +39,14 @@ const Dashboard = ({ onSwitchMode }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dateRange, setDateRange] = useState('today');
 
+  // Custom date range state
+  const [customStartDate, setCustomStartDate] = useState(() => format(subDays(new Date(), 14), 'yyyy-MM-dd'));
+  const [customEndDate, setCustomEndDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+
+  // Modals state
+  const [showHealthModal, setShowHealthModal] = useState(false);
+  const [showLegacyConfirmModal, setShowLegacyConfirmModal] = useState(false);
+
   // Raw Database Collections Cached in Memory
   const [rawSales, setRawSales] = useState([]);
   const [rawExpenses, setRawExpenses] = useState([]);
@@ -44,7 +55,16 @@ const Dashboard = ({ onSwitchMode }) => {
   const [rawProducts, setRawProducts] = useState([]);
   const [rawAttendance, setRawAttendance] = useState([]);
 
-  const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
+  // Robust currency resolver
+  const currencySymbol = useMemo(() => {
+    const c = currentBusiness?.currency || currentBusiness?.settings?.currency || 'INR';
+    if (c === 'INR' || c === '₹') return '₹';
+    if (c === 'USD' || c === '$') return '$';
+    if (c === 'EUR' || c === '€') return '€';
+    if (c === 'GBP' || c === '£') return '£';
+    if (c === 'AED') return 'AED ';
+    return c.length <= 3 ? c + ' ' : '₹';
+  }, [currentBusiness]);
 
   // Role Based Visibility
   const showFinance = ['OWNER', 'MANAGER', 'ACCOUNTANT'].includes(userRole);
@@ -89,6 +109,13 @@ const Dashboard = ({ onSwitchMode }) => {
         prevStart = new Date(0);
         prevEnd = new Date(0);
         break;
+      case 'custom':
+        currentStart = startOfDay(new Date(customStartDate || subDays(now, 14)));
+        currentEnd = endOfDay(new Date(customEndDate || now));
+        const diffMs = Math.max(86400000, currentEnd.getTime() - currentStart.getTime());
+        prevStart = new Date(currentStart.getTime() - diffMs);
+        prevEnd = new Date(currentStart.getTime() - 1);
+        break;
       case 'today':
       default:
         currentStart = todayStart;
@@ -99,7 +126,7 @@ const Dashboard = ({ onSwitchMode }) => {
     }
 
     return { currentStart, currentEnd, prevStart, prevEnd };
-  }, [dateRange]);
+  }, [dateRange, customStartDate, customEndDate]);
 
   // Comprehensive Metrics Calculation
   const computedMetrics = useMemo(() => {
@@ -430,7 +457,11 @@ const Dashboard = ({ onSwitchMode }) => {
         
         <div className="dashboard-header-actions">
           <div className="executive-health-dock flex items-center gap-3 bg-[var(--bg-card)] px-4 py-2.5 rounded-2xl border border-[var(--border-color)] shadow-sm">
-            <div className="flex items-center gap-2.5">
+            <div 
+              className="flex items-center gap-2.5 cursor-pointer hover:bg-[var(--bg-hover)] p-1.5 px-2 rounded-xl transition-colors"
+              onClick={() => setShowHealthModal(true)}
+              title="Click to view full Business Health Radar audit & improvement actions"
+            >
               <div className="relative flex items-center justify-center">
                 <span className="w-2.5 h-2.5 rounded-full bg-[var(--text-main)]"></span>
                 <span className="absolute w-4 h-4 rounded-full bg-[var(--text-main)]/20 animate-ping"></span>
@@ -458,8 +489,8 @@ const Dashboard = ({ onSwitchMode }) => {
 
             <button 
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#09090b] text-[#ffffff] hover:bg-zinc-800 transition-all duration-200 text-xs font-bold"
-              onClick={() => onSwitchMode && onSwitchMode('legacy')}
-              title="Switch to Legacy Mode"
+              onClick={() => setShowLegacyConfirmModal(true)}
+              title="Switch to Legacy Operations Desk"
             >
               <Sparkles size={12} />
               <span>Legacy Mode ⚡</span>
@@ -469,38 +500,70 @@ const Dashboard = ({ onSwitchMode }) => {
       </div>
 
       {/* Date-Range Filter Pill Selector Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-2 px-3 mb-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5 px-2">
-            <Calendar size={13} /> Filter Period:
-          </span>
-          <div className="flex items-center gap-1">
-            {[
-              { id: 'today', label: 'Today' },
-              { id: 'yesterday', label: 'Yesterday' },
-              { id: '7d', label: 'Last 7 Days' },
-              { id: 'this_month', label: 'This Month' },
-              { id: 'all_time', label: 'All Time' }
-            ].map(pill => (
-              <button
-                key={pill.id}
-                type="button"
-                onClick={() => setDateRange(pill.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  dateRange === pill.id
-                    ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-sm'
-                    : 'text-text-muted hover:text-text-main hover:bg-[var(--bg-hover)]'
-                }`}
-              >
-                {pill.label}
-              </button>
-            ))}
+      <div className="flex flex-col gap-2 p-3 mb-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5 px-2">
+              <Calendar size={13} /> Filter Period:
+            </span>
+            <div className="flex items-center gap-1">
+              {[
+                { id: 'today', label: 'Today' },
+                { id: 'yesterday', label: 'Yesterday' },
+                { id: '7d', label: 'Last 7 Days' },
+                { id: 'this_month', label: 'This Month' },
+                { id: 'all_time', label: 'All Time' },
+                { id: 'custom', label: 'Custom Range' }
+              ].map(pill => (
+                <button
+                  key={pill.id}
+                  type="button"
+                  onClick={() => setDateRange(pill.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    dateRange === pill.id
+                      ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-sm'
+                      : 'text-text-muted hover:text-text-main hover:bg-[var(--bg-hover)]'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-xs font-semibold text-text-secondary px-2">
+            Showing metrics for: <strong className="text-text-main">
+              {dateRange === 'custom' 
+                ? `${format(new Date(customStartDate), 'MMM dd, yyyy')} – ${format(new Date(customEndDate), 'MMM dd, yyyy')}`
+                : DATE_RANGE_LABELS[dateRange]
+              }
+            </strong>
           </div>
         </div>
 
-        <div className="text-xs font-semibold text-text-secondary px-2">
-          Showing metrics for: <strong className="text-text-main">{DATE_RANGE_LABELS[dateRange]}</strong>
-        </div>
+        {/* Custom Range Date Pickers */}
+        {dateRange === 'custom' && (
+          <div className="flex flex-wrap items-center gap-3 pt-2.5 border-t border-[var(--border-color)]">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-semibold text-text-muted">Start Date:</span>
+              <input 
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="px-2.5 py-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-hover)] text-text-main text-xs font-bold"
+              />
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-semibold text-text-muted">End Date:</span>
+              <input 
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="px-2.5 py-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-hover)] text-text-main text-xs font-bold"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <GettingStartedGuide />
@@ -564,7 +627,10 @@ const Dashboard = ({ onSwitchMode }) => {
         stats={maskedStats} 
         trends={computedMetrics.trends} 
         currencySymbol={currencySymbol} 
-        dateRangeLabel={DATE_RANGE_LABELS[dateRange]}
+        dateRangeLabel={dateRange === 'custom' ? `${format(new Date(customStartDate), 'MMM dd')} – ${format(new Date(customEndDate), 'MMM dd')}` : DATE_RANGE_LABELS[dateRange]}
+        sales={rawSales}
+        customers={rawCustomers}
+        products={rawProducts}
       />
 
       {/* 3. Analytics & Quick Actions */}
@@ -596,6 +662,22 @@ const Dashboard = ({ onSwitchMode }) => {
         alerts={computedMetrics.alerts} 
         transactions={computedMetrics.transactions} 
         currencySymbol={currencySymbol} 
+      />
+
+      {/* Modals */}
+      <BusinessHealthModal
+        isOpen={showHealthModal}
+        onClose={() => setShowHealthModal(false)}
+        healthScore={computedMetrics.healthScore}
+        healthLabel={computedMetrics.healthLabel}
+        metrics={computedMetrics}
+        currencySymbol={currencySymbol}
+      />
+
+      <LegacyModeConfirmModal
+        isOpen={showLegacyConfirmModal}
+        onClose={() => setShowLegacyConfirmModal(false)}
+        onConfirm={() => onSwitchMode && onSwitchMode('legacy')}
       />
 
     </div>
