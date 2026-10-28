@@ -52,8 +52,31 @@
       .splash-logo-box {
         animation: pulseLogo 2.4s ease-in-out infinite;
       }
-      .splash-loading-bar-fill {
-        animation: karobaarShimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      .splash-quote {
+        display: inline-block;
+        transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        font-style: italic;
+        color: var(--splash-subtext);
+        font-size: 0.92rem;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        text-align: center;
+        max-width: 380px;
+        line-height: 1.4;
+        will-change: opacity, transform;
+      }
+      .splash-quote.quote-out {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+      }
+      .splash-quote.quote-in {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .splash-quote.quote-prep {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+        transition: none !important;
       }
     </style>
     <script>
@@ -74,19 +97,98 @@
   </head>
   <body>
     <div id="root">
-      <div style="height:100vh;width:100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--splash-bg);color:var(--splash-text);user-select:none;padding:24px;box-sizing:border-box;">
+      <div id="loading-screen" style="height:100vh;width:100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--splash-bg);color:var(--splash-text);user-select:none;padding:24px;box-sizing:border-box;">
         <div class="splash-logo-box" style="width:78px;height:78px;border:3.5px solid var(--splash-text);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:2.6rem;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,0.06);line-height:1;">K</div>
         <div style="font-size:2.5rem;font-weight:800;letter-spacing:-0.03em;color:var(--splash-text);margin-bottom:8px;line-height:1.1;">Karobaar</div>
         <div style="font-size:1.18rem;font-weight:500;color:var(--splash-subtext);letter-spacing:0.01em;margin-bottom:28px;">Turn Work Into Growth.</div>
         
-        <!-- Loading Progress Bar -->
-        <div style="width:240px;height:6px;background:var(--splash-bar-bg);border-radius:9999px;overflow:hidden;position:relative;">
-          <div class="splash-loading-bar-fill" style="height:100%;background:var(--splash-bar-fill);border-radius:9999px;position:absolute;"></div>
+        <!-- 100 Countdown Progress Bar -->
+        <div style="width:260px;max-width:85vw;height:6px;background:var(--splash-bar-bg);border-radius:9999px;overflow:hidden;position:relative;margin-bottom:12px;">
+          <div id="splash-bar-fill" style="width:0%;height:100%;background:var(--splash-bar-fill);border-radius:9999px;transition:width 0.16s cubic-bezier(0.16, 1, 0.3, 1);"></div>
         </div>
         
-        <div style="font-size:0.85rem;font-weight:500;color:var(--splash-subtext);margin-top:12px;letter-spacing:0.02em;">Loading workspace...</div>
+        <!-- Counter & Workspace Status Row -->
+        <div style="width:260px;max-width:85vw;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <span id="splash-status-text" style="font-size:0.85rem;font-weight:500;color:var(--splash-subtext);letter-spacing:0.01em;">Initializing workspace...</span>
+          <span id="splash-count-percent" style="font-size:0.92rem;font-weight:700;color:var(--splash-text);font-variant-numeric:tabular-nums;letter-spacing:0.02em;">0%</span>
+        </div>
+
+        <!-- Rotating Motivational Quotes with Fade-In & Fade-Out -->
+        <div style="min-height:46px;display:flex;align-items:center;justify-content:center;max-width:380px;text-align:center;padding:0 16px;">
+          <span id="splash-quote-text" class="splash-quote quote-in">“Where Effort Becomes Progress.”</span>
+        </div>
       </div>
     </div>
+    <script>
+      (function() {
+        var quotes = [
+          "“Where Effort Becomes Progress.”",
+          "“Work Smarter. Grow Faster.”",
+          "“Plan Better. Achieve More.”",
+          "“Built to Simplify. Designed to Grow.”",
+          "“Smarter Tools. Stronger Businesses.”",
+          "“Turning Ambition Into Achievement.”",
+          "“Every Transaction, Seamlessly Managed.”",
+          "“Your Business. Your Progress.”",
+          "“Make Every Move Count.”",
+          "“Turn Work Into Growth.”"
+        ];
+        var qIdx = 0;
+        var quoteEl = document.getElementById('splash-quote-text');
+        var barEl = document.getElementById('splash-bar-fill');
+        var percentEl = document.getElementById('splash-count-percent');
+        var statusEl = document.getElementById('splash-status-text');
+
+        // Smooth quote rotation with fade out and fade in
+        function rotateQuote() {
+          if (!quoteEl) return;
+          quoteEl.className = 'splash-quote quote-out';
+          setTimeout(function() {
+            qIdx = (qIdx + 1) % quotes.length;
+            quoteEl.textContent = quotes[qIdx];
+            quoteEl.className = 'splash-quote quote-prep';
+            void quoteEl.offsetHeight; // force reflow
+            quoteEl.className = 'splash-quote quote-in';
+          }, 380);
+        }
+        var quoteInterval = setInterval(rotateQuote, 2100);
+
+        // Smooth 0 to 100 countdown progress ticker
+        var currentProgress = 0;
+        var statuses = [
+          { at: 15, text: "Initializing workspace..." },
+          { at: 40, text: "Syncing business records..." },
+          { at: 70, text: "Loading modules..." },
+          { at: 92, text: "Finalizing workspace..." },
+          { at: 100, text: "Ready." }
+        ];
+
+        var progressTimer = setInterval(function() {
+          if (currentProgress >= 100) {
+            clearInterval(progressTimer);
+            return;
+          }
+          var step = Math.floor(Math.random() * 5) + 3;
+          currentProgress = Math.min(100, currentProgress + step);
+          if (barEl) barEl.style.width = currentProgress + '%';
+          if (percentEl) percentEl.textContent = currentProgress + '%';
+
+          for (var i = statuses.length - 1; i >= 0; i--) {
+            if (currentProgress >= statuses[i].at) {
+              if (statusEl && statusEl.textContent !== statuses[i].text) {
+                statusEl.textContent = statuses[i].text;
+              }
+              break;
+            }
+          }
+        }, 50);
+
+        window.__clearKarobaarSplashTimers = function() {
+          clearInterval(quoteInterval);
+          clearInterval(progressTimer);
+        };
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
     <script>
       if ('serviceWorker' in navigator) {

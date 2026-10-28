@@ -87,85 +87,105 @@ const ROLES = {
 };
 
 const SLOGANS = [
-  "Transforming Effort Into Growth.",
-  "Where Effort Becomes Growth.",
-  "Empowering Work. Accelerating Growth.",
-  "Work Smarter. Grow Stronger.",
-  "Turning Vision Into Progress.",
+  "Where Effort Becomes Progress.",
+  "Work Smarter. Grow Faster.",
+  "Plan Better. Achieve More.",
   "Built to Simplify. Designed to Grow.",
-  "Your Business. Your Growth.",
-  "From Ideas to Impact.",
-  "Powering Smarter Business.",
-  "Elevate Your Work. Accelerate Growth.",
-  "Business, Simplified.",
-  "Plan Better. Work Smarter. Grow Faster.",
-  "Turning Ambition Into Achievement.",
-  "Built for Businesses That Think Bigger.",
   "Smarter Tools. Stronger Businesses.",
+  "Turning Ambition Into Achievement.",
+  "Every Transaction, Seamlessly Managed.",
+  "Your Business. Your Progress.",
+  "Empowering Work. Accelerating Growth.",
   "Make Every Move Count.",
-  "Your Growth Starts Here.",
-  "Drive Progress. Build Success.",
-  "Work Better. Achieve More.",
   "Karobaar — Built to Grow."
-];
-
-const SYSTEM_MESSAGES = [
-  "Initializing system architecture...",
-  "Syncing business data...",
-  "Loading dashboard modules...",
-  "Making the setup ready for you...",
-  "Establishing secure connection...",
-  "Almost there..."
 ];
 
 const AppContent = () => {
   const { authStatus, currentUser, currentBusiness } = useAppContext();
   const [sloganIndex, setSloganIndex] = useState(0);
-  const [sysMsgIndex, setSysMsgIndex] = useState(0);
-  const [progress, setProgress] = useState(15);
+  const [quoteFade, setQuoteFade] = useState('in'); // 'in' | 'out' | 'prep'
+  const [progress, setProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState("Initializing workspace...");
+  const [splashFinished, setSplashFinished] = useState(false);
   const [isSlow, setIsSlow] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
 
+  // Rotating quotes with smooth fade-in and fade-out
   useEffect(() => {
-    // Hard 800ms limit: never trap user on loading/splash screen
-    const hardLimit = setTimeout(() => {
-      setTimedOut(true);
-    }, 800);
-    return () => clearTimeout(hardLimit);
-  }, []);
+    if (splashFinished) return;
 
+    const quoteInterval = setInterval(() => {
+      setQuoteFade('out');
+      setTimeout(() => {
+        setSloganIndex(prev => (prev + 1) % SLOGANS.length);
+        setQuoteFade('prep');
+        setTimeout(() => {
+          setQuoteFade('in');
+        }, 30);
+      }, 380);
+    }, 2200);
+
+    return () => clearInterval(quoteInterval);
+  }, [splashFinished]);
+
+  // Smooth 0 to 100 countdown progress ticker
   useEffect(() => {
-    if (authStatus !== 'loading' || timedOut) return;
-    
-    const sloganInterval = setInterval(() => {
-      setSloganIndex(prev => (prev + 1) % SLOGANS.length);
-    }, 2000);
-    
-    const sysMsgInterval = setInterval(() => {
-      setSysMsgIndex(prev => (prev + 1) % SYSTEM_MESSAGES.length);
-    }, 1200);
-    
-    const progressInterval = setInterval(() => {
+    if (splashFinished) return;
+
+    const timer = setInterval(() => {
       setProgress(prev => {
-        if (prev < 80) return prev + 15;
-        if (prev < 95) return prev + 5;
-        return Math.min(prev + 1, 99);
+        if (prev >= 100) {
+          clearInterval(timer);
+          return 100;
+        }
+
+        // If auth is still checking, slow down near 92%
+        if (authStatus === 'loading' && prev >= 90) {
+          return Math.min(94, prev + 1);
+        }
+
+        // Normal smooth progression
+        const step = Math.floor(Math.random() * 4) + 3;
+        const next = Math.min(100, prev + step);
+
+        if (next < 25) setStatusMessage("Initializing workspace...");
+        else if (next < 55) setStatusMessage("Syncing business records...");
+        else if (next < 85) setStatusMessage("Loading modules...");
+        else if (next < 100) setStatusMessage("Finalizing workspace...");
+        else setStatusMessage("Ready.");
+
+        return next;
       });
-    }, 120);
+    }, 45);
 
     const slowTimer = setTimeout(() => {
       setIsSlow(true);
-    }, 4000);
-    
+    }, 4500);
+
     return () => {
-      clearInterval(sloganInterval);
-      clearInterval(sysMsgInterval);
-      clearInterval(progressInterval);
+      clearInterval(timer);
       clearTimeout(slowTimer);
     };
-  }, [authStatus, timedOut]);
+  }, [authStatus, splashFinished]);
 
-  if (authStatus === 'loading' && !timedOut) {
+  // When 100% countdown finishes and auth is loaded, complete splash
+  useEffect(() => {
+    if (progress >= 100 && authStatus !== 'loading') {
+      const finishTimer = setTimeout(() => {
+        setSplashFinished(true);
+      }, 240);
+      return () => clearTimeout(finishTimer);
+    }
+  }, [progress, authStatus]);
+
+  // Safety limit: ensure workspace opens smoothly within 2.2s
+  useEffect(() => {
+    const safetyLimit = setTimeout(() => {
+      setSplashFinished(true);
+    }, 2200);
+    return () => clearTimeout(safetyLimit);
+  }, []);
+
+  if (!splashFinished) {
     return (
       <div className="login-splash-screen" style={{ 
         height: '100vh', 
@@ -239,9 +259,10 @@ const AppContent = () => {
             Turn Work Into Growth.
           </p>
 
-          {/* Sleek Loading Progress Bar */}
+          {/* 100 Countdown Progress Bar */}
           <div style={{
-            width: '240px',
+            width: '260px',
+            maxWidth: '85vw',
             height: '6px',
             backgroundColor: 'var(--border-color, rgba(9, 9, 11, 0.12))',
             borderRadius: '9999px',
@@ -254,22 +275,62 @@ const AppContent = () => {
               height: '100%',
               backgroundColor: 'var(--text-main, #09090b)',
               borderRadius: '9999px',
-              transition: 'width 0.25s ease-out'
+              transition: 'width 0.16s cubic-bezier(0.16, 1, 0.3, 1)'
             }} />
           </div>
 
+          {/* Counter & Workspace Status Row */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            width: '240px',
-            fontSize: '0.82rem',
+            width: '260px',
+            maxWidth: '85vw',
+            fontSize: '0.85rem',
             color: 'var(--text-muted, #71717a)',
-            fontWeight: 500
+            fontWeight: 500,
+            marginBottom: '20px'
           }}>
-            <span>{SYSTEM_MESSAGES[sysMsgIndex]}</span>
-            <span style={{ fontWeight: 600, color: 'var(--text-main, #09090b)', fontVariantNumeric: 'tabular-nums' }}>
+            <span>{statusMessage}</span>
+            <span style={{ 
+              fontWeight: 700, 
+              color: 'var(--text-main, #09090b)', 
+              fontVariantNumeric: 'tabular-nums',
+              fontSize: '0.92rem'
+            }}>
               {Math.floor(progress)}%
+            </span>
+          </div>
+
+          {/* Rotating Motivational Quotes with Fade-In & Fade-Out */}
+          <div style={{
+            minHeight: '46px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            maxWidth: '380px',
+            textAlign: 'center',
+            padding: '0 16px'
+          }}>
+            <span 
+              style={{
+                fontSize: '0.92rem',
+                fontWeight: 500,
+                fontStyle: 'italic',
+                color: 'var(--text-secondary, #71717a)',
+                letterSpacing: '0.01em',
+                lineHeight: 1.4,
+                display: 'inline-block',
+                transition: quoteFade === 'prep' ? 'none' : 'opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1)',
+                opacity: quoteFade === 'in' ? 1 : 0,
+                transform: quoteFade === 'in' 
+                  ? 'translateY(0) scale(1)' 
+                  : quoteFade === 'out' 
+                    ? 'translateY(-8px) scale(0.98)' 
+                    : 'translateY(8px) scale(0.98)'
+              }}
+            >
+              “{SLOGANS[sloganIndex]}”
             </span>
           </div>
 
