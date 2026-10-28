@@ -11,9 +11,24 @@ import {
   Smartphone, 
   CreditCard, 
   CheckCircle2, 
-  User 
+  User,
+  LayoutGrid,
+  Utensils,
+  Coffee,
+  Cookie,
+  Tag
 } from 'lucide-react';
 import './MobilePOS.css';
+
+const getCategoryIcon = (category) => {
+  const cat = (category || '').toLowerCase();
+  if (cat === 'all') return <LayoutGrid size={13} />;
+  if (cat.includes('food') || cat.includes('meal') || cat.includes('burger') || cat.includes('pizza') || cat.includes('snack')) return <Utensils size={13} />;
+  if (cat.includes('drink') || cat.includes('coffee') || cat.includes('tea') || cat.includes('beverage')) return <Coffee size={13} />;
+  if (cat.includes('bakery') || cat.includes('dessert') || cat.includes('sweet') || cat.includes('donut')) return <Cookie size={13} />;
+  if (cat.includes('tech') || cat.includes('electron') || cat.includes('phone') || cat.includes('laptop')) return <Smartphone size={13} />;
+  return <Tag size={13} />;
+};
 
 export const MobilePOS = ({ 
   products = [], 
@@ -101,13 +116,14 @@ export const MobilePOS = ({
             <button 
               key={cat} 
               onClick={() => setActiveCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
                 activeCategory === cat 
                   ? 'bg-[#09090b] text-white dark:bg-white dark:text-black shadow-xs' 
                   : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-color)]'
               }`}
             >
-              {cat}
+              <span>{getCategoryIcon(cat)}</span>
+              <span>{cat}</span>
             </button>
           ))}
         </div>
@@ -171,15 +187,15 @@ export const MobilePOS = ({
       </div>
 
       {/* Floating Cart Capsule - Apple Pay Style */}
-      {totalItems > 0 && (
-        <div className="fixed bottom-22 left-4 right-4 max-w-md mx-auto bg-[#09090b] text-white p-3.5 rounded-2xl shadow-xl z-40 border border-white/10 flex items-center justify-between animate-in fade-in slide-in-from-bottom-3">
+      {totalItems > 0 && !showCheckoutModal && (
+        <div className="mobile-floating-capsule animate-in fade-in slide-in-from-bottom-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-bold text-xs">
+            <div className="mobile-capsule-badge">
               {totalItems}
             </div>
             <div>
-              <p className="text-[10px] text-zinc-400 font-medium">Subtotal (incl. tax)</p>
-              <p className="text-sm font-extrabold text-white">{currencySymbol}{total.toFixed(2)}</p>
+              <p className="text-[10px] text-zinc-400 font-medium" style={{ color: 'rgba(255,255,255,0.7)' }}>Subtotal (incl. tax)</p>
+              <p className="text-sm font-extrabold text-white" style={{ color: '#ffffff' }}>{currencySymbol}{total.toFixed(2)}</p>
             </div>
           </div>
 
@@ -187,14 +203,15 @@ export const MobilePOS = ({
             <button 
               type="button" 
               onClick={clearCart} 
-              className="text-[11px] font-semibold text-zinc-400 hover:text-red-400 px-2 py-1"
+              className="text-[11px] font-semibold px-2 py-1"
+              style={{ color: 'rgba(255,255,255,0.7)', background: 'transparent', border: 'none', cursor: 'pointer' }}
             >
               Clear
             </button>
             <button 
               type="button"
               onClick={() => setShowCheckoutModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-white text-black font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-transform shadow-xs"
+              className="mobile-capsule-checkout-btn"
             >
               <span>Checkout</span>
               <ArrowRight size={14} />
@@ -205,9 +222,9 @@ export const MobilePOS = ({
 
       {/* Checkout Drawer / Modal */}
       {showCheckoutModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end justify-center animate-in fade-in" onClick={() => setShowCheckoutModal(false)}>
+        <div className="mobile-checkout-backdrop" onClick={() => setShowCheckoutModal(false)}>
           <div 
-            className="w-full max-w-lg bg-[var(--bg-card)] rounded-t-3xl p-5 border-t border-[var(--border-color)] flex flex-col gap-4 max-h-[85vh] overflow-y-auto"
+            className="mobile-checkout-panel"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center pb-2 border-b border-[var(--border-color)]">

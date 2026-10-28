@@ -26,7 +26,13 @@ import {
   Truck,
   Keyboard,
   CheckCircle2,
-  RotateCcw
+  RotateCcw,
+  Coffee,
+  Cookie,
+  Smartphone,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { salesService } from '../../services/salesService';
@@ -42,6 +48,17 @@ import { CustomItemModal } from './CustomItemModal';
 import { QuickCustomerModal } from './QuickCustomerModal';
 import { hasPermission, PERMISSIONS } from '../../utils/permissions';
 import './POS.css';
+
+// Helper for category-specific visual icon
+const getCategoryIcon = (category) => {
+  const cat = (category || '').toLowerCase();
+  if (cat === 'all') return <LayoutGrid size={14} />;
+  if (cat.includes('food') || cat.includes('meal') || cat.includes('burger') || cat.includes('pizza') || cat.includes('snack')) return <Utensils size={14} />;
+  if (cat.includes('drink') || cat.includes('coffee') || cat.includes('tea') || cat.includes('beverage')) return <Coffee size={14} />;
+  if (cat.includes('bakery') || cat.includes('dessert') || cat.includes('sweet') || cat.includes('donut')) return <Cookie size={14} />;
+  if (cat.includes('tech') || cat.includes('electron') || cat.includes('phone') || cat.includes('laptop')) return <Smartphone size={14} />;
+  return <Tag size={14} />;
+};
 
 const POS = () => {
   const isMobile = useIsMobile();
@@ -70,7 +87,11 @@ const POS = () => {
   // Discount
   const [discountType, setDiscountType] = useState('fixed'); // 'fixed' | 'percent'
   const [discountValue, setDiscountValue] = useState(0);
-  const [taxRate] = useState(10); // 10% demo tax
+  const taxRate = currentBusiness?.settings?.taxRate !== undefined ? Number(currentBusiness.settings.taxRate) : 5;
+
+  // Pagination for catalog
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   // Payment Details
   const [amountPaid, setAmountPaid] = useState('');
@@ -104,7 +125,7 @@ const POS = () => {
 
   const loadData = async (businessId) => {
     let p = await db.getCollection('products', businessId);
-    if ((!p || p.length === 0) && businessId === 'demo-business-1') {
+    if (!p || p.length === 0) {
       await initializeDemoData(businessId);
       p = await db.getCollection('products', businessId);
     }
@@ -188,6 +209,16 @@ const POS = () => {
       (p.barcode && p.barcode.includes(s));
     return matchesCategory && matchesSearch;
   });
+
+  // Reset pagination on filter or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeCategory]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(filteredProducts.length, startIndex + itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
   // Barcode Instant Add on Enter
   const handleSearchKeyDown = (e) => {
@@ -854,6 +885,7 @@ const POS = () => {
                 className={`pos-category-pill ${isActive ? 'active' : ''}`}
                 onClick={() => setActiveCategory(cat)}
               >
+                <span className="pos-category-icon">{getCategoryIcon(cat)}</span>
                 <span>{cat}</span>
                 <span className="pos-category-count">({count})</span>
               </button>
@@ -890,105 +922,151 @@ const POS = () => {
               </button>
             </div>
           ) : viewMode === 'table' ? (
-            /* TABLE VIEW */
+            /* TABLE VIEW (Matching Reference Spec) */
             <div className="pos-table-card">
-              <table className="pos-table">
-                <thead>
-                  <tr>
-                    <th className="w-2/5">Product</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th className="text-center w-40">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map(product => {
-                    const cartItem = cart.find(item => item.productId === product.id);
-                    const quantityInCart = cartItem ? cartItem.quantity : 0;
-                    const availableStock = Math.max(0, product.stockQuantity - quantityInCart);
+              <div className="pos-table-header-strip">
+                <div className="pos-table-title-area">
+                  <h3 className="pos-table-title">Product Table</h3>
+                  <span className="pos-table-badge">{filteredProducts.length} Available</span>
+                </div>
+                <div className="pos-table-pagination-info">
+                  Showing {filteredProducts.length > 0 ? startIndex + 1 : 0} to {endIndex} of {filteredProducts.length} products
+                </div>
+              </div>
 
-                    return (
-                      <tr key={product.id} className={availableStock <= 0 ? 'out-of-stock-row' : ''}>
-                        <td>
-                          <div className="pos-product-col">
-                            <div className="pos-thumb-box">
-                              {product.imageUrl && product.imageUrl.trim() !== '' ? (
-                                <img src={product.imageUrl} alt={product.name} />
-                              ) : (
-                                <Package size={20} className="text-muted" />
-                              )}
-                            </div>
-                            <div className="pos-name-col">
-                              <span className="pos-prod-name">{product.name}</span>
-                              <span className="pos-prod-sku">{product.sku || 'No SKU'}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="pos-prod-category">{product.category || 'General'}</span>
-                        </td>
-                        <td>
-                          <div className="pos-price-val">
-                            <span className="currency">{currencySymbol}</span>
-                            <span className="amount">{product.sellingPrice || product.price || 0}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="pos-stock-badge-col">
-                            {(() => {
-                              const threshold = currentBusiness?.settings?.lowStockThreshold || 10;
-                              const isLow = availableStock > 0 && availableStock <= threshold;
-                              const isOut = availableStock <= 0;
-                              return (
-                                <span className={`pos-stock-tag ${isOut ? 'out' : isLow ? 'low' : 'in'}`}>
-                                  {isOut ? 'Out of stock' : isLow ? `Low (${availableStock})` : `In Stock (${availableStock})`}
-                                </span>
-                              );
-                            })()}
-                          </div>
-                        </td>
-                        <td>
-                          {quantityInCart > 0 ? (
-                            <div className="pos-qty-toggle">
-                              <button 
-                                className="pos-qty-btn"
-                                onClick={() => { if (quantityInCart === 1) removeFromCart(product.id); else updateQuantity(product.id, -1); }}
-                              >
-                                <Minus size={14} strokeWidth={3} />
-                              </button>
-                              
-                              <div className="pos-qty-val">
-                                {quantityInCart}
+              <div className="pos-table-responsive-wrapper">
+                <table className="pos-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '38%' }}>Product</th>
+                      <th style={{ width: '18%' }}>Category</th>
+                      <th style={{ width: '15%' }}>Price</th>
+                      <th style={{ width: '15%' }}>Stock</th>
+                      <th className="text-center" style={{ width: '14%' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedProducts.map(product => {
+                      const cartItem = cart.find(item => item.productId === product.id);
+                      const quantityInCart = cartItem ? cartItem.quantity : 0;
+                      const availableStock = Math.max(0, product.stockQuantity - quantityInCart);
+                      const isOut = availableStock <= 0;
+                      const threshold = currentBusiness?.settings?.lowStockThreshold || 10;
+                      const isLow = availableStock > 0 && availableStock <= threshold;
+
+                      return (
+                        <tr key={product.id} className={isOut ? 'out-of-stock-row' : ''}>
+                          <td>
+                            <div className="pos-product-col">
+                              <div className="pos-thumb-box">
+                                {product.imageUrl && product.imageUrl.trim() !== '' ? (
+                                  <img src={product.imageUrl} alt={product.name} />
+                                ) : (
+                                  <Package size={22} className="text-muted" />
+                                )}
                               </div>
-                              
+                              <div className="pos-name-col">
+                                <span className="pos-prod-name">{product.name}</span>
+                                <span className="pos-prod-sku">{product.sku ? `SKU: ${product.sku}` : (product.category || 'Item')}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="pos-prod-category-badge">{product.category || 'General'}</span>
+                          </td>
+                          <td>
+                            <div className="pos-price-val">
+                              <span className="amount">{currencySymbol}{parseFloat(product.sellingPrice || product.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="pos-stock-badge-col">
+                              <span className={`pos-stock-tag ${isOut ? 'out' : isLow ? 'low' : 'in'}`}>
+                                <span className="pos-stock-dot" />
+                                {isOut ? 'Out of Stock' : isLow ? `Low Stock (${availableStock})` : `In Stock (${availableStock})`}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="text-center">
+                            {quantityInCart > 0 ? (
+                              <div className="pos-qty-toggle">
+                                <button 
+                                  className="pos-qty-btn"
+                                  onClick={() => { if (quantityInCart === 1) removeFromCart(product.id); else updateQuantity(product.id, -1); }}
+                                  title="Decrease quantity"
+                                >
+                                  <Minus size={13} strokeWidth={2.5} />
+                                </button>
+                                
+                                <div className="pos-qty-val">
+                                  {quantityInCart}
+                                </div>
+                                
+                                <button 
+                                  className="pos-qty-btn"
+                                  disabled={availableStock <= 0}
+                                  onClick={() => { if (availableStock > 0) addToCart(product); }}
+                                  title="Increase quantity"
+                                >
+                                  <Plus size={13} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            ) : availableStock > 0 ? (
                               <button 
-                                className="pos-qty-btn"
-                                disabled={availableStock <= 0}
-                                onClick={() => { if (availableStock > 0) addToCart(product); }}
+                                className="pos-add-to-cart-btn"
+                                onClick={() => addToCart(product)}
                               >
-                                <Plus size={14} strokeWidth={3} />
+                                <ShoppingCart size={14} /> 
+                                <span>Add to Cart</span>
                               </button>
-                            </div>
-                          ) : availableStock > 0 ? (
-                            <button 
-                              className="pos-add-btn"
-                              onClick={() => addToCart(product)}
-                            >
-                              <ShoppingCart size={15} strokeWidth={2.5} /> 
-                              <span>Add</span>
-                            </button>
-                          ) : (
-                            <div className="pos-unavailable-btn">
-                              <span>Unavailable</span>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            ) : (
+                              <span className="pos-out-of-stock-pill">
+                                Out of Stock
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Table Pagination Footer */}
+              {totalPages > 1 && (
+                <div className="pos-table-pagination-footer">
+                  <span className="pos-pagination-showing">
+                    Showing {startIndex + 1} to {endIndex} of {filteredProducts.length} products
+                  </span>
+                  <div className="pos-pagination-controls">
+                    <button 
+                      className="pos-page-btn arrow"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      title="Previous Page"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        className={`pos-page-btn ${currentPage === page ? 'active' : ''}`}
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button 
+                      className="pos-page-btn arrow"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      title="Next Page"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             /* TOUCH GRID VIEW */
@@ -998,6 +1076,8 @@ const POS = () => {
                 const quantityInCart = cartItem ? cartItem.quantity : 0;
                 const availableStock = Math.max(0, product.stockQuantity - quantityInCart);
                 const isOut = availableStock <= 0;
+                const threshold = currentBusiness?.settings?.lowStockThreshold || 10;
+                const isLow = availableStock > 0 && availableStock <= threshold;
 
                 return (
                   <div 
@@ -1009,18 +1089,21 @@ const POS = () => {
                       {product.imageUrl && product.imageUrl.trim() !== '' ? (
                         <img src={product.imageUrl} alt={product.name} />
                       ) : (
-                        <Package size={28} className="text-muted" />
+                        <Package size={32} className="text-muted" />
                       )}
                       <span className="pos-grid-cat-tag">{product.category || 'General'}</span>
+                      {isOut && <span className="pos-grid-out-overlay">Out of Stock</span>}
                     </div>
 
                     <div className="pos-grid-info">
                       <h4 className="pos-grid-title" title={product.name}>{product.name}</h4>
+                      <p className="pos-grid-sku">{product.sku ? `SKU: ${product.sku}` : (product.category || 'Item')}</p>
+                      
                       <div className="pos-grid-meta">
                         <div className="pos-grid-price">
-                          {currencySymbol}{product.sellingPrice || product.price || 0}
+                          {currencySymbol}{parseFloat(product.sellingPrice || product.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
-                        <span className={`pos-stock-tag ${isOut ? 'out' : availableStock <= 10 ? 'low' : 'in'}`}>
+                        <span className={`pos-stock-tag ${isOut ? 'out' : isLow ? 'low' : 'in'}`}>
                           {isOut ? 'Out' : `${availableStock} left`}
                         </span>
                       </div>
@@ -1033,28 +1116,30 @@ const POS = () => {
                           <button 
                             className="pos-qty-btn"
                             onClick={() => { if (quantityInCart === 1) removeFromCart(product.id); else updateQuantity(product.id, -1); }}
+                            title="Decrease quantity"
                           >
-                            <Minus size={13} strokeWidth={3} />
+                            <Minus size={13} strokeWidth={2.5} />
                           </button>
-                          <div className="pos-qty-val" style={{ fontSize: '13px' }}>
+                          <div className="pos-qty-val">
                             {quantityInCart}
                           </div>
                           <button 
                             className="pos-qty-btn"
                             disabled={availableStock <= 0}
                             onClick={() => { if (availableStock > 0) addToCart(product); }}
+                            title="Increase quantity"
                           >
-                            <Plus size={13} strokeWidth={3} />
+                            <Plus size={13} strokeWidth={2.5} />
                           </button>
                         </div>
                       ) : (
                         <button 
-                          className="pos-add-btn" 
-                          style={{ width: '100%', height: '34px', fontSize: '13px' }}
+                          className="pos-add-to-cart-btn" 
+                          style={{ width: '100%', height: '34px' }}
                           disabled={isOut}
                           onClick={() => addToCart(product)}
                         >
-                          <Plus size={15} /> Add
+                          <ShoppingCart size={14} /> Add to Cart
                         </button>
                       )}
                     </div>
