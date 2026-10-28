@@ -219,11 +219,15 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const toggleTheme = (forcedMode) => {
+    const currentDomTheme = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme')) 
+      || theme 
+      || 'light';
+
     let next;
     if (forcedMode === 'dark' || forcedMode === 'light') {
       next = forcedMode;
     } else {
-      next = theme === 'dark' ? 'light' : 'dark';
+      next = currentDomTheme === 'dark' ? 'light' : 'dark';
     }
 
     // 1. Synchronously update DOM attributes & classes for 0ms visual responsiveness

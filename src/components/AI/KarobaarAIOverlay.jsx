@@ -148,27 +148,68 @@ export const KarobaarAIOverlay = ({ isOpen, onClose }) => {
     setInputText('');
     stopSpeaking();
 
-    // 1. Instant local fast-path commands
-    const lower = query.toLowerCase();
-    if (/^(dark mode|enable dark mode|dark theme|switch to dark)/i.test(lower)) {
-      toggleTheme('dark');
-      const reply = "Switched to Dark Mode.";
-      setMessages(prev => [...prev, 
-        { id: 'user-' + Date.now(), role: 'user', content: query },
-        { id: 'bot-' + (Date.now() + 1), role: 'assistant', content: reply }
-      ]);
-      if (voiceOutputEnabled) speakText(reply);
-      return;
-    }
-    if (/^(light mode|enable light mode|light theme|switch to light)/i.test(lower)) {
-      toggleTheme('light');
-      const reply = "Switched to Light Mode.";
-      setMessages(prev => [...prev, 
-        { id: 'user-' + Date.now(), role: 'user', content: query },
-        { id: 'bot-' + (Date.now() + 1), role: 'assistant', content: reply }
-      ]);
-      if (voiceOutputEnabled) speakText(reply);
-      return;
+    // 1. Instant local fast-path shortcuts for voice UI control: THEME & MODE SWITCHING
+    const currentDomTheme = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme')) 
+      || theme 
+      || 'light';
+
+    const hasDarkKeyword = /\b(dark mode|dark theme|black theme|black mode|night mode|dark)\b/i.test(lower);
+    const hasLightKeyword = /\b(light mode|light theme|white theme|white mode|day mode|light)\b/i.test(lower);
+    const hasOppositeKeyword = /\b(opposite|oppsite|other mode|another mode)\b/i.test(lower);
+    const isPureSwitchCommand = /^(?:hey jarvis\s+|jarvis\s+)?(?:please\s+)?(?:switch|toggle|change mode|change theme|flip mode|flip theme|badal do|badlo|kardo|kar do)(?:\s+(?:it\s+)?to)?(?:\s+(?:the\s+)?(?:oppsite|opposite)\s+mode)?(?:\s+please)?$/i.test(lower.trim()) ||
+      /(?:switch|toggle|change)(?:\s+(?:it\s+)?to)?\s+(?:the\s+)?(?:oppsite|opposite)\s+mode/i.test(lower) ||
+      /^(?:switch|toggle)$/i.test(lower.trim());
+
+    const isThemeRelated = hasDarkKeyword || hasLightKeyword || hasOppositeKeyword || isPureSwitchCommand ||
+      /\b(theme|mode)\b/i.test(lower);
+
+    if (isThemeRelated) {
+      let targetMode = null;
+
+      if (hasOppositeKeyword || isPureSwitchCommand || (hasDarkKeyword && hasLightKeyword)) {
+        targetMode = currentDomTheme === 'dark' ? 'light' : 'dark';
+      } else if (hasDarkKeyword && !hasLightKeyword) {
+        targetMode = 'dark';
+      } else if (hasLightKeyword && !hasDarkKeyword) {
+        targetMode = 'light';
+      } else if (/\b(switch|toggle|change|flip)\b/i.test(lower) && /\b(mode|theme)\b/i.test(lower)) {
+        targetMode = currentDomTheme === 'dark' ? 'light' : 'dark';
+      }
+
+      if (targetMode) {
+        toggleTheme(targetMode);
+        if (typeof document !== 'undefined') {
+          document.documentElement.setAttribute('data-theme', targetMode);
+          if (targetMode === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark');
+          }
+        }
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('karobaar-theme', targetMode);
+        }
+
+        let reply;
+        if (targetMode === 'dark') {
+          reply = (currentDomTheme === 'dark' && !hasOppositeKeyword && !isPureSwitchCommand)
+            ? "Already in Dark Mode. All cards, metrics, and details are high-contrast dark. Say 'switch' or 'light mode' to change to Light Mode."
+            : "Switched to Dark Mode. All cards, metrics, and details are now high-contrast dark.";
+        } else {
+          reply = (currentDomTheme === 'light' && !hasOppositeKeyword && !isPureSwitchCommand)
+            ? "Already in Light Mode. Say 'switch' or 'dark mode' to change to Dark Mode."
+            : "Switched to Light Mode.";
+        }
+
+        setMessages(prev => [...prev, 
+          { id: 'user-' + Date.now(), role: 'user', content: query },
+          { id: 'bot-' + (Date.now() + 1), role: 'assistant', content: reply }
+        ]);
+        if (voiceOutputEnabled) speakText(reply);
+        return;
+      }
     }
 
     // Add user message

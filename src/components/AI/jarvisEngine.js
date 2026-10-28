@@ -1257,12 +1257,28 @@ export const processJarvisQuery = async (rawQuery, context) => {
     }
 
     // ==========================================
-    // 23. SYSTEM: THEME TOGGLE
+    // 23. SYSTEM: THEME TOGGLE & OPPOSITE MODE
     // ==========================================
-    if (/(dark mode|light mode|toggle theme|change theme)/i.test(lower)) {
-      const isLight = /light/i.test(lower);
-      const isDark = /dark/i.test(lower);
-      const targetMode = isLight ? 'light' : (isDark ? 'dark' : (context.theme === 'dark' ? 'light' : 'dark'));
+    const isThemeToggleMatch = /\b(dark mode|light mode|toggle theme|change theme|switch mode|switch theme|opposite mode|toggle mode|flip theme|flip mode)\b/i.test(lower) ||
+      /^(?:hey jarvis\s+|jarvis\s+)?(?:please\s+)?(?:switch|toggle|change mode|change theme|opposite mode)\b/i.test(lower.trim()) ||
+      /(?:switch|toggle|change)(?:\s+(?:it\s+)?to)?\s+(?:the\s+)?(?:oppsite|opposite)\s+mode/i.test(lower);
+
+    if (isThemeToggleMatch) {
+      const currentTheme = (typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') : null) || context.theme || 'light';
+      const hasLight = /\b(light mode|light theme|white theme|white mode|day mode|light)\b/i.test(lower);
+      const hasDark = /\b(dark mode|dark theme|black theme|black mode|night mode|dark)\b/i.test(lower);
+      const hasOpposite = /\b(opposite|oppsite|other mode|another mode)\b/i.test(lower);
+      const isPureSwitch = /^(?:hey jarvis\s+|jarvis\s+)?(?:please\s+)?(?:switch|toggle|change mode|change theme|opposite mode|flip mode|flip theme)\b/i.test(lower.trim());
+
+      let targetMode;
+      if (hasOpposite || isPureSwitch || (!hasLight && !hasDark) || (hasLight && hasDark)) {
+        targetMode = currentTheme === 'dark' ? 'light' : 'dark';
+      } else if (hasDark) {
+        targetMode = 'dark';
+      } else {
+        targetMode = 'light';
+      }
+
       if (context.toggleTheme) {
         context.toggleTheme(targetMode);
       }

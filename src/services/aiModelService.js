@@ -177,7 +177,7 @@ class AiModelService {
       currentBusiness: authContext.currentBusiness,
       currentUser: authContext.currentUser,
       navigate: authContext.navigate || (() => {}),
-      theme: authContext.theme || 'dark',
+      theme: authContext.theme || (typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') : 'light') || 'light',
       toggleTheme: authContext.toggleTheme || (() => {}),
       aiLanguage: authContext.aiLanguage || 'hinglish',
       assistantName: authContext.assistantName || 'Jarvis',
