@@ -298,6 +298,11 @@ export const CustomizeAIChatbot = () => {
   }, [aiSettings.speechPauseDelay]);
 
   // Sync isHudOverlayOpen ref & pause background listener while HUD overlay is open
+  const isConversationBubbleOpenRef = useRef(isConversationBubbleOpen);
+  useEffect(() => {
+    isConversationBubbleOpenRef.current = isConversationBubbleOpen;
+  }, [isConversationBubbleOpen]);
+
   useEffect(() => {
     isHudOverlayOpenRef.current = isHudOverlayOpen;
     if (isHudOverlayOpen) {
@@ -404,6 +409,17 @@ export const CustomizeAIChatbot = () => {
       // Combine accumulated finalized speech with current interim words
       const fullSoFar = (speechAccumulatorRef.current + ' ' + currentInterim).trim();
 
+      // STRICT PRIVACY & NO SELF-ACTING GUARD:
+      // If idle (conversation bubble is closed), do NOT react to room noise unless
+      // the user explicitly addressed Jarvis with the wake word ("Hey Jarvis", "Jarvis")!
+      const isAlreadyEngaged = isConversationBubbleOpenRef.current;
+      const { isSoloWakeWord: previewSolo, hasWakeWord: previewWake } = cleanSpokenQuery(fullSoFar, assistantName);
+
+      if (!isAlreadyEngaged && !previewSolo && !previewWake) {
+        // Ambient speech not addressed to Jarvis. Do not pop up bubble, do not act!
+        return;
+      }
+
       if (fullSoFar) {
         // Show live real-time transcription in the dialog bubble ("see my voice")
         setInterimTranscript(fullSoFar);
@@ -435,34 +451,24 @@ export const CustomizeAIChatbot = () => {
           return;
         }
 
-        const { isSoloWakeWord, cleanedQuery } = cleanSpokenQuery(raw, assistantName);
+        const { isSoloWakeWord, hasWakeWord, cleanedQuery } = cleanSpokenQuery(raw, assistantName);
 
-        if (isSoloWakeWord) {
-          // User ONLY said wake word ("Hey Jarvis") and paused for full silence delay
-          if (aiSettings.wakeChime !== false) playWakeChime();
-          setIsConversationBubbleOpen(true);
-
-          // Smart Anti-Repetition: Pick varied non-repeating prompt
-          const greeting = getDynamicWakeGreeting(aiLanguage, assistantName, recentBotGreetingsRef.current);
-          recentBotGreetingsRef.current = [greeting, ...recentBotGreetingsRef.current.slice(0, 4)];
-
-          setMessages(prev => [
-            ...prev,
-            {
-              id: 'bot-' + Date.now(),
-              sender: 'bot',
-              text: greeting,
-              spokenText: greeting,
-              timestamp: new Date().toISOString()
-            }
-          ]);
-          if (voiceEnabled && aiSettings.voiceFeedback !== false) {
-            speakText(greeting);
-          }
+        // If assistant was NOT already engaged and neither wake word nor solo wake word was spoken, drop it!
+        if (!isAlreadyEngaged && !hasWakeWord && !isSoloWakeWord) {
           return;
         }
 
-        // User spoke their full command!
+        if (isSoloWakeWord) {
+          // User ONLY said wake word ("Hey Jarvis") and paused for full silence delay.
+          // Wake up attentively: play chime, open conversation bubble in listening mode,
+          // BUT DO NOT blurt out a loud monologue or execute unprompted actions!
+          if (aiSettings.wakeChime !== false) playWakeChime();
+          setIsConversationBubbleOpen(true);
+          // Keep microphone actively listening for the upcoming user question.
+          return;
+        }
+
+        // User spoke their question or command!
         if (cleanedQuery) {
           setIsConversationBubbleOpen(true);
           handleUserQuery(cleanedQuery);
@@ -675,7 +681,7 @@ export const CustomizeAIChatbot = () => {
       if (aiSettings.wakeChime !== false) playWakeChime();
       setIsConversationBubbleOpen(true);
 
-      // Start voice listening
+      // Start voice listening attentively
       if (recognitionRef.current && isListeningEnabledRef.current && !isSpeakingRef.current) {
         try {
           recognitionRef.current.start();
@@ -685,25 +691,9 @@ export const CustomizeAIChatbot = () => {
 
       if (e?.detail?.query) {
         handleUserQuery(e.detail.query);
-      } else {
-        // Smart Anti-Repetition: Pick dynamic fresh greeting
-        const greeting = getDynamicWakeGreeting(aiLanguage, assistantName, recentBotGreetingsRef.current);
-        recentBotGreetingsRef.current = [greeting, ...recentBotGreetingsRef.current.slice(0, 4)];
-
-        setMessages(prev => [
-          ...prev,
-          {
-            id: 'bot-' + Date.now(),
-            sender: 'bot',
-            text: greeting,
-            spokenText: greeting,
-            timestamp: new Date().toISOString()
-          }
-        ]);
-        if (voiceEnabled && aiSettings.voiceFeedback !== false) {
-          speakText(greeting);
-        }
       }
+      // If no query was passed (just a wake call):
+      // Jarvis simply opens the bubble in attentive listening mode without unprompted speech or actions.
     };
     window.addEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
     return () => window.removeEventListener('karobaar_wake_ai_assistant', handleWakeEvent);

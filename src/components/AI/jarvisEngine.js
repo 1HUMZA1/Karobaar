@@ -22,7 +22,7 @@ const fuzzyMatch = (haystack, needle) => {
 
 // Normalize speech / query input
 export const cleanSpokenQuery = (text, configuredName = 'Jarvis') => {
-  if (!text) return '';
+  if (!text) return { isSoloWakeWord: false, hasWakeWord: false, cleanedQuery: '' };
   const trimmed = text.trim();
   const lower = trimmed.toLowerCase();
 
@@ -37,7 +37,7 @@ export const cleanSpokenQuery = (text, configuredName = 'Jarvis') => {
     'जार्विस'
   ];
 
-  // Solo wake-word checks
+  // 1. Solo wake-word checks (calling Jarvis only)
   for (const name of nameVariants) {
     const soloPatterns = [
       name,
@@ -50,22 +50,34 @@ export const cleanSpokenQuery = (text, configuredName = 'Jarvis') => {
       `oye ${name}`
     ];
     if (soloPatterns.includes(lower)) {
-      return { isSoloWakeWord: true, assistantName: configuredName || 'Jarvis' };
+      return { isSoloWakeWord: true, hasWakeWord: true, assistantName: configuredName || 'Jarvis', cleanedQuery: '' };
     }
   }
 
-  // Strip wake word prefixes
+  // 2. Strip wake word prefixes and flag whether Jarvis was specifically addressed
+  let hasWakeWord = false;
   let cleaned = trimmed;
   for (const name of nameVariants) {
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`^(?:hey|ok|hello|wake up|suno|oye)?\\s*${escaped}\\s*(?:bhai|ji|sir)?[,\\s]*`, 'i');
     if (regex.test(cleaned)) {
+      hasWakeWord = true;
       cleaned = cleaned.replace(regex, '').trim();
       break;
     }
   }
 
-  return { isSoloWakeWord: false, cleanedQuery: cleaned || trimmed };
+  // Also check if wake word is mentioned anywhere in the utterance
+  if (!hasWakeWord) {
+    for (const name of nameVariants) {
+      if (lower.includes(name)) {
+        hasWakeWord = true;
+        break;
+      }
+    }
+  }
+
+  return { isSoloWakeWord: false, hasWakeWord, cleanedQuery: cleaned || trimmed };
 };
 
 /**
@@ -247,6 +259,126 @@ export const processJarvisQuery = async (rawQuery, context) => {
 • **⚙️ System:** "Export database backup", "Toggle dark mode", "Switch branch"`;
 
       spokenText = `I am ${assistantName}, your autonomous store assistant. I can bill items at POS, check sales, add products, manage customer udhaar, track expenses, and export backups anytime.`;
+      return { replyText, spokenText, actionData, quickActions };
+    }
+
+    // ==========================================
+    // 2A. JOKES, HUMOR & LIGHTHEARTED CONVERSATION
+    // ==========================================
+    if (/(?:tell me a |sunao |koi )?(?:joke|chutkula|funny|hasao|laugh)/i.test(lower)) {
+      const jokesHinglish = [
+        {
+          reply: `😄 **Ye lijiye ek badhiya business joke:**\n\nEk dukandar ne board lagaya: *"Kal sab kuch muft milega!"*\nAgli subah ek customer daudte hue aaya aur bola: *"Laao sab muft mein do!"*\nDukandar haskar bola: *"Bhai, board to dhyan se padh... uspe likha hai KAL muft milega, AAJ nahi!"* 😂`,
+          spoken: `Ek dukandar ne board lagaya: Kal sab muft milega! Agle din customer aaya to bola: Board dhyan se padho, uspe likha hai kal muft milega, aaj nahi!`
+        },
+        {
+          reply: `😄 **Ek aur mazedaar joke:**\n\nCustomer: *"Bhaiya, ye samosa kitne din purana hai?"*\nHalwai: *"Sirf teen din!"*\nCustomer: *"Toh fir taaza wala kab aayega?"*\nHalwai: *"Jab ye bik jaayega!"* 😆`,
+          spoken: `Customer ne pucha: Samosa kitne din purana hai? Halwai bola: Sirf teen din! Customer: Taaza kab aayega? Halwai: Jab ye bik jaayega!`
+        },
+        {
+          reply: `😄 **Tech & Shop joke:**\n\nEk naye cashier ne boss se poocha: *"Sir, computer bol raha hai Press Any Key... par mere keyboard par Any Key naam ka koi button hi nahi hai!"* 🤣`,
+          spoken: `Cashier ne poocha: Computer bol raha hai Press Any Key, par keyboard par Any Key button hi nahi hai!`
+        }
+      ];
+
+      const jokesEnglish = [
+        {
+          reply: `😄 **Here's a lighthearted tech joke for you:**\n\nWhy do programmers prefer dark mode?\n*Because light attracts bugs!* 🐛✨`,
+          spoken: `Why do programmers prefer dark mode? Because light attracts bugs!`
+        },
+        {
+          reply: `😄 **A classic finance joke:**\n\nWhy was the math book always looking stressed?\n*Because it had too many problems!* 📚😅`,
+          spoken: `Why was the math book stressed? Because it had too many problems!`
+        },
+        {
+          reply: `😄 **Here's one:**\n\nWhat do you call an accountant who is good with computers?\n*A balance sheet hacker!* 💼⚡`,
+          spoken: `What do you call an accountant good with computers? A balance sheet hacker!`
+        }
+      ];
+
+      const chosenJoke = isHi || isHinglish
+        ? jokesHinglish[Math.floor(Math.random() * jokesHinglish.length)]
+        : jokesEnglish[Math.floor(Math.random() * jokesEnglish.length)];
+
+      replyText = chosenJoke.reply;
+      spokenText = chosenJoke.spoken;
+      actionData = null; // No database action! Pure conversation.
+      quickActions = [
+        { label: '📊 Today\'s Sales', query: 'Show today sales summary' },
+        { label: '😄 Another Joke', query: 'Tell me another joke' }
+      ];
+      return { replyText, spokenText, actionData, quickActions };
+    }
+
+    // ==========================================
+    // 2B. GRATITUDE, PRAISE & POLITE CHIT-CHAT
+    // ==========================================
+    if (/^(?:thank you|thanks|shukriya|dhanyawad|great job|good job|well done|bahut badhiya|shabash|awesome|nice)\b/i.test(lower)) {
+      const replies = isHi ? [
+        { reply: `🙏 आपका बहुत-बहुत धन्यवाद सर! आपकी सेवा में सदैव तत्पर हूँ। बताइए आगे क्या काम करना है?`, spoken: `आपका बहुत धन्यवाद सर! सदैव आपकी सेवा में तत्पर हूँ।` },
+        { reply: `🙏 बहुत खुशी हुई सर! जब भी ज़रूरत हो, बस एक आवाज़ दीजिए।`, spoken: `बहुत खुशी हुई सर! जब भी ज़रूरत हो, आवाज़ दीजिए।` }
+      ] : isHinglish ? [
+        { reply: `🙏 You're most welcome Sir! Aapke business ko smoothly run karna hi mera maqsad hai. Boliye aur kya madad karoon?`, spoken: `You're most welcome Sir! Hamesha aapki madad ke liye taiyar hoon.` },
+        { reply: `🙏 Thank you Sir! Main hamesha 24/7 ready hoon. Bataiye abhi kya check karein?`, spoken: `Thank you Sir! Hamesha ready hoon, bataiye kya karein?` }
+      ] : [
+        { reply: `🙏 You're very welcome, Sir! Always a pleasure keeping your store operations fast, accurate, and seamless.`, spoken: `You are very welcome, Sir! Always here to keep your business running smoothly.` },
+        { reply: `🙏 Thank you, Sir! Delighted to assist. Let me know whatever else you need on your schedule.`, spoken: `Thank you, Sir! Delighted to assist. Let me know what you need next.` }
+      ];
+
+      const chosen = replies[Math.floor(Math.random() * replies.length)];
+      replyText = chosen.reply;
+      spokenText = chosen.spoken;
+      actionData = null; // No database action! Pure conversation.
+      quickActions = [
+        { label: '📊 Check Sales', query: 'Show today sales summary' },
+        { label: '📦 Low Stock', query: 'Which items are low in stock?' }
+      ];
+      return { replyText, spokenText, actionData, quickActions };
+    }
+
+    // ==========================================
+    // 2C. CASUAL CONVERSATION & HOW ARE YOU
+    // ==========================================
+    if (/(?:how are you feeling|what are you doing|kya kar rahe ho|sab theek thaak|how is your day|how are things)/i.test(lower)) {
+      replyText = `⚡ I am feeling great and running at 100% operational efficiency, Sir!\n\nAll data pipelines, billing streams, and inventory trackers for **${context.currentBusiness?.name || 'your store'}** are smooth and latency-free. I'm right here having a conversation with you or ready to answer any questions you have.`;
+      spokenText = `I am running at 100% efficiency, Sir! Ready to converse, answer your questions, or help with any business task.`;
+      actionData = null;
+      quickActions = [
+        { label: '📊 Today\'s Sales', query: 'Show today sales summary' },
+        { label: '💡 Business Tips', query: 'Tips to grow business' }
+      ];
+      return { replyText, spokenText, actionData, quickActions };
+    }
+
+    // ==========================================
+    // 2D. SMART MATH & PERCENTAGE CALCULATIONS
+    // ==========================================
+    const pctMatch = lower.match(/(?:calculate|what is|find)?\s*(\d+(?:\.\d+)?)\s*(?:%|percent|pratishat)\s*(?:of|ka)\s*(\d+(?:\.\d+)?)/i);
+    if (pctMatch) {
+      const pct = parseFloat(pctMatch[1]);
+      const base = parseFloat(pctMatch[2]);
+      const resVal = (pct * base) / 100;
+      replyText = `🧮 **Calculation Result:**\n\n• **${pct}% of ${formatCurrency(base)}** = **${formatCurrency(resVal)}**`;
+      spokenText = `${pct} percent of ${base} is ${resVal}.`;
+      actionData = null;
+      return { replyText, spokenText, actionData, quickActions };
+    }
+
+    const mathMatch = lower.match(/(?:calculate|what is)?\s*(\d+(?:\.\d+)?)\s*([\+\-\*\/x]|plus|minus|into|multiplied by|divided by|times)\s*(\d+(?:\.\d+)?)/i);
+    if (mathMatch && !lower.includes('add') && !lower.includes('product') && !lower.includes('sale') && !lower.includes('stock')) {
+      const n1 = parseFloat(mathMatch[1]);
+      const op = mathMatch[2].toLowerCase();
+      const n2 = parseFloat(mathMatch[3]);
+      let res = 0;
+      let opSymbol = op;
+      if (op === '+' || op === 'plus') { res = n1 + n2; opSymbol = '+'; }
+      else if (op === '-' || op === 'minus') { res = n1 - n2; opSymbol = '-'; }
+      else if (op === '*' || op === 'x' || op === 'into' || op === 'multiplied by' || op === 'times') { res = n1 * n2; opSymbol = '×'; }
+      else if (op === '/' || op === 'divided by') { res = n2 !== 0 ? (n1 / n2) : 'Undefined (division by zero)'; opSymbol = '÷'; }
+
+      replyText = `🧮 **Calculation Result:**\n\n**${n1} ${opSymbol} ${n2}** = **${res}**`;
+      spokenText = `${n1} ${opSymbol} ${n2} equals ${res}.`;
+      actionData = null;
       return { replyText, spokenText, actionData, quickActions };
     }
 
