@@ -48,15 +48,35 @@ const Purchases = () => {
     const purchase = purchases.find(p => p.id === purchaseId);
     if (!purchase || purchase.status === 'Received') return;
     
-    // Simulate updating inventory
+    // Update inventory products and stock movement ledger
     const products = await db.getCollection('products', currentUser.activeBusinessId);
     if (purchase.items && purchase.items.length > 0) {
       for (const item of purchase.items) {
         const product = products.find(p => p.id === item.productId);
         if (product) {
+          const prevStock = Number(product.stockQuantity) || 0;
+          const addQty = Number(item.quantity) || 0;
+          const newStock = prevStock + addQty;
+          
           await db.update('products', product.id, {
-            stockQuantity: product.stockQuantity + item.quantity
+            stockQuantity: newStock
           }, currentUser.activeBusinessId);
+
+          try {
+            await db.add('stock_movements', {
+              productId: product.id,
+              productName: product.name,
+              sku: product.sku || '',
+              type: 'supplier_purchase',
+              quantity: addQty,
+              previousStock: prevStock,
+              newStock: newStock,
+              referenceId: purchase.poNumber || purchase.id,
+              notes: 'Received from PO: ' + (purchase.poNumber || '') + ' (' + (purchase.supplierName || 'Supplier') + ')',
+              date: new Date().toISOString(),
+              createdBy: currentUser?.name || 'Staff'
+            }, currentUser.activeBusinessId);
+          } catch (e) {}
         }
       }
     }
@@ -67,7 +87,7 @@ const Purchases = () => {
     // Update purchase status
     await db.update('purchases', purchaseId, { status: 'Received' }, currentUser.activeBusinessId);
     refetch();
-    alert('Stock received and inventory updated successfully!');
+    alert('Stock received and inventory movement recorded successfully!');
   };
 
   const handleCreatePO = async (e) => {

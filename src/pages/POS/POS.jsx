@@ -46,6 +46,7 @@ const POS = () => {
   const isMobile = useIsMobile();
   const { currentUser, currentBusiness } = useAppContext();
   const searchInputRef = useRef(null);
+  const isCheckoutLockedRef = useRef(false);
 
   // Core Data
   const [products, setProducts] = useState([]);
@@ -478,9 +479,9 @@ const POS = () => {
     return () => window.removeEventListener('karobaar_ai_pos_action', handleAiEvent);
   }, [products]);
 
-  // Checkout Handler
+  // Checkout Handler (with immediate synchronous double-submission prevention)
   const handleCheckout = async () => {
-    if (cart.length === 0 || !currentUser?.activeBusinessId) return;
+    if (isCheckoutLockedRef.current || processing || cart.length === 0 || !currentUser?.activeBusinessId) return;
     
     if (paymentMethod === 'Udhaar' && !selectedCustomer) {
       alert('Please select a customer first to provide Udhaar / Credit.');
@@ -501,6 +502,8 @@ const POS = () => {
   };
 
   const finalizeCheckout = async () => {
+    if (isCheckoutLockedRef.current) return;
+    isCheckoutLockedRef.current = true;
     setProcessing(true);
     try {
       let finalAmountPaid = total;
@@ -556,6 +559,9 @@ const POS = () => {
       alert('Checkout failed. Please check connection or details.');
     } finally {
       setProcessing(false);
+      setTimeout(() => {
+        isCheckoutLockedRef.current = false;
+      }, 1000);
     }
   };
 

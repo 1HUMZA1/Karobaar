@@ -40,9 +40,13 @@ const Orders = () => {
     return () => clearTimeout(timerId);
   }, [searchTerm]);
 
-  const filteredOrders = orders.filter(o => 
-    o.invoiceNumber.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-  ).slice(0, displayLimit);
+  const filteredOrders = orders.filter(o => {
+    const term = debouncedSearchTerm.toLowerCase();
+    const inv = (o.invoiceNumber || o.id || '').toLowerCase();
+    const cust = (o.customerName || '').toLowerCase();
+    const emp = (o.employeeName || '').toLowerCase();
+    return inv.includes(term) || cust.includes(term) || emp.includes(term);
+  }).slice(0, displayLimit);
 
   const getStatusClass = (status) => {
     switch(status) {

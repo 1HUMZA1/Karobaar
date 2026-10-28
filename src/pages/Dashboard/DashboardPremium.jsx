@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../../services/databaseService';
 import { localDb } from '../../services/localDb';
 import { initializeDemoData } from '../../services/demoData';
 import { useAppContext } from '../../context/AppContext';
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { DashboardKPIs } from '../../components/Dashboard/DashboardKPIs';
 import { DashboardAnalytics } from '../../components/Dashboard/DashboardAnalytics';
 import { DashboardOperations } from '../../components/Dashboard/DashboardOperations';
 import { DashboardFeed } from '../../components/Dashboard/DashboardFeed';
 import { GettingStartedGuide } from '../../components/Dashboard/GettingStartedGuide';
-import { Button } from '../../components/ui/Button';
-import { RefreshCw, Zap, Package, Users, Receipt, Sparkles } from 'lucide-react';
+import { RefreshCw, Zap, Package, Users, Receipt, Sparkles, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileDashboard } from './MobileDashboard';
@@ -22,24 +21,28 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
+const DATE_RANGE_LABELS = {
+  today: 'Today',
+  yesterday: 'Yesterday',
+  '7d': 'Last 7 Days',
+  this_month: 'This Month',
+  all_time: 'All Time'
+};
+
 const Dashboard = ({ onSwitchMode }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { userRole, currentUser, currentBusiness } = useAppContext();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Master State with defaults
-  const [stats, setStats] = useState({
-    todayRevenue: 0, yesterdayRevenue: 0, todayOrders: 0, yesterdayOrders: 0,
-    todayExpenses: 0, yesterdayExpenses: 0, todayProfit: 0, yesterdayProfit: 0,
-    totalCustomers: 0, lowStockCount: 0, receivables: 0
-  });
-  const [chartData, setChartData] = useState({ labels: [], revenueData: [], expenseData: [], profitData: [] });
-  const [recentCustomers, setRecentCustomers] = useState([]);
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [lowStockProducts, setLowStockProducts] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [alerts, setAlerts] = useState([]);
+  const [dateRange, setDateRange] = useState('today');
+
+  // Raw Database Collections Cached in Memory
+  const [rawSales, setRawSales] = useState([]);
+  const [rawExpenses, setRawExpenses] = useState([]);
+  const [rawPurchases, setRawPurchases] = useState([]);
+  const [rawCustomers, setRawCustomers] = useState([]);
+  const [rawProducts, setRawProducts] = useState([]);
+  const [rawAttendance, setRawAttendance] = useState([]);
 
   const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
 
@@ -48,105 +51,255 @@ const Dashboard = ({ onSwitchMode }) => {
   const showInventory = ['OWNER', 'MANAGER', 'INVENTORY'].includes(userRole);
   const showHR = ['OWNER', 'MANAGER'].includes(userRole);
 
-  const calculateAndSetData = useCallback((sales, exp, purchases, customers, products, attendance) => {
-    const today = startOfDay(new Date());
-    const yesterday = startOfDay(subDays(today, 1));
-    
-    let todayRev = 0, yesterdayRev = 0, todayOrd = 0, yesterdayOrd = 0;
-    let todayExp = 0, yesterdayExp = 0;
+  // Compute intervals for current and previous comparison window
+  const dateIntervals = useMemo(() => {
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const todayEnd = endOfDay(now);
+
+    let currentStart = todayStart;
+    let currentEnd = todayEnd;
+    let prevStart = startOfDay(subDays(todayStart, 1));
+    let prevEnd = endOfDay(subDays(todayStart, 1));
+
+    switch (dateRange) {
+      case 'yesterday':
+        currentStart = startOfDay(subDays(todayStart, 1));
+        currentEnd = endOfDay(subDays(todayStart, 1));
+        prevStart = startOfDay(subDays(todayStart, 2));
+        prevEnd = endOfDay(subDays(todayStart, 2));
+        break;
+      case '7d':
+        currentStart = startOfDay(subDays(todayStart, 6));
+        currentEnd = todayEnd;
+        prevStart = startOfDay(subDays(todayStart, 13));
+        prevEnd = endOfDay(subDays(todayStart, 7));
+        break;
+      case 'this_month':
+        currentStart = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+        currentEnd = todayEnd;
+        const daysIntoMonth = Math.max(1, Math.ceil((todayEnd - currentStart) / (1000 * 60 * 60 * 24)));
+        const lastMonthStart = startOfDay(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+        prevStart = lastMonthStart;
+        prevEnd = endOfDay(new Date(lastMonthStart.getTime() + daysIntoMonth * 24 * 60 * 60 * 1000));
+        break;
+      case 'all_time':
+        currentStart = new Date(0);
+        currentEnd = todayEnd;
+        prevStart = new Date(0);
+        prevEnd = new Date(0);
+        break;
+      case 'today':
+      default:
+        currentStart = todayStart;
+        currentEnd = todayEnd;
+        prevStart = startOfDay(subDays(todayStart, 1));
+        prevEnd = endOfDay(subDays(todayStart, 1));
+        break;
+    }
+
+    return { currentStart, currentEnd, prevStart, prevEnd };
+  }, [dateRange]);
+
+  // Comprehensive Metrics Calculation
+  const computedMetrics = useMemo(() => {
+    const now = new Date();
+    const { currentStart, currentEnd, prevStart, prevEnd } = dateIntervals;
+
+    const inCurrent = (rawDate) => {
+      if (!rawDate) return false;
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return false;
+      return d >= currentStart && d <= currentEnd;
+    };
+
+    const inPrev = (rawDate) => {
+      if (!rawDate) return false;
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return false;
+      return d >= prevStart && d <= prevEnd;
+    };
+
+    // Filtered Records
+    const currentSales = rawSales.filter(s => inCurrent(s.date || s.createdAt));
+    const prevSales = rawSales.filter(s => inPrev(s.date || s.createdAt));
+    const currentExp = rawExpenses.filter(e => inCurrent(e.date || e.createdAt));
+    const prevExp = rawExpenses.filter(e => inPrev(e.date || e.createdAt));
+
+    // Revenue & Orders
+    const currentRevenue = currentSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+    const prevRevenue = prevSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+    const currentOrders = currentSales.length;
+    const prevOrders = prevSales.length;
+
+    // Cost of Goods Sold (COGS)
+    let cogs = 0;
+    const prodMap = new Map(rawProducts.map(p => [p.id, p]));
+    currentSales.forEach(s => {
+      if (s.items && Array.isArray(s.items)) {
+        s.items.forEach(it => {
+          const p = prodMap.get(it.productId);
+          const unitCost = Number(it.costPrice) || Number(it.purchasePrice) || Number(p?.purchasePrice) || (Number(it.price || 0) * 0.65) || 0;
+          const safeCost = isNaN(unitCost) ? 0 : unitCost;
+          cogs += safeCost * (Number(it.quantity) || 1);
+        });
+      } else {
+        cogs += (Number(s.total) || 0) * 0.65;
+      }
+    });
+
+    const grossProfit = isNaN(currentRevenue - cogs) ? 0 : Math.max(0, currentRevenue - cogs);
+    const grossMargin = currentRevenue > 0 && !isNaN(grossProfit) ? ((grossProfit / currentRevenue) * 100).toFixed(1) : '0';
+
+    const currentTotalExp = currentExp.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const prevTotalExp = prevExp.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const netProfit = grossProfit - currentTotalExp;
+    const prevNetProfit = (prevRevenue * 0.35) - prevTotalExp;
+    const netMargin = currentRevenue > 0 ? ((netProfit / currentRevenue) * 100).toFixed(1) : '0';
+
+    // Payment Method Breakdown
+    const paymentBreakdown = { cash: 0, upi: 0, card: 0, udhaar: 0 };
+    currentSales.forEach(s => {
+      const amt = Number(s.total) || 0;
+      const m = (s.paymentMethod || 'Cash').toLowerCase();
+      if (m.includes('upi')) paymentBreakdown.upi += amt;
+      else if (m.includes('card')) paymentBreakdown.card += amt;
+      else if (m.includes('udhaar') || m.includes('credit') || s.balanceDue > 0) paymentBreakdown.udhaar += amt;
+      else paymentBreakdown.cash += amt;
+    });
+
+    // Receivables (Customer Udhaar)
     let pendingReceivables = 0;
-    
-    sales.forEach(s => {
-      const saleDate = startOfDay(new Date(s.date));
-      if (saleDate.getTime() === today.getTime()) { todayRev += (s.total || 0); todayOrd++; } 
-      else if (saleDate.getTime() === yesterday.getTime()) { yesterdayRev += (s.total || 0); yesterdayOrd++; }
-      
+    rawSales.forEach(s => {
       if (s.status === 'Pending' || s.paymentStatus === 'Unpaid' || s.balanceDue > 0) {
-        pendingReceivables += (s.balanceDue || s.total || 0);
+        pendingReceivables += (Number(s.balanceDue) || Number(s.total) || 0);
       }
     });
 
-    exp.forEach(e => {
-      const expDate = startOfDay(new Date(e.date));
-      if (expDate.getTime() === today.getTime()) todayExp += (e.amount || 0);
-      else if (expDate.getTime() === yesterday.getTime()) yesterdayExp += (e.amount || 0);
-    });
+    // Low Stock Products
+    const lowStockList = rawProducts.filter(p => (Number(p.stockQuantity) || 0) <= (Number(p.minimumStock) || 5));
 
-    const todayProfit = todayRev - todayExp;
-    const yesterdayProfit = yesterdayRev - yesterdayExp;
+    // Trend Percentage Helper
+    const calcTrend = (cur, prev) => {
+      if (prev === 0) return cur > 0 ? { value: '100', isPositive: true } : { value: '0', isPositive: true };
+      const diff = cur - prev;
+      return { value: Math.abs((diff / prev) * 100).toFixed(1), isPositive: diff >= 0 };
+    };
 
-    const lowStockList = products.filter(p => (p.stockQuantity || 0) <= (p.minimumStock || 5));
+    const trends = {
+      revTrend: calcTrend(currentRevenue, prevRevenue),
+      ordTrend: calcTrend(currentOrders, prevOrders),
+      profTrend: calcTrend(netProfit, prevNetProfit),
+      expTrend: calcTrend(currentTotalExp, prevTotalExp)
+    };
 
-    // Recent Orders (Sales)
-    const recentOrd = [...sales].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
-    
-    // Transactions (Activity Feed)
-    const formattedSales = sales.map(s => ({ ...s, type: 'Sale', amount: s.total, time: new Date(s.date) }));
-    const formattedExp = exp.map(e => ({ ...e, type: 'Expense', amount: e.amount, time: new Date(e.date) }));
-    const formattedProd = products.map(p => ({ id: p.id, type: 'Product Added', name: p.name, time: new Date(p.createdAt || Date.now()) }));
-    
+    // Health Score
+    const healthScore = Math.min(100, Math.max(0,
+      75 + (trends.revTrend.isPositive ? 10 : -5) + (lowStockList.length === 0 ? 10 : -5) + (netProfit > 0 ? 10 : -10)
+    ));
+    let healthLabel = 'Average';
+    if (healthScore >= 90) healthLabel = 'Excellent';
+    else if (healthScore >= 70) healthLabel = 'Good';
+    else if (healthScore < 50) healthLabel = 'Needs Attention';
+
+    // Recent Activity Feed
+    const recentOrd = [...rawSales].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+    const formattedSales = rawSales.map(s => ({ ...s, type: 'Sale', amount: s.total, time: new Date(s.date || s.createdAt) }));
+    const formattedExp = rawExpenses.map(e => ({ ...e, type: 'Expense', amount: e.amount, time: new Date(e.date || e.createdAt) }));
+    const formattedProd = rawProducts.map(p => ({ id: p.id, type: 'Product Added', name: p.name, time: new Date(p.createdAt || Date.now()) }));
     let recentTrx = [...formattedSales, ...formattedExp, ...formattedProd].sort((a, b) => b.time - a.time).slice(0, 10);
-    if (!showFinance) recentTrx = recentTrx.filter(t => t.type !== 'Expense'); 
+    if (!showFinance) recentTrx = recentTrx.filter(t => t.type !== 'Expense');
 
-    // Smart Alerts (Action Items)
-    const generatedAlerts = [];
-    if (showInventory && lowStockList.length > 0) generatedAlerts.push({ id: 'stock', title: 'Low Stock Products', description: `${lowStockList.length} products require restocking.`, link: '/inventory' });
-    if (showFinance && pendingReceivables > 0) generatedAlerts.push({ id: 'recv', title: 'Pending Invoices', description: `${currencySymbol}${pendingReceivables.toFixed(2)} outstanding from customers.`, link: '/orders' });
-    
-    setStats({
-      todayRevenue: todayRev, yesterdayRevenue: yesterdayRev,
-      todayOrders: todayOrd, yesterdayOrders: yesterdayOrd,
-      todayExpenses: todayExp, yesterdayExpenses: yesterdayExp,
-      todayProfit: todayProfit, yesterdayProfit: yesterdayProfit,
-      totalCustomers: customers.length, 
-      lowStockCount: lowStockList.length, 
-      receivables: pendingReceivables
-    });
-    
-    setRecentCustomers([...customers].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5));
-    setRecentOrders(recentOrd);
-    setLowStockProducts(lowStockList.slice(0, 5));
-    setTransactions(recentTrx);
-    setAlerts(generatedAlerts);
-
-    // Chart Data
-    const labels = []; const revData = []; const expData = []; const profData = [];
-    // Plot from 7 days ago down to yesterday (i=1), so we only show fully completed days (decided at midnight)
-    for (let i = 7; i >= 1; i--) {
-      const d = startOfDay(subDays(today, i));
-      labels.push(format(d, 'MMM dd'));
-      const dayRev = sales.filter(s => startOfDay(new Date(s.date)).getTime() === d.getTime()).reduce((sum, s) => sum + (s.total || 0), 0);
-      const dayExp = exp.filter(e => startOfDay(new Date(e.date)).getTime() === d.getTime()).reduce((sum, e) => sum + (e.amount || 0), 0);
-      
-      revData.push(dayRev);
-      expData.push(dayExp);
-      profData.push(dayRev - dayExp);
+    // Smart Alerts
+    const alerts = [];
+    if (showInventory && lowStockList.length > 0) {
+      alerts.push({ id: 'stock', title: 'Low Stock Products', description: `${lowStockList.length} products require restocking.`, link: '/inventory' });
     }
-    setChartData({ labels, revenueData: revData, expenseData: expData, profitData: profData });
-  }, [showFinance, showInventory, currencySymbol]);
+    if (showFinance && pendingReceivables > 0) {
+      alerts.push({ id: 'recv', title: 'Pending Customer Invoices', description: `${currencySymbol}${pendingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2 })} outstanding on Khata.`, link: '/payments' });
+    }
 
-  useEffect(() => {
-    if (currentUser?.activeBusinessId) {
-      // 1. Instantly populate UI from local cache
-      try {
-        const cachedSales = localDb.getAll('sales', currentUser.activeBusinessId) || [];
-        const cachedExp = localDb.getAll('expenses', currentUser.activeBusinessId) || [];
-        const cachedPurchases = localDb.getAll('purchases', currentUser.activeBusinessId) || [];
-        const cachedCustomers = localDb.getAll('customers', currentUser.activeBusinessId) || [];
-        const cachedProducts = localDb.getAll('products', currentUser.activeBusinessId) || [];
-        const cachedAttendance = localDb.getAll('attendance', currentUser.activeBusinessId) || [];
-        
-        calculateAndSetData(cachedSales, cachedExp, cachedPurchases, cachedCustomers, cachedProducts, cachedAttendance);
-      } catch (e) {
-        // Ignore cache miss
+    // Dynamic Chart Data based on dateRange
+    const chartLabels = [];
+    const revData = [];
+    const expData = [];
+    const profData = [];
+
+    if (dateRange === 'today' || dateRange === 'yesterday') {
+      const targetDay = dateRange === 'today' ? startOfDay(now) : startOfDay(subDays(now, 1));
+      const hours = [6, 10, 14, 18, 22];
+      hours.forEach(h => {
+        chartLabels.push(`${h}:00`);
+        const slotStart = new Date(targetDay.getTime() + (h - 2) * 60 * 60 * 1000);
+        const slotEnd = new Date(targetDay.getTime() + (h + 2) * 60 * 60 * 1000);
+        const slotSales = rawSales.filter(s => {
+          const t = new Date(s.date || s.createdAt).getTime();
+          return t >= slotStart.getTime() && t < slotEnd.getTime();
+        });
+        const slotExp = rawExpenses.filter(e => {
+          const t = new Date(e.date || e.createdAt).getTime();
+          return t >= slotStart.getTime() && t < slotEnd.getTime();
+        });
+        const r = slotSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+        const ex = slotExp.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+        revData.push(r);
+        expData.push(ex);
+        profData.push(r - ex);
+      });
+    } else {
+      // 7-day or 30-day daily points
+      const numDays = dateRange === '7d' ? 7 : dateRange === 'this_month' ? Math.min(30, now.getDate()) : 7;
+      for (let i = numDays - 1; i >= 0; i--) {
+        const d = startOfDay(subDays(now, i));
+        chartLabels.push(format(d, 'MMM dd'));
+        const daySales = rawSales.filter(s => startOfDay(new Date(s.date || s.createdAt)).getTime() === d.getTime());
+        const dayExp = rawExpenses.filter(e => startOfDay(new Date(e.date || e.createdAt)).getTime() === d.getTime());
+        const r = daySales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+        const ex = dayExp.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+        revData.push(r);
+        expData.push(ex);
+        profData.push(r - ex);
       }
-
-      // 2. Fetch fresh data in background
-      loadDashboardData(currentUser.activeBusinessId);
     }
-  }, [currentUser?.activeBusinessId, calculateAndSetData]);
 
-  const loadDashboardData = async (businessId) => {
+    const chartData = {
+      labels: chartLabels,
+      revenueData: revData,
+      expenseData: expData,
+      profitData: profData
+    };
+
+    return {
+      revenue: currentRevenue,
+      todayRevenue: currentRevenue,
+      ordersCount: currentOrders,
+      todayOrders: currentOrders,
+      grossProfit,
+      grossMargin,
+      netProfit,
+      todayProfit: netProfit,
+      netMargin,
+      expenses: currentTotalExp,
+      todayExpenses: currentTotalExp,
+      paymentBreakdown,
+      receivables: pendingReceivables,
+      lowStockCount: lowStockList.length,
+      totalCustomers: rawCustomers.length,
+      trends,
+      healthScore,
+      healthLabel,
+      recentOrders: recentOrd,
+      lowStockProducts: lowStockList.slice(0, 5),
+      transactions: recentTrx,
+      alerts,
+      chartData
+    };
+  }, [dateIntervals, dateRange, rawSales, rawExpenses, rawProducts, rawCustomers, showFinance, showInventory, currencySymbol]);
+
+  // Load and cache all business data
+  const loadDashboardData = useCallback(async (businessId) => {
+    if (!businessId) return;
     setIsRefreshing(true);
     try {
       if (businessId === 'demo-business-1') {
@@ -156,7 +309,6 @@ const Dashboard = ({ onSwitchMode }) => {
         }
       }
 
-      // Fetch in parallel
       const [sales, exp, purchases, customers, products, attendance] = await Promise.all([
         db.getCollection('sales', businessId),
         db.getCollection('expenses', businessId),
@@ -166,14 +318,37 @@ const Dashboard = ({ onSwitchMode }) => {
         db.getCollection('attendance', businessId).catch(() => [])
       ]);
 
-      calculateAndSetData(sales, exp, purchases, customers, products, attendance);
+      setRawSales(sales || []);
+      setRawExpenses(exp || []);
+      setRawPurchases(purchases || []);
+      setRawCustomers(customers || []);
+      setRawProducts(products || []);
+      setRawAttendance(attendance || []);
     } catch (err) {
-      console.error("Dashboard Error:", err);
+      console.error("Dashboard Load Error:", err);
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, []);
 
+  // Initial load from localDb cache + background refresh
+  useEffect(() => {
+    const bizId = currentUser?.activeBusinessId;
+    if (bizId) {
+      try {
+        setRawSales(localDb.getAll('sales', bizId) || []);
+        setRawExpenses(localDb.getAll('expenses', bizId) || []);
+        setRawPurchases(localDb.getAll('purchases', bizId) || []);
+        setRawCustomers(localDb.getAll('customers', bizId) || []);
+        setRawProducts(localDb.getAll('products', bizId) || []);
+        setRawAttendance(localDb.getAll('attendance', bizId) || []);
+      } catch (e) {}
+
+      loadDashboardData(bizId);
+    }
+  }, [currentUser?.activeBusinessId, loadDashboardData]);
+
+  // Greeting
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -205,33 +380,15 @@ const Dashboard = ({ onSwitchMode }) => {
     return () => clearInterval(intervalId);
   }, [fullGreetingText, currentBusiness?.id]);
 
-  const calculateTrend = (today, yesterday) => {
-    if (yesterday === 0) return today > 0 ? { value: 100, isPositive: true } : { value: 0, isPositive: true };
-    const diff = today - yesterday;
-    return { value: Math.abs((diff / yesterday) * 100).toFixed(1), isPositive: diff >= 0 };
-  };
-
-  const trends = {
-    revTrend: calculateTrend(stats.todayRevenue, stats.yesterdayRevenue),
-    ordTrend: calculateTrend(stats.todayOrders, stats.yesterdayOrders),
-    profTrend: calculateTrend(stats.todayProfit, stats.yesterdayProfit),
-    expTrend: calculateTrend(stats.todayExpenses, stats.yesterdayExpenses)
-  };
-
-  const healthScore = Math.min(100, Math.max(0, 
-    75 + (trends.revTrend.isPositive ? 10 : -5) + (stats.lowStockCount === 0 ? 10 : -5) + (stats.todayProfit > 0 ? 10 : -10)
-  ));
-  
-  let healthLabel = 'Average';
-  if (healthScore >= 90) healthLabel = 'Excellent';
-  else if (healthScore >= 70) healthLabel = 'Good';
-  else if (healthScore < 50) healthLabel = 'Needs Attention';
-
-  const maskedStats = showFinance ? stats : {
-    ...stats,
-    todayRevenue: '***', yesterdayRevenue: '***',
-    todayProfit: '***', yesterdayProfit: '***',
-    todayExpenses: '***', yesterdayExpenses: '***',
+  const maskedStats = showFinance ? computedMetrics : {
+    ...computedMetrics,
+    revenue: '***',
+    todayRevenue: '***',
+    netProfit: '***',
+    todayProfit: '***',
+    grossProfit: '***',
+    expenses: '***',
+    todayExpenses: '***',
   };
 
   if (isMobile) {
@@ -240,13 +397,13 @@ const Dashboard = ({ onSwitchMode }) => {
         currentUser={currentUser}
         currentBusiness={currentBusiness}
         stats={maskedStats}
-        trends={trends}
+        trends={computedMetrics.trends}
         currencySymbol={currencySymbol}
-        chartData={chartData}
-        recentOrders={recentOrders}
-        lowStockProducts={lowStockProducts}
-        healthScore={healthScore}
-        healthLabel={healthLabel}
+        chartData={computedMetrics.chartData}
+        recentOrders={computedMetrics.recentOrders}
+        lowStockProducts={computedMetrics.lowStockProducts}
+        healthScore={computedMetrics.healthScore}
+        healthLabel={computedMetrics.healthLabel}
         onRefresh={() => loadDashboardData(currentUser?.activeBusinessId)}
         isRefreshing={isRefreshing}
       />
@@ -256,8 +413,8 @@ const Dashboard = ({ onSwitchMode }) => {
   return (
     <div className="dashboard-container max-w-[1600px] mx-auto hidden-mobile">
       
-      {/* 1. Header Area - Strictly Left-Aligned Greeting with Right-Aligned Executive Health Dock */}
-      <div className="dashboard-header">
+      {/* 1. Header Area - Greeting + Executive Health Dock */}
+      <div className="dashboard-header mb-4">
         <div className="dashboard-header-text">
           <p className="text-text-muted font-bold tracking-wide text-xs mb-2 text-left">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
           <h1 className="text-3xl font-extrabold tracking-tight mb-1 text-text-main flex items-center text-left">
@@ -268,7 +425,7 @@ const Dashboard = ({ onSwitchMode }) => {
               <span className="ml-1 animate-pulse border-r-4 border-text-main h-[0.8em] inline-block align-baseline"></span>
             )}
           </h1>
-          <p className="text-text-secondary text-sm font-semibold text-left">Here's what's happening with your operations today.</p>
+          <p className="text-text-secondary text-sm font-semibold text-left">Here's your live operational performance and financial status.</p>
         </div>
         
         <div className="dashboard-header-actions">
@@ -281,8 +438,8 @@ const Dashboard = ({ onSwitchMode }) => {
               <div className="flex flex-col">
                 <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold leading-none mb-1">Business Health</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold text-text-main leading-none">{healthScore}<span className="text-text-muted font-medium text-xs">/100</span></span>
-                  <span className="text-[10px] font-bold bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)] px-2 py-0.5 rounded-full leading-none">{healthLabel}</span>
+                  <span className="text-sm font-extrabold text-text-main leading-none">{computedMetrics.healthScore}<span className="text-text-muted font-medium text-xs">/100</span></span>
+                  <span className="text-[10px] font-bold bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)] px-2 py-0.5 rounded-full leading-none">{computedMetrics.healthLabel}</span>
                 </div>
               </div>
             </div>
@@ -291,7 +448,7 @@ const Dashboard = ({ onSwitchMode }) => {
 
             <button 
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--bg-hover)] hover:bg-[#09090b] text-text-secondary hover:text-[#ffffff] transition-all duration-200 text-xs font-bold"
-              onClick={() => loadDashboardData(currentUser.activeBusinessId)}
+              onClick={() => loadDashboardData(currentUser?.activeBusinessId)}
               disabled={isRefreshing}
               title="Sync & Refresh Dashboard"
             >
@@ -308,6 +465,41 @@ const Dashboard = ({ onSwitchMode }) => {
               <span>Legacy Mode ⚡</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Date-Range Filter Pill Selector Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2 px-3 mb-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5 px-2">
+            <Calendar size={13} /> Filter Period:
+          </span>
+          <div className="flex items-center gap-1">
+            {[
+              { id: 'today', label: 'Today' },
+              { id: 'yesterday', label: 'Yesterday' },
+              { id: '7d', label: 'Last 7 Days' },
+              { id: 'this_month', label: 'This Month' },
+              { id: 'all_time', label: 'All Time' }
+            ].map(pill => (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setDateRange(pill.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  dateRange === pill.id
+                    ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-sm'
+                    : 'text-text-muted hover:text-text-main hover:bg-[var(--bg-hover)]'
+                }`}
+              >
+                {pill.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="text-xs font-semibold text-text-secondary px-2">
+          Showing metrics for: <strong className="text-text-main">{DATE_RANGE_LABELS[dateRange]}</strong>
         </div>
       </div>
 
@@ -367,27 +559,42 @@ const Dashboard = ({ onSwitchMode }) => {
         </div>
       </div>
 
-      {/* 2. KPI Cards */}
-      <DashboardKPIs stats={maskedStats} trends={trends} currencySymbol={currencySymbol} />
+      {/* 2. Enhanced Clickable KPI Cards */}
+      <DashboardKPIs 
+        stats={maskedStats} 
+        trends={computedMetrics.trends} 
+        currencySymbol={currencySymbol} 
+        dateRangeLabel={DATE_RANGE_LABELS[dateRange]}
+      />
 
-      {/* 3. Analytics & Quick Actions (Hide analytics chart if not finance) */}
+      {/* 3. Analytics & Quick Actions */}
       {showFinance ? (
-        <DashboardAnalytics chartData={chartData} currencySymbol={currencySymbol} stats={maskedStats} trends={trends} />
+        <DashboardAnalytics 
+          chartData={computedMetrics.chartData} 
+          currencySymbol={currencySymbol} 
+          stats={maskedStats} 
+          trends={computedMetrics.trends} 
+        />
       ) : (
-        <DashboardAnalytics chartData={{ labels: [], revenueData: [], expenseData: [], profitData: [] }} currencySymbol={currencySymbol} stats={maskedStats} trends={trends} />
+        <DashboardAnalytics 
+          chartData={{ labels: [], revenueData: [], expenseData: [], profitData: [] }} 
+          currencySymbol={currencySymbol} 
+          stats={maskedStats} 
+          trends={computedMetrics.trends} 
+        />
       )}
 
       {/* 4. Operations (Recent Orders & Inventory) */}
       <DashboardOperations 
-        recentOrders={recentOrders} 
-        lowStockProducts={showInventory ? lowStockProducts : []} 
+        recentOrders={computedMetrics.recentOrders} 
+        lowStockProducts={showInventory ? computedMetrics.lowStockProducts : []} 
         currencySymbol={currencySymbol} 
       />
 
       {/* 5. Feed (Action Items & Recent Activity) */}
       <DashboardFeed 
-        alerts={alerts} 
-        transactions={transactions} 
+        alerts={computedMetrics.alerts} 
+        transactions={computedMetrics.transactions} 
         currencySymbol={currencySymbol} 
       />
 

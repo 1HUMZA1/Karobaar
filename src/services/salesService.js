@@ -24,7 +24,7 @@ export const salesService = {
   }) {
     if (!businessId) throw new Error("businessId is required to create a sale");
     
-    // Default values if not provided (e.g. legacy calls)
+    // Default values if not provided
     const finalAmountPaid = amountPaid !== undefined ? amountPaid : total;
     const finalBalanceDue = balanceDue !== undefined ? balanceDue : 0;
     
@@ -47,21 +47,47 @@ export const salesService = {
       dueDate: dueDate || new Date().toISOString(),
       items,
       date: new Date().toISOString(),
-      status
+      status,
+      notes: notes || '',
+      orderType: orderType || 'Takeaway',
+      tokenNumber: tokenNumber || '',
+      discountType: discountType || 'fixed',
+      discountValue: discountValue || 0,
+      splitDetails: splitDetails || null
     };
 
-    // 1. Save Sale
+    // 1. Save Sale Record
     const savedSale = await db.add('sales', sale, businessId);
 
-    // 2. Update Inventory
+    // 2. Update Inventory & Record Stock Movements
     const products = await db.getCollection('products', businessId);
     for (const item of items) {
       const product = products.find(p => p.id === item.productId);
       if (product) {
-        const newQuantity = product.stockQuantity - item.quantity;
+        const prevStock = Number(product.stockQuantity) || 0;
+        const newQuantity = Math.max(0, prevStock - (Number(item.quantity) || 1));
         await db.update('products', product.id, { 
-          stockQuantity: Math.max(0, newQuantity)
+          stockQuantity: newQuantity
         }, businessId);
+
+        // Record stock movement ledger entry
+        try {
+          await db.add('stock_movements', {
+            productId: product.id,
+            productName: product.name,
+            sku: product.sku || '',
+            type: 'sale',
+            quantity: -(Number(item.quantity) || 1),
+            previousStock: prevStock,
+            newStock: newQuantity,
+            referenceId: savedSale.id,
+            referenceType: 'sale',
+            date: new Date().toISOString(),
+            createdBy: employeeName || 'Staff'
+          }, businessId);
+        } catch (e) {
+          console.warn('Failed to record stock movement log', e);
+        }
       }
     }
 
@@ -89,7 +115,8 @@ export const salesService = {
       amountPaid: finalAmountPaid,
       balanceDue: finalBalanceDue,
       status: finalBalanceDue > 0 ? 'Pending' : 'Paid',
-      paymentMethod
+      paymentMethod,
+      items: sale.items || []
     };
     await db.add('invoices', invoice, businessId);
 
@@ -106,15 +133,35 @@ export const salesService = {
     // 1. Mark Sale as Refunded
     await db.update('sales', saleId, { status: 'Refunded' }, businessId);
 
-    // 2. Restore Inventory
+    // 2. Restore Inventory & Record Stock Movements
     const products = await db.getCollection('products', businessId);
     for (const item of sale.items || []) {
       const product = products.find(p => p.id === item.productId);
       if (product) {
-        const newQuantity = (product.stockQuantity || 0) + item.quantity;
+        const prevStock = Number(product.stockQuantity) || 0;
+        const newQuantity = prevStock + (Number(item.quantity) || 1);
         await db.update('products', product.id, { 
           stockQuantity: newQuantity
         }, businessId);
+
+        // Record return stock movement
+        try {
+          await db.add('stock_movements', {
+            productId: product.id,
+            productName: product.name,
+            sku: product.sku || '',
+            type: 'return_refund',
+            quantity: +(Number(item.quantity) || 1),
+            previousStock: prevStock,
+            newStock: newQuantity,
+            referenceId: saleId,
+            referenceType: 'refund',
+            date: new Date().toISOString(),
+            createdBy: 'Admin'
+          }, businessId);
+        } catch (e) {
+          console.warn('Failed to record stock movement log', e);
+        }
       }
     }
 

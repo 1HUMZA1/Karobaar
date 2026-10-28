@@ -65,7 +65,7 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5">
+                  <td colSpan="6">
                     <div className="py-12 flex flex-col items-center justify-center text-text-muted">
                       <div className="w-16 h-16 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center mb-4">
                         <ShoppingCart size={24} className="opacity-40" />

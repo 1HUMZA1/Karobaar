@@ -39,7 +39,7 @@ class DatabaseService {
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     if (this.syncInProgress) return;
 
-    const collectionsToSync = ['products', 'sales', 'customers', 'expenses', 'suppliers', 'invoices', 'employees'];
+    const collectionsToSync = ['products', 'sales', 'customers', 'expenses', 'suppliers', 'invoices', 'employees', 'purchases', 'stock_movements', 'audit_logs'];
     
     for (const col of collectionsToSync) {
       try {
@@ -360,6 +360,23 @@ class DatabaseService {
       const cached = localDb.get('users', firebaseUid);
       if (cached) return cached;
       throw new Error("Network error: Could not verify account data (" + e.message + ")");
+    }
+  }
+  // Record administrative or high-impact actions into audit trail
+  async logAudit(action, details, user = null, businessId = null) {
+    try {
+      const activeBiz = businessId || (typeof localStorage !== 'undefined' ? localStorage.getItem('karobaar-active-business') : null) || 'demo-business-1';
+      const auditRecord = {
+        action,
+        details,
+        userId: user?.id || user?.uid || 'system',
+        userName: user?.name || user?.email || 'System / Staff',
+        userRole: user?.role || 'STAFF',
+        timestamp: new Date().toISOString()
+      };
+      return await this.add('audit_logs', auditRecord, activeBiz);
+    } catch (e) {
+      console.warn('Audit log write skipped:', e.message);
     }
   }
 }
