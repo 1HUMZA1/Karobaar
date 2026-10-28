@@ -14,8 +14,71 @@ class LocalDB {
 
   _loadDB() {
     try {
+      if (typeof localStorage === 'undefined') return {};
       const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : {};
+      const parsed = data ? JSON.parse(data) : {};
+      
+      // Ensure baseline demo records exist locally
+      if (!parsed.businesses) parsed.businesses = {};
+      if (!parsed.businesses['demo-business-1']) {
+        parsed.businesses['demo-business-1'] = {
+          id: 'demo-business-1',
+          name: 'SAS CAFETERIA',
+          currency: 'INR',
+          category: 'Cafeteria & Restaurant',
+          address: 'Shop #4, Commercial Complex',
+          phone: '+91 98765 43210',
+          settings: {
+            currency: 'INR',
+            dateFormat: 'DD/MM/YYYY',
+            theme: 'light',
+            taxRate: 5,
+            lowStockThreshold: 5,
+            invoicePrefix: 'INV-',
+            paymentTerms: 'Immediate / Due on Receipt',
+            invoiceFooter: 'Thank you for choosing SAS CAFETERIA!',
+            aiSettings: {
+              assistantName: 'Jarvis',
+              wakeWord: 'Hey Jarvis',
+              backgroundWake: true,
+              aiEnabled: true,
+              showFloatingBubble: true,
+              autoExecute: true,
+              autoAlertLowStock: true,
+              autoPrintReceipt: false,
+              dailySummaryNotification: true,
+              rapidBarcodeAdd: true,
+              language: 'hinglish'
+            }
+          },
+          modules: {
+            pos: true,
+            inventory: true,
+            orders: true,
+            customers: true,
+            expenses: true,
+            suppliers: true,
+            reports: true,
+            employees: true,
+            invoices: true
+          }
+        };
+      }
+
+      if (!parsed.users) parsed.users = {};
+      if (!parsed.users['demo-user-1']) {
+        parsed.users['demo-user-1'] = {
+          id: 'demo-user-1',
+          name: 'SAS Cafeteria Owner',
+          email: 'owner@sascafeteria.com',
+          role: 'Owner',
+          activeBusinessId: 'demo-business-1',
+          memberships: ['demo-business-1'],
+          onboardingCompleted: true
+        };
+      }
+
+      return parsed;
     } catch (e) {
       console.error("Failed to load LocalDB", e);
       return {};
@@ -24,6 +87,7 @@ class LocalDB {
 
   _saveDB() {
     try {
+      if (typeof localStorage === 'undefined') return;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.db));
     } catch (e) {
       console.error("Failed to save LocalDB", e);
@@ -32,6 +96,7 @@ class LocalDB {
 
   _loadQueue() {
     try {
+      if (typeof localStorage === 'undefined') return [];
       const data = localStorage.getItem(QUEUE_KEY);
       return data ? JSON.parse(data) : [];
     } catch (e) {
@@ -41,9 +106,12 @@ class LocalDB {
 
   _saveQueue() {
     try {
+      if (typeof localStorage === 'undefined') return;
       localStorage.setItem(QUEUE_KEY, JSON.stringify(this.queue));
       // Dispatch event to notify UI components (like Topbar sync indicator)
-      window.dispatchEvent(new Event('karobaar_sync_update'));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('karobaar_sync_update'));
+      }
     } catch (e) {
       console.error("Failed to save Queue", e);
     }

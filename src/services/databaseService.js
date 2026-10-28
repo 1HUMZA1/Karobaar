@@ -104,6 +104,33 @@ class DatabaseService {
     this.syncInProgress = false;
   }
 
+  // Recursive sanitize data for Firestore (strips undefined, internal sync fields, and id)
+  _cleanDataForFirestore(obj) {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) {
+      return obj
+        .map(item => this._cleanDataForFirestore(item))
+        .filter(item => item !== undefined);
+    }
+    const cleaned = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (
+        key === 'id' ||
+        key === '_businessId' ||
+        key === '_syncStatus' ||
+        key === '_localUpdatedAt' ||
+        value === undefined
+      ) {
+        continue;
+      }
+      cleaned[key] = (typeof value === 'object' && value !== null)
+        ? this._cleanDataForFirestore(value)
+        : value;
+    }
+    return cleaned;
+  }
+
   // Helper to prevent hanging promises
   async _withTimeout(promise, ms = 3500) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -191,9 +218,10 @@ class DatabaseService {
         } else {
           docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
         }
-        const clean = { ...data };
-        delete clean.id;
-        setDoc(docRef, clean, { merge: true }).catch(() => {});
+        const clean = this._cleanDataForFirestore(data);
+        await this._withTimeout(setDoc(docRef, clean, { merge: true }), 4000).catch(err => {
+          console.warn(`[Cloud Save Note] ${collectionName}/${id}:`, err?.message || err);
+        });
       } catch (_) {}
     }
     return saved;
@@ -203,7 +231,7 @@ class DatabaseService {
   async getById(collectionName, id, businessId = null) {
     const cached = localDb.get(collectionName, id);
     if (cached) {
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
+      if (typeof navigator !== 'undefined' && navigator.onLine && !String(id).startsWith('demo-')) {
         setTimeout(async () => {
           try {
             let docRef;
@@ -220,6 +248,11 @@ class DatabaseService {
         }, 0);
       }
       return cached;
+    }
+
+    // Skip cloud query for demo entities
+    if (id && String(id).startsWith('demo-')) {
+      return null;
     }
 
     try {
@@ -259,7 +292,7 @@ class DatabaseService {
     const savedLocal = localDb.save(collectionName, id, newItem, true, businessId);
 
     // Direct cloud push so the other device (laptop/phone) sees it immediately
-    if (typeof navigator !== 'undefined' && navigator.onLine) {
+    if (!String(id).startsWith('demo-') && typeof navigator !== 'undefined' && navigator.onLine) {
       try {
         let docRef;
         if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
@@ -267,12 +300,10 @@ class DatabaseService {
         } else {
           docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
         }
-        const cleanData = { ...newItem };
-        delete cleanData.id;
-        delete cleanData._businessId;
-        delete cleanData._syncStatus;
-        delete cleanData._localUpdatedAt;
-        setDoc(docRef, cleanData, { merge: true }).catch(() => {});
+        const cleanData = this._cleanDataForFirestore(newItem);
+        await this._withTimeout(setDoc(docRef, cleanData, { merge: true }), 4000).catch(err => {
+          console.warn(`[Cloud Add Note] ${collectionName}/${id}:`, err?.message || err);
+        });
       } catch (_) {}
     }
 
@@ -287,11 +318,14 @@ class DatabaseService {
       updatedAt: new Date().toISOString()
     };
 
-    const existing = localDb.get(collectionName, id) || {};
+    let existing = localDb.get(collectionName, id);
+    if (!existing) {
+      existing = (await this.getById(collectionName, id, businessId)) || {};
+    }
     const merged = { ...existing, ...updateData };
     const savedLocal = localDb.save(collectionName, id, merged, true, businessId);
 
-    if (typeof navigator !== 'undefined' && navigator.onLine) {
+    if (!String(id).startsWith('demo-') && typeof navigator !== 'undefined' && navigator.onLine) {
       try {
         let docRef;
         if (!businessId || collectionName === 'users' || collectionName === 'businesses') {
@@ -299,12 +333,10 @@ class DatabaseService {
         } else {
           docRef = doc(dbFirestore, `businesses/${businessId}/${collectionName}`, id);
         }
-        const cleanData = { ...merged };
-        delete cleanData.id;
-        delete cleanData._businessId;
-        delete cleanData._syncStatus;
-        delete cleanData._localUpdatedAt;
-        setDoc(docRef, cleanData, { merge: true }).catch(() => {});
+        const cleanData = this._cleanDataForFirestore(merged);
+        await this._withTimeout(setDoc(docRef, cleanData, { merge: true }), 4000).catch(err => {
+          console.warn(`[Cloud Update Note] ${collectionName}/${id}:`, err?.message || err);
+        });
       } catch (_) {}
     }
 

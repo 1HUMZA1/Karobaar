@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Save, 
   Building, 
@@ -29,12 +29,14 @@ import {
   Target,
   Volume2,
   Check,
-  Upload
+  Upload,
+  ArrowLeft,
+  AlertCircle
 } from 'lucide-react';
 import { db } from '../../services/databaseService';
 import { auth } from '../../services/firebase';
 import { signOut, updatePassword } from 'firebase/auth';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext, DEFAULT_BUSINESS } from '../../context/AppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileMenu } from './MobileMenu';
 import TeamManagement from './TeamManagement';
@@ -61,13 +63,16 @@ const MODULES_LIST = [
 
 const Settings = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   const initialTab = queryParams.get('tab') || 'general';
 
   const { 
     currentBusiness, 
     currentUser, 
-    refreshUserProfile, 
+    refreshUserProfile,
+    refreshBusinessProfile,
+    updateCurrentBusiness,
     theme, 
     setTheme, 
     accent, 
@@ -83,32 +88,35 @@ const Settings = () => {
     if (tab) setActiveTab(tab);
   }, [location.search]);
 
+  // Loading & Save Feedback States
   const [saving, setSaving] = useState(false);
   const [saveBanner, setSaveBanner] = useState('');
-  
-  // Loading Transition Overlay State
+  const [errorBanner, setErrorBanner] = useState('');
   const [isChangingSettings, setIsChangingSettings] = useState(false);
   const [settingsChangedSuccess, setSettingsChangedSuccess] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const lastLoadedBizIdRef = useRef(null);
 
-  // Customize (AI & Automations) State - Default Mr. H
-  const [aiAssistantName, setAiAssistantName] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-      return saved.assistantName || 'Jarvis';
-    } catch { return 'Mr. H'; }
-  });
-  const [aiWakeWord, setAiWakeWord] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-      return saved.wakeWord || 'Jarvis';
-    } catch { return 'Hey Mr. H'; }
-  });
-  const [aiBackgroundWake, setAiBackgroundWake] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
-      return saved.backgroundWake !== false;
-    } catch { return true; }
-  });
+  // Baseline snapshot for tracking dirty / unsaved changes
+  const [initialBaseline, setInitialBaseline] = useState(null);
+
+  // 1. Business Profile State
+  const [businessName, setBusinessName] = useState('SAS CAFETERIA');
+  const [businessEmail, setBusinessEmail] = useState('');
+  const [businessType, setBusinessType] = useState('Cafeteria / Restaurant');
+  const [businessPhone, setBusinessPhone] = useState('+91 98765 43210');
+  const [businessAddress, setBusinessAddress] = useState('Shop #4, Commercial Complex');
+  const [taxId, setTaxId] = useState('GSTIN-29AAAAA0000A1Z5');
+
+  // 2. Appearance & Mode State
+  const [selectedTheme, setSelectedTheme] = useState(() => localStorage.getItem('karobaar-theme') || 'light');
+  const [selectedAccent, setSelectedAccent] = useState(() => localStorage.getItem('karobaar-accent') || 'default');
+  const [selectedAppUiVersion, setSelectedAppUiVersion] = useState(() => localStorage.getItem('karobaar-ui-version') || 'v2');
+
+  // 3. Customize (AI & Automations) State
+  const [aiAssistantName, setAiAssistantName] = useState('Jarvis');
+  const [aiWakeWord, setAiWakeWord] = useState('Hey Jarvis');
+  const [aiBackgroundWake, setAiBackgroundWake] = useState(true);
   const [aiEnabled, setAiEnabled] = useState(true);
   const [aiFloatingBubble, setAiFloatingBubble] = useState(true);
   const [aiAutoExecute, setAiAutoExecute] = useState(true);
@@ -116,18 +124,12 @@ const Settings = () => {
   const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
   const [dailySummaryNotification, setDailySummaryNotification] = useState(true);
   const [rapidBarcodeAdd, setRapidBarcodeAdd] = useState(true);
-  const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish');
+  const [aiLanguage, setAiLanguage] = useState('hinglish');
 
-  // Store Custom UPI ID & Google Pay QR Image State
-  const [storeUpiId, setStoreUpiId] = useState(() => {
-    return currentBusiness?.settings?.upiId || localStorage.getItem('karobaar_custom_upi_id') || 'karobaar.pay@upi';
-  });
-  const [storeUpiQrImage, setStoreUpiQrImage] = useState(() => {
-    return currentBusiness?.settings?.upiQrImage || localStorage.getItem('karobaar_custom_upi_qr_img') || null;
-  });
-  const [storeUpiMode, setStoreUpiMode] = useState(() => {
-    return currentBusiness?.settings?.upiDefaultMode || localStorage.getItem('karobaar_custom_upi_mode') || 'dynamic';
-  });
+  // UPI & QR Presentation State
+  const [storeUpiId, setStoreUpiId] = useState('karobaar.pay@upi');
+  const [storeUpiQrImage, setStoreUpiQrImage] = useState(null);
+  const [storeUpiMode, setStoreUpiMode] = useState('dynamic');
 
   const handleSettingsQrUpload = (e) => {
     const file = e.target.files?.[0];
@@ -140,40 +142,32 @@ const Settings = () => {
     reader.readAsDataURL(file);
   };
 
-  // Business Profile State
-  const [businessName, setBusinessName] = useState('');
-  const [businessEmail, setBusinessEmail] = useState('');
-  const [businessType, setBusinessType] = useState('Cafeteria / Restaurant');
-  const [businessPhone, setBusinessPhone] = useState('+91 98765 43210');
-  const [businessAddress, setBusinessAddress] = useState('Shop #4, Commercial Complex');
-  const [taxId, setTaxId] = useState('GSTIN-29AAAAA0000A1Z5');
-  
-  // Preferences State
+  // 4. Preferences & Tax State
   const [currency, setCurrency] = useState('INR');
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
-  
-  // Tax & Invoice Settings
   const [taxRate, setTaxRate] = useState(5);
+
+  // 5. Invoice Settings State
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
+  const [paymentTerms, setPaymentTerms] = useState('Immediate / Due on Receipt');
   const [invoiceFooter, setInvoiceFooter] = useState('Thank you for choosing SAS CAFETERIA!');
 
-  // Notification Settings
+  // 6. Notifications State
   const [notifyLowStock, setNotifyLowStock] = useState(true);
   const [notifyNewSale, setNotifyNewSale] = useState(true);
   const [notifyDailyReport, setNotifyDailyReport] = useState(false);
 
-  // Modules State
+  // 7. Features & Modules State
   const [enabledModules, setEnabledModules] = useState({});
 
-  // Account Tab Extended Features
+  // 8. Account & Security State
   const [accountDisplayName, setAccountDisplayName] = useState('');
   const [accountPhone, setAccountPhone] = useState('+91 98765 43210');
   const [defaultBranch, setDefaultBranch] = useState('main');
   const [autoLockTimeout, setAutoLockTimeout] = useState('30m');
-  const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   
-  // Password State
+  // Password Update State
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordStatus, setPasswordStatus] = useState('');
@@ -227,7 +221,7 @@ const Settings = () => {
   const [deviceBanner, setDeviceBanner] = useState('');
   const [isRefreshingDevices, setIsRefreshingDevices] = useState(false);
 
-  // Auto-detect current device info
+  // Current Device Info Auto-detector
   const currentDeviceInfo = (() => {
     if (typeof window === 'undefined') return { os: 'Windows PC', browser: 'Google Chrome', screen: '1920 × 1080' };
     const ua = navigator.userAgent;
@@ -248,7 +242,7 @@ const Settings = () => {
     return {
       os,
       browser,
-      screen: `${window.screen.width} × ${window.screen.height}`
+      screen: `${window.screen?.width || 1920} × ${window.screen?.height || 1080}`
     };
   })();
 
@@ -283,31 +277,275 @@ const Settings = () => {
     }, 400);
   };
 
+  // Helper snapshot of all current state
+  const getCurrentStateSnapshot = useCallback(() => ({
+    general: {
+      businessName,
+      businessType,
+      businessEmail,
+      businessPhone,
+      businessAddress,
+      taxId
+    },
+    appearance: {
+      theme: selectedTheme,
+      accent: selectedAccent,
+      appUiVersion: selectedAppUiVersion
+    },
+    customize: {
+      aiAssistantName,
+      aiWakeWord,
+      aiBackgroundWake,
+      aiEnabled,
+      aiFloatingBubble,
+      aiAutoExecute,
+      autoAlertLowStock,
+      autoPrintReceipt,
+      dailySummaryNotification,
+      rapidBarcodeAdd,
+      aiLanguage,
+      storeUpiId,
+      storeUpiQrImage,
+      storeUpiMode
+    },
+    preferences: {
+      currency,
+      dateFormat,
+      lowStockThreshold: Math.max(0, Number(lowStockThreshold) || 0),
+      taxRate: Math.max(0, Number(taxRate) || 0)
+    },
+    invoices: {
+      invoicePrefix,
+      paymentTerms,
+      invoiceFooter
+    },
+    features: { ...enabledModules },
+    notifications: {
+      notifyLowStock,
+      notifyNewSale,
+      notifyDailyReport
+    },
+    account: {
+      accountDisplayName,
+      accountPhone,
+      defaultBranch,
+      autoLockTimeout
+    }
+  }), [
+    businessName, businessType, businessEmail, businessPhone, businessAddress, taxId,
+    selectedTheme, selectedAccent, selectedAppUiVersion,
+    aiAssistantName, aiWakeWord, aiBackgroundWake, aiEnabled, aiFloatingBubble, aiAutoExecute,
+    autoAlertLowStock, autoPrintReceipt, dailySummaryNotification, rapidBarcodeAdd, aiLanguage,
+    storeUpiId, storeUpiQrImage, storeUpiMode,
+    currency, dateFormat, lowStockThreshold, taxRate,
+    invoicePrefix, paymentTerms, invoiceFooter,
+    enabledModules,
+    notifyLowStock, notifyNewSale, notifyDailyReport,
+    accountDisplayName, accountPhone, defaultBranch, autoLockTimeout
+  ]);
+
+  // Determine if a section or whole form has unsaved edits
+  const isSectionDirty = (sectionKey) => {
+    if (!initialBaseline || !initialBaseline[sectionKey]) return false;
+    const current = getCurrentStateSnapshot()[sectionKey];
+    return JSON.stringify(current) !== JSON.stringify(initialBaseline[sectionKey]);
+  };
+
+  const hasUnsavedChanges = (() => {
+    if (!initialBaseline) return false;
+    const current = getCurrentStateSnapshot();
+    return JSON.stringify(current) !== JSON.stringify(initialBaseline);
+  })();
+
+  // Main Load Settings Effect: Loads fresh database values safely without clobbering in-flight typing
+  const loadSettings = useCallback(async (force = false) => {
+    const bizId = currentBusiness?.id || currentUser?.activeBusinessId || localStorage.getItem('karobaar-active-business') || 'demo-business-1';
+
+    if (!force && lastLoadedBizIdRef.current === bizId && dataLoaded) {
+      return;
+    }
+
+    try {
+      const biz = (await db.getById('businesses', bizId)) || currentBusiness || DEFAULT_BUSINESS;
+      const settings = biz.settings || {};
+      const aiSettings = settings.aiSettings || {};
+
+      let userRecord = currentUser;
+      if (currentUser?.id) {
+        userRecord = (await db.getById('users', currentUser.id)) || currentUser;
+      }
+
+      // Populate Business Profile
+      const bName = biz.name || 'SAS CAFETERIA';
+      const bType = biz.type || 'Cafeteria / Restaurant';
+      const bEmail = biz.email || '';
+      const bPhone = biz.phone || settings.phone || '+91 98765 43210';
+      const bAddr = biz.address || settings.address || 'Shop #4, Commercial Complex';
+      const bTaxId = settings.taxId || 'GSTIN-29AAAAA0000A1Z5';
+
+      setBusinessName(bName);
+      setBusinessType(bType);
+      setBusinessEmail(bEmail);
+      setBusinessPhone(bPhone);
+      setBusinessAddress(bAddr);
+      setTaxId(bTaxId);
+
+      // Populate Appearance
+      const loadedTheme = localStorage.getItem('karobaar-theme') || settings.theme || theme || 'light';
+      const loadedAccent = localStorage.getItem('karobaar-accent') || settings.accent || accent || 'default';
+      const loadedUiVersion = localStorage.getItem('karobaar-ui-version') || settings.appUiVersion || appUiVersion || 'v2';
+      setSelectedTheme(loadedTheme);
+      setSelectedAccent(loadedAccent);
+      setSelectedAppUiVersion(loadedUiVersion);
+
+      // Populate Customize AI
+      let savedAiLocal = {};
+      try {
+        savedAiLocal = JSON.parse(localStorage.getItem('karobaar_customize_ai_settings') || '{}');
+      } catch (e) {}
+
+      const aName = aiSettings.assistantName || savedAiLocal.assistantName || 'Jarvis';
+      const aWake = aiSettings.wakeWord || savedAiLocal.wakeWord || (aName === 'Mr. H' ? 'Hey Mr. H' : 'Hey Jarvis');
+      const aBgWake = aiSettings.backgroundWake ?? savedAiLocal.backgroundWake ?? true;
+      const aEn = aiSettings.aiEnabled ?? savedAiLocal.aiEnabled ?? true;
+      const aBubble = aiSettings.showFloatingBubble ?? savedAiLocal.showFloatingBubble ?? true;
+      const aAuto = aiSettings.autoExecute ?? savedAiLocal.autoExecute ?? true;
+      const aStock = aiSettings.autoAlertLowStock ?? savedAiLocal.autoAlertLowStock ?? true;
+      const aPrint = aiSettings.autoPrintReceipt ?? savedAiLocal.autoPrintReceipt ?? false;
+      const aDaily = aiSettings.dailySummaryNotification ?? savedAiLocal.dailySummaryNotification ?? true;
+      const aRapid = aiSettings.rapidBarcodeAdd ?? savedAiLocal.rapidBarcodeAdd ?? true;
+      const aLang = localStorage.getItem('karobaar_ai_language') || aiSettings.language || 'hinglish';
+
+      setAiAssistantName(aName);
+      setAiWakeWord(aWake);
+      setAiBackgroundWake(aBgWake);
+      setAiEnabled(aEn);
+      setAiFloatingBubble(aBubble);
+      setAiAutoExecute(aAuto);
+      setAutoAlertLowStock(aStock);
+      setAutoPrintReceipt(aPrint);
+      setDailySummaryNotification(aDaily);
+      setRapidBarcodeAdd(aRapid);
+      setAiLanguage(aLang);
+
+      const uId = settings.upiId || localStorage.getItem('karobaar_custom_upi_id') || 'karobaar.pay@upi';
+      const uImg = settings.upiQrImage || localStorage.getItem('karobaar_custom_upi_qr_img') || null;
+      const uMode = settings.upiDefaultMode || localStorage.getItem('karobaar_custom_upi_mode') || 'dynamic';
+      setStoreUpiId(uId);
+      setStoreUpiQrImage(uImg);
+      setStoreUpiMode(uMode);
+
+      // Populate Preferences
+      const prefCurr = settings.currency || 'INR';
+      const prefDate = settings.dateFormat || 'DD/MM/YYYY';
+      const prefLow = settings.lowStockThreshold ?? 5;
+      const prefTax = settings.taxRate ?? 5;
+      setCurrency(prefCurr);
+      setDateFormat(prefDate);
+      setLowStockThreshold(prefLow);
+      setTaxRate(prefTax);
+
+      // Populate Invoices
+      const invPrefix = settings.invoicePrefix || 'INV-';
+      const invTerms = settings.paymentTerms || 'Immediate / Due on Receipt';
+      const invFooter = settings.invoiceFooter || 'Thank you for choosing SAS CAFETERIA!';
+      setInvoicePrefix(invPrefix);
+      setPaymentTerms(invTerms);
+      setInvoiceFooter(invFooter);
+
+      // Populate Modules
+      const initialMods = biz.modules || {};
+      const populatedMods = {};
+      MODULES_LIST.forEach(m => {
+        populatedMods[m.id] = initialMods[m.id] !== false;
+      });
+      setEnabledModules(populatedMods);
+
+      // Populate Notifications
+      const notLow = settings.notifyLowStock ?? true;
+      const notSale = settings.notifyNewSale ?? true;
+      const notRep = settings.notifyDailyReport ?? false;
+      setNotifyLowStock(notLow);
+      setNotifyNewSale(notSale);
+      setNotifyDailyReport(notRep);
+
+      // Populate Account Details
+      const uName = userRecord?.name || 'HUMZA';
+      const uPhone = userRecord?.phone || '+91 98765 43210';
+      const uBranch = userRecord?.defaultBranch || 'main';
+      const uLock = userRecord?.autoLockTimeout || '30m';
+      setAccountDisplayName(uName);
+      setAccountPhone(uPhone);
+      setDefaultBranch(uBranch);
+      setAutoLockTimeout(uLock);
+
+      // Save baseline snapshot
+      const baseline = {
+        general: {
+          businessName: bName,
+          businessType: bType,
+          businessEmail: bEmail,
+          businessPhone: bPhone,
+          businessAddress: bAddr,
+          taxId: bTaxId
+        },
+        appearance: {
+          theme: loadedTheme,
+          accent: loadedAccent,
+          appUiVersion: loadedUiVersion
+        },
+        customize: {
+          aiAssistantName: aName,
+          aiWakeWord: aWake,
+          aiBackgroundWake: aBgWake,
+          aiEnabled: aEn,
+          aiFloatingBubble: aBubble,
+          aiAutoExecute: aAuto,
+          autoAlertLowStock: aStock,
+          autoPrintReceipt: aPrint,
+          dailySummaryNotification: aDaily,
+          rapidBarcodeAdd: aRapid,
+          aiLanguage: aLang,
+          storeUpiId: uId,
+          storeUpiQrImage: uImg,
+          storeUpiMode: uMode
+        },
+        preferences: {
+          currency: prefCurr,
+          dateFormat: prefDate,
+          lowStockThreshold: Number(prefLow),
+          taxRate: Number(prefTax)
+        },
+        invoices: {
+          invoicePrefix: invPrefix,
+          paymentTerms: invTerms,
+          invoiceFooter: invFooter
+        },
+        features: populatedMods,
+        notifications: {
+          notifyLowStock: notLow,
+          notifyNewSale: notSale,
+          notifyDailyReport: notRep
+        },
+        account: {
+          accountDisplayName: uName,
+          accountPhone: uPhone,
+          defaultBranch: uBranch,
+          autoLockTimeout: uLock
+        }
+      };
+
+      setInitialBaseline(baseline);
+      lastLoadedBizIdRef.current = bizId;
+      setDataLoaded(true);
+    } catch (err) {
+      console.error("[Settings] Load error:", err);
+    }
+  }, [currentBusiness?.id, currentUser?.id, dataLoaded]);
+
   useEffect(() => {
-    if (currentBusiness) {
-      setBusinessName(currentBusiness.name || '');
-      setBusinessEmail(currentBusiness.email || '');
-      setBusinessType(currentBusiness.type || 'Cafeteria / Restaurant');
-      setCurrency(currentBusiness.settings?.currency || 'INR');
-      setDateFormat(currentBusiness.settings?.dateFormat || 'DD/MM/YYYY');
-      setLowStockThreshold(currentBusiness.settings?.lowStockThreshold || 5);
-      setTaxRate(currentBusiness.settings?.taxRate ?? 5);
-      setTaxId(currentBusiness.settings?.taxId || 'GSTIN-29AAAAA0000A1Z5');
-      setInvoicePrefix(currentBusiness.settings?.invoicePrefix || 'INV-');
-      setInvoiceFooter(currentBusiness.settings?.invoiceFooter || 'Thank you for choosing SAS CAFETERIA!');
-      
-      setNotifyLowStock(currentBusiness.settings?.notifyLowStock ?? true);
-      setNotifyNewSale(currentBusiness.settings?.notifyNewSale ?? true);
-      setNotifyDailyReport(currentBusiness.settings?.notifyDailyReport ?? false);
-
-      setEnabledModules(currentBusiness.modules || {});
-    }
-
-    if (currentUser) {
-      setAccountDisplayName(currentUser.name || 'HUMZA');
-      setAccountPhone(currentUser.phone || '+91 98765 43210');
-    }
-  }, [currentBusiness, currentUser]);
+    loadSettings();
+  }, [currentBusiness?.id, currentUser?.id]);
 
   const toggleModule = (modId) => {
     setEnabledModules(prev => ({
@@ -332,17 +570,47 @@ const Settings = () => {
     setEnabledModules(allDisabled);
   };
 
-  const handleSave = async () => {
-    if (!currentUser?.activeBusinessId) return;
+  // Robust Save Handler supporting section-specific or global saves
+  const handleSave = async (targetSection = null) => {
+    const bizId = currentBusiness?.id || currentUser?.activeBusinessId || localStorage.getItem('karobaar-active-business') || 'demo-business-1';
+    
+    // 1. Validation
+    if (targetSection === 'general' || !targetSection) {
+      if (!businessName || !businessName.trim()) {
+        setErrorBanner('Company / Legal Name is required.');
+        setTimeout(() => setErrorBanner(''), 4500);
+        return;
+      }
+    }
+
+    if (targetSection === 'preferences' || !targetSection) {
+      if (isNaN(taxRate) || Number(taxRate) < 0) {
+        setErrorBanner('Default Tax Rate must be a valid positive number or 0.');
+        setTimeout(() => setErrorBanner(''), 4500);
+        return;
+      }
+      if (isNaN(lowStockThreshold) || Number(lowStockThreshold) < 0) {
+        setErrorBanner('Low Stock Threshold must be a valid positive number or 0.');
+        setTimeout(() => setErrorBanner(''), 4500);
+        return;
+      }
+    }
+
     setSaving(true);
     setSaveBanner('');
+    setErrorBanner('');
     setIsChangingSettings(true);
     setSettingsChangedSuccess(false);
 
     try {
+      // 2. Fetch fresh business record to guarantee non-destructive merges
+      const freshBiz = (await db.getById('businesses', bizId)) || currentBusiness || DEFAULT_BUSINESS;
+      const freshSettings = freshBiz.settings || {};
+
       const aiConfig = {
+        ...(freshSettings.aiSettings || {}),
         assistantName: aiAssistantName || 'Jarvis',
-        wakeWord: aiWakeWord || (aiAssistantName || 'Jarvis'),
+        wakeWord: aiWakeWord || (aiAssistantName ? `Hey ${aiAssistantName}` : 'Hey Jarvis'),
         backgroundWake: aiBackgroundWake,
         aiEnabled,
         showFloatingBubble: aiFloatingBubble,
@@ -350,69 +618,111 @@ const Settings = () => {
         autoAlertLowStock,
         autoPrintReceipt,
         dailySummaryNotification,
-        rapidBarcodeAdd
+        rapidBarcodeAdd,
+        language: aiLanguage
       };
+
+      const updatedSettings = {
+        ...freshSettings,
+        currency,
+        dateFormat,
+        lowStockThreshold: Math.max(0, Number(lowStockThreshold) || 5),
+        taxRate: Math.max(0, Number(taxRate) || 0),
+        taxId: (taxId || '').trim(),
+        phone: (businessPhone || '').trim(),
+        address: (businessAddress || '').trim(),
+        invoicePrefix: (invoicePrefix || 'INV-').trim(),
+        paymentTerms,
+        invoiceFooter: invoiceFooter || '',
+        notifyLowStock,
+        notifyNewSale,
+        notifyDailyReport,
+        theme: selectedTheme,
+        accent: selectedAccent,
+        appUiVersion: selectedAppUiVersion,
+        aiSettings: aiConfig,
+        upiId: (storeUpiId || '').trim(),
+        upiQrImage: storeUpiQrImage,
+        upiDefaultMode: storeUpiMode
+      };
+
+      const businessUpdates = {
+        name: (businessName || 'SAS CAFETERIA').trim(),
+        type: businessType,
+        email: (businessEmail || '').trim(),
+        phone: (businessPhone || '').trim(),
+        address: (businessAddress || '').trim(),
+        settings: updatedSettings,
+        modules: enabledModules
+      };
+
+      // 3. Persist business to database & AppContext
+      if (updateCurrentBusiness) {
+        await updateCurrentBusiness(businessUpdates);
+      } else {
+        await db.update('businesses', bizId, businessUpdates);
+      }
+
+      // 4. Update immediate appearance & UI modes
+      localStorage.setItem('karobaar-theme', selectedTheme);
+      localStorage.setItem('karobaar-accent', selectedAccent);
+      localStorage.setItem('karobaar-ui-version', selectedAppUiVersion);
+      if (setTheme) setTheme(selectedTheme);
+      if (setAccent) setAccent(selectedAccent);
+      if (setAppUiVersion) setAppUiVersion(selectedAppUiVersion);
+
+      // 5. Update local storage fast caches
       localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(aiConfig));
-      window.dispatchEvent(new CustomEvent('karobaar_settings_updated', { detail: { assistantName: aiAssistantName || 'Jarvis' } }));
       localStorage.setItem('karobaar_ai_language', aiLanguage);
       localStorage.setItem('karobaar_custom_upi_id', storeUpiId);
       if (storeUpiQrImage) localStorage.setItem('karobaar_custom_upi_qr_img', storeUpiQrImage);
       else localStorage.removeItem('karobaar_custom_upi_qr_img');
       localStorage.setItem('karobaar_custom_upi_mode', storeUpiMode);
 
-      await db.update('businesses', currentUser.activeBusinessId, {
-        name: businessName,
-        email: businessEmail,
-        type: businessType,
-        settings: {
-          ...currentBusiness?.settings,
-          currency,
-          dateFormat,
-          lowStockThreshold: Number(lowStockThreshold),
-          taxRate: Number(taxRate),
-          taxId,
-          invoicePrefix,
-          invoiceFooter,
-          notifyLowStock,
-          notifyNewSale,
-          notifyDailyReport,
-          theme,
-          accent: 'monochrome',
-          appUiVersion,
-          aiSettings: aiConfig,
-          upiId: storeUpiId,
-          upiQrImage: storeUpiQrImage,
-          upiDefaultMode: storeUpiMode
-        },
-        modules: enabledModules
-      });
-
-      // Update user local session
+      // 6. Update user account profile if present
       if (currentUser?.id) {
         try {
           await db.update('users', currentUser.id, {
-            name: accountDisplayName,
-            phone: accountPhone
+            name: (accountDisplayName || '').trim(),
+            phone: (accountPhone || '').trim(),
+            defaultBranch,
+            autoLockTimeout
           });
-        } catch (e) {}
+          if (refreshUserProfile) await refreshUserProfile();
+        } catch (e) {
+          console.warn("User profile save note:", e);
+        }
       }
 
-      await refreshUserProfile();
-      
-      // Stage 2: Success state on loading screen with action
+      // 7. Broadcast settings update to Topbar, POS, and Jarvis
+      window.dispatchEvent(new CustomEvent('karobaar_settings_updated', { 
+        detail: { 
+          assistantName: aiAssistantName || 'Jarvis',
+          businessId: bizId,
+          businessName: businessUpdates.name,
+          settings: updatedSettings 
+        } 
+      }));
+
+      // 8. Update baseline snapshot so isDirty clears
+      setInitialBaseline(getCurrentStateSnapshot());
+
+      // 9. Display success feedback
       setSettingsChangedSuccess(true);
-      setSaveBanner('This settings has been changed');
+      const sectionLabel = targetSection ? `Section` : `Workspace`;
+      setSaveBanner(`${sectionLabel} settings saved successfully.`);
 
       setTimeout(() => {
         setIsChangingSettings(false);
         setSettingsChangedSuccess(false);
-      }, 2000);
+      }, 1400);
 
-      setTimeout(() => setSaveBanner(''), 5000);
+      setTimeout(() => setSaveBanner(''), 4500);
     } catch (err) {
-      console.error(err);
+      console.error("[Settings] Save error:", err);
       setIsChangingSettings(false);
-      setSaveBanner('Failed to save settings.');
+      setSettingsChangedSuccess(false);
+      setErrorBanner(`Failed to save settings: ${err.message || 'Storage error'}. Your edits are preserved.`);
     } finally {
       setSaving(false);
     }
@@ -443,9 +753,14 @@ const Settings = () => {
 
   const handleExportData = async () => {
     try {
-      const sales = await db.getCollection('sales', currentUser?.activeBusinessId);
-      const products = await db.getCollection('products', currentUser?.activeBusinessId);
-      const customers = await db.getCollection('customers', currentUser?.activeBusinessId);
+      const bizId = currentBusiness?.id || currentUser?.activeBusinessId || 'demo-business-1';
+      const sales = await db.getCollection('sales', bizId);
+      const products = await db.getCollection('products', bizId);
+      const customers = await db.getCollection('customers', bizId);
+      const suppliers = await db.getCollection('suppliers', bizId);
+      const expenses = await db.getCollection('expenses', bizId);
+      const purchases = await db.getCollection('purchases', bizId);
+      const employees = await db.getCollection('employees', bizId);
       
       const backupPayload = {
         business: currentBusiness?.name || 'SAS CAFETERIA',
@@ -456,7 +771,12 @@ const Settings = () => {
         totalCustomers: customers.length,
         sales,
         products,
-        customers
+        customers,
+        suppliers,
+        expenses,
+        purchases,
+        employees,
+        settings: currentBusiness?.settings || {}
       };
 
       const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json' });
@@ -489,12 +809,31 @@ const Settings = () => {
   };
 
   const isMobile = useIsMobile();
-  if (isMobile) {
+  const tabParam = queryParams.get('tab');
+  
+  // On mobile, if no tab param is present in URL, show the high-level MobileMenu.
+  // If a tab param is clicked, display that settings section with a clean back button.
+  if (isMobile && !tabParam) {
     return <MobileMenu />;
   }
 
   return (
     <div className="settings-page-wrapper">
+      {/* Mobile Back Button */}
+      {isMobile && (
+        <div className="flex items-center gap-2 pb-2">
+          <button 
+            type="button" 
+            className="settings-btn-secondary" 
+            style={{ height: '34px', fontSize: '12px', padding: '0 12px' }}
+            onClick={() => navigate('/settings')}
+          >
+            <ArrowLeft size={14} />
+            <span>Back to Settings Menu</span>
+          </button>
+        </div>
+      )}
+
       {/* Header Bar */}
       <div className="settings-header-strip">
         <div className="settings-header-text">
@@ -502,6 +841,26 @@ const Settings = () => {
           <p>Configure business parameters, security & operating mode</p>
         </div>
         <div className="settings-header-actions">
+          {hasUnsavedChanges && (
+            <span className="settings-header-dirty-badge" title="You have unsaved changes">
+              ● Unsaved Changes
+            </span>
+          )}
+
+          {errorBanner && (
+            <div className="settings-error-banner">
+              <AlertCircle size={14} />
+              <span>{errorBanner}</span>
+              <button 
+                type="button" 
+                className="settings-action-banner-close"
+                onClick={() => setErrorBanner('')}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {saveBanner && (
             <div className="settings-action-banner">
               <CheckCircle2 size={15} />
@@ -515,13 +874,15 @@ const Settings = () => {
               </button>
             </div>
           )}
+
           <button 
             className="settings-btn-primary"
-            onClick={handleSave} 
+            onClick={() => handleSave()} 
             disabled={saving}
+            title={hasUnsavedChanges ? "Save all workspace modifications" : "Settings currently up to date"}
           >
             <Save size={16} />
-            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+            <span>{saving ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}</span>
           </button>
         </div>
       </div>
@@ -581,6 +942,7 @@ const Settings = () => {
                     className="settings-input-field" 
                     value={businessName} 
                     onChange={e => setBusinessName(e.target.value)} 
+                    placeholder="e.g. SAS CAFETERIA"
                   />
                 </div>
 
@@ -606,6 +968,7 @@ const Settings = () => {
                     className="settings-input-field" 
                     value={businessEmail} 
                     onChange={e => setBusinessEmail(e.target.value)} 
+                    placeholder="e.g. contact@business.com"
                   />
                 </div>
 
@@ -616,6 +979,7 @@ const Settings = () => {
                     className="settings-input-field" 
                     value={businessPhone} 
                     onChange={e => setBusinessPhone(e.target.value)} 
+                    placeholder="+91 98765 43210"
                   />
                 </div>
 
@@ -626,6 +990,7 @@ const Settings = () => {
                     className="settings-input-field" 
                     value={businessAddress} 
                     onChange={e => setBusinessAddress(e.target.value)} 
+                    placeholder="Shop #, Street, City, State"
                   />
                 </div>
 
@@ -636,8 +1001,29 @@ const Settings = () => {
                     className="settings-input-field" 
                     value={taxId} 
                     onChange={e => setTaxId(e.target.value)} 
+                    placeholder="e.g. GSTIN-29AAAAA0000A1Z5"
                   />
                 </div>
+              </div>
+
+              {/* Section Footer */}
+              <div className="settings-section-footer">
+                <div className="flex items-center gap-2">
+                  {isSectionDirty('general') ? (
+                    <span className="settings-dirty-pill">● Unsaved business profile changes</span>
+                  ) : (
+                    <span className="settings-saved-pill">✓ Business profile up to date</span>
+                  )}
+                </div>
+                <button 
+                  type="button" 
+                  className="settings-btn-primary"
+                  disabled={saving}
+                  onClick={() => handleSave('general')}
+                >
+                  <Save size={15} />
+                  <span>{saving ? 'Saving...' : 'Save Business Profile'}</span>
+                </button>
               </div>
             </div>
           )}
@@ -657,33 +1043,41 @@ const Settings = () => {
                 <h3 className="settings-section-heading">Theme Contrast (Strictly Black & White)</h3>
                 <div className="settings-grid-2">
                   <button
-                    onClick={() => setTheme('light')}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTheme('light');
+                      if (setTheme) setTheme('light');
+                    }}
                     className="settings-nav-btn p-4 flex items-center justify-between"
                     style={{
-                      border: theme === 'light' ? '2px solid #09090b' : '1px solid #e4e4e7',
-                      backgroundColor: theme === 'light' ? '#f4f4f5' : '#ffffff'
+                      border: selectedTheme === 'light' ? '2px solid #09090b' : '1px solid #e4e4e7',
+                      backgroundColor: selectedTheme === 'light' ? '#f4f4f5' : '#ffffff'
                     }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full border border-black bg-white"></div>
                       <span className="font-bold text-sm">Light Mode (Clean White)</span>
                     </div>
-                    {theme === 'light' && <CheckCircle2 size={16} />}
+                    {selectedTheme === 'light' && <CheckCircle2 size={16} />}
                   </button>
 
                   <button
-                    onClick={() => setTheme('dark')}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTheme('dark');
+                      if (setTheme) setTheme('dark');
+                    }}
                     className="settings-nav-btn p-4 flex items-center justify-between"
                     style={{
-                      border: theme === 'dark' ? '2px solid #ffffff' : '1px solid rgba(255,255,255,0.2)',
-                      backgroundColor: theme === 'dark' ? '#141416' : '#1e1e24'
+                      border: selectedTheme === 'dark' ? '2px solid #ffffff' : '1px solid rgba(255,255,255,0.2)',
+                      backgroundColor: selectedTheme === 'dark' ? '#141416' : '#1e1e24'
                     }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full border border-white bg-black"></div>
                       <span className="font-bold text-sm text-white">Dark Mode (Elevated Black)</span>
                     </div>
-                    {theme === 'dark' && <CheckCircle2 size={16} className="text-white" />}
+                    {selectedTheme === 'dark' && <CheckCircle2 size={16} className="text-white" />}
                   </button>
                 </div>
               </div>
@@ -693,40 +1087,66 @@ const Settings = () => {
                 <h3 className="settings-section-heading">Operating UI Mode</h3>
                 <div className="settings-grid-2">
                   <div 
-                    onClick={() => setAppUiVersion('legacy')}
+                    onClick={() => {
+                      setSelectedAppUiVersion('legacy');
+                      if (setAppUiVersion) setAppUiVersion('legacy');
+                    }}
                     className="p-4 rounded-xl border cursor-pointer transition-all"
                     style={{
-                      border: appUiVersion === 'legacy' ? '2px solid #09090b' : '1px solid #e4e4e7',
-                      backgroundColor: appUiVersion === 'legacy' ? 'var(--bg-hover)' : 'transparent'
+                      border: selectedAppUiVersion === 'legacy' ? '2px solid #09090b' : '1px solid #e4e4e7',
+                      backgroundColor: selectedAppUiVersion === 'legacy' ? 'var(--bg-hover)' : 'transparent'
                     }}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-bold text-sm">⚡ Legacy Operations Desk</span>
-                      {appUiVersion === 'legacy' && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">ACTIVE</span>}
+                      {selectedAppUiVersion === 'legacy' && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">ACTIVE</span>}
                     </div>
                     <p className="text-xs text-text-secondary">Fast-track desk with fit-to-page buttons, catalog glance, and rapid ledger.</p>
                   </div>
 
                   <div 
-                    onClick={() => setAppUiVersion('premium')}
+                    onClick={() => {
+                      setSelectedAppUiVersion('premium');
+                      if (setAppUiVersion) setAppUiVersion('premium');
+                    }}
                     className="p-4 rounded-xl border cursor-pointer transition-all"
                     style={{
-                      border: appUiVersion === 'premium' ? '2px solid #09090b' : '1px solid #e4e4e7',
-                      backgroundColor: appUiVersion === 'premium' ? 'var(--bg-hover)' : 'transparent'
+                      border: selectedAppUiVersion === 'premium' ? '2px solid #09090b' : '1px solid #e4e4e7',
+                      backgroundColor: selectedAppUiVersion === 'premium' ? 'var(--bg-hover)' : 'transparent'
                     }}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-bold text-sm">💎 Premium Command Center</span>
-                      {appUiVersion === 'premium' && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">ACTIVE</span>}
+                      {selectedAppUiVersion === 'premium' && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">ACTIVE</span>}
                     </div>
                     <p className="text-xs text-text-secondary">Multi-metric executive workspace with dual charts and radar health monitor.</p>
                   </div>
                 </div>
               </div>
+
+              {/* Section Footer */}
+              <div className="settings-section-footer">
+                <div className="flex items-center gap-2">
+                  {isSectionDirty('appearance') ? (
+                    <span className="settings-dirty-pill">● Unsaved appearance changes</span>
+                  ) : (
+                    <span className="settings-saved-pill">✓ Appearance up to date</span>
+                  )}
+                </div>
+                <button 
+                  type="button" 
+                  className="settings-btn-primary"
+                  disabled={saving}
+                  onClick={() => handleSave('appearance')}
+                >
+                  <Save size={15} />
+                  <span>{saving ? 'Saving...' : 'Save Appearance'}</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* TAB: Customize (AI & Automations) */}
+          {/* TAB 3: Customize (AI & Automations) */}
           {activeTab === 'customize' && (
             <div className="settings-content-card">
               <div className="settings-card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -792,7 +1212,7 @@ const Settings = () => {
                     }}
                     placeholder="Mr. H"
                   />
-                  {/* Preset Assistant Names - Single Identity Active */}
+                  {/* Preset Assistant Names */}
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     {[
                       { name: 'Jarvis', badge: 'Default' },
@@ -804,7 +1224,7 @@ const Settings = () => {
                         type="button"
                         onClick={() => {
                           setAiAssistantName(preset.name);
-                          setAiWakeWord(preset.name);
+                          setAiWakeWord(preset.name === 'Mr. H' ? 'Hey Mr. H' : preset.name);
                         }}
                         className={`px-3 py-1.5 text-xs rounded-lg border font-bold transition-all flex items-center gap-1.5 ${
                           (aiAssistantName || 'Jarvis') === preset.name
@@ -829,7 +1249,7 @@ const Settings = () => {
                     className="settings-input-field" 
                     value={aiWakeWord} 
                     onChange={e => setAiWakeWord(e.target.value)}
-                    placeholder="Hey Mr. H"
+                    placeholder="Hey Jarvis"
                   />
                   <span className="text-[11px] text-text-muted mt-1 block">Say this phrase aloud anytime to wake the AI hands-free.</span>
                 </div>
@@ -851,10 +1271,7 @@ const Settings = () => {
                   <select 
                     className="settings-input-field"
                     value={aiLanguage}
-                    onChange={e => {
-                      setAiLanguage(e.target.value);
-                      localStorage.setItem('karobaar_ai_language', e.target.value);
-                    }}
+                    onChange={e => setAiLanguage(e.target.value)}
                   >
                     <option value="hinglish">Hinglish (Roman English - e.g. "Aaj ki sale ₹...", "1 Chai add kardi")</option>
                     <option value="en">Pure English (e.g. "Today's sales report...", "Added 1 Tea")</option>
@@ -1049,10 +1466,30 @@ const Settings = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Section Footer */}
+              <div className="settings-section-footer">
+                <div className="flex items-center gap-2">
+                  {isSectionDirty('customize') ? (
+                    <span className="settings-dirty-pill">● Unsaved AI changes</span>
+                  ) : (
+                    <span className="settings-saved-pill">✓ AI configuration up to date</span>
+                  )}
+                </div>
+                <button 
+                  type="button" 
+                  className="settings-btn-primary"
+                  disabled={saving}
+                  onClick={() => handleSave('customize')}
+                >
+                  <Save size={15} />
+                  <span>{saving ? 'Saving...' : 'Save AI Settings'}</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* TAB 3: Preferences & Tax */}
+          {/* TAB 4: Preferences & Tax */}
           {activeTab === 'preferences' && (
             <div className="settings-content-card">
               <div className="settings-card-header">
@@ -1096,6 +1533,7 @@ const Settings = () => {
                   <label>Low Stock Alert Threshold (Units)</label>
                   <input 
                     type="number" 
+                    min="0"
                     className="settings-input-field" 
                     value={lowStockThreshold} 
                     onChange={e => setLowStockThreshold(e.target.value)} 
@@ -1106,16 +1544,38 @@ const Settings = () => {
                   <label>Default Tax Rate (%)</label>
                   <input 
                     type="number" 
+                    min="0"
+                    step="0.1"
                     className="settings-input-field" 
                     value={taxRate} 
                     onChange={e => setTaxRate(e.target.value)} 
                   />
                 </div>
               </div>
+
+              {/* Section Footer */}
+              <div className="settings-section-footer">
+                <div className="flex items-center gap-2">
+                  {isSectionDirty('preferences') ? (
+                    <span className="settings-dirty-pill">● Unsaved preferences changes</span>
+                  ) : (
+                    <span className="settings-saved-pill">✓ Financial defaults up to date</span>
+                  )}
+                </div>
+                <button 
+                  type="button" 
+                  className="settings-btn-primary"
+                  disabled={saving}
+                  onClick={() => handleSave('preferences')}
+                >
+                  <Save size={15} />
+                  <span>{saving ? 'Saving...' : 'Save Preferences'}</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* TAB 4: Invoice Settings */}
+          {/* TAB 5: Invoice Settings */}
           {activeTab === 'invoices' && (
             <div className="settings-content-card">
               <div className="settings-card-header">
@@ -1133,16 +1593,21 @@ const Settings = () => {
                     className="settings-input-field" 
                     value={invoicePrefix} 
                     onChange={e => setInvoicePrefix(e.target.value)} 
+                    placeholder="INV-"
                   />
                 </div>
 
                 <div className="settings-input-group">
                   <label>Payment Terms</label>
-                  <select className="settings-input-field">
-                    <option>Immediate / Due on Receipt</option>
-                    <option>Net 7 Days</option>
-                    <option>Net 15 Days</option>
-                    <option>Net 30 Days</option>
+                  <select 
+                    className="settings-input-field"
+                    value={paymentTerms}
+                    onChange={e => setPaymentTerms(e.target.value)}
+                  >
+                    <option value="Immediate / Due on Receipt">Immediate / Due on Receipt</option>
+                    <option value="Net 7 Days">Net 7 Days</option>
+                    <option value="Net 15 Days">Net 15 Days</option>
+                    <option value="Net 30 Days">Net 30 Days</option>
                   </select>
                 </div>
 
@@ -1153,13 +1618,34 @@ const Settings = () => {
                     className="settings-input-field" 
                     value={invoiceFooter} 
                     onChange={e => setInvoiceFooter(e.target.value)} 
+                    placeholder="Thank you for choosing us!"
                   />
                 </div>
+              </div>
+
+              {/* Section Footer */}
+              <div className="settings-section-footer">
+                <div className="flex items-center gap-2">
+                  {isSectionDirty('invoices') ? (
+                    <span className="settings-dirty-pill">● Unsaved invoice changes</span>
+                  ) : (
+                    <span className="settings-saved-pill">✓ Billing defaults up to date</span>
+                  )}
+                </div>
+                <button 
+                  type="button" 
+                  className="settings-btn-primary"
+                  disabled={saving}
+                  onClick={() => handleSave('invoices')}
+                >
+                  <Save size={15} />
+                  <span>{saving ? 'Saving...' : 'Save Invoice Settings'}</span>
+                </button>
               </div>
             </div>
           )}
 
-          {/* TAB 5: Features & Modules */}
+          {/* TAB 6: Features & Modules */}
           {activeTab === 'features' && (
             <div className="settings-content-card">
               <div className="settings-card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1208,15 +1694,35 @@ const Settings = () => {
                   );
                 })}
               </div>
+
+              {/* Section Footer */}
+              <div className="settings-section-footer">
+                <div className="flex items-center gap-2">
+                  {isSectionDirty('features') ? (
+                    <span className="settings-dirty-pill">● Unsaved module changes</span>
+                  ) : (
+                    <span className="settings-saved-pill">✓ Modules active & synchronized</span>
+                  )}
+                </div>
+                <button 
+                  type="button" 
+                  className="settings-btn-primary"
+                  disabled={saving}
+                  onClick={() => handleSave('features')}
+                >
+                  <Save size={15} />
+                  <span>{saving ? 'Saving...' : 'Save Active Modules'}</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* TAB 6: Team & Role Permissions */}
+          {/* TAB 7: Team & Role Permissions */}
           {(activeTab === 'users' || activeTab === 'team') && (
             <TeamManagement />
           )}
 
-          {/* TAB 7: Notifications */}
+          {/* TAB 8: Notifications */}
           {activeTab === 'notifications' && (
             <div className="settings-content-card">
               <div className="settings-card-header">
@@ -1251,10 +1757,30 @@ const Settings = () => {
                   </div>
                 </label>
               </div>
+
+              {/* Section Footer */}
+              <div className="settings-section-footer">
+                <div className="flex items-center gap-2">
+                  {isSectionDirty('notifications') ? (
+                    <span className="settings-dirty-pill">● Unsaved notification changes</span>
+                  ) : (
+                    <span className="settings-saved-pill">✓ Notification triggers up to date</span>
+                  )}
+                </div>
+                <button 
+                  type="button" 
+                  className="settings-btn-primary"
+                  disabled={saving}
+                  onClick={() => handleSave('notifications')}
+                >
+                  <Save size={15} />
+                  <span>{saving ? 'Saving...' : 'Save Notifications'}</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* TAB 8: Data Backup */}
+          {/* TAB 9: Data Backup */}
           {activeTab === 'backup' && (
             <div className="settings-content-card">
               <div className="settings-card-header">
@@ -1270,7 +1796,7 @@ const Settings = () => {
                 </p>
 
                 <div>
-                  <button className="settings-btn-primary" onClick={handleExportData}>
+                  <button type="button" className="settings-btn-primary" onClick={handleExportData}>
                     <Download size={16} />
                     <span>Export Full Data Backup (.json)</span>
                   </button>
@@ -1279,7 +1805,7 @@ const Settings = () => {
                 <div className="pt-4 border-t border-[var(--border-color)] mt-2">
                   <h4 className="font-bold text-sm text-text-main mb-1">Database Maintenance</h4>
                   <p className="text-xs text-text-secondary mb-3">Re-seed standard cafeteria demo data if needed.</p>
-                  <button className="settings-btn-secondary" onClick={handleResetData}>
+                  <button type="button" className="settings-btn-secondary" onClick={handleResetData}>
                     <RotateCcw size={15} />
                     <span>Reset to Default Demo State</span>
                   </button>
@@ -1288,7 +1814,7 @@ const Settings = () => {
             </div>
           )}
 
-          {/* TAB 9: Account & Security (Comprehensive & Ultra-Clean) */}
+          {/* TAB 10: Account & Security */}
           {activeTab === 'account' && (
             <div className="settings-content-card">
               <div className="settings-card-header">
@@ -1302,7 +1828,7 @@ const Settings = () => {
               <div className="settings-account-hero">
                 <div className="settings-account-user-info">
                   <div className="settings-account-avatar">
-                    {currentUser?.name?.charAt(0) || 'H'}
+                    {accountDisplayName?.charAt(0) || currentUser?.name?.charAt(0) || 'H'}
                   </div>
                   <div className="settings-account-meta">
                     <h3>{accountDisplayName || currentUser?.name || 'HUMZA'}</h3>
@@ -1314,6 +1840,7 @@ const Settings = () => {
                 </div>
 
                 <button 
+                  type="button"
                   className="settings-btn-secondary" 
                   onClick={handleLogout}
                   title="Sign out of Karobaar"
@@ -1373,6 +1900,26 @@ const Settings = () => {
                     </select>
                   </div>
                 </div>
+              </div>
+
+              {/* Section Footer */}
+              <div className="settings-section-footer">
+                <div className="flex items-center gap-2">
+                  {isSectionDirty('account') ? (
+                    <span className="settings-dirty-pill">● Unsaved personal details</span>
+                  ) : (
+                    <span className="settings-saved-pill">✓ Personal details up to date</span>
+                  )}
+                </div>
+                <button 
+                  type="button" 
+                  className="settings-btn-primary"
+                  disabled={saving}
+                  onClick={() => handleSave('account')}
+                >
+                  <Save size={15} />
+                  <span>{saving ? 'Saving...' : 'Save Profile Changes'}</span>
+                </button>
               </div>
 
               {/* Section 2: Security & Change Password */}
@@ -1463,7 +2010,6 @@ const Settings = () => {
 
                 <div className="flex flex-col gap-2.5">
                   {deviceList.map(device => {
-                    // Render appropriate device icon
                     const renderIcon = () => {
                       if (device.isCurrent) return <Monitor size={20} />;
                       if (device.type === 'mobile') return <Smartphone size={20} />;
@@ -1567,40 +2113,40 @@ const Settings = () => {
       </div>
 
       {/* Settings Change Loading Transition Overlay with Action Notification */}
-    {isChangingSettings && (
-      <div className="settings-transition-overlay">
-        <div className="settings-transition-card">
-          {!settingsChangedSuccess ? (
-            <>
-              <div className="settings-transition-spinner" />
-              <h3 className="settings-transition-title">Saving Workspace Settings...</h3>
-              <p className="settings-transition-sub">Applying business parameters & operational rules</p>
-            </>
-          ) : (
-            <>
-              <div className="settings-transition-check">
-                <CheckCircle2 size={32} />
-              </div>
-              <h3 className="settings-transition-title">This settings has been changed</h3>
-              <p className="settings-transition-sub">Workspace configuration and preferences have been successfully updated.</p>
-              <div className="settings-transition-actions">
-                <button 
-                  type="button"
-                  className="settings-transition-btn"
-                  onClick={() => {
-                    setIsChangingSettings(false);
-                    setSettingsChangedSuccess(false);
-                  }}
-                >
-                  <Check size={14} />
-                  <span>Done / Dismiss</span>
-                </button>
-              </div>
-            </>
-          )}
+      {isChangingSettings && (
+        <div className="settings-transition-overlay">
+          <div className="settings-transition-card">
+            {!settingsChangedSuccess ? (
+              <>
+                <div className="settings-transition-spinner" />
+                <h3 className="settings-transition-title">Saving Workspace Settings...</h3>
+                <p className="settings-transition-sub">Applying business parameters & operational rules</p>
+              </>
+            ) : (
+              <>
+                <div className="settings-transition-check">
+                  <CheckCircle2 size={32} />
+                </div>
+                <h3 className="settings-transition-title">Settings Saved Successfully</h3>
+                <p className="settings-transition-sub">Workspace configuration and preferences have been updated.</p>
+                <div className="settings-transition-actions">
+                  <button 
+                    type="button"
+                    className="settings-transition-btn"
+                    onClick={() => {
+                      setIsChangingSettings(false);
+                      setSettingsChangedSuccess(false);
+                    }}
+                  >
+                    <Check size={14} />
+                    <span>Done / Dismiss</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 };

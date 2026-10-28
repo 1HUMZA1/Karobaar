@@ -1,9 +1,10 @@
 import { db } from './databaseService';
+import { localDb } from './localDb';
 import { subDays, formatISO } from 'date-fns';
 
 export const initializeDemoData = async (businessId = 'demo-business-1') => {
   // Ensure business entity exists in localDb
-  const existingBiz = await db.getById('businesses', businessId);
+  const existingBiz = localDb.get('businesses', businessId);
   if (!existingBiz) {
     const demoBusinessDoc = {
       id: businessId,
@@ -29,11 +30,11 @@ export const initializeDemoData = async (businessId = 'demo-business-1') => {
         invoices: true
       }
     };
-    await db.save('businesses', businessId, demoBusinessDoc);
+    localDb.save('businesses', businessId, demoBusinessDoc, false, businessId);
   }
 
   // Ensure user entity exists in localDb
-  const existingUser = await db.getById('users', 'demo-user-1');
+  const existingUser = localDb.get('users', 'demo-user-1');
   if (!existingUser) {
     const demoUserDoc = {
       id: 'demo-user-1',
@@ -44,7 +45,7 @@ export const initializeDemoData = async (businessId = 'demo-business-1') => {
       memberships: [businessId],
       onboardingCompleted: true
     };
-    await db.save('users', 'demo-user-1', demoUserDoc);
+    localDb.save('users', 'demo-user-1', demoUserDoc, false, businessId);
   }
 
   const products = await db.getCollection('products', businessId);

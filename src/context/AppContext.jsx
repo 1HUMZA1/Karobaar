@@ -344,6 +344,79 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const refreshBusinessProfile = useCallback(async (businessId = null) => {
+    const targetId = businessId || currentBusiness?.id || currentUser?.activeBusinessId || localStorage.getItem('karobaar-active-business') || 'demo-business-1';
+    try {
+      const freshBiz = await db.getById('businesses', targetId);
+      if (freshBiz) {
+        setCurrentBusiness(freshBiz);
+        setUserBusinesses(prev => {
+          const list = prev || [];
+          const idx = list.findIndex(b => b.id === targetId);
+          if (idx !== -1) {
+            const next = [...list];
+            next[idx] = freshBiz;
+            return next;
+          }
+          return [...list, freshBiz];
+        });
+        try {
+          localStorage.setItem('karobaar_session_business', JSON.stringify(freshBiz));
+          localStorage.setItem('karobaar-active-business', targetId);
+        } catch (e) {}
+        return freshBiz;
+      }
+    } catch (e) {
+      console.warn("Failed to refresh business profile:", e);
+    }
+    return currentBusiness;
+  }, [currentBusiness, currentUser]);
+
+  const updateCurrentBusiness = useCallback(async (updates) => {
+    const targetId = currentBusiness?.id || currentUser?.activeBusinessId || localStorage.getItem('karobaar-active-business') || 'demo-business-1';
+    try {
+      const existing = (await db.getById('businesses', targetId)) || currentBusiness || {};
+      const merged = {
+        ...existing,
+        ...updates,
+        settings: {
+          ...(existing.settings || {}),
+          ...(updates.settings || {})
+        },
+        modules: {
+          ...(existing.modules || {}),
+          ...(updates.modules || {})
+        },
+        updatedAt: new Date().toISOString()
+      };
+      
+      await db.update('businesses', targetId, merged);
+      
+      setCurrentBusiness(merged);
+      setUserBusinesses(prev => {
+        const list = prev || [];
+        const idx = list.findIndex(b => b.id === targetId);
+        if (idx !== -1) {
+          const next = [...list];
+          next[idx] = merged;
+          return next;
+        }
+        return [...list, merged];
+      });
+
+      try {
+        localStorage.setItem('karobaar_session_business', JSON.stringify(merged));
+        localStorage.setItem('karobaar-active-business', targetId);
+      } catch (e) {}
+
+      window.dispatchEvent(new CustomEvent('karobaar_business_updated', { detail: { business: merged } }));
+      return merged;
+    } catch (e) {
+      console.error("Failed to update current business:", e);
+      throw e;
+    }
+  }, [currentBusiness, currentUser]);
+
   const logout = async () => {
     try {
       localStorage.setItem('karobaar_explicit_logout', 'true');
@@ -390,6 +463,8 @@ export const AppProvider = ({ children }) => {
       joinBusinessWithCode,
       hasUserPermission,
       refreshUserProfile,
+      refreshBusinessProfile,
+      updateCurrentBusiness,
       launchReadyToUseWorkspace,
       appUiVersion,
       setAppUiVersion
