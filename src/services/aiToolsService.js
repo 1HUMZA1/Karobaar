@@ -522,6 +522,24 @@ export const KAROBAAR_TOOL_DECLARATIONS = [
         required: []
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'switch_theme',
+      description: 'Switch the application UI theme between dark mode and light mode. Call this whenever the user requests dark mode, light mode, or to toggle theme.',
+      parameters: {
+        type: 'object',
+        properties: {
+          mode: {
+            type: 'string',
+            enum: ['dark', 'light', 'toggle'],
+            description: 'Target theme mode: "dark", "light", or "toggle"'
+          }
+        },
+        required: ['mode']
+      }
+    }
   }
 ];
 
@@ -1233,6 +1251,24 @@ export const executeKarobaarTool = async (toolName, toolArgs = {}, authContext =
           defaultTaxRate: '18% GST',
           multiBranchEnabled: true,
           userRole
+        };
+      }
+
+      case 'switch_theme': {
+        const mode = toolArgs?.mode || 'toggle';
+        if (authContext.toggleTheme) {
+          if (mode === 'dark') {
+            authContext.toggleTheme('dark');
+          } else if (mode === 'light') {
+            authContext.toggleTheme('light');
+          } else {
+            authContext.toggleTheme();
+          }
+        }
+        return {
+          success: true,
+          mode,
+          message: `Application theme successfully set to ${mode} mode.`
         };
       }
 

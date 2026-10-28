@@ -93,9 +93,16 @@ export const AppProvider = ({ children }) => {
     initializeDemoData('demo-business-1').catch(e => console.warn("Background demo init:", e));
   }, []);
 
-  // Apply Theme
+  // Apply Theme with high-contrast HTML & Body classes
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+    }
     localStorage.setItem('karobaar-theme', theme);
   }, [theme]);
 
@@ -110,9 +117,10 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('karobaar-ui-version', appUiVersion);
   }, [appUiVersion]);
 
-  // Apply Business Theme/Settings if available
+  // Apply Business Theme/Settings if available and no local override exists
   useEffect(() => {
-    if (currentBusiness?.settings?.theme) {
+    const localTheme = localStorage.getItem('karobaar-theme');
+    if (!localTheme && currentBusiness?.settings?.theme) {
       setTheme(currentBusiness.settings.theme);
     }
     if (currentBusiness?.settings?.accent) {
@@ -195,7 +203,34 @@ export const AppProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  const toggleTheme = (forcedMode) => {
+    setTheme(prev => {
+      const next = (forcedMode === 'dark' || forcedMode === 'light') 
+        ? forcedMode 
+        : (prev === 'light' ? 'dark' : 'light');
+      
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('karobaar-theme', next);
+      if (next === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+      }
+
+      if (currentBusiness?.id) {
+        db.update('businesses', currentBusiness.id, {
+          settings: {
+            ...(currentBusiness.settings || {}),
+            theme: next
+          }
+        }).catch(() => {});
+      }
+
+      return next;
+    });
+  };
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
   const switchBranch = (businessId) => {

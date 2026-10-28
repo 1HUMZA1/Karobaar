@@ -38,6 +38,9 @@ import { processJarvisQuery, cleanSpokenQuery, isSelfEcho } from './jarvisEngine
 import { aiModelService } from '../../services/aiModelService';
 import { executeKarobaarTool } from '../../services/aiToolsService';
 import KarobaarAIOverlay from './KarobaarAIOverlay';
+import JarvisMiniCharacter from './JarvisMiniCharacter';
+import JarvisConversationBubble from './JarvisConversationBubble';
+import JarvisSettingsModal from './JarvisSettingsModal';
 import './CustomizeAIChatbot.css';
 
 export const CustomizeAIChatbot = () => {
@@ -64,6 +67,8 @@ export const CustomizeAIChatbot = () => {
 
   // Simple, Non-Intrusive UI States
   const [isHudOverlayOpen, setIsHudOverlayOpen] = useState(false);
+  const [isConversationBubbleOpen, setIsConversationBubbleOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const [isBarMinimized, setIsBarMinimized] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -72,10 +77,69 @@ export const CustomizeAIChatbot = () => {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [audioLevel, setAudioLevel] = useState(0);
   const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish');
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Audio Context & Analyser for Live Character Reaction
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const micStreamRef = useRef(null);
+  const animFrameRef = useRef(null);
+
+  // Measure audio RMS levels while listening
+  useEffect(() => {
+    if (isListening) {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+          micStreamRef.current = stream;
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            const ctx = new AudioCtx();
+            audioContextRef.current = ctx;
+            const src = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 128;
+            src.connect(analyser);
+            analyserRef.current = analyser;
+            const data = new Uint8Array(analyser.frequencyBinCount);
+            const loop = () => {
+              if (!analyserRef.current) return;
+              analyserRef.current.getByteFrequencyData(data);
+              let sum = 0;
+              for (let i = 0; i < data.length; i++) sum += data[i];
+              const avg = sum / data.length;
+              setAudioLevel(Math.min(1.0, Math.max(0, (avg - 10) / 70)));
+              animFrameRef.current = requestAnimationFrame(loop);
+            };
+            loop();
+          }
+        }).catch(() => {});
+      }
+    } else {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach(t => t.stop());
+        micStreamRef.current = null;
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        try { audioContextRef.current.close(); } catch (e) {}
+        audioContextRef.current = null;
+      }
+      setAudioLevel(0);
+    }
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        try { audioContextRef.current.close(); } catch (e) {}
+      }
+    };
+  }, [isListening]);
 
   // Settings for Customize AI
   const [aiSettings, setAiSettings] = useState(() => {
@@ -85,14 +149,21 @@ export const CustomizeAIChatbot = () => {
       const name = (saved.assistantName && saved.assistantName !== 'Customize') ? saved.assistantName : 'Jarvis';
       return {
         assistantName: name,
-        showFloatingBubble: true,
-        autoExecute: true,
+        persona: 'friendly',
         voiceFeedback: true,
+        speechRate: 1.05,
+        speechPitch: 1.0,
+        characterStyle: 'robot',
+        characterPosition: 'bottom_left',
+        autoExecuteSafe: true,
+        confirmSensitive: true,
+        showFloatingBubble: true,
+        wakeChime: true,
         ...saved,
         assistantName: name
       };
     } catch {
-      return { assistantName: 'Jarvis', showFloatingBubble: true, autoExecute: true, voiceFeedback: true };
+      return { assistantName: 'Jarvis', persona: 'friendly', voiceFeedback: true, characterStyle: 'robot', wakeChime: true };
     }
   });
 
@@ -275,18 +346,33 @@ export const CustomizeAIChatbot = () => {
 
             const { isSoloWakeWord, cleanedQuery } = cleanSpokenQuery(raw, assistantName);
             if (isSoloWakeWord) {
-              playWakeChime();
-              setIsBarMinimized(false);
-              setIsChatDrawerOpen(true);
+              if (aiSettings.wakeChime !== false) playWakeChime();
+              setIsConversationBubbleOpen(true);
               const isHi = aiLanguage === 'hi';
+              const isHinglish = aiLanguage === 'hinglish';
               const greeting = isHi
                 ? `जी सर, ${assistantName} सुन रहा है! कहिए, क्या सहायता करूँ?`
-                : `Yes sir, ${assistantName} is listening from anywhere! How can I assist you?`;
-              speakText(greeting);
+                : isHinglish
+                ? `Yes sir, ${assistantName} is listening! How can I help your business today?`
+                : `Yes sir, I'm listening! How can I assist you?`;
+              setMessages(prev => [
+                ...prev,
+                {
+                  id: 'bot-' + Date.now(),
+                  sender: 'bot',
+                  text: greeting,
+                  spokenText: greeting,
+                  timestamp: new Date().toISOString()
+                }
+              ]);
+              if (voiceEnabled && aiSettings.voiceFeedback !== false) {
+                speakText(greeting);
+              }
               return;
             }
 
             if (cleanedQuery) {
+              setIsConversationBubbleOpen(true);
               handleUserQuery(cleanedQuery);
             }
           }
@@ -313,18 +399,33 @@ export const CustomizeAIChatbot = () => {
 
         const { isSoloWakeWord, cleanedQuery } = cleanSpokenQuery(raw, assistantName);
         if (isSoloWakeWord) {
-          playWakeChime();
-          setIsBarMinimized(false);
-          setIsChatDrawerOpen(true);
+          if (aiSettings.wakeChime !== false) playWakeChime();
+          setIsConversationBubbleOpen(true);
           const isHi = aiLanguage === 'hi';
+          const isHinglish = aiLanguage === 'hinglish';
           const greeting = isHi
             ? `जी सर, ${assistantName} सुन रहा है! कहिए, क्या सहायता करूँ?`
-            : `Yes sir, ${assistantName} is listening from anywhere! How can I assist you?`;
-          speakText(greeting);
+            : isHinglish
+            ? `Yes sir, ${assistantName} is listening! How can I help your business today?`
+            : `Yes sir, I'm listening! How can I assist you?`;
+          setMessages(prev => [
+            ...prev,
+            {
+              id: 'bot-' + Date.now(),
+              sender: 'bot',
+              text: greeting,
+              spokenText: greeting,
+              timestamp: new Date().toISOString()
+            }
+          ]);
+          if (voiceEnabled && aiSettings.voiceFeedback !== false) {
+            speakText(greeting);
+          }
           return;
         }
 
         if (cleanedQuery) {
+          setIsConversationBubbleOpen(true);
           handleUserQuery(cleanedQuery);
         }
       }
@@ -408,8 +509,8 @@ export const CustomizeAIChatbot = () => {
     }
 
     const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.rate = 1.05;
-    utterance.pitch = 1.0;
+    utterance.rate = Number(aiSettings.speechRate) || 1.05;
+    utterance.pitch = Number(aiSettings.speechPitch) || 1.0;
 
     const voices = window.speechSynthesis.getVoices();
     const isHindi = /[\u0900-\u097F]/.test(clean) || /(namaste|dhanyawad|aapka|shukriya|kar diya|kardo|hai|kripya|bhejo|aaj|kamayi|bikri|dukan|maal|batao|udhaar)/i.test(clean);
@@ -519,25 +620,49 @@ export const CustomizeAIChatbot = () => {
     return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, []);
 
-  // Listen to wake event from Dedicated Topbar Button -> Opens See-Through HUD Overlay
+  // Listen to wake event from Dedicated Topbar Button -> Opens Conversation Bubble
   useEffect(() => {
     const handleWakeEvent = (e) => {
-      playWakeChime();
-      setIsHudOverlayOpen(true);
+      if (aiSettings.wakeChime !== false) playWakeChime();
+      setIsConversationBubbleOpen(true);
+
+      // Start voice listening
+      if (recognitionRef.current && isListeningEnabledRef.current && !isSpeakingRef.current) {
+        try {
+          recognitionRef.current.start();
+          setIsListening(true);
+        } catch (err) {}
+      }
 
       if (e?.detail?.query) {
         handleUserQuery(e.detail.query);
       } else {
         const isHi = aiLanguage === 'hi';
+        const isHinglish = aiLanguage === 'hinglish';
         const greeting = isHi
           ? `जी सर, ${assistantName} सुन रहा है! कहिए, क्या सहायता करूँ?`
-          : `Yes sir, ${assistantName} is listening from anywhere! How can I assist you?`;
-        speakText(greeting);
+          : isHinglish
+          ? `Yes sir, ${assistantName} is listening! How can I assist you today?`
+          : `Hello sir, ${assistantName} is listening. How can I assist you?`;
+
+        setMessages(prev => [
+          ...prev,
+          {
+            id: 'bot-' + Date.now(),
+            sender: 'bot',
+            text: greeting,
+            spokenText: greeting,
+            timestamp: new Date().toISOString()
+          }
+        ]);
+        if (voiceEnabled && aiSettings.voiceFeedback !== false) {
+          speakText(greeting);
+        }
       }
     };
     window.addEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
     return () => window.removeEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
-  }, [assistantName, aiLanguage]);
+  }, [assistantName, aiLanguage, aiSettings, voiceEnabled]);
 
   // Sync settings dynamically when changed in Settings tab
   useEffect(() => {
@@ -716,22 +841,37 @@ export const CustomizeAIChatbot = () => {
 
     // 1. Instant local fast-path shortcuts for voice UI control
     const lower = query.toLowerCase();
-    if (/^(dark mode|enable dark mode|dark theme|switch to dark)/i.test(lower)) {
-      if (theme !== 'dark') toggleTheme();
-      const reply = "Switched to Dark Mode.";
+
+    // Dark Mode Command (flexible matching)
+    if (/(?:switch to |enable |turn on |activate |laga do |kardo |kar do )?(?:dark mode|dark theme|black theme)|dark mode (?:on|kardo|lagao)/i.test(lower)) {
+      if (theme !== 'dark') toggleTheme('dark');
+      const reply = "Switched to Dark Mode. All cards, metrics, and details are now high-contrast dark.";
       setIsTyping(false);
       setMessages(prev => [...prev, { id: 'bot-' + Date.now(), sender: 'bot', text: reply, timestamp: new Date().toISOString() }]);
       if (voiceEnabled) speakText(reply);
       return;
     }
-    if (/^(light mode|enable light mode|light theme|switch to light)/i.test(lower)) {
-      if (theme !== 'light') toggleTheme();
+
+    // Light Mode Command (flexible matching)
+    if (/(?:switch to |enable |turn on |activate |laga do |kardo |kar do )?(?:light mode|light theme|white theme)|light mode (?:on|kardo|lagao)/i.test(lower)) {
+      if (theme !== 'light') toggleTheme('light');
       const reply = "Switched to Light Mode.";
       setIsTyping(false);
       setMessages(prev => [...prev, { id: 'bot-' + Date.now(), sender: 'bot', text: reply, timestamp: new Date().toISOString() }]);
       if (voiceEnabled) speakText(reply);
       return;
     }
+
+    // Settings Command
+    if (/(?:open |show |change |view )?(?:jarvis |ai )?settings/i.test(lower)) {
+      setIsSettingsModalOpen(true);
+      const reply = `Opening ${assistantName} Settings. You can customize voice speed, listening mode, name, and permissions.`;
+      setIsTyping(false);
+      setMessages(prev => [...prev, { id: 'bot-' + Date.now(), sender: 'bot', text: reply, timestamp: new Date().toISOString() }]);
+      if (voiceEnabled) speakText(reply);
+      return;
+    }
+
     if (/^(mute|stop talking|be quiet|shant ho jao|awaz band|silence)/i.test(lower)) {
       stopSpeaking();
       setVoiceEnabled(false);
@@ -874,353 +1014,66 @@ export const CustomizeAIChatbot = () => {
 
   return (
     <>
-      {/* VIEW 1: Minimized Floating Pill */}
-      {isBarMinimized ? (
-        <button 
-          type="button"
-          className="jarvis-minimized-pill"
-          onClick={() => setIsHudOverlayOpen(true)}
-          title={`Open Karobaar AI JARVIS HUD Overlay (Listening from everywhere • Press Ctrl+J)`}
-        >
-          <span className={`jarvis-bar-dot ${isListening ? 'listening' : isSpeaking ? 'speaking' : !voiceEnabled ? 'muted' : 'idle'}`} />
-          <Sparkles size={14} />
-          <span>{assistantName} Active</span>
-        </button>
-      ) : (
-        /* VIEW 2: Simple, Non-Intrusive Floating Jarvis Bar */
-        <div className="jarvis-simple-bar-wrapper">
-          <div className="jarvis-simple-bar">
-            {/* Brand & Status Indicator */}
-            <div 
-              className="jarvis-bar-brand"
-              onClick={() => {
-                if (isSpeaking) stopSpeaking();
-                else toggleVoiceListening();
-              }}
-              title={isSpeaking ? "Tap to stop speaking" : isListening ? "Listening everywhere • Tap to mute" : "Muted • Tap to listen"}
-            >
-              <span className={`jarvis-bar-dot ${isListening ? 'listening' : isSpeaking ? 'speaking' : !voiceEnabled ? 'muted' : 'idle'}`} />
-              <span className="jarvis-bar-title">{assistantName}</span>
-            </div>
+      {/* 1. Small Animated AI Assistant Character in Below-Left Side */}
+      <JarvisMiniCharacter 
+        isListening={isListening}
+        isSpeaking={isSpeaking}
+        isThinking={isTyping}
+        audioLevel={audioLevel}
+        voiceEnabled={voiceEnabled}
+        assistantName={assistantName}
+        characterStyle={aiSettings.characterStyle || 'robot'}
+        isBubbleOpen={isConversationBubbleOpen}
+        onCharacterClick={() => {
+          if (isSpeaking) {
+            stopSpeaking();
+          } else {
+            setIsConversationBubbleOpen(prev => !prev);
+          }
+        }}
+        onSettingsClick={() => setIsSettingsModalOpen(true)}
+        onToggleMic={toggleVoiceListening}
+      />
 
-            <div className="jarvis-bar-divider" />
+      {/* 2. Human-Like Floating Conversational Dialog (anchored right above mini character) */}
+      <JarvisConversationBubble 
+        isOpen={isConversationBubbleOpen}
+        onClose={() => setIsConversationBubbleOpen(false)}
+        assistantName={assistantName}
+        messages={messages}
+        interimTranscript={interimTranscript}
+        isListening={isListening}
+        isSpeaking={isSpeaking}
+        isTyping={isTyping}
+        voiceEnabled={voiceEnabled}
+        theme={theme}
+        onSendMessage={(text) => handleUserQuery(text)}
+        onToggleMic={toggleVoiceListening}
+        onStopSpeaking={stopSpeaking}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        onOpenFullHud={() => {
+          setIsConversationBubbleOpen(false);
+          setIsHudOverlayOpen(true);
+        }}
+      />
 
-            {/* Live Dynamic Speech / Feedback Text */}
-            <div className="jarvis-bar-text-area">
-              <p className={`jarvis-bar-live-text ${interimTranscript ? 'interim' : latestBotText ? 'response' : 'idle'}`}>
-                {interimTranscript ? (
-                  `“${interimTranscript}”`
-                ) : latestBotText ? (
-                  latestBotText
-                ) : isListening ? (
-                  `Listening everywhere... Speak naturally`
-                ) : (
-                  `Mic muted • Tap mic to listen`
-                )}
-              </p>
-            </div>
+      {/* 3. Comprehensive Settings Center Modal */}
+      <JarvisSettingsModal 
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        currentSettings={{ ...aiSettings, aiLanguage }}
+        onSaveSettings={(newSettings) => {
+          setAiSettings(newSettings);
+          if (newSettings.aiLanguage) {
+            setAiLanguage(newSettings.aiLanguage);
+            localStorage.setItem('karobaar_ai_language', newSettings.aiLanguage);
+          }
+          localStorage.setItem('karobaar_customize_ai_settings', JSON.stringify(newSettings));
+        }}
+        onClearHistory={handleClearHistory}
+      />
 
-            {/* Quick Commands (Subtle 1-Click Chips) */}
-            <div className="jarvis-bar-chips-cluster">
-              <button type="button" onClick={() => handleUserQuery('Show today sales summary')} className="jarvis-bar-chip">
-                <TrendingUp size={11} />
-                <span>Sales</span>
-              </button>
-              <button type="button" onClick={() => handleUserQuery('Which items are low in stock?')} className="jarvis-bar-chip">
-                <AlertTriangle size={11} />
-                <span>Stock</span>
-              </button>
-              <button type="button" onClick={() => handleUserQuery('Who owes me money?')} className="jarvis-bar-chip">
-                <DollarSign size={11} />
-                <span>Khata</span>
-              </button>
-              <button type="button" onClick={() => handleUserQuery('Toggle dark mode')} className="jarvis-bar-chip">
-                <Moon size={11} />
-                <span>Mode</span>
-              </button>
-            </div>
-
-            {/* Bar Controls */}
-            <div className="jarvis-bar-actions">
-              {/* Language Selector */}
-              <button 
-                type="button" 
-                className="jarvis-bar-lang-pill"
-                onClick={() => {
-                  const next = aiLanguage === 'hinglish' ? 'en' : aiLanguage === 'en' ? 'hi' : 'hinglish';
-                  setAiLanguage(next);
-                  localStorage.setItem('karobaar_ai_language', next);
-                }}
-                title="Toggle Language: Hinglish / EN / हिंदी"
-              >
-                <Globe size={11} />
-                <span>{aiLanguage === 'hinglish' ? 'Hinglish' : aiLanguage === 'hi' ? 'हिंदी' : 'EN'}</span>
-              </button>
-
-              {/* Mic Toggle Button */}
-              <button 
-                type="button" 
-                onClick={toggleVoiceListening}
-                className={`jarvis-bar-icon-btn ${isListening ? 'active' : 'muted'}`}
-                title={isListening ? "Mute Microphone" : "Unmute Microphone"}
-              >
-                {isListening ? <Mic size={14} /> : <MicOff size={14} />}
-              </button>
-
-              {/* Futuristic JARVIS HUD Overlay Toggle Button */}
-              <button 
-                type="button" 
-                onClick={() => setIsHudOverlayOpen(true)}
-                className={`jarvis-bar-icon-btn ${isHudOverlayOpen ? 'active' : ''}`}
-                title="Open See-Through Karobaar AI JARVIS HUD [Ctrl+J]"
-              >
-                <Sparkles size={14} />
-              </button>
-
-              {/* Side Chat Drawer Toggle Button */}
-              <button 
-                type="button" 
-                onClick={() => setIsChatDrawerOpen(!isChatDrawerOpen)}
-                className={`jarvis-bar-icon-btn ${isChatDrawerOpen ? 'active' : ''}`}
-                title="View Chat Transcript Drawer"
-              >
-                <MessageSquare size={14} />
-              </button>
-
-              {/* Minimize Bar */}
-              <button 
-                type="button" 
-                onClick={() => setIsBarMinimized(true)}
-                className="jarvis-bar-icon-btn"
-                title="Minimize bar to bottom corner"
-              >
-                <ChevronDown size={14} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* VIEW 3: Executive Side Chat Drawer */}
-      {isChatDrawerOpen && (
-        <div className="jarvis-chat-side-drawer">
-          <div className="customize-ai-header">
-            <div className="customize-ai-header-left">
-              <div className="customize-ai-avatar">
-                <Sparkles size={15} />
-              </div>
-              <div>
-                <h3 className="customize-ai-title">{assistantName} AI 3.0</h3>
-                <p className="customize-ai-status">
-                  {isListening ? '● Listening from anywhere' : '● Ambient Ready [Ctrl+J]'}
-                </p>
-              </div>
-            </div>
-
-            <div className="customize-ai-header-actions">
-              <button onClick={() => { setIsChatDrawerOpen(false); navigate('/ai'); }} className="customize-ai-icon-btn" title="Open Full Karobaar AI Workspace">
-                <Maximize2 size={14} />
-              </button>
-              <button onClick={handleClearHistory} className="customize-ai-icon-btn" title="Clear chat history">
-                <Trash2 size={14} />
-              </button>
-              <button onClick={() => setIsChatDrawerOpen(false)} className="customize-ai-icon-btn" title="Close drawer">
-                <X size={15} />
-              </button>
-            </div>
-          </div>
-
-          {/* Message Stream */}
-          <div className="customize-ai-messages custom-scrollbar">
-            {messages.map(msg => (
-              <div key={msg.id} className={`customize-ai-message-row ${msg.sender === 'user' ? 'user' : 'bot'}`}>
-                {msg.sender === 'bot' && (
-                  <div className="customize-ai-bot-icon">
-                    <Bot size={13} />
-                  </div>
-                )}
-
-                <div className="customize-ai-bubble-wrap">
-                  <div className={`customize-ai-bubble ${msg.sender === 'user' ? 'user-bubble' : 'bot-bubble'}`}>
-                    <div className="customize-ai-bubble-text">
-                      {msg.text.split('\n').map((line, idx) => (
-                        <p key={idx} style={{ margin: '0 0 4px 0', lineHeight: 1.5 }}>
-                          {renderFormattedText(line)}
-                        </p>
-                      ))}
-                    </div>
-
-                    {/* Action Card if present */}
-                    {msg.actionData && (
-                      <div className="customize-ai-action-card">
-                        {msg.actionData.badge && (
-                          <div className="customize-ai-action-badge">
-                            <CheckCircle2 size={13} />
-                            <span>{msg.actionData.badge}</span>
-                          </div>
-                        )}
-                        {msg.actionData.metrics && (
-                          <div className="customize-ai-metrics-grid">
-                            {msg.actionData.metrics.map((m, i) => (
-                              <div key={i} className="customize-ai-metric-item">
-                                <span className="metric-label">{m.label}</span>
-                                <span className="metric-value">{m.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {msg.actionData.items && (
-                          <div className="customize-ai-items-list">
-                            {msg.actionData.items.map(it => (
-                              <div key={it.id || it.name} className="customize-ai-item-row">
-                                <span>{it.name}</span>
-                                <span className="stock-alert">{it.stockQuantity || 0} left</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {msg.actionData.cta && (
-                          <button 
-                            className="customize-ai-cta-btn"
-                            onClick={() => {
-                              setIsChatDrawerOpen(false);
-                              navigate(msg.actionData.cta.path);
-                            }}
-                          >
-                            <span>{msg.actionData.cta.label}</span>
-                            <ArrowRight size={13} />
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Tool Execution Logs if any */}
-                    {msg.toolLogs && msg.toolLogs.length > 0 && (
-                      <div className="customize-ai-tool-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                        {msg.toolLogs.map((tl, tli) => (
-                          <span 
-                            key={tli} 
-                            style={{ 
-                              display: 'inline-flex', 
-                              alignItems: 'center', 
-                              gap: '4px', 
-                              padding: '2px 8px', 
-                              borderRadius: '6px', 
-                              background: 'rgba(255, 255, 255, 0.06)', 
-                              border: '1px solid var(--border-color)', 
-                              fontSize: '10.5px', 
-                              color: 'var(--text-secondary)' 
-                            }}
-                          >
-                            <Zap size={10} />
-                            <span>{tl.name}</span>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Sensitive Action Confirmation Card */}
-                    {msg.requiresConfirmation && msg.confirmationAction && (
-                      <div 
-                        className="customize-ai-confirm-card"
-                        style={{
-                          marginTop: '10px',
-                          padding: '12px',
-                          borderRadius: '10px',
-                          border: '1.5px solid var(--border-color)',
-                          background: 'rgba(255, 255, 255, 0.03)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px' }}>
-                          <AlertTriangle size={14} />
-                          <span>Confirmation Required</span>
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px', lineHeight: 1.4 }}>
-                          {msg.confirmationAction.summary}
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => handleConfirmSensitiveAction(msg.id, msg.confirmationAction)}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '6px 14px',
-                            borderRadius: '8px',
-                            background: 'var(--text-main)',
-                            color: 'var(--bg-main)',
-                            border: 'none',
-                            fontSize: '11.5px',
-                            fontWeight: 700,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <Check size={13} />
-                          <span>Confirm & Execute</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Follow-up Quick Action Chips */}
-                    {msg.quickActions && msg.quickActions.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
-                        {msg.quickActions.map((qa, qi) => (
-                          <button
-                            key={qi}
-                            type="button"
-                            onClick={() => handleUserQuery(qa.query)}
-                            style={{
-                              background: 'var(--bg-card, #18181b)',
-                              border: '1px solid var(--border-color, #27272a)',
-                              borderRadius: '12px',
-                              padding: '4px 10px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              color: 'var(--text-main, #ffffff)',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              transition: 'all 0.15s ease'
-                            }}
-                          >
-                            {qa.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Bottom Text Input */}
-          <div className="customize-ai-input-bar">
-            <input 
-              ref={inputRef}
-              type="text" 
-              value={inputMessage}
-              onChange={e => setInputMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`Command ${assistantName} [Ctrl+J]...`}
-              className="customize-ai-input"
-            />
-            <button 
-              type="button" 
-              onClick={() => handleUserQuery()}
-              disabled={!inputMessage.trim()}
-              className="customize-ai-send-btn"
-              title="Send Command"
-            >
-              <Send size={15} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Translucent JARVIS HUD Overlay on Main Screen */}
+      {/* 4. Translucent Full HUD Overlay (on Ctrl+J or maximize) */}
       <KarobaarAIOverlay 
         isOpen={isHudOverlayOpen}
         onClose={() => setIsHudOverlayOpen(false)}

@@ -23,7 +23,6 @@ const navGroups = [
     title: 'OVERVIEW',
     items: [
       { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} />, roles: ALL_ROLES, moduleId: 'core' },
-      { name: 'Karobaar AI', path: '/ai', icon: <Sparkles size={20} />, roles: ALL_ROLES, moduleId: 'core' },
     ]
   },
   {

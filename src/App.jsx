@@ -269,7 +269,7 @@ const AppContent = () => {
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="ai" element={<ProtectedRoute allowedRoles={ROLES.ALL} moduleId="core"><KarobaarAI /></ProtectedRoute>} />
+          <Route path="ai" element={<Navigate to="/dashboard" replace />} />
           <Route path="sales" element={<Navigate to="/pos" replace />} />
           
           <Route path="pos" element={<ProtectedRoute allowedRoles={ROLES.SALES_POS} moduleId="pos"><POS /></ProtectedRoute>} />

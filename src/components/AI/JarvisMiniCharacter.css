@@ -1,0 +1,324 @@
+/* ==========================================================================
+   JARVIS MINI CHARACTER (BELOW-LEFT SIDE ASSISTANT)
+   Strict Monochrome: Pure Black, Charcoal, White & Subtle Gray. Zero Neon.
+   ========================================================================== */
+
+.jarvis-mini-character-dock {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+  user-select: none;
+  animation: miniCharFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes miniCharFadeIn {
+  from {
+    transform: translateY(12px) scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Character Avatar Button Container */
+.jarvis-avatar-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.jarvis-avatar-container:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.jarvis-avatar-container:active {
+  transform: scale(0.97);
+}
+
+/* Radar Pulse Wave (Ambient Glow) */
+.jarvis-pulse-ring-ambient {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  animation: radarWave 1.6s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes radarWave {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* SVG Wrapper */
+.jarvis-svg-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background-color: #09090b;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .jarvis-svg-wrap {
+  background-color: #000000;
+  border-color: #ffffff;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6), 0 0 14px rgba(255, 255, 255, 0.25);
+}
+
+.jarvis-character-svg {
+  width: 44px;
+  height: 44px;
+  overflow: visible;
+}
+
+/* Idle Breathing */
+.jarvis-character-svg.state-idle {
+  animation: charBreathe 3.6s infinite ease-in-out;
+}
+
+@keyframes charBreathe {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-1.5px) scale(1.02);
+  }
+}
+
+/* Antenna Blinking */
+.antenna-tip-light {
+  animation: antennaBlink 2.2s infinite ease-in-out;
+}
+
+.state-listening .antenna-tip-light {
+  animation: antennaPulseFast 0.8s infinite alternate;
+}
+
+@keyframes antennaBlink {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; filter: drop-shadow(0 0 6px #ffffff); }
+}
+
+@keyframes antennaPulseFast {
+  from { opacity: 0.6; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1.15); filter: drop-shadow(0 0 8px #ffffff); }
+}
+
+/* Idle Eyes Natural Blinking */
+.eye-idle-l, .eye-idle-r {
+  animation: naturalEyeBlink 4.2s infinite ease-in-out;
+}
+
+@keyframes naturalEyeBlink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
+}
+
+/* Listening Eyes */
+.eye-listening-l, .eye-listening-r {
+  animation: listeningEyePulse 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes listeningEyePulse {
+  from { transform: scale(1); opacity: 0.9; }
+  to { transform: scale(1.08); opacity: 1; }
+}
+
+/* Thinking Visor Scan Beam */
+.visor-scan-beam {
+  animation: scanVisor 1.4s infinite alternate ease-in-out;
+}
+
+@keyframes scanVisor {
+  0% { transform: translateX(-6px); opacity: 0.5; }
+  100% { transform: translateX(6px); opacity: 1; }
+}
+
+/* Speaking Mouth Movement */
+.mouth-speaking-bar {
+  animation: speakingMouth 0.28s infinite alternate ease-in-out;
+  transform-origin: center;
+}
+
+@keyframes speakingMouth {
+  0% { transform: scaleX(0.7) scaleY(0.6); }
+  100% { transform: scaleX(1.15) scaleY(1.4); }
+}
+
+/* Side Soundwave Bars */
+.jarvis-side-soundwaves {
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  margin-left: 6px;
+  height: 32px;
+}
+
+.mini-soundwave-bar {
+  width: 3px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  transition: height 0.08s ease;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+/* Pill Badge */
+.jarvis-character-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--bg-card, #ffffff);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 9999px;
+  padding: 4px 6px 4px 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .jarvis-character-badge {
+  background-color: #141417;
+  border-color: #27272a;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.jarvis-status-pill-btn {
+  background: none;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text-main, #09090b);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+}
+
+[data-theme="dark"] .jarvis-status-pill-btn {
+  color: #ffffff;
+}
+
+/* Status Dot */
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #71717a;
+  transition: all 0.2s ease;
+}
+
+.status-dot.listening {
+  background-color: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+  animation: dotPulse 1s infinite alternate;
+}
+
+.status-dot.speaking {
+  background-color: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+  animation: dotPulse 0.6s infinite alternate;
+}
+
+.status-dot.idle {
+  background-color: #a1a1aa;
+}
+
+@keyframes dotPulse {
+  from { transform: scale(0.9); opacity: 0.6; }
+  to { transform: scale(1.3); opacity: 1; }
+}
+
+.status-name {
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.status-state-desc {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary, #71717a);
+  padding-left: 2px;
+}
+
+[data-theme="dark"] .status-state-desc {
+  color: #a1a1aa;
+}
+
+/* Pill Icon Buttons */
+.jarvis-pill-icon-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--text-secondary, #71717a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-theme="dark"] .jarvis-pill-icon-btn {
+  color: #a1a1aa;
+}
+
+.jarvis-pill-icon-btn:hover {
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.06));
+  color: var(--text-main, #09090b);
+  border-color: var(--border-color, #e2e8f0);
+}
+
+[data-theme="dark"] .jarvis-pill-icon-btn:hover {
+  background-color: #27272a;
+  color: #ffffff;
+  border-color: #3f3f46;
+}
+
+.jarvis-pill-icon-btn.active {
+  color: var(--text-main, #09090b);
+}
+
+[data-theme="dark"] .jarvis-pill-icon-btn.active {
+  color: #ffffff;
+}
+
+.jarvis-pill-icon-btn.muted {
+  color: #ef4444;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .jarvis-mini-character-dock {
+    bottom: 74px; /* Above mobile bottom navigation */
+    left: 14px;
+  }
+
+  .status-state-desc {
+    display: none;
+  }
+}

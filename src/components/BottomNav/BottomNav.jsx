@@ -51,16 +51,18 @@ const BottomNav = () => {
           <span className="k-nav-label">Orders</span>
         </NavLink>
 
-                <NavLink 
-          to="/ai" 
-          className={({ isActive }) => 'k-pill-nav-item ' + (isActive ? 'active' : '')}
-          title="Karobaar AI"
+                <button 
+          type="button" 
+          onClick={() => window.dispatchEvent(new CustomEvent('karobaar_wake_ai_assistant'))}
+          className="k-pill-nav-item"
+          title="Wake Jarvis Voice Assistant"
+          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
         >
           <div className="k-nav-icon-wrap">
             <Sparkles size={18} />
           </div>
-          <span className="k-nav-label">AI</span>
-        </NavLink>
+          <span className="k-nav-label">Jarvis</span>
+        </button>
         <NavLink 
           to="/more" 
           className={({ isActive }) => 'k-pill-nav-item ' + (isActive ? 'active' : '')}
