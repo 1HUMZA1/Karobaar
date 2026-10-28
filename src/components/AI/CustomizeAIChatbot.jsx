@@ -878,8 +878,16 @@ export const CustomizeAIChatbot = () => {
     const lower = query.toLowerCase();
 
     // Dark Mode Command (flexible matching)
-    if (/(?:switch to |enable |turn on |activate |laga do |kardo |kar do )?(?:dark mode|dark theme|black theme)|dark mode (?:on|kardo|lagao)/i.test(lower)) {
-      if (theme !== 'dark') toggleTheme('dark');
+    if (/(?:switch to |change to |turn on |turn to |set |enable |activate |laga do |kardo |kar do )?(?:dark mode|dark theme|black theme|black mode|night mode)|dark mode/i.test(lower)) {
+      toggleTheme('dark');
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('karobaar-theme', 'dark');
+      }
       const reply = "Switched to Dark Mode. All cards, metrics, and details are now high-contrast dark.";
       setIsTyping(false);
       setMessages(prev => [...prev, { id: 'bot-' + Date.now(), sender: 'bot', text: reply, timestamp: new Date().toISOString() }]);
@@ -888,8 +896,16 @@ export const CustomizeAIChatbot = () => {
     }
 
     // Light Mode Command (flexible matching)
-    if (/(?:switch to |enable |turn on |activate |laga do |kardo |kar do )?(?:light mode|light theme|white theme)|light mode (?:on|kardo|lagao)/i.test(lower)) {
-      if (theme !== 'light') toggleTheme('light');
+    if (/(?:switch to |change to |turn on |turn to |set |enable |activate |laga do |kardo |kar do )?(?:light mode|light theme|white theme|white mode|day mode)|light mode/i.test(lower)) {
+      toggleTheme('light');
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('karobaar-theme', 'light');
+      }
       const reply = "Switched to Light Mode.";
       setIsTyping(false);
       setMessages(prev => [...prev, { id: 'bot-' + Date.now(), sender: 'bot', text: reply, timestamp: new Date().toISOString() }]);

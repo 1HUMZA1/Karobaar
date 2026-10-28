@@ -1260,8 +1260,13 @@ export const processJarvisQuery = async (rawQuery, context) => {
     // 23. SYSTEM: THEME TOGGLE
     // ==========================================
     if (/(dark mode|light mode|toggle theme|change theme)/i.test(lower)) {
-      context.toggleTheme();
-      const newTheme = context.theme === 'dark' ? 'Light' : 'Dark';
+      const isLight = /light/i.test(lower);
+      const isDark = /dark/i.test(lower);
+      const targetMode = isLight ? 'light' : (isDark ? 'dark' : (context.theme === 'dark' ? 'light' : 'dark'));
+      if (context.toggleTheme) {
+        context.toggleTheme(targetMode);
+      }
+      const newTheme = targetMode === 'dark' ? 'Dark' : 'Light';
       replyText = `🌓 **Theme Switched to ${newTheme} Mode.** Interface palette updated.`;
       spokenText = `Switched to ${newTheme} mode.`;
       return { replyText, spokenText, actionData, quickActions };

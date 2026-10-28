@@ -705,7 +705,7 @@ const Topbar = () => {
           )}
         </div>
 
-        <button className="icon-btn" data-tour="theme-toggle" onClick={toggleTheme} title="Toggle Theme" aria-label="Toggle theme">
+        <button className="icon-btn" data-tour="theme-toggle" onClick={() => toggleTheme()} title="Toggle Theme" aria-label="Toggle theme">
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
 

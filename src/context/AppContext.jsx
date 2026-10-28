@@ -219,13 +219,16 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const toggleTheme = (forcedMode) => {
-    setTheme(prev => {
-      const next = (forcedMode === 'dark' || forcedMode === 'light') 
-        ? forcedMode 
-        : (prev === 'light' ? 'dark' : 'light');
-      
+    let next;
+    if (forcedMode === 'dark' || forcedMode === 'light') {
+      next = forcedMode;
+    } else {
+      next = theme === 'dark' ? 'light' : 'dark';
+    }
+
+    // 1. Synchronously update DOM attributes & classes for 0ms visual responsiveness
+    if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('karobaar-theme', next);
       if (next === 'dark') {
         document.documentElement.classList.add('dark');
         document.body.classList.add('dark');
@@ -233,18 +236,38 @@ export const AppProvider = ({ children }) => {
         document.documentElement.classList.remove('dark');
         document.body.classList.remove('dark');
       }
+    }
 
-      if (currentBusiness?.id) {
-        db.update('businesses', currentBusiness.id, {
-          settings: {
-            ...(currentBusiness.settings || {}),
-            theme: next
-          }
-        }).catch(() => {});
-      }
+    // 2. Persist to localStorage
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('karobaar-theme', next);
+    }
 
-      return next;
-    });
+    // 3. Update React theme state
+    setTheme(next);
+
+    // 4. Update current business settings in memory & DB
+    if (currentBusiness?.id) {
+      setCurrentBusiness(prev => prev ? ({
+        ...prev,
+        settings: {
+          ...(prev.settings || {}),
+          theme: next
+        }
+      }) : prev);
+
+      db.update('businesses', currentBusiness.id, {
+        settings: {
+          ...(currentBusiness.settings || {}),
+          theme: next
+        }
+      }).catch(() => {});
+    }
+
+    // 5. Broadcast custom event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('karobaar_theme_changed', { detail: { theme: next } }));
+    }
   };
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
 

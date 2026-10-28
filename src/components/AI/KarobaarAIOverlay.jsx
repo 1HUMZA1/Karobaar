@@ -151,7 +151,7 @@ export const KarobaarAIOverlay = ({ isOpen, onClose }) => {
     // 1. Instant local fast-path commands
     const lower = query.toLowerCase();
     if (/^(dark mode|enable dark mode|dark theme|switch to dark)/i.test(lower)) {
-      if (theme !== 'dark') toggleTheme();
+      toggleTheme('dark');
       const reply = "Switched to Dark Mode.";
       setMessages(prev => [...prev, 
         { id: 'user-' + Date.now(), role: 'user', content: query },
@@ -161,7 +161,7 @@ export const KarobaarAIOverlay = ({ isOpen, onClose }) => {
       return;
     }
     if (/^(light mode|enable light mode|light theme|switch to light)/i.test(lower)) {
-      if (theme !== 'light') toggleTheme();
+      toggleTheme('light');
       const reply = "Switched to Light Mode.";
       setMessages(prev => [...prev, 
         { id: 'user-' + Date.now(), role: 'user', content: query },
