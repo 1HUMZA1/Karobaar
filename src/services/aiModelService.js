@@ -179,8 +179,8 @@ class AiModelService {
       navigate: authContext.navigate || (() => {}),
       theme: authContext.theme || 'dark',
       toggleTheme: authContext.toggleTheme || (() => {}),
-      aiLanguage: 'en',
-      assistantName: 'Karobaar AI',
+      aiLanguage: authContext.aiLanguage || 'hinglish',
+      assistantName: authContext.assistantName || 'Jarvis',
       triggerBackupExport: authContext.triggerBackupExport
     });
 

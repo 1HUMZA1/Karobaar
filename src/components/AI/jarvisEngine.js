@@ -171,16 +171,55 @@ export const processJarvisQuery = async (rawQuery, context) => {
       const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
       const storeName = context.currentBusiness?.name || 'your store';
 
-      if (isHi) {
-        replyText = `नमस्ते सर! मैं **${assistantName}** हूँ, आपका Karobaar AI असिस्टेंट।\n\n**${storeName}** का सिस्टम पूरी तरह एक्टिव है। मैं आपके लिए बिल बना सकता हूँ, स्टॉक अपडेट कर सकता हूँ, या आज की बिक्री बता सकता हूँ। कहिए, क्या करूँ?`;
-        spokenText = `नमस्ते सर! मैं ${assistantName} हूँ। आपकी दुकान का सिस्टम एक्टिव है। आज मैं आपकी क्या सहायता करूँ?`;
-      } else if (isHinglish) {
-        replyText = `${timeGreeting} Sir! Main **${assistantName}** hoon, aapka Executive AI Co-Pilot.\n\n**${storeName}** ke saare systems live hain. Main aapke liye POS billing kar sakta hoon, khata manage kar sakta hoon, aur sales analyze kar sakta hoon. Boliye, kya command execute karoon?`;
-        spokenText = `${timeGreeting} Sir! Main ${assistantName} hoon. Aapki dukan ke sabhi systems ready hain. Kya command execute karoon?`;
-      } else {
-        replyText = `${timeGreeting}, Sir! I am **${assistantName}**, your autonomous executive AI co-pilot.\n\nAll operations across **${storeName}** are synchronized and online. I have full autonomous control to bill items, restock products, log expenses, manage customer khata, or provide instant financial audits. What would you like to achieve?`;
-        spokenText = `${timeGreeting}, Sir! I am ${assistantName}. All systems are synchronized and online. How can I assist your business today?`;
-      }
+      const greetingsPool = {
+        hi: [
+          {
+            reply: `नमस्ते सर! **${storeName}** का सिस्टम पूरी तरह एक्टिव है। मैं बिल बना सकता हूँ, स्टॉक अपडेट कर सकता हूँ, या आज की बिक्री बता सकता हूँ। कहिए, क्या करूँ?`,
+            spoken: `नमस्ते सर! आपकी दुकान का सिस्टम एक्टिव है। आज मैं आपकी क्या सहायता करूँ?`
+          },
+          {
+            reply: `हाँजी सर! मैं **${assistantName}** हूँ। स्टोर का पूरा हिसाब-किताब तैयार है। बताइए आज क्या चेक करना है?`,
+            spoken: `हाँजी सर! स्टोर का हिसाब तैयार है। बताइए क्या चेक करना है?`
+          },
+          {
+            reply: `नमस्ते सर! आज के ऑर्डर्स और इन्वेंट्री सिंक हैं। POS बिलिंग, नया प्रोडक्ट, या बिक्री - आज क्या देखना चाहते हैं?`,
+            spoken: `नमस्ते सर! सभी ऑर्डर्स सिंक हैं। आज क्या देखना चाहते हैं?`
+          }
+        ],
+        hinglish: [
+          {
+            reply: `${timeGreeting} Sir! Main **${assistantName}** hoon. **${storeName}** ke saare systems live hain. Main aapke liye POS billing kar sakta hoon, khata manage kar sakta hoon, aur sales analyze kar sakta hoon. Boliye, kya command execute karoon?`,
+            spoken: `${timeGreeting} Sir! Main ${assistantName} hoon. Aapki dukan ke sabhi systems ready hain. Kya command execute karoon?`
+          },
+          {
+            reply: `Haanji Sir! **${storeName}** active hai. POS bill banana ho, stock check karna ho ya udhaar dekhna ho - bas boliye!`,
+            spoken: `Haanji Sir! Store active hai. Bill banana ho ya stock check karna ho, bas boliye!`
+          },
+          {
+            reply: `Welcome back Sir! Saara store data uptodate hai. Aaj ka sale summary ya naya invoice banayein?`,
+            spoken: `Welcome back Sir! Saara store data ready hai. Aaj ka kya plan hai?`
+          }
+        ],
+        en: [
+          {
+            reply: `${timeGreeting}, Sir! I am **${assistantName}**, your autonomous executive AI co-pilot.\n\nAll operations across **${storeName}** are synchronized and online. How can I assist your business today?`,
+            spoken: `${timeGreeting}, Sir! All systems are synchronized and online. How can I assist your business today?`
+          },
+          {
+            reply: `Hello Sir! Ready for action. I can record sales, balance customer khatas, restock items, or audit profit margins anytime. What's on your agenda?`,
+            spoken: `Hello Sir! Ready for action. What would you like to review or execute right now?`
+          },
+          {
+            reply: `${timeGreeting}, Sir! Live store telemetry is operating normally. Tell me what needs attention today.`,
+            spoken: `${timeGreeting}, Sir! Store operations are running smoothly. What needs your attention?`
+          }
+        ]
+      };
+
+      const langKey = isHi ? 'hi' : isHinglish ? 'hinglish' : 'en';
+      const selectedGreeting = greetingsPool[langKey][Math.floor(Math.random() * greetingsPool[langKey].length)];
+      replyText = selectedGreeting.reply;
+      spokenText = selectedGreeting.spoken;
 
       actionData = {
         type: 'status_active',

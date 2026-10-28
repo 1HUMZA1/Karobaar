@@ -43,6 +43,58 @@ import JarvisConversationBubble from './JarvisConversationBubble';
 import JarvisSettingsModal from './JarvisSettingsModal';
 import './CustomizeAIChatbot.css';
 
+// Smart Anti-Repetition Dynamic Greeting Pools
+const WAKE_GREETING_POOLS = {
+  hi: [
+    "जी सर, कहिए?",
+    "हाँ सर, मैं सुन रहा हूँ। बताइए क्या सहायता करूँ?",
+    "आज्ञा दीजिए सर, सिस्टम तैयार है।",
+    "बताइए सर, क्या काम करना है?",
+    "जी, बताइए क्या करूँ आपके लिए?"
+  ],
+  hinglish: [
+    "Haanji sir, boliye?",
+    "Ji sir, main sun raha hoon! Bataiye kya madad karoon?",
+    "Ready sir! Kya command execute karni hai?",
+    "Yes sir, all systems live hain. Boliye!",
+    "Bataiye sir, kaise assist karoon?"
+  ],
+  en: [
+    "Yes sir, I'm listening. How can I help?",
+    "Ready when you are, sir.",
+    "Go ahead, sir. What would you like to do?",
+    "Online and listening, sir.",
+    "Yes? How can I assist your business?"
+  ],
+  ur: [
+    "جی سر، فرمائیے؟",
+    "ہاں سر، میں سن رہا ہوں۔ کیا مدد کروں؟",
+    "حکم دیجیے سر، سسٹم تیار ہے۔"
+  ],
+  ar: [
+    "نعم يا سيدي، أنا أستمع إليك.",
+    "جاهز لأمرك، كيف أساعدك اليوم؟"
+  ],
+  es: [
+    "¿Sí, señor? Estoy escuchando.",
+    "Listo cuando usted diga. ¿En qué le ayudo?"
+  ]
+};
+
+const getDynamicWakeGreeting = (lang, assistantName, recentList = []) => {
+  const normalizedLang = (lang || 'hinglish').toLowerCase();
+  const pool = WAKE_GREETING_POOLS[normalizedLang] || 
+    (normalizedLang.startsWith('hi') ? WAKE_GREETING_POOLS.hi : 
+     normalizedLang.startsWith('en') ? WAKE_GREETING_POOLS.en : 
+     normalizedLang.startsWith('ur') ? WAKE_GREETING_POOLS.ur :
+     normalizedLang.startsWith('ar') ? WAKE_GREETING_POOLS.ar :
+     normalizedLang.startsWith('es') ? WAKE_GREETING_POOLS.es :
+     WAKE_GREETING_POOLS.hinglish);
+  const available = pool.filter(g => !recentList.includes(g));
+  const chosen = (available.length > 0 ? available : pool)[Math.floor(Math.random() * (available.length || pool.length))];
+  return chosen.replace(/Jarvis/g, assistantName);
+};
+
 export const CustomizeAIChatbot = () => {
   const { 
     theme, 
@@ -143,8 +195,13 @@ export const CustomizeAIChatbot = () => {
         assistantName: name,
         persona: 'friendly',
         voiceFeedback: true,
+        selectedVoiceName: 'auto',
         speechRate: 1.05,
         speechPitch: 1.0,
+        speechVolume: 1.0,
+        speechPauseDelay: 1.5,
+        preventRepetitions: true,
+        verbosity: 'balanced',
         characterStyle: 'robot',
         characterPosition: 'bottom_left',
         autoExecuteSafe: true,
@@ -155,7 +212,16 @@ export const CustomizeAIChatbot = () => {
         assistantName: name
       };
     } catch {
-      return { assistantName: 'Jarvis', persona: 'friendly', voiceFeedback: true, characterStyle: 'robot', wakeChime: true };
+      return { 
+        assistantName: 'Jarvis', 
+        persona: 'friendly', 
+        voiceFeedback: true, 
+        selectedVoiceName: 'auto',
+        speechPauseDelay: 1.5,
+        preventRepetitions: true,
+        characterStyle: 'robot', 
+        wakeChime: true 
+      };
     }
   });
 
@@ -220,8 +286,16 @@ export const CustomizeAIChatbot = () => {
   const lastSpeechEndTimeRef = useRef(0);
   const speechCooldownTimerRef = useRef(null);
   const isHudOverlayOpenRef = useRef(isHudOverlayOpen);
-  const interimRef = useRef('');
-  const commitTimerRef = useRef(null);
+  
+  // Robust Speech Accumulation & Silence Wait Buffer (Guarantees listening to FULL command)
+  const speechAccumulatorRef = useRef('');
+  const speechSilenceTimerRef = useRef(null);
+  const recentBotGreetingsRef = useRef([]);
+  const speechPauseDelayRef = useRef(aiSettings.speechPauseDelay || 1.5);
+
+  useEffect(() => {
+    speechPauseDelayRef.current = aiSettings.speechPauseDelay || 1.5;
+  }, [aiSettings.speechPauseDelay]);
 
   // Sync isHudOverlayOpen ref & pause background listener while HUD overlay is open
   useEffect(() => {
@@ -258,7 +332,7 @@ export const CustomizeAIChatbot = () => {
     }
   };
 
-  // Continuous Ambient Listener active from EVERYWHERE in the application
+  // Continuous Ambient Listener: Listens to the FULL command and reacts only after true silence
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -270,7 +344,19 @@ export const CustomizeAIChatbot = () => {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-IN'; // Indian English / Hindi accent support
+
+    // Map configured language to recognition acoustic model
+    const langAcousticMap = {
+      'hinglish': 'en-IN',
+      'hi': 'hi-IN',
+      'en-in': 'en-IN',
+      'en': 'en-US',
+      'en-gb': 'en-GB',
+      'ur': 'ur-PK',
+      'ar': 'ar-SA',
+      'es': 'es-ES'
+    };
+    recognition.lang = langAcousticMap[aiLanguage] || 'en-IN';
 
     recognition.onstart = () => {
       if (isMounted) setIsListening(true);
@@ -279,7 +365,7 @@ export const CustomizeAIChatbot = () => {
     recognition.onresult = (event) => {
       // ANTI-ECHO GUARD 1: Assistant is currently speaking out loud!
       if (isSpeakingRef.current) {
-        interimRef.current = '';
+        speechAccumulatorRef.current = '';
         setInterimTranscript('');
         return;
       }
@@ -287,119 +373,79 @@ export const CustomizeAIChatbot = () => {
       // ANTI-ECHO GUARD 2: Within 900ms acoustic echo cooldown buffer
       const timeSinceSpeech = Date.now() - lastSpeechEndTimeRef.current;
       if (timeSinceSpeech < 900) {
-        interimRef.current = '';
+        speechAccumulatorRef.current = '';
         setInterimTranscript('');
         return;
       }
 
       // If HUD overlay is open, background ambient listener yields
       if (isHudOverlayOpenRef.current) {
-        interimRef.current = '';
+        speechAccumulatorRef.current = '';
         setInterimTranscript('');
         return;
       }
 
-      let interim = '';
-      let final = '';
+      let currentInterim = '';
+      let newlyFinal = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const piece = event.results[i][0]?.transcript || '';
         if (event.results[i].isFinal) {
-          final += piece;
+          newlyFinal += piece + ' ';
         } else {
-          interim += piece;
+          currentInterim += piece;
         }
       }
 
-      if (interim) {
-        interimRef.current = interim;
-        setInterimTranscript(interim);
-
-        // Fast auto-dispatch after 450ms pause
-        clearTimeout(commitTimerRef.current);
-        commitTimerRef.current = setTimeout(() => {
-          // Re-verify speaking / cooldown guards before executing
-          if (isSpeakingRef.current || (Date.now() - lastSpeechEndTimeRef.current) < 900 || isHudOverlayOpenRef.current) {
-            interimRef.current = '';
-            setInterimTranscript('');
-            return;
-          }
-
-          if (interimRef.current && interimRef.current.trim().length > 1) {
-            const raw = interimRef.current.trim();
-            interimRef.current = '';
-            setInterimTranscript('');
-
-            // ANTI-ECHO GUARD 3: Drop self-hearing echo of recently spoken text
-            if (isSelfEcho(raw, lastSpokenTextRef.current, recentSpokenListRef.current)) {
-              console.warn('[Anti-Echo Filter] Dropped self-hearing transcript (interim):', raw);
-              return;
-            }
-
-            const { isSoloWakeWord, cleanedQuery } = cleanSpokenQuery(raw, assistantName);
-            if (isSoloWakeWord) {
-              if (aiSettings.wakeChime !== false) playWakeChime();
-              setIsConversationBubbleOpen(true);
-              const isHi = aiLanguage === 'hi';
-              const isHinglish = aiLanguage === 'hinglish';
-              const greeting = isHi
-                ? `जी सर, ${assistantName} सुन रहा है! कहिए, क्या सहायता करूँ?`
-                : isHinglish
-                ? `Yes sir, ${assistantName} is listening! How can I help your business today?`
-                : `Yes sir, I'm listening! How can I assist you?`;
-              setMessages(prev => [
-                ...prev,
-                {
-                  id: 'bot-' + Date.now(),
-                  sender: 'bot',
-                  text: greeting,
-                  spokenText: greeting,
-                  timestamp: new Date().toISOString()
-                }
-              ]);
-              if (voiceEnabled && aiSettings.voiceFeedback !== false) {
-                speakText(greeting);
-              }
-              return;
-            }
-
-            if (cleanedQuery) {
-              setIsConversationBubbleOpen(true);
-              handleUserQuery(cleanedQuery);
-            }
-          }
-        }, 450);
+      if (newlyFinal) {
+        speechAccumulatorRef.current = (speechAccumulatorRef.current + ' ' + newlyFinal).trim();
       }
 
-      if (final.trim()) {
-        clearTimeout(commitTimerRef.current);
-        interimRef.current = '';
-        setInterimTranscript('');
+      // Combine accumulated finalized speech with current interim words
+      const fullSoFar = (speechAccumulatorRef.current + ' ' + currentInterim).trim();
 
-        // Re-verify speaking / cooldown guards
+      if (fullSoFar) {
+        // Show live real-time transcription in the dialog bubble ("see my voice")
+        setInterimTranscript(fullSoFar);
+        setIsConversationBubbleOpen(true);
+      }
+
+      // Configurable silence delay (default: 1.5s) to guarantee listening to FULL command before reacting
+      const pauseDelayMs = Math.round((Number(speechPauseDelayRef.current) || 1.5) * 1000);
+
+      // RESET silence debounce timer on every word / syllable. Never cut off mid-sentence!
+      clearTimeout(speechSilenceTimerRef.current);
+      speechSilenceTimerRef.current = setTimeout(() => {
+        // Re-check speaking & cooldown guards
         if (isSpeakingRef.current || (Date.now() - lastSpeechEndTimeRef.current) < 900 || isHudOverlayOpenRef.current) {
+          speechAccumulatorRef.current = '';
+          setInterimTranscript('');
           return;
         }
 
-        const raw = final.trim();
+        const raw = (speechAccumulatorRef.current + ' ' + currentInterim).trim();
+        speechAccumulatorRef.current = '';
+        setInterimTranscript('');
 
-        // ANTI-ECHO GUARD 3: Drop self-hearing echo of recently spoken text
+        if (!raw || raw.length < 2) return;
+
+        // Anti-Echo Check: Drop self-hearing audio
         if (isSelfEcho(raw, lastSpokenTextRef.current, recentSpokenListRef.current)) {
-          console.warn('[Anti-Echo Filter] Dropped self-hearing transcript (final):', raw);
+          console.warn('[Anti-Echo Filter] Dropped self-hearing transcript:', raw);
           return;
         }
 
         const { isSoloWakeWord, cleanedQuery } = cleanSpokenQuery(raw, assistantName);
+
         if (isSoloWakeWord) {
+          // User ONLY said wake word ("Hey Jarvis") and paused for full silence delay
           if (aiSettings.wakeChime !== false) playWakeChime();
           setIsConversationBubbleOpen(true);
-          const isHi = aiLanguage === 'hi';
-          const isHinglish = aiLanguage === 'hinglish';
-          const greeting = isHi
-            ? `जी सर, ${assistantName} सुन रहा है! कहिए, क्या सहायता करूँ?`
-            : isHinglish
-            ? `Yes sir, ${assistantName} is listening! How can I help your business today?`
-            : `Yes sir, I'm listening! How can I assist you?`;
+
+          // Smart Anti-Repetition: Pick varied non-repeating prompt
+          const greeting = getDynamicWakeGreeting(aiLanguage, assistantName, recentBotGreetingsRef.current);
+          recentBotGreetingsRef.current = [greeting, ...recentBotGreetingsRef.current.slice(0, 4)];
+
           setMessages(prev => [
             ...prev,
             {
@@ -416,11 +462,12 @@ export const CustomizeAIChatbot = () => {
           return;
         }
 
+        // User spoke their full command!
         if (cleanedQuery) {
           setIsConversationBubbleOpen(true);
           handleUserQuery(cleanedQuery);
         }
-      }
+      }, pauseDelayMs);
     };
 
     recognition.onerror = (event) => {
@@ -434,8 +481,6 @@ export const CustomizeAIChatbot = () => {
     recognition.onend = () => {
       if (isMounted) {
         setIsListening(false);
-        // Automatically restart so Jarvis listens from everywhere continuously,
-        // STRICTLY ONLY if not speaking, not in echo cooldown, and HUD overlay is not open
         const inCooldown = (Date.now() - lastSpeechEndTimeRef.current) < 900;
         if (isListeningEnabledRef.current && !isSpeakingRef.current && !inCooldown && !isHudOverlayOpenRef.current) {
           setTimeout(() => {
@@ -460,11 +505,12 @@ export const CustomizeAIChatbot = () => {
 
     return () => {
       isMounted = false;
+      clearTimeout(speechSilenceTimerRef.current);
       try { recognition.abort(); } catch (e) {}
     };
-  }, [assistantName, aiLanguage]);
+  }, [assistantName, aiLanguage, voiceEnabled]);
 
-  // Speech Output Helper with Natural Human Cadence & Strict Anti-Echo Locks
+  // Speech Output Helper with Custom Voices, Volume, Cadence & Strict Anti-Echo Locks
   const speakText = (text) => {
     if (!('speechSynthesis' in window)) return;
 
@@ -472,15 +518,15 @@ export const CustomizeAIChatbot = () => {
     isSpeakingRef.current = true;
     setIsSpeaking(true);
     clearTimeout(speechCooldownTimerRef.current);
-    clearTimeout(commitTimerRef.current);
-    interimRef.current = '';
+    clearTimeout(speechSilenceTimerRef.current);
+    speechAccumulatorRef.current = '';
     setInterimTranscript('');
 
     // 2. Cancel any pending speech synthesis
     window.speechSynthesis.cancel();
 
     const clean = String(text || '')
-      .replace(/[*#_`]/g, '')
+      .replace(/[*#_\x60]/g, '')
       .replace(/•/g, '')
       .replace(/\n+/g, ' ')
       .trim();
@@ -503,18 +549,29 @@ export const CustomizeAIChatbot = () => {
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.rate = Number(aiSettings.speechRate) || 1.05;
     utterance.pitch = Number(aiSettings.speechPitch) || 1.0;
+    utterance.volume = Math.max(0.2, Math.min(1.0, Number(aiSettings.speechVolume) || 1.0));
 
     const voices = window.speechSynthesis.getVoices();
-    const isHindi = /[\u0900-\u097F]/.test(clean) || /(namaste|dhanyawad|aapka|shukriya|kar diya|kardo|hai|kripya|bhejo|aaj|kamayi|bikri|dukan|maal|batao|udhaar)/i.test(clean);
 
-    if (isHindi) {
-      const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('swara') || v.name.toLowerCase().includes('madhur'));
-      if (hiVoice) utterance.voice = hiVoice;
-      utterance.lang = 'hi-IN';
+    // Use custom chosen voice from Settings if set
+    if (aiSettings.selectedVoiceName && aiSettings.selectedVoiceName !== 'auto') {
+      const match = voices.find(v => v.name === aiSettings.selectedVoiceName || v.voiceURI === aiSettings.selectedVoiceName);
+      if (match) {
+        utterance.voice = match;
+        utterance.lang = match.lang;
+      }
     } else {
-      const inVoice = voices.find(v => v.lang === 'en-IN' || v.name.toLowerCase().includes('india') || v.name.toLowerCase().includes('neerja'));
-      if (inVoice) utterance.voice = inVoice;
-      utterance.lang = 'en-IN';
+      const isHindi = /[\u0900-\u097F]/.test(clean) || /(namaste|dhanyawad|aapka|shukriya|kar diya|kardo|hai|kripya|bhejo|aaj|kamayi|bikri|dukan|maal|batao|udhaar)/i.test(clean);
+
+      if (isHindi || aiLanguage === 'hi' || aiLanguage === 'hinglish') {
+        const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('swara') || v.name.toLowerCase().includes('madhur'));
+        if (hiVoice) utterance.voice = hiVoice;
+        utterance.lang = 'hi-IN';
+      } else {
+        const inVoice = voices.find(v => v.lang === 'en-IN' || v.name.toLowerCase().includes('india') || v.name.toLowerCase().includes('neerja'));
+        if (inVoice) utterance.voice = inVoice;
+        utterance.lang = 'en-IN';
+      }
     }
 
     try {
@@ -629,13 +686,9 @@ export const CustomizeAIChatbot = () => {
       if (e?.detail?.query) {
         handleUserQuery(e.detail.query);
       } else {
-        const isHi = aiLanguage === 'hi';
-        const isHinglish = aiLanguage === 'hinglish';
-        const greeting = isHi
-          ? `जी सर, ${assistantName} सुन रहा है! कहिए, क्या सहायता करूँ?`
-          : isHinglish
-          ? `Yes sir, ${assistantName} is listening! How can I assist you today?`
-          : `Hello sir, ${assistantName} is listening. How can I assist you?`;
+        // Smart Anti-Repetition: Pick dynamic fresh greeting
+        const greeting = getDynamicWakeGreeting(aiLanguage, assistantName, recentBotGreetingsRef.current);
+        recentBotGreetingsRef.current = [greeting, ...recentBotGreetingsRef.current.slice(0, 4)];
 
         setMessages(prev => [
           ...prev,

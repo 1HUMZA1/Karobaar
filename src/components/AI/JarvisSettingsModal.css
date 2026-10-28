@@ -322,6 +322,43 @@
   outline: none;
 }
 
+.setting-select-field {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 13px;
+  background-color: var(--bg-elevated, #f8fafc);
+  color: var(--text-main, #09090b);
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+[data-theme="dark"] .setting-select-field {
+  background-color: #18181c;
+  border-color: #27272a;
+  color: #ffffff;
+}
+
+.setting-select-field:focus {
+  border-color: var(--text-main, #09090b);
+}
+
+[data-theme="dark"] .setting-select-field:focus {
+  border-color: #ffffff;
+}
+
+.voice-select-with-test {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.voice-select-with-test .setting-select-field {
+  flex: 1;
+}
+
 [data-theme="dark"] .setting-text-field {
   background-color: #18181c;
   border-color: #27272a;

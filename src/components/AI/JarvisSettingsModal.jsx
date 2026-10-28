@@ -13,14 +13,17 @@ import {
   Trash2, 
   Check, 
   Globe, 
-  Play
+  Play,
+  Clock,
+  Repeat
 } from 'lucide-react';
 import './JarvisSettingsModal.css';
 
 /**
  * JarvisSettingsModal
  * Comprehensive settings center allowing users to customize every aspect of Jarvis:
- * Name, Voice rate/pitch, Language, Listening modes, Visual Avatar, Persona, and Safety permissions.
+ * Name, Voice rate/pitch/volume/system voice, Silence Wait Time (full command listening),
+ * Spoken language, Listening modes, Visual Avatar, Persona, and Anti-Repetition.
  */
 export const JarvisSettingsModal = ({
   isOpen = false,
@@ -30,20 +33,42 @@ export const JarvisSettingsModal = ({
   onClearHistory = () => {}
 }) => {
   const [activeTab, setActiveTab] = useState('voice'); // 'voice' | 'identity' | 'listening' | 'character' | 'safety'
-  
+  const [systemVoices, setSystemVoices] = useState([]);
+
+  // Fetch available system voices dynamically from SpeechSynthesis
+  useEffect(() => {
+    const loadVoices = () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        const v = window.speechSynthesis.getVoices();
+        if (v && v.length > 0) {
+          setSystemVoices(v);
+        }
+      }
+    };
+    loadVoices();
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, []);
+
   const [settings, setSettings] = useState({
     assistantName: 'Jarvis',
     persona: 'friendly', // 'friendly' | 'concise' | 'advisor'
     voiceFeedback: true,
+    selectedVoiceName: 'auto',
     speechRate: 1.05,
     speechPitch: 1.0,
-    aiLanguage: 'hinglish', // 'hinglish' | 'en' | 'hi'
-    listeningMode: 'ambient', // 'ambient' | 'push_to_talk' | 'wake_word'
+    speechVolume: 1.0,
+    speechPauseDelay: 1.5, // Wait time in seconds for full command before replying
+    aiLanguage: 'hinglish',
+    listeningMode: 'ambient',
     wakeChime: true,
     characterStyle: 'robot', // 'robot' | 'orb' | 'pulse'
-    characterPosition: 'bottom_left', // 'bottom_left' | 'bottom_right'
+    characterPosition: 'bottom_left',
     autoExecuteSafe: true,
     confirmSensitive: true,
+    preventRepetitions: true,
+    verbosity: 'balanced', // 'concise' | 'balanced' | 'detailed'
     ...currentSettings
   });
 
@@ -70,7 +95,7 @@ export const JarvisSettingsModal = ({
     }, 400);
   };
 
-  // Test Voice function
+  // Test Voice function using selected voice and parameters
   const handleTestVoice = () => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
@@ -79,22 +104,35 @@ export const JarvisSettingsModal = ({
     if (settings.aiLanguage === 'hi') {
       sampleText = `नमस्ते! मैं ${settings.assistantName} हूँ। आपकी आवाज़ की सेटिंग्स बिल्कुल तैयार हैं।`;
     } else if (settings.aiLanguage === 'hinglish') {
-      sampleText = `जी सर, मैं ${settings.assistantName} हूँ! आपकी वॉयस सेटिंग्स टेस्ट हो रही हैं। सब कुछ तैयार है!`;
+      sampleText = `जी सर, मैं ${settings.assistantName} हूँ! आपकी वॉयस सेटिंग्स बिल्कुल सही काम कर रही हैं।`;
+    } else if (settings.aiLanguage === 'ur') {
+      sampleText = `سلام! میں ${settings.assistantName} ہوں۔ آپ کی آواز کی ترتیبات مکمل طور پر تیار ہیں۔`;
+    } else if (settings.aiLanguage === 'es') {
+      sampleText = `¡Hola! Soy ${settings.assistantName}. La configuración de voz está lista.`;
+    } else if (settings.aiLanguage === 'ar') {
+      sampleText = `مرحباً! أنا ${settings.assistantName}. تم إعداد الصوت بنجاح.`;
     }
 
     const utterance = new SpeechSynthesisUtterance(sampleText);
     utterance.rate = Number(settings.speechRate) || 1.05;
     utterance.pitch = Number(settings.speechPitch) || 1.0;
+    utterance.volume = Number(settings.speechVolume) || 1.0;
 
-    const voices = window.speechSynthesis.getVoices();
-    if (settings.aiLanguage === 'hi' || settings.aiLanguage === 'hinglish') {
-      const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'));
-      if (hiVoice) utterance.voice = hiVoice;
-      utterance.lang = 'hi-IN';
+    const voices = systemVoices.length > 0 ? systemVoices : window.speechSynthesis.getVoices();
+
+    if (settings.selectedVoiceName && settings.selectedVoiceName !== 'auto') {
+      const match = voices.find(v => v.name === settings.selectedVoiceName || v.voiceURI === settings.selectedVoiceName);
+      if (match) utterance.voice = match;
     } else {
-      const inVoice = voices.find(v => v.lang === 'en-IN' || v.name.toLowerCase().includes('india'));
-      if (inVoice) utterance.voice = inVoice;
-      utterance.lang = 'en-IN';
+      if (settings.aiLanguage === 'hi' || settings.aiLanguage === 'hinglish') {
+        const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'));
+        if (hiVoice) utterance.voice = hiVoice;
+        utterance.lang = 'hi-IN';
+      } else {
+        const inVoice = voices.find(v => v.lang === 'en-IN' || v.name.toLowerCase().includes('india'));
+        if (inVoice) utterance.voice = inVoice;
+        utterance.lang = 'en-IN';
+      }
     }
 
     window.speechSynthesis.speak(utterance);
@@ -116,7 +154,7 @@ export const JarvisSettingsModal = ({
             </div>
             <div>
               <h3 className="settings-modal-title">{settings.assistantName} Settings</h3>
-              <p className="settings-modal-sub">Customize voice, character, listening & behavior</p>
+              <p className="settings-modal-sub">Customize voice, full command listening, language & avatar</p>
             </div>
           </div>
 
@@ -142,7 +180,7 @@ export const JarvisSettingsModal = ({
             className={`settings-tab-btn ${activeTab === 'identity' ? 'active' : ''}`}
           >
             <Bot size={13} />
-            <span>Identity & Name</span>
+            <span>Identity & Tone</span>
           </button>
 
           <button 
@@ -173,11 +211,12 @@ export const JarvisSettingsModal = ({
           </button>
         </div>
 
-        {/* Tab Contents */}
-        <div className="settings-modal-content custom-scrollbar">
+        {/* Content Body */}
+        <div className="settings-modal-body custom-scrollbar">
           {/* TAB 1: VOICE & AUDIO */}
           {activeTab === 'voice' && (
             <div className="settings-section">
+              {/* Voice Output Toggle */}
               <div className="setting-toggle-row">
                 <div>
                   <h4 className="setting-label">Voice Speech Output</h4>
@@ -193,33 +232,90 @@ export const JarvisSettingsModal = ({
                 </label>
               </div>
 
+              {/* System Voice Selection */}
               <div className="setting-input-block">
-                <label className="setting-label">Spoken Language</label>
-                <div className="setting-pill-options">
+                <label className="setting-label">Selected System Voice</label>
+                <p className="setting-desc">Choose from any available voice installed on your device</p>
+                <div className="voice-select-with-test">
+                  <select 
+                    value={settings.selectedVoiceName || 'auto'}
+                    onChange={(e) => handleChange('selectedVoiceName', e.target.value)}
+                    className="setting-select-field"
+                  >
+                    <option value="auto">✨ Auto / Best Match for Language</option>
+                    {systemVoices.map(v => (
+                      <option key={v.name} value={v.name}>
+                        {v.name} ({v.lang})
+                      </option>
+                    ))}
+                  </select>
                   <button 
                     type="button" 
-                    onClick={() => handleChange('aiLanguage', 'hinglish')}
-                    className={`setting-choice-btn ${settings.aiLanguage === 'hinglish' ? 'selected' : ''}`}
+                    onClick={handleTestVoice} 
+                    className="test-voice-btn"
+                    title="Play voice sample"
                   >
-                    Hinglish (Hindi + English)
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => handleChange('aiLanguage', 'en')}
-                    className={`setting-choice-btn ${settings.aiLanguage === 'en' ? 'selected' : ''}`}
-                  >
-                    English (India)
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => handleChange('aiLanguage', 'hi')}
-                    className={`setting-choice-btn ${settings.aiLanguage === 'hi' ? 'selected' : ''}`}
-                  >
-                    हिंदी (Hindi)
+                    <Play size={12} />
+                    <span>Test</span>
                   </button>
                 </div>
               </div>
 
+              {/* Language Selector */}
+              <div className="setting-input-block">
+                <label className="setting-label">Spoken & Understood Language</label>
+                <div className="setting-pill-options">
+                  {[
+                    { id: 'hinglish', label: 'Hinglish (Hindi + English)' },
+                    { id: 'en-in', label: 'English (India)' },
+                    { id: 'en', label: 'English (US / Global)' },
+                    { id: 'en-gb', label: 'English (UK)' },
+                    { id: 'hi', label: 'हिंदी (Hindi)' },
+                    { id: 'ur', label: 'اردو (Urdu)' },
+                    { id: 'ar', label: 'العربية (Arabic)' },
+                    { id: 'es', label: 'Español (Spanish)' }
+                  ].map(lang => (
+                    <button 
+                      key={lang.id}
+                      type="button" 
+                      onClick={() => handleChange('aiLanguage', lang.id)}
+                      className={`setting-choice-btn ${settings.aiLanguage === lang.id ? 'selected' : ''}`}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Silence Wait Time Before Replying (Wait for Full Command) */}
+              <div className="setting-input-block">
+                <div className="setting-label-with-val">
+                  <label className="setting-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Clock size={13} />
+                    <span>Silence Wait Time (Wait for Full Command)</span>
+                  </label>
+                  <span className="setting-slider-val">{settings.speechPauseDelay || 1.5}s</span>
+                </div>
+                <p className="setting-desc">
+                  How long Jarvis waits in silence after you speak before answering. Prevents Jarvis from interrupting while you pause to think or breathe.
+                </p>
+                <input 
+                  type="range" 
+                  min="0.8" 
+                  max="2.5" 
+                  step="0.1"
+                  value={settings.speechPauseDelay || 1.5}
+                  onChange={(e) => handleChange('speechPauseDelay', parseFloat(e.target.value))}
+                  className="jarvis-slider-input"
+                />
+                <div className="slider-hints">
+                  <span>0.8s (Fast)</span>
+                  <span>1.5s (Balanced - Recommended)</span>
+                  <span>2.5s (Patient - Long Pauses)</span>
+                </div>
+              </div>
+
+              {/* Speech Speed */}
               <div className="setting-input-block">
                 <div className="setting-label-with-val">
                   <label className="setting-label">Speech Speed / Rate</label>
@@ -241,6 +337,7 @@ export const JarvisSettingsModal = ({
                 </div>
               </div>
 
+              {/* Voice Pitch */}
               <div className="setting-input-block">
                 <div className="setting-label-with-val">
                   <label className="setting-label">Voice Pitch</label>
@@ -257,21 +354,26 @@ export const JarvisSettingsModal = ({
                 />
               </div>
 
-              <div className="test-voice-action">
-                <button 
-                  type="button" 
-                  onClick={handleTestVoice} 
-                  className="test-voice-btn"
-                  title="Play audio sample with current voice settings"
-                >
-                  <Play size={13} />
-                  <span>Test Voice Sample</span>
-                </button>
+              {/* Voice Volume */}
+              <div className="setting-input-block">
+                <div className="setting-label-with-val">
+                  <label className="setting-label">Voice Volume</label>
+                  <span className="setting-slider-val">{Math.round((settings.speechVolume || 1.0) * 100)}%</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0.2" 
+                  max="1.0" 
+                  step="0.05"
+                  value={settings.speechVolume || 1.0}
+                  onChange={(e) => handleChange('speechVolume', parseFloat(e.target.value))}
+                  className="jarvis-slider-input"
+                />
               </div>
             </div>
           )}
 
-          {/* TAB 2: IDENTITY & PERSONA */}
+          {/* TAB 2: IDENTITY & ANTI-REPETITION */}
           {activeTab === 'identity' && (
             <div className="settings-section">
               <div className="setting-input-block">
@@ -297,6 +399,47 @@ export const JarvisSettingsModal = ({
                   className="setting-text-field"
                   maxLength={24}
                 />
+              </div>
+
+              {/* Anti-Repetition Engine Toggle */}
+              <div className="setting-toggle-row">
+                <div>
+                  <h4 className="setting-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Repeat size={13} />
+                    <span>Smart Anti-Repetition Engine</span>
+                  </h4>
+                  <p className="setting-desc">Varies intros and greetings dynamically; prevents Jarvis from saying the same things repeatedly</p>
+                </div>
+                <label className="jarvis-switch">
+                  <input 
+                    type="checkbox" 
+                    checked={settings.preventRepetitions !== false} 
+                    onChange={(e) => handleChange('preventRepetitions', e.target.checked)} 
+                  />
+                  <span className="jarvis-slider" />
+                </label>
+              </div>
+
+              {/* Response Verbosity */}
+              <div className="setting-input-block">
+                <label className="setting-label">Response Verbosity</label>
+                <p className="setting-desc">How detailed Jarvis answers your queries</p>
+                <div className="setting-pill-options">
+                  {[
+                    { id: 'concise', label: '⚡ Concise (1-sentence answers)' },
+                    { id: 'balanced', label: '🤝 Balanced (Natural coworker)' },
+                    { id: 'detailed', label: '📊 Detailed (In-depth analysis)' }
+                  ].map(v => (
+                    <button 
+                      key={v.id}
+                      type="button"
+                      onClick={() => handleChange('verbosity', v.id)}
+                      className={`setting-choice-btn ${settings.verbosity === v.id ? 'selected' : ''}`}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="setting-input-block">
