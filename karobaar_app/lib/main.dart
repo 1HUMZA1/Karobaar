@@ -78,7 +78,17 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
   }
 
   Future<void> _startApp() async {
-    // 1. Windows Desktop implementation using Microsoft Edge WebView2
+    // 1. Start the local server serving the fresh, bundled Karobaar 2.0 assets
+    try {
+      final port = await _localServer.start();
+      _currentUrl = 'http://127.0.0.1:$port/#/dashboard';
+      debugPrint('[Karobaar LocalServer] Started successfully on port $port');
+    } catch (e) {
+      debugPrint('[Karobaar LocalServer Error] $e - falling back to cloud mirror');
+      _currentUrl = _cloudUrl;
+    }
+
+    // 2. Windows Desktop implementation using Microsoft Edge WebView2
     if (_isWindows) {
       _windowsController = ww.WebviewController();
       try {
@@ -94,11 +104,12 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
         await _windowsController!.loadUrl(_currentUrl);
       } catch (e) {
         debugPrint('[Windows WebView error] $e');
-        try {
-          final port = await _localServer.start();
-          _currentUrl = 'http://127.0.0.1:$port/';
-          await _windowsController!.loadUrl(_currentUrl);
-        } catch (_) {}
+        if (!_currentUrl.startsWith('https://')) {
+          _currentUrl = _cloudUrl;
+          try {
+            await _windowsController!.loadUrl(_currentUrl);
+          } catch (_) {}
+        }
       }
 
       if (mounted) {
@@ -109,12 +120,12 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
       return;
     }
 
-    // 2. Android / iOS Mobile implementation using webview_flutter
+    // 3. Android / iOS Mobile implementation using webview_flutter
     _mobileController = wf.WebViewController()
       ..setJavaScriptMode(wf.JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
       ..setUserAgent(
-        'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 KarobaarApp/1.1.0',
+        'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 KarobaarApp/2.0.0',
       )
       ..setNavigationDelegate(
         wf.NavigationDelegate(
@@ -135,10 +146,9 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
           },
           onWebResourceError: (wf.WebResourceError error) async {
             debugPrint('[Karobaar WebResourceError] ${error.errorCode}: ${error.description}');
-            if (_currentUrl.startsWith('https://')) {
+            if (!_currentUrl.startsWith('https://')) {
+              _currentUrl = _cloudUrl;
               try {
-                final port = await _localServer.start();
-                _currentUrl = 'http://127.0.0.1:$port/';
                 await _mobileController?.loadRequest(Uri.parse(_currentUrl));
               } catch (_) {}
             }
