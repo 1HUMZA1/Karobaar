@@ -10,6 +10,8 @@ class LocalServer {
   HttpServer? _server;
   int? port;
   static Map<String, dynamic>? pendingAuthSession;
+  static Map<String, dynamic>? lastAuthSession;
+  static DateTime? lastAuthTime;
 
   Future<int> start() async {
     final handler = const Pipeline().addHandler(_handleRequest);
@@ -19,7 +21,8 @@ class LocalServer {
   }
 
   Future<Response> _handleRequest(Request request) async {
-    final path = request.url.path;
+    final rawPath = request.url.path;
+    final path = rawPath.startsWith('/') ? rawPath.substring(1) : rawPath;
 
     // Handle CORS Pre-flight for API calls
     if (request.method == 'OPTIONS' && path.startsWith('api/')) {
@@ -33,9 +36,12 @@ class LocalServer {
 
     // 1. API: Check auth status
     if (path == 'api/auth-status') {
-      final session = pendingAuthSession;
+      final isManual = request.url.queryParameters['manual'] == 'true';
+      final session = isManual ? (lastAuthSession ?? pendingAuthSession) : pendingAuthSession;
       if (session != null) {
-        pendingAuthSession = null; // consume once
+        if (!isManual) {
+          pendingAuthSession = null; // consume pending for auto-poll
+        }
         return Response.ok(
           jsonEncode({'authenticated': true, 'user': session}),
           headers: {
@@ -68,10 +74,14 @@ class LocalServer {
           final bodyStr = await request.readAsString();
           if (bodyStr.isNotEmpty) {
             pendingAuthSession = jsonDecode(bodyStr) as Map<String, dynamic>;
+            lastAuthSession = pendingAuthSession;
+            lastAuthTime = DateTime.now();
           }
         } else if (request.url.queryParameters.containsKey('data')) {
           final dataStr = Uri.decodeComponent(request.url.queryParameters['data']!);
           pendingAuthSession = jsonDecode(dataStr) as Map<String, dynamic>;
+          lastAuthSession = pendingAuthSession;
+          lastAuthTime = DateTime.now();
         }
         debugPrint('[LocalServer Auth Callback] Received auth for: ${pendingAuthSession?['email']}');
       } catch (e) {

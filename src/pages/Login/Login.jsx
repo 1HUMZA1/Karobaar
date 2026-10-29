@@ -281,12 +281,20 @@ const Login = () => {
 
         // 2. Poll LocalServer API
         try {
-          const res = await fetch(`http://localhost:${port}/api/auth-status`);
-          const data = await res.json();
-          if (data?.authenticated && data?.user) {
-            clearInterval(authPollTimerRef.current);
-            setWaitingForBrowserAuth(false);
-            await handleAuthenticatedGoogleUser(data.user);
+          let res = null;
+          try {
+            res = await fetch('/api/auth-status');
+          } catch (_) {
+            if (port) res = await fetch(`http://localhost:${port}/api/auth-status`);
+          }
+          if (res && res.ok) {
+            const data = await res.json();
+            if (data?.authenticated && data?.user) {
+              if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
+              setWaitingForBrowserAuth(false);
+              await handleAuthenticatedGoogleUser(data.user);
+              return;
+            }
           }
         } catch (_) {}
       }, 800);
@@ -801,10 +809,17 @@ const Login = () => {
             <button
               type="button"
               onClick={async () => {
+                setIsAuthenticating(true);
+                // 1. Try local server auth status
                 try {
                   const port = window.location.port;
-                  if (port) {
-                    const res = await fetch(`http://localhost:${port}/api/auth-status`);
+                  let res = null;
+                  try {
+                    res = await fetch('/api/auth-status?manual=true');
+                  } catch (_) {
+                    if (port) res = await fetch(`http://localhost:${port}/api/auth-status?manual=true`);
+                  }
+                  if (res && res.ok) {
                     const data = await res.json();
                     if (data?.user) {
                       setWaitingForBrowserAuth(false);
@@ -814,6 +829,7 @@ const Login = () => {
                   }
                 } catch (_) {}
 
+                // 2. Try storage
                 try {
                   const cached = localStorage.getItem('karobaar_session_user') || localStorage.getItem('karobaar_google_auth_payload');
                   if (cached) {
@@ -826,6 +842,7 @@ const Login = () => {
                     }
                   }
                 } catch (_) {}
+                setIsAuthenticating(false);
               }}
               style={{
                 width: '100%',
