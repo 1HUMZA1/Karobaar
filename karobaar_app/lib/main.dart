@@ -81,7 +81,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
     // 1. Start the local server serving the fresh, bundled Karobaar 2.0 assets
     try {
       final port = await _localServer.start();
-      _currentUrl = 'http://localhost:$port/#/dashboard';
+      _currentUrl = 'http://localhost:$port/?platform=desktop#/dashboard';
       debugPrint('[Karobaar LocalServer] Started successfully on port $port');
     } catch (e) {
       debugPrint('[Karobaar LocalServer Error] $e - falling back to cloud mirror');

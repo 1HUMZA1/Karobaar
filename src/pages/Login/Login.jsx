@@ -130,26 +130,57 @@ const Login = () => {
         if (setAuthStatus) setAuthStatus('authenticated');
         navigate('/dashboard', { replace: true });
       } else {
-        // New user: Route to quick Business Setup so they have their own business
+        // New Google user: Automatically set up an instant personal workspace
+        const userName = user.name || user.displayName || user.email?.split('@')[0] || 'Store Owner';
+        const businessName = `${userName}'s Business`;
+        const newBizId = `biz-${uid.substring(0, 8)}`;
+        
+        const newBusiness = {
+          id: newBizId,
+          name: businessName,
+          category: 'Retail & Services',
+          currency: 'INR',
+          currencySymbol: '₹',
+          ownerId: uid,
+          ownerEmail: user.email,
+          createdAt: new Date().toISOString(),
+          modules: {
+            sales: true, pos: true, inventory: true, purchases: true,
+            customers: true, suppliers: true, employees: true, payroll: true,
+            expenses: true, reports: true, tasks: true
+          }
+        };
+
         const sessionUser = {
           id: uid,
-          name: user.name || user.displayName || user.email?.split('@')[0] || 'Store Owner',
+          name: userName,
           email: user.email,
           role: 'Owner',
-          activeBusinessId: null,
-          memberships: [],
-          onboardingCompleted: false
+          activeBusinessId: newBizId,
+          memberships: [newBizId],
+          onboardingCompleted: true
         };
+
+        try {
+          localDb.save('businesses', newBizId, newBusiness);
+          localDb.save('users', uid, sessionUser);
+        } catch (_) {}
+
         localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
-        sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
+        localStorage.setItem('karobaar_session_business', JSON.stringify(newBusiness));
+        localStorage.setItem('karobaar_session_businesses', JSON.stringify([newBusiness]));
+        localStorage.setItem(`karobaar_onboarding_completed_${user.email.toLowerCase()}`, 'true');
+
         if (setCurrentUser) setCurrentUser(sessionUser);
-        if (setAuthStatus) setAuthStatus('pending_onboarding');
-        navigate('/setup', { replace: true });
+        if (setCurrentBusiness) setCurrentBusiness(newBusiness);
+        if (setUserBusinesses) setUserBusinesses([newBusiness]);
+        if (setAuthStatus) setAuthStatus('authenticated');
+        
+        navigate('/dashboard', { replace: true });
       }
     } catch (e) {
       console.error('[Google sign in complete error]', e);
-      if (setAuthStatus) setAuthStatus('pending_onboarding');
-      navigate('/setup', { replace: true });
+      setGeneralError('Failed to initialize session. Please try again.');
     } finally {
       setIsAuthenticating(false);
     }
@@ -239,14 +270,15 @@ const Login = () => {
     setGeneralError('');
 
     // Detect if running inside Flutter Desktop WebView or local server
-    const isDesktopOrLocal = !!(
+    const isDesktopApp = !!(
       window.chrome?.webview || 
-      (window.location.hostname === '127.0.0.1' && window.location.port) ||
-      (window.location.hostname === 'localhost' && window.location.port)
+      navigator.userAgent.includes('KarobaarApp') ||
+      window.location.search.includes('platform=desktop') ||
+      window.location.search.includes('desktop=true')
     );
     const port = window.location.port;
 
-    if (isDesktopOrLocal && port) {
+    if (isDesktopApp && port) {
       setWaitingForBrowserAuth(true);
       const authUrl = `http://localhost:${port}/#/google-auth?port=${port}`;
       try {
@@ -255,10 +287,10 @@ const Login = () => {
         window.open(authUrl, '_blank');
       }
 
-      // Start polling local server and localStorage for Google auth callback
+      // Start rapid polling local server for Google auth callback
       if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
       authPollTimerRef.current = setInterval(async () => {
-        // 1. Check local storage directly (synchronous cross-window)
+        // 1. Check local storage directly
         try {
           const cached = localStorage.getItem('karobaar_google_auth_payload');
           if (cached) {
@@ -277,9 +309,9 @@ const Login = () => {
         try {
           let res = null;
           try {
-            res = await fetch('/api/auth-status');
+            res = await fetch(`/api/auth-status?t=${Date.now()}`);
           } catch (_) {
-            if (port) res = await fetch(`http://localhost:${port}/api/auth-status`);
+            if (port) res = await fetch(`http://localhost:${port}/api/auth-status?t=${Date.now()}`);
           }
           if (res && res.ok) {
             const data = await res.json();
@@ -291,11 +323,11 @@ const Login = () => {
             }
           }
         } catch (_) {}
-      }, 800);
+      }, 500);
       return;
     }
 
-    // Standard web browser fallback
+    // Standard web browser flow (Chrome, Edge, Firefox, Safari)
     try {
       let result = null;
       try {
@@ -306,10 +338,11 @@ const Login = () => {
           await signInWithRedirect(auth, googleProvider);
           return;
         }
-        // Fallback: open Google Auth in separate window/tab
-        setWaitingForBrowserAuth(true);
-        window.open('#/google-auth', '_blank');
-        return;
+        if (popupErr.code === 'auth/popup-closed-by-user') {
+          setIsAuthenticating(false);
+          return;
+        }
+        throw popupErr;
       }
 
       if (result?.user) {
