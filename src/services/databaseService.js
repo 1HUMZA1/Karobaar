@@ -39,7 +39,7 @@ class DatabaseService {
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     if (this.syncInProgress) return;
 
-    const collectionsToSync = ['products', 'sales', 'customers', 'expenses', 'suppliers', 'invoices', 'employees', 'purchases', 'stock_movements', 'audit_logs', 'members', 'invitations'];
+    const collectionsToSync = ['products', 'sales', 'customers', 'expenses', 'suppliers', 'invoices', 'employees', 'purchases', 'stock_movements', 'audit_logs', 'members', 'invitations', 'device_sessions'];
     
     for (const col of collectionsToSync) {
       try {
@@ -824,6 +824,131 @@ class DatabaseService {
     }
 
     return matched;
+  }
+
+  // --- Real Device & Session Tracking ---
+
+  /**
+   * Register or heartbeat the current true device session
+   */
+  async registerDeviceSession(userId, businessId, sessionInfo) {
+    if (!sessionInfo || !sessionInfo.id) return null;
+    const sessionDoc = {
+      id: sessionInfo.id,
+      deviceId: sessionInfo.deviceId || sessionInfo.id,
+      userId: userId || 'anonymous',
+      businessId: businessId || 'demo-business-1',
+      name: sessionInfo.name || 'Current Device',
+      os: sessionInfo.os || 'Windows PC',
+      browser: sessionInfo.browser || 'Google Chrome',
+      type: sessionInfo.type || 'desktop',
+      ip: sessionInfo.ip || '127.0.0.1 (Localhost)',
+      screen: sessionInfo.screen || '1920 × 1080',
+      userAgent: sessionInfo.userAgent || '',
+      lastActive: new Date().toISOString(),
+      lastActiveTime: Date.now(),
+      status: 'ACTIVE NOW',
+      isRevoked: false,
+      isCurrent: true
+    };
+
+    // Save to localDb device_sessions
+    await this.save('device_sessions', sessionDoc.id, sessionDoc, businessId);
+
+    // Save to Firestore in background
+    try {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        const docRef = doc(dbFirestore, `businesses/${businessId}/device_sessions`, sessionDoc.id);
+        await setDoc(docRef, sessionDoc, { merge: true });
+      }
+    } catch (e) {
+      // offline fallback
+    }
+
+    return sessionDoc;
+  }
+
+  /**
+   * Retrieve active true device sessions for user & business
+   */
+  async getActiveDeviceSessions(userId, businessId, currentDeviceId) {
+    let sessions = [];
+    try {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        const q = collection(dbFirestore, `businesses/${businessId}/device_sessions`);
+        const snap = await this._withTimeout(getDocs(q), 3000);
+        if (snap && !snap.empty) {
+          sessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          localDb.bulkSave('device_sessions', sessions, businessId);
+        }
+      }
+    } catch (e) {}
+
+    if (sessions.length === 0) {
+      sessions = localDb.getAll('device_sessions', businessId) || [];
+    }
+
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+
+    // Filter out revoked sessions and legacy fake mockups
+    const activeSessions = sessions.filter(s => {
+      if (!s || s.isRevoked) return false;
+      // Strip out any hardcoded fake mockups
+      if (s.id === 'mobile-pwa' || s.id === 'pos-tablet' || s.id === 'laptop-billing') return false;
+      if (s.name && (s.name.includes('Samsung Galaxy') || s.name.includes('iPad Counter Register') || s.name.includes('HP Laptop (Manager Office)'))) return false;
+      const actTime = s.lastActiveTime || (s.lastActive ? new Date(s.lastActive).getTime() : 0);
+      return actTime >= thirtyDaysAgo;
+    });
+
+    // Normalize isCurrent flag and status based on real activity
+    return activeSessions.map(s => {
+      const isCur = s.deviceId === currentDeviceId || s.id === currentDeviceId || s.isCurrent === true;
+      const timeDiff = Date.now() - (s.lastActiveTime || (s.lastActive ? new Date(s.lastActive).getTime() : 0));
+      let status = 'ONLINE';
+      if (isCur || timeDiff < 5 * 60 * 1000) {
+        status = 'ACTIVE NOW';
+      } else if (timeDiff < 60 * 60 * 1000) {
+        status = 'ONLINE';
+      } else if (timeDiff < 24 * 60 * 60 * 1000) {
+        status = 'STANDBY';
+      } else {
+        status = 'OFFLINE';
+      }
+
+      return {
+        ...s,
+        isCurrent: isCur,
+        status
+      };
+    });
+  }
+
+  /**
+   * Revoke a single session
+   */
+  async revokeDeviceSession(userId, businessId, sessionId) {
+    try {
+      const existing = localDb.get('device_sessions', sessionId) || {};
+      const updated = { ...existing, id: sessionId, isRevoked: true, revokedAt: new Date().toISOString() };
+      await this.save('device_sessions', sessionId, updated, businessId);
+
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        const docRef = doc(dbFirestore, `businesses/${businessId}/device_sessions`, sessionId);
+        await setDoc(docRef, { isRevoked: true, revokedAt: new Date().toISOString() }, { merge: true });
+      }
+    } catch (e) {}
+  }
+
+  /**
+   * Revoke all other device sessions
+   */
+  async revokeAllOtherDeviceSessions(userId, businessId, currentDeviceId) {
+    const sessions = await this.getActiveDeviceSessions(userId, businessId, currentDeviceId);
+    for (const s of sessions) {
+      if (s.deviceId !== currentDeviceId && s.id !== currentDeviceId) {
+        await this.revokeDeviceSession(userId, businessId, s.id);
+      }
+    }
   }
 }
 

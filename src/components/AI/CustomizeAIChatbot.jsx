@@ -42,6 +42,7 @@ import KarobaarAIOverlay from './KarobaarAIOverlay';
 import JarvisMiniCharacter from './JarvisMiniCharacter';
 import JarvisConversationBubble from './JarvisConversationBubble';
 import JarvisSettingsModal from './JarvisSettingsModal';
+import JarvisCommandCenter from './JarvisCommandCenter';
 import './CustomizeAIChatbot.css';
 
 // Smart Anti-Repetition Dynamic Greeting Pools
@@ -113,6 +114,8 @@ export const CustomizeAIChatbot = () => {
   // Simple, Non-Intrusive UI States
   const [isHudOverlayOpen, setIsHudOverlayOpen] = useState(false);
   const [isConversationBubbleOpen, setIsConversationBubbleOpen] = useState(false);
+  const [isCommandCenterOpen, setIsCommandCenterOpen] = useState(false);
+  const [commandCenterInitialQuery, setCommandCenterInitialQuery] = useState('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const [isBarMinimized, setIsBarMinimized] = useState(false);
@@ -669,36 +672,29 @@ export const CustomizeAIChatbot = () => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'j' || e.key === 'J')) {
         e.preventDefault();
         playWakeChime();
-        setIsHudOverlayOpen(prev => !prev);
+        setIsCommandCenterOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleGlobalShortcuts);
     return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, []);
 
-  // Listen to wake event from Dedicated Topbar Button -> Opens Conversation Bubble
+  // Listen to wake event from Dedicated Topbar Button & Global triggers -> Opens Command Center
   useEffect(() => {
     const handleWakeEvent = (e) => {
       if (aiSettings.wakeChime !== false) playWakeChime();
-      setIsConversationBubbleOpen(true);
-
-      // Start voice listening attentively
-      if (recognitionRef.current && isListeningEnabledRef.current && !isSpeakingRef.current) {
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-        } catch (err) {}
-      }
-
-      if (e?.detail?.query) {
-        handleUserQuery(e.detail.query);
-      }
-      // If no query was passed (just a wake call):
-      // Jarvis simply opens the bubble in attentive listening mode without unprompted speech or actions.
+      const q = e?.detail?.query || '';
+      setCommandCenterInitialQuery(q);
+      setIsCommandCenterOpen(true);
+      setIsConversationBubbleOpen(false);
     };
+    window.addEventListener('karobaar_open_ai_assistant', handleWakeEvent);
     window.addEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
-    return () => window.removeEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
-  }, [assistantName, aiLanguage, aiSettings, voiceEnabled]);
+    return () => {
+      window.removeEventListener('karobaar_open_ai_assistant', handleWakeEvent);
+      window.removeEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
+    };
+  }, [aiSettings]);
 
   // Sync settings dynamically when changed in Settings tab
   useEffect(() => {
@@ -1099,20 +1095,31 @@ export const CustomizeAIChatbot = () => {
         audioLevel={audioLevel}
         voiceEnabled={voiceEnabled}
         assistantName={assistantName}
-        characterStyle={aiSettings.characterStyle || 'robot'}
-        isBubbleOpen={isConversationBubbleOpen}
+        characterStyle={aiSettings.characterStyle || 'orb'}
+        isBubbleOpen={isConversationBubbleOpen || isCommandCenterOpen}
         onCharacterClick={() => {
           if (isSpeaking) {
             stopSpeaking();
           } else {
-            setIsConversationBubbleOpen(prev => !prev);
+            setIsCommandCenterOpen(prev => !prev);
           }
         }}
         onSettingsClick={() => setIsSettingsModalOpen(true)}
         onToggleMic={toggleVoiceListening}
       />
 
-      {/* 2. Human-Like Floating Conversational Dialog (anchored right above mini character) */}
+      {/* 2. Flagship Jarvis Command Center with Reactive Intelligence Orb */}
+      <JarvisCommandCenter 
+        isOpen={isCommandCenterOpen}
+        onClose={() => {
+          setIsCommandCenterOpen(false);
+          setCommandCenterInitialQuery('');
+        }}
+        assistantName={assistantName}
+        initialQuery={commandCenterInitialQuery}
+      />
+
+      {/* 3. Human-Like Floating Conversational Dialog */}
       <JarvisConversationBubble 
         isOpen={isConversationBubbleOpen}
         onClose={() => setIsConversationBubbleOpen(false)}
@@ -1131,7 +1138,7 @@ export const CustomizeAIChatbot = () => {
         onOpenSettings={() => setIsSettingsModalOpen(true)}
         onOpenFullHud={() => {
           setIsConversationBubbleOpen(false);
-          setIsHudOverlayOpen(true);
+          setIsCommandCenterOpen(true);
         }}
       />
 

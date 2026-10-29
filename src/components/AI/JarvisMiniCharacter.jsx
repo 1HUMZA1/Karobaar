@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Mic, MicOff, Settings, Sparkles, Volume2 } from 'lucide-react';
+import JarvisIntelligenceOrb from './JarvisIntelligenceOrb';
 import './JarvisMiniCharacter.css';
 
 /**
@@ -67,39 +68,9 @@ export const JarvisMiniCharacter = ({
           <div className="jarvis-pulse-ring-ambient" />
         )}
 
-        {/* Small Animated Character SVG based on Character Style */}
+        {/* Small Animated Character based on Character Style */}
         <div className="jarvis-svg-wrap">
-          {characterStyle === 'orb' ? (
-            <svg 
-              viewBox="0 0 100 100" 
-              className={`jarvis-character-svg style-orb state-${currentState}`}
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <filter id="jarvisOrbGlow" x="-30%" y="-30%" width="160%" height="160%">
-                  <feGaussianBlur stdDeviation="3.5" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
-              <circle cx="50" cy="50" r="42" fill="#09090b" stroke="#ffffff" strokeWidth="1.5" />
-              <circle cx="50" cy="50" r="34" fill="none" stroke="#71717a" strokeWidth="1.2" strokeDasharray="6 4" className="orb-ring-outer" />
-              <circle cx="50" cy="50" r="24" fill="none" stroke="#d4d4d8" strokeWidth="1.4" strokeDasharray="4 3" className="orb-ring-mid" />
-              <circle cx="50" cy="50" r="13" fill="#ffffff" filter="url(#jarvisOrbGlow)" className="orb-core" />
-            </svg>
-          ) : characterStyle === 'pulse' ? (
-            <svg 
-              viewBox="0 0 100 100" 
-              className={`jarvis-character-svg style-pulse state-${currentState}`}
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="50" cy="50" r="42" fill="#09090b" stroke="#ffffff" strokeWidth="1.5" />
-              <rect x="25" y="40" width="7" height="20" rx="3.5" fill="#a1a1aa" className="pulse-bar-1" />
-              <rect x="37" y="28" width="7" height="44" rx="3.5" fill="#e4e4e7" className="pulse-bar-2" />
-              <rect x="49" y="18" width="7" height="64" rx="3.5" fill="#ffffff" className="pulse-bar-3" />
-              <rect x="61" y="28" width="7" height="44" rx="3.5" fill="#e4e4e7" className="pulse-bar-4" />
-              <rect x="73" y="40" width="7" height="20" rx="3.5" fill="#a1a1aa" className="pulse-bar-5" />
-            </svg>
-          ) : (
+          {characterStyle === 'robot' ? (
             <svg 
               viewBox="0 0 100 100" 
               className={`jarvis-character-svg style-robot state-${currentState}`}
@@ -165,38 +136,39 @@ export const JarvisMiniCharacter = ({
 
               {/* STATE-BASED DIGITAL FACE EXPRESSIONS */}
               {currentState === 'listening' ? (
-                /* LISTENING: Wide alert attentive eyes */
                 <g className="jarvis-face-listening">
                   <rect x="31" y="42" width="11" height="16" rx="5.5" fill="#ffffff" filter="url(#jarvisGlow)" className="eye-listening-l" />
                   <rect x="58" y="42" width="11" height="16" rx="5.5" fill="#ffffff" filter="url(#jarvisGlow)" className="eye-listening-r" />
-                  {/* Listening mouth waveform indicator */}
                   <path d="M 44 63 Q 50 67 56 63" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" fill="none" />
                 </g>
               ) : currentState === 'speaking' ? (
-                /* SPEAKING: Happy animated eyes + speaking mouth */
                 <g className="jarvis-face-speaking">
                   <path d="M 32 49 Q 38 41 44 49" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" fill="none" filter="url(#jarvisGlow)" />
                   <path d="M 56 49 Q 62 41 68 49" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" fill="none" filter="url(#jarvisGlow)" />
-                  {/* Mouth wave */}
                   <rect x="42" y="60" width="16" height="4" rx="2" fill="#ffffff" filter="url(#jarvisGlow)" className="mouth-speaking-bar" />
                 </g>
               ) : currentState === 'thinking' ? (
-                /* THINKING: Scanning visor beam */
                 <g className="jarvis-face-thinking">
                   <rect x="28" y="46" width="14" height="8" rx="4" fill="#ffffff" className="eye-thinking-l" />
                   <rect x="58" y="46" width="14" height="8" rx="4" fill="#ffffff" className="eye-thinking-r" />
                   <rect x="25" y="48" width="50" height="3" rx="1.5" fill="#ffffff" filter="url(#jarvisGlow)" className="visor-scan-beam" />
                 </g>
               ) : (
-                /* IDLE: Calm, friendly curved eyes with natural blinking */
                 <g className="jarvis-face-idle">
                   <path d="M 32 47 Q 38 44 44 47" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" fill="none" className="eye-idle-l" />
                   <path d="M 56 47 Q 62 44 68 47" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" fill="none" className="eye-idle-r" />
-                  {/* Tiny friendly smile dot */}
                   <circle cx="50" cy="58" r="1.5" fill="rgba(255, 255, 255, 0.7)" />
                 </g>
               )}
             </svg>
+          ) : (
+            <JarvisIntelligenceOrb 
+              state={currentState}
+              audioLevel={audioLevel}
+              size={48}
+              showRings={false}
+              interactive={false}
+            />
           )}
         </div>
 

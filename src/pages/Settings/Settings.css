@@ -18,9 +18,15 @@
 
 /* Header */
 .settings-header-strip {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--bg-body, #ffffff);
+  backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  padding-top: 0.5rem;
   padding-bottom: 1rem;
   border-bottom: 1.5px solid #09090b;
   width: 100%;
@@ -35,6 +41,7 @@
 }
 
 [data-theme="dark"] .settings-header-strip {
+  background: var(--bg-body, #09090b);
   border-bottom-color: #ffffff;
 }
 

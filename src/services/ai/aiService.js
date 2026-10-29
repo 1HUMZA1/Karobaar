@@ -25,6 +25,21 @@ class AiService {
   }
 
   /**
+   * Compatibility alias for chat queries
+   */
+  async chatWithGemini(query, options = {}) {
+    return this.sendMessage({
+      query,
+      authContext: {
+        currentUser: options.user,
+        currentBusiness: options.workspace,
+        businessId: options.workspace?.id || 'demo-business-1'
+      },
+      ...options
+    });
+  }
+
+  /**
    * Main query execution pipeline
    */
   async sendMessage({

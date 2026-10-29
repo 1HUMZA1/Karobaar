@@ -1,0 +1,604 @@
+/**
+ * JarvisCommandCenter.css
+ * Premium Futuristic Monochrome Styling for Jarvis AI 2.0
+ */
+
+.jarvis-command-center-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  background-color: rgba(9, 9, 11, 0.75);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: ccFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.jarvis-command-center-backdrop.maximized {
+  padding: 0;
+}
+
+@keyframes ccFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.jarvis-command-center-panel {
+  width: 100%;
+  max-width: 640px;
+  height: 82vh;
+  max-height: 850px;
+  background: #09090b;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.jarvis-command-center-backdrop.maximized .jarvis-command-center-panel {
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
+  border: none;
+}
+
+/* Header */
+.jarvis-cc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0d0d11;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.jarvis-cc-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.jarvis-cc-orb-wrap {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jarvis-cc-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.jarvis-cc-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #09090b;
+  text-transform: uppercase;
+}
+
+.jarvis-cc-model {
+  font-size: 0.7rem;
+  color: #a1a1aa;
+  font-family: monospace;
+}
+
+.jarvis-cc-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.status-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #71717a;
+}
+
+.status-indicator.listening {
+  background: #ffffff;
+  box-shadow: 0 0 10px #ffffff;
+  animation: pulseMic 1.2s infinite;
+}
+
+.status-indicator.thinking {
+  background: #ffffff;
+  animation: pulseMic 0.6s infinite;
+}
+
+.status-indicator.speaking {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.status-indicator.success {
+  background: #10b981;
+}
+
+.status-indicator.error {
+  background: #ef4444;
+}
+
+.status-label {
+  font-size: 0.72rem;
+  color: #a1a1aa;
+}
+
+@keyframes pulseMic {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Controls & Tabs */
+.jarvis-cc-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.jarvis-cc-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: #ffffff;
+  color: #09090b;
+  font-weight: 700;
+}
+
+.control-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #a1a1aa;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.control-btn.active {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.control-btn.close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Hero Visualizer */
+.jarvis-cc-hero-visualizer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 0 0.5rem 0;
+  background: radial-gradient(circle, rgba(24, 24, 28, 0.5) 0%, transparent 70%);
+  flex-shrink: 0;
+}
+
+.jarvis-cc-listening-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.75rem;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.78rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.live-mic-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+  animation: pulseMic 1s infinite;
+}
+
+/* Messages Stream */
+.jarvis-cc-messages-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.jarvis-msg-row {
+  display: flex;
+  width: 100%;
+}
+
+.jarvis-msg-row.user-side {
+  justify-content: flex-end;
+}
+
+.jarvis-msg-row.bot-side {
+  justify-content: flex-start;
+}
+
+.jarvis-msg-bubble {
+  max-width: 85%;
+  padding: 0.85rem 1.1rem;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.user-side .jarvis-msg-bubble {
+  background: #27272a;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom-right-radius: 4px;
+}
+
+.bot-side .jarvis-msg-bubble {
+  background: #18181b;
+  color: #f4f4f5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom-left-radius: 4px;
+}
+
+.msg-timestamp {
+  display: block;
+  font-size: 0.65rem;
+  color: #71717a;
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* Action Confirmation Card */
+.jarvis-confirmation-card {
+  margin-top: 0.85rem;
+  padding: 0.85rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.confirmation-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.confirmation-summary {
+  font-size: 0.82rem;
+  color: #d4d4d8;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.confirm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  color: #09090b;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirm-btn-primary:hover {
+  background: #e4e4e7;
+}
+
+.confirm-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: #a1a1aa;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirm-btn-secondary:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Quick Suggestion Chips */
+.jarvis-cc-quick-chips {
+  display: flex;
+  gap: 6px;
+  padding: 0.5rem 1.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.jarvis-cc-quick-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.jarvis-cc-quick-chips button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #d4d4d8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.jarvis-cc-quick-chips button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Bottom Input Bar */
+.jarvis-cc-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.85rem 1.25rem 1.15rem 1.25rem;
+  background: #0d0d11;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.mic-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mic-button.listening {
+  background: #ffffff;
+  color: #09090b;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  animation: pulseMic 1.2s infinite;
+}
+
+.command-text-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  color: #ffffff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.command-text-input:focus {
+  border-color: #ffffff;
+}
+
+.command-text-input::placeholder {
+  color: #71717a;
+}
+
+.send-button, .stop-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.send-button {
+  background: #ffffff;
+  color: #09090b;
+}
+
+.send-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.stop-button {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* Activity Panel */
+.jarvis-cc-activity-panel {
+  flex: 1;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.activity-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.activity-panel-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.activity-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #71717a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.activity-empty p {
+  margin: 0;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.activity-empty span {
+  font-size: 0.78rem;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.activity-item {
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.activity-args {
+  margin: 6px 0 0 0;
+  font-size: 0.72rem;
+  color: #a1a1aa;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 6px 8px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* Preferences Panel */
+.jarvis-cc-preferences-panel {
+  flex: 1;
+  padding: 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.jarvis-cc-preferences-panel h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pref-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.pref-label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #ffffff;
+}
+
+.pref-sub {
+  display: block;
+  font-size: 0.72rem;
+  color: #a1a1aa;
+  margin-top: 2px;
+}
+
+.pref-toggle-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ffffff;
+  cursor: pointer;
+}
+
+.pref-info-block {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+}

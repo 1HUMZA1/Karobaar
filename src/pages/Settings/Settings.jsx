@@ -183,93 +183,137 @@ const Settings = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordStatus, setPasswordStatus] = useState('');
 
-  // Device Sessions State
+  // Persistent Device ID generator
+  const getPersistentDeviceId = () => {
+    if (typeof window === 'undefined') return 'device-primary';
+    let devId = localStorage.getItem('karobaar_device_id');
+    if (!devId) {
+      devId = 'dev_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+      localStorage.setItem('karobaar_device_id', devId);
+    }
+    return devId;
+  };
+
+  // Real Current Device Auto-detector
+  const getRealCurrentDevice = () => {
+    if (typeof window === 'undefined') {
+      return {
+        id: 'device-primary',
+        deviceId: 'device-primary',
+        name: 'Windows PC • Google Chrome (This Device)',
+        os: 'Windows PC',
+        browser: 'Google Chrome',
+        isCurrent: true,
+        ip: '127.0.0.1 (Localhost)',
+        screen: '1920 × 1080',
+        lastActive: 'Active right now',
+        lastActiveTime: Date.now(),
+        status: 'ACTIVE NOW',
+        type: 'desktop'
+      };
+    }
+
+    const devId = getPersistentDeviceId();
+    const ua = navigator.userAgent || '';
+    
+    // Real OS detection
+    let os = 'Windows PC';
+    if (/Windows/i.test(ua)) os = 'Windows PC';
+    else if (/Macintosh|Mac OS X/i.test(ua)) os = 'Apple Mac';
+    else if (/iPhone/i.test(ua)) os = 'Apple iPhone';
+    else if (/iPad/i.test(ua)) os = 'Apple iPad';
+    else if (/Android/i.test(ua)) os = 'Android Mobile';
+    else if (/Linux/i.test(ua)) os = 'Linux Workstation';
+
+    // Real Browser detection
+    let browser = 'Google Chrome';
+    if (/Edg/i.test(ua)) browser = 'Microsoft Edge';
+    else if (/Chrome/i.test(ua) && !/Edg/i.test(ua)) browser = 'Google Chrome';
+    else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Apple Safari';
+    else if (/Firefox/i.test(ua)) browser = 'Mozilla Firefox';
+
+    // Real Device Type
+    let type = 'desktop';
+    if (/iPad|Tablet/i.test(ua) || (navigator.maxTouchPoints > 1 && window.screen.width >= 768 && window.screen.width <= 1024)) {
+      type = 'tablet';
+    } else if (/Mobi|Android|iPhone/i.test(ua)) {
+      type = 'mobile';
+    } else if (window.screen.width <= 1536 && navigator.maxTouchPoints > 0) {
+      type = 'laptop';
+    }
+
+    const screenRes = `${window.screen?.width || 1920} × ${window.screen?.height || 1080}`;
+    const host = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? '127.0.0.1 (Localhost)'
+      : window.location.hostname || '127.0.0.1';
+
+    return {
+      id: devId,
+      deviceId: devId,
+      name: `${os} • ${browser} (This Device)`,
+      os,
+      browser,
+      screen: screenRes,
+      ip: host,
+      isCurrent: true,
+      lastActive: 'Active right now',
+      lastActiveTime: Date.now(),
+      status: 'ACTIVE NOW',
+      type
+    };
+  };
+
+  const currentDeviceInfo = getRealCurrentDevice();
+
+  // Device Sessions State (ONLY TRUE DEVICES)
   const [deviceList, setDeviceList] = useState(() => {
     try {
       const saved = localStorage.getItem('karobaar_connected_devices');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return [
-      {
-        id: 'current-session',
-        name: 'This Device (Current Session)',
-        isCurrent: true,
-        ip: '127.0.0.1 (Localhost)',
-        lastActive: 'Active right now',
-        status: 'ACTIVE NOW',
-        type: 'desktop'
-      },
-      {
-        id: 'mobile-pwa',
-        name: 'Samsung Galaxy / Android Terminal',
-        isCurrent: false,
-        ip: '192.168.1.104 (Local Wi-Fi)',
-        lastActive: 'Synced 12 mins ago',
-        status: 'ONLINE',
-        type: 'mobile'
-      },
-      {
-        id: 'pos-tablet',
-        name: 'iPad Counter Register (Cafeteria POS)',
-        isCurrent: false,
-        ip: '192.168.1.112 (Store Wi-Fi)',
-        lastActive: 'Active 1 hour ago',
-        status: 'STANDBY',
-        type: 'tablet'
-      },
-      {
-        id: 'laptop-billing',
-        name: 'HP Laptop (Manager Office)',
-        isCurrent: false,
-        ip: '192.168.1.108 (Office LAN)',
-        lastActive: 'Yesterday, 8:40 PM',
-        status: 'OFFLINE',
-        type: 'laptop'
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Strict filter to permanently eliminate any legacy fake mockups
+        const cleaned = parsed.filter(d => 
+          d && 
+          d.id !== 'mobile-pwa' && 
+          d.id !== 'pos-tablet' && 
+          d.id !== 'laptop-billing' &&
+          !d.name?.includes('Samsung Galaxy') &&
+          !d.name?.includes('iPad Counter Register') &&
+          !d.name?.includes('HP Laptop (Manager Office)')
+        );
+        if (cleaned.length > 0) return cleaned;
       }
-    ];
+    } catch (e) {}
+    return [getRealCurrentDevice()];
   });
 
   const [deviceBanner, setDeviceBanner] = useState('');
   const [isRefreshingDevices, setIsRefreshingDevices] = useState(false);
 
-  // Current Device Info Auto-detector
-  const currentDeviceInfo = (() => {
-    if (typeof window === 'undefined') return { os: 'Windows PC', browser: 'Google Chrome', screen: '1920 × 1080' };
-    const ua = navigator.userAgent;
-    let os = 'Windows PC';
-    if (ua.indexOf('Win') !== -1) os = 'Windows PC';
-    else if (ua.indexOf('Mac') !== -1) os = 'Apple Mac';
-    else if (ua.indexOf('Android') !== -1) os = 'Android Mobile';
-    else if (ua.indexOf('iPhone') !== -1) os = 'Apple iPhone';
-    else if (ua.indexOf('iPad') !== -1) os = 'Apple iPad';
-    else if (ua.indexOf('Linux') !== -1) os = 'Linux Workstation';
-
-    let browser = 'Google Chrome';
-    if (ua.indexOf('Edg') !== -1) browser = 'Microsoft Edge';
-    else if (ua.indexOf('Chrome') !== -1) browser = 'Google Chrome';
-    else if (ua.indexOf('Safari') !== -1 && ua.indexOf('Chrome') === -1) browser = 'Apple Safari';
-    else if (ua.indexOf('Firefox') !== -1) browser = 'Mozilla Firefox';
-
-    return {
-      os,
-      browser,
-      screen: `${window.screen?.width || 1920} × ${window.screen?.height || 1080}`
-    };
-  })();
-
-  const handleRevokeDevice = (deviceId) => {
-    const updated = deviceList.filter(d => d.id !== deviceId);
-    setDeviceList(updated);
+  const handleRevokeDevice = async (deviceId) => {
     try {
-      localStorage.setItem('karobaar_connected_devices', JSON.stringify(updated));
-    } catch (e) {}
-    setDeviceBanner('Device session revoked successfully.');
+      await db.revokeDeviceSession(currentUser?.id, activeBizId, deviceId);
+      const updated = deviceList.filter(d => d.id !== deviceId && d.deviceId !== deviceId);
+      setDeviceList(updated);
+      try {
+        localStorage.setItem('karobaar_connected_devices', JSON.stringify(updated));
+      } catch (e) {}
+      setDeviceBanner('Device session revoked successfully.');
+    } catch (e) {
+      const updated = deviceList.filter(d => d.id !== deviceId);
+      setDeviceList(updated);
+      setDeviceBanner('Device session revoked.');
+    }
     setTimeout(() => setDeviceBanner(''), 3000);
   };
 
-  const handleRevokeAllOtherDevices = () => {
+  const handleRevokeAllOtherDevices = async () => {
     if (window.confirm('Log out all other connected sessions and keep only this current device?')) {
-      const onlyCurrent = deviceList.filter(d => d.isCurrent);
+      const cur = getRealCurrentDevice();
+      try {
+        await db.revokeAllOtherDeviceSessions(currentUser?.id, activeBizId, cur.deviceId);
+      } catch (e) {}
+      const onlyCurrent = [cur];
       setDeviceList(onlyCurrent);
       try {
         localStorage.setItem('karobaar_connected_devices', JSON.stringify(onlyCurrent));
@@ -279,13 +323,27 @@ const Settings = () => {
     }
   };
 
-  const handleRefreshDevices = () => {
+  const handleRefreshDevices = async () => {
     setIsRefreshingDevices(true);
-    setTimeout(() => {
+    try {
+      const cur = getRealCurrentDevice();
+      await db.registerDeviceSession(currentUser?.id, activeBizId, cur);
+      const sessions = await db.getActiveDeviceSessions(currentUser?.id, activeBizId, cur.deviceId);
+      if (sessions && sessions.length > 0) {
+        setDeviceList(sessions);
+        try {
+          localStorage.setItem('karobaar_connected_devices', JSON.stringify(sessions));
+        } catch (e) {}
+      } else {
+        setDeviceList([cur]);
+      }
+      setDeviceBanner('Connected device sessions verified and refreshed.');
+    } catch (e) {
+      setDeviceBanner('Device sessions refreshed.');
+    } finally {
       setIsRefreshingDevices(false);
-      setDeviceBanner('Device session list refreshed.');
       setTimeout(() => setDeviceBanner(''), 2500);
-    }, 400);
+    }
   };
 
   // Helper snapshot of all current state
@@ -563,6 +621,44 @@ const Settings = () => {
   useEffect(() => {
     loadSettings();
   }, [currentBusiness?.id, currentUser?.id]);
+
+  // Synchronize true device session on mount and business switch
+  useEffect(() => {
+    let isMounted = true;
+    const syncDevice = async () => {
+      try {
+        const cur = getRealCurrentDevice();
+        await db.registerDeviceSession(currentUser?.id, activeBizId, cur);
+        const sessions = await db.getActiveDeviceSessions(currentUser?.id, activeBizId, cur.deviceId);
+        if (isMounted) {
+          if (sessions && sessions.length > 0) {
+            setDeviceList(sessions);
+            try {
+              localStorage.setItem('karobaar_connected_devices', JSON.stringify(sessions));
+            } catch (e) {}
+          } else {
+            setDeviceList([cur]);
+          }
+        }
+      } catch (e) {
+        if (isMounted) setDeviceList([getRealCurrentDevice()]);
+      }
+    };
+    syncDevice();
+    return () => { isMounted = false; };
+  }, [activeBizId, currentUser?.id]);
+
+  // Global keyboard shortcut: Ctrl+S / Cmd+S to save all workspace settings
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave]);
 
   const toggleModule = (modId) => {
     setEnabledModules(prev => ({
@@ -1028,26 +1124,6 @@ const Settings = () => {
                   />
                 </div>
               </div>
-
-              {/* Section Footer */}
-              <div className="settings-section-footer">
-                <div className="flex items-center gap-2">
-                  {isSectionDirty('general') ? (
-                    <span className="settings-dirty-pill">● Unsaved business profile changes</span>
-                  ) : (
-                    <span className="settings-saved-pill">✓ Business profile up to date</span>
-                  )}
-                </div>
-                <button 
-                  type="button" 
-                  className="settings-btn-primary"
-                  disabled={saving}
-                  onClick={() => handleSave('general')}
-                >
-                  <Save size={15} />
-                  <span>{saving ? 'Saving...' : 'Save Business Profile'}</span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -1145,26 +1221,6 @@ const Settings = () => {
                     <p className="text-xs text-text-secondary">Multi-metric executive workspace with dual charts and radar health monitor.</p>
                   </div>
                 </div>
-              </div>
-
-              {/* Section Footer */}
-              <div className="settings-section-footer">
-                <div className="flex items-center gap-2">
-                  {isSectionDirty('appearance') ? (
-                    <span className="settings-dirty-pill">● Unsaved appearance changes</span>
-                  ) : (
-                    <span className="settings-saved-pill">✓ Appearance up to date</span>
-                  )}
-                </div>
-                <button 
-                  type="button" 
-                  className="settings-btn-primary"
-                  disabled={saving}
-                  onClick={() => handleSave('appearance')}
-                >
-                  <Save size={15} />
-                  <span>{saving ? 'Saving...' : 'Save Appearance'}</span>
-                </button>
               </div>
             </div>
           )}
@@ -1644,26 +1700,6 @@ const Settings = () => {
                   ))}
                 </div>
               </div>
-
-              {/* Section Footer */}
-              <div className="settings-section-footer">
-                <div className="flex items-center gap-2">
-                  {isSectionDirty('customize') ? (
-                    <span className="settings-dirty-pill">● Unsaved AI changes</span>
-                  ) : (
-                    <span className="settings-saved-pill">✓ AI configuration up to date</span>
-                  )}
-                </div>
-                <button 
-                  type="button" 
-                  className="settings-btn-primary"
-                  disabled={saving}
-                  onClick={() => handleSave('customize')}
-                >
-                  <Save size={15} />
-                  <span>{saving ? 'Saving...' : 'Save AI Settings'}</span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -1730,26 +1766,6 @@ const Settings = () => {
                   />
                 </div>
               </div>
-
-              {/* Section Footer */}
-              <div className="settings-section-footer">
-                <div className="flex items-center gap-2">
-                  {isSectionDirty('preferences') ? (
-                    <span className="settings-dirty-pill">● Unsaved preferences changes</span>
-                  ) : (
-                    <span className="settings-saved-pill">✓ Financial defaults up to date</span>
-                  )}
-                </div>
-                <button 
-                  type="button" 
-                  className="settings-btn-primary"
-                  disabled={saving}
-                  onClick={() => handleSave('preferences')}
-                >
-                  <Save size={15} />
-                  <span>{saving ? 'Saving...' : 'Save Preferences'}</span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -1799,26 +1815,6 @@ const Settings = () => {
                     placeholder="Thank you for choosing us!"
                   />
                 </div>
-              </div>
-
-              {/* Section Footer */}
-              <div className="settings-section-footer">
-                <div className="flex items-center gap-2">
-                  {isSectionDirty('invoices') ? (
-                    <span className="settings-dirty-pill">● Unsaved invoice changes</span>
-                  ) : (
-                    <span className="settings-saved-pill">✓ Billing defaults up to date</span>
-                  )}
-                </div>
-                <button 
-                  type="button" 
-                  className="settings-btn-primary"
-                  disabled={saving}
-                  onClick={() => handleSave('invoices')}
-                >
-                  <Save size={15} />
-                  <span>{saving ? 'Saving...' : 'Save Invoice Settings'}</span>
-                </button>
               </div>
             </div>
           )}
@@ -1872,26 +1868,6 @@ const Settings = () => {
                   );
                 })}
               </div>
-
-              {/* Section Footer */}
-              <div className="settings-section-footer">
-                <div className="flex items-center gap-2">
-                  {isSectionDirty('features') ? (
-                    <span className="settings-dirty-pill">● Unsaved module changes</span>
-                  ) : (
-                    <span className="settings-saved-pill">✓ Modules active & synchronized</span>
-                  )}
-                </div>
-                <button 
-                  type="button" 
-                  className="settings-btn-primary"
-                  disabled={saving}
-                  onClick={() => handleSave('features')}
-                >
-                  <Save size={15} />
-                  <span>{saving ? 'Saving...' : 'Save Active Modules'}</span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -1934,26 +1910,6 @@ const Settings = () => {
                     <span className="text-xs text-text-secondary">Generate automated closing summary at shift completion.</span>
                   </div>
                 </label>
-              </div>
-
-              {/* Section Footer */}
-              <div className="settings-section-footer">
-                <div className="flex items-center gap-2">
-                  {isSectionDirty('notifications') ? (
-                    <span className="settings-dirty-pill">● Unsaved notification changes</span>
-                  ) : (
-                    <span className="settings-saved-pill">✓ Notification triggers up to date</span>
-                  )}
-                </div>
-                <button 
-                  type="button" 
-                  className="settings-btn-primary"
-                  disabled={saving}
-                  onClick={() => handleSave('notifications')}
-                >
-                  <Save size={15} />
-                  <span>{saving ? 'Saving...' : 'Save Notifications'}</span>
-                </button>
               </div>
             </div>
           )}
@@ -2080,26 +2036,6 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* Section Footer */}
-              <div className="settings-section-footer">
-                <div className="flex items-center gap-2">
-                  {isSectionDirty('account') ? (
-                    <span className="settings-dirty-pill">● Unsaved personal details</span>
-                  ) : (
-                    <span className="settings-saved-pill">✓ Personal details up to date</span>
-                  )}
-                </div>
-                <button 
-                  type="button" 
-                  className="settings-btn-primary"
-                  disabled={saving}
-                  onClick={() => handleSave('account')}
-                >
-                  <Save size={15} />
-                  <span>{saving ? 'Saving...' : 'Save Profile Changes'}</span>
-                </button>
-              </div>
-
               {/* Section 2: Security & Change Password */}
               <div className="settings-section-block">
                 <h3 className="settings-section-heading">
@@ -2189,69 +2125,69 @@ const Settings = () => {
                 <div className="flex flex-col gap-2.5">
                   {deviceList.map(device => {
                     const renderIcon = () => {
-                      if (device.isCurrent) return <Monitor size={20} />;
-                      if (device.type === 'mobile') return <Smartphone size={20} />;
-                      if (device.type === 'tablet') return <Tablet size={20} />;
-                      return <Laptop size={20} />;
+                      if (device.type === 'mobile') return <Smartphone size={18} />;
+                      if (device.type === 'tablet') return <Tablet size={18} />;
+                      if (device.type === 'laptop') return <Laptop size={18} />;
+                      return <Monitor size={18} />;
                     };
 
                     const displayName = device.isCurrent 
-                      ? `${currentDeviceInfo.os} • ${currentDeviceInfo.browser} (This Device)`
-                      : device.name;
+                      ? `${device.os || currentDeviceInfo.os} • ${device.browser || currentDeviceInfo.browser} (This Device)`
+                      : (device.name || `${device.os || 'Authorized Device'} • ${device.browser || 'Browser'}`);
 
-                    const displaySub = device.isCurrent
-                      ? `IP: ${device.ip} • Screen: ${currentDeviceInfo.screen} • Active right now`
-                      : `IP: ${device.ip} • ${device.lastActive}`;
+                    const displaySub = `IP: ${device.ip || '127.0.0.1 (Localhost)'} • Screen: ${device.screen || currentDeviceInfo.screen} • ${device.lastActive || 'Active right now'}`;
 
                     return (
                       <div 
-                        key={device.id} 
-                        className="p-3.5 border rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-[var(--border-color)] bg-[var(--bg-card)] hover:border-black dark:hover:border-white transition-colors"
+                        key={device.id || device.deviceId} 
+                        className="p-4 border rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 border-[var(--border-color)] bg-[var(--bg-card)] transition-colors"
                         style={{
-                          borderWidth: device.isCurrent ? '2px' : '1px'
+                          borderWidth: device.isCurrent ? '1.5px' : '1px'
                         }}
                       >
-                        <div className="flex items-center gap-3.5">
+                        <div className="flex items-center gap-3.5 min-w-0">
                           <div 
                             className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                             style={{
-                              backgroundColor: device.isCurrent ? '#09090b' : 'var(--bg-hover)',
-                              color: device.isCurrent ? '#ffffff' : 'var(--text-main)',
+                              backgroundColor: device.isCurrent ? 'var(--text-main)' : 'var(--bg-hover)',
+                              color: device.isCurrent ? 'var(--bg-body)' : 'var(--text-main)',
                               border: '1px solid var(--border-color)'
                             }}
                           >
                             {renderIcon()}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-text-main">{displayName}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-sm text-text-main truncate">{displayName}</span>
                               {device.isCurrent && (
-                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">
+                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black uppercase tracking-wider">
                                   CURRENT
                                 </span>
                               )}
                             </div>
-                            <span className="text-xs text-text-secondary mt-0.5 block">{displaySub}</span>
+                            <span className="text-xs text-text-secondary mt-0.5 block truncate">{displaySub}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                        <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0 mt-1 md:mt-0">
                           <span 
-                            className="text-[10px] font-bold px-2.5 py-1 rounded-md"
-                            style={{
-                              backgroundColor: device.status === 'ACTIVE NOW' || device.status === 'ONLINE' ? '#09090b' : 'var(--bg-hover)',
-                              color: device.status === 'ACTIVE NOW' || device.status === 'ONLINE' ? '#ffffff' : 'var(--text-main)',
-                              border: '1px solid var(--border-color)'
-                            }}
+                            className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-hover)] text-[var(--text-main)] whitespace-nowrap"
                           >
-                            ● {device.status}
+                            <span 
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                device.status === 'ACTIVE NOW' || device.status === 'ONLINE'
+                                  ? 'bg-emerald-500 animate-pulse' 
+                                  : 'bg-zinc-400'
+                              }`} 
+                            />
+                            <span>{device.status || 'ACTIVE NOW'}</span>
                           </span>
 
                           {!device.isCurrent && (
                             <button
                               type="button"
                               className="settings-btn-secondary"
-                              style={{ height: '30px', fontSize: '0.725rem', padding: '0 0.65rem' }}
+                              style={{ height: '30px', fontSize: '0.725rem', padding: '0 0.75rem' }}
                               onClick={() => handleRevokeDevice(device.id)}
                               title="Revoke session for this device"
                             >
