@@ -35,8 +35,15 @@ const DATE_RANGE_LABELS = {
 const Dashboard = ({ onSwitchMode }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { userRole, currentUser, currentBusiness } = useAppContext();
+  const { 
+    userRole, 
+    currentUser, 
+    currentBusiness, 
+    exitDemoWorkspace, 
+    resetDemoWorkspace 
+  } = useAppContext();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isResettingDemo, setIsResettingDemo] = useState(false);
   const [dateRange, setDateRange] = useState('today');
 
   // Custom date range state
@@ -66,10 +73,19 @@ const Dashboard = ({ onSwitchMode }) => {
     return c.length <= 3 ? c + ' ' : '₹';
   }, [currentBusiness]);
 
-  // Role Based Visibility
-  const showFinance = ['OWNER', 'MANAGER', 'ACCOUNTANT'].includes(userRole);
-  const showInventory = ['OWNER', 'MANAGER', 'INVENTORY'].includes(userRole);
-  const showHR = ['OWNER', 'MANAGER'].includes(userRole);
+  // Demo Mode detection
+  const isDemoMode = Boolean(
+    currentBusiness?.isDemo || 
+    currentBusiness?.id === 'karobaar-demo-store' || 
+    currentUser?.isDemo ||
+    (typeof localStorage !== 'undefined' && localStorage.getItem('karobaar_is_demo_mode') === 'true')
+  );
+
+  // Role Based Visibility (Normalized to handle both TitleCase 'Owner' and uppercase 'OWNER')
+  const normRole = (userRole || 'Owner').toUpperCase();
+  const showFinance = isDemoMode || ['OWNER', 'MANAGER', 'ACCOUNTANT', 'ADMIN'].includes(normRole);
+  const showInventory = isDemoMode || ['OWNER', 'MANAGER', 'INVENTORY', 'STAFF', 'ADMIN'].includes(normRole);
+  const showHR = isDemoMode || ['OWNER', 'MANAGER', 'ADMIN'].includes(normRole);
 
   // Compute intervals for current and previous comparison window
   const dateIntervals = useMemo(() => {
@@ -360,7 +376,7 @@ const Dashboard = ({ onSwitchMode }) => {
 
   // Initial load from localDb cache + background refresh
   useEffect(() => {
-    const bizId = currentUser?.activeBusinessId;
+    const bizId = currentUser?.activeBusinessId || currentBusiness?.id;
     if (bizId) {
       try {
         setRawSales(localDb.getAll('sales', bizId) || []);
@@ -373,7 +389,29 @@ const Dashboard = ({ onSwitchMode }) => {
 
       loadDashboardData(bizId);
     }
-  }, [currentUser?.activeBusinessId, loadDashboardData]);
+  }, [currentUser?.activeBusinessId, currentBusiness?.id, loadDashboardData]);
+
+  const handleResetDemo = async () => {
+    setIsResettingDemo(true);
+    try {
+      if (resetDemoWorkspace) {
+        await resetDemoWorkspace();
+      }
+      const bizId = currentBusiness?.id || 'karobaar-demo-store';
+      await loadDashboardData(bizId);
+    } catch (e) {
+      console.error('Reset demo error:', e);
+    } finally {
+      setTimeout(() => setIsResettingDemo(false), 500);
+    }
+  };
+
+  const handleExitDemo = async () => {
+    if (exitDemoWorkspace) {
+      await exitDemoWorkspace();
+    }
+    navigate('/login');
+  };
 
   // Greeting
   const getGreeting = () => {
@@ -407,7 +445,7 @@ const Dashboard = ({ onSwitchMode }) => {
     return () => clearInterval(intervalId);
   }, [fullGreetingText, currentBusiness?.id]);
 
-  const maskedStats = showFinance ? computedMetrics : {
+  const maskedStats = (showFinance || isDemoMode) ? computedMetrics : {
     ...computedMetrics,
     revenue: '***',
     todayRevenue: '***',
@@ -440,6 +478,49 @@ const Dashboard = ({ onSwitchMode }) => {
   return (
     <div className="dashboard-container max-w-[1600px] mx-auto hidden-mobile">
       
+      {/* 0. Demo Mode Interactive Showcase Banner */}
+      {isDemoMode && (
+        <div className="demo-showcase-bar">
+          <div className="demo-showcase-bar-left">
+            <span className="demo-showcase-pill">
+              <Sparkles size={13} /> DEMO WORKSPACE
+            </span>
+            <div className="demo-showcase-info">
+              <strong>Karobaar Showcase Demo:</strong> Sample business with live sales, inventory, and analytics. All features are fully unlocked.
+            </div>
+          </div>
+          <div className="demo-showcase-bar-actions">
+            <button
+              type="button"
+              className="demo-bar-btn demo-btn-reset"
+              onClick={handleResetDemo}
+              disabled={isResettingDemo}
+              title="Reset sample sales and stock"
+            >
+              <RefreshCw size={13} className={isResettingDemo ? 'animate-spin' : ''} />
+              <span>{isResettingDemo ? 'Resetting...' : 'Reset Demo Data'}</span>
+            </button>
+            <button
+              type="button"
+              className="demo-bar-btn demo-btn-create"
+              onClick={() => navigate('/setup?new=true')}
+              title="Create your real business"
+            >
+              <Zap size={13} />
+              <span>Create Real Business</span>
+            </button>
+            <button
+              type="button"
+              className="demo-bar-btn demo-btn-exit"
+              onClick={handleExitDemo}
+              title="Exit demo"
+            >
+              Exit Demo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 1. Header Area - Greeting + Executive Health Dock */}
       <div className="dashboard-header mb-4">
         <div className="dashboard-header-text">

@@ -3,10 +3,12 @@ import { auth, googleProvider } from '../services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { db } from '../services/databaseService';
 import { localDb } from '../services/localDb';
-import { initializeDemoData } from '../services/demoData';
+import { initializeDemoData, DEMO_SHOWCASE_BUSINESS, DEMO_SHOWCASE_USER, resetDemoWorkspace } from '../services/demoData';
 import { hasPermission, normalizeRole } from '../utils/permissions';
 
 const AppContext = createContext();
+
+export { DEMO_SHOWCASE_BUSINESS, DEMO_SHOWCASE_USER, resetDemoWorkspace };
 
 export const DEFAULT_BUSINESS = {
   id: 'demo-business-1',
@@ -137,6 +139,49 @@ export const AppProvider = ({ children }) => {
       setAppUiVersion(currentBusiness.settings.appUiVersion);
     }
   }, [currentBusiness]);
+
+  // Helper: Instantly launches the dedicated DEMO SHOWCASE workspace
+  const launchDemoWorkspace = async (role = 'Owner') => {
+    const businessId = 'karobaar-demo-store';
+    try {
+      await initializeDemoData(businessId);
+    } catch (e) {}
+
+    const demoUser = {
+      ...DEMO_SHOWCASE_USER,
+      name: `Karobaar Demo (${role})`,
+      role: role,
+      email: `${role.toLowerCase().replace(/\s+/g, '')}@karobaar-demo.app`
+    };
+
+    try {
+      localStorage.removeItem('karobaar_explicit_logout');
+      localStorage.setItem('karobaar_session_user', JSON.stringify(demoUser));
+      localStorage.setItem('karobaar_session_business', JSON.stringify(DEMO_SHOWCASE_BUSINESS));
+      localStorage.setItem('karobaar_session_businesses', JSON.stringify([DEMO_SHOWCASE_BUSINESS]));
+      localStorage.setItem('karobaar-active-business', businessId);
+      localStorage.setItem('karobaar_is_demo_mode', 'true');
+    } catch (e) {}
+
+    setCurrentUser(demoUser);
+    setCurrentBusiness(DEMO_SHOWCASE_BUSINESS);
+    setUserBusinesses([DEMO_SHOWCASE_BUSINESS]);
+    setAuthStatus('authenticated');
+  };
+
+  const exitDemoWorkspace = async () => {
+    try {
+      localStorage.removeItem('karobaar_is_demo_mode');
+      localStorage.removeItem('karobaar_session_user');
+      localStorage.removeItem('karobaar_session_business');
+      localStorage.removeItem('karobaar_session_businesses');
+      localStorage.setItem('karobaar_explicit_logout', 'true');
+    } catch (e) {}
+    setCurrentUser(null);
+    setCurrentBusiness(null);
+    setUserBusinesses([]);
+    setAuthStatus('unauthenticated');
+  };
 
   // Helper: Instantly provisions and logs into the ready-to-use business workspace
   const launchReadyToUseWorkspace = async () => {
@@ -513,6 +558,9 @@ export const AppProvider = ({ children }) => {
       refreshBusinessProfile,
       updateCurrentBusiness,
       launchReadyToUseWorkspace,
+      launchDemoWorkspace,
+      exitDemoWorkspace,
+      resetDemoWorkspace,
       appUiVersion,
       setAppUiVersion
     }}>

@@ -22,6 +22,7 @@ import {
   Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAppContext } from '../../context/AppContext';
 import './Landing.css';
 
 /**
@@ -116,12 +117,20 @@ const TiltCard = ({
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { launchDemoWorkspace } = useAppContext();
   const fullText = "The Operating System\nFor Your Business.";
   const [typedText, setTypedText] = useState("");
   const [cursorVisible, setCursorVisible] = useState(true);
   const [showWindowsModal, setShowWindowsModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [heroActiveTab, setHeroActiveTab] = useState('pos'); // 'pos' or 'dashboard'
+
+  const handleTryDemo = async () => {
+    if (launchDemoWorkspace) {
+      await launchDemoWorkspace('Owner');
+    }
+    navigate('/dashboard');
+  };
 
   useEffect(() => {
     document.title = "Karobaar — The Operating System For Your Business";
@@ -265,6 +274,26 @@ const Landing = () => {
 
         {/* Action Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            type="button"
+            onClick={handleTryDemo}
+            style={{
+              background: '#f4f4f5',
+              border: '1px solid #e4e4e7',
+              color: '#18181b',
+              padding: '0.62rem 1.1rem',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '0.86rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              transition: 'background 0.15s ease'
+            }}
+          >
+            <Sparkles size={14} /> Try Live Demo
+          </button>
           <button 
             type="button"
             onClick={handleLaunchApp}
@@ -341,7 +370,7 @@ const Landing = () => {
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '4rem' }}>
           <button 
             type="button"
-            onClick={handleLaunchApp}
+            onClick={handleTryDemo}
             style={{ 
               backgroundColor: '#09090b', 
               color: '#ffffff', 
@@ -357,7 +386,28 @@ const Landing = () => {
               boxShadow: '0 4px 14px rgba(0,0,0,0.15)'
             }}
           >
-            Launch Web App <ArrowRight size={18} />
+            <Sparkles size={18} /> Try Live Demo <ArrowRight size={18} />
+          </button>
+
+          <button 
+            type="button"
+            onClick={handleLaunchApp}
+            style={{ 
+              backgroundColor: '#ffffff', 
+              color: '#09090b', 
+              border: '1px solid #d4d4d8', 
+              padding: '0.875rem 1.75rem', 
+              borderRadius: '10px', 
+              fontSize: '1.05rem', 
+              fontWeight: 600, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+            }}
+          >
+            Sign In / Launch App
           </button>
 
           <button 

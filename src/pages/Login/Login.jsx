@@ -24,7 +24,8 @@ const Login = () => {
     authStatus, 
     setAuthStatus, 
     authError, 
-    launchReadyToUseWorkspace, 
+    launchReadyToUseWorkspace,
+    launchDemoWorkspace, 
     setCurrentUser, 
     setCurrentBusiness, 
     setUserBusinesses, 
@@ -216,22 +217,15 @@ const Login = () => {
     setIsAuthenticating(true);
     setGeneralError('');
     try {
-      if (launchReadyToUseWorkspace) {
+      if (launchDemoWorkspace) {
+        await launchDemoWorkspace(role);
+      } else if (launchReadyToUseWorkspace) {
         await launchReadyToUseWorkspace();
       }
-      try {
-        const sessionUser = JSON.parse(localStorage.getItem('karobaar_session_user') || '{}');
-        sessionUser.role = role;
-        sessionUser.permissions = ROLE_PERMISSIONS_MAP[role] || [];
-        sessionUser.name = `SAS Cafeteria ${role}`;
-        sessionUser.email = `${role.toLowerCase().replace(/\s+/g, '')}@sascafeteria.com`;
-        localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
-        if (setCurrentUser) setCurrentUser(sessionUser);
-      } catch (e) {}
       navigate('/dashboard');
     } catch (e) {
       console.error("Quick launch error:", e);
-      setGeneralError('Failed to initialize workspace.');
+      setGeneralError('Failed to initialize demo workspace.');
     } finally {
       setIsAuthenticating(false);
     }
@@ -644,7 +638,7 @@ const Login = () => {
                       disabled={isAuthenticating}
                     >
                       <Sparkles size={16} />
-                      <span>Instant Demo (Owner Workspace)</span>
+                      <span>Explore Live Demo Store (Showcase Workspace)</span>
                     </button>
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>

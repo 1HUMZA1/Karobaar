@@ -507,3 +507,110 @@
   background-color: var(--bg-card);
   border-color: rgba(255, 255, 255, 0.08);
 }
+
+
+/* ==========================================================================
+   Interactive Demo Showcase Bar
+   ========================================================================== */
+.demo-showcase-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 12px 20px;
+  margin-bottom: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.demo-showcase-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.demo-showcase-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: var(--text-main);
+  color: var(--bg-main);
+}
+
+.demo-showcase-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.demo-showcase-info strong {
+  color: var(--text-main);
+}
+
+.demo-showcase-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.demo-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.demo-btn-reset {
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+.demo-btn-reset:hover {
+  background: var(--border-color);
+  transform: translateY(-1px);
+}
+
+.demo-btn-create {
+  background: var(--text-main);
+  color: var(--bg-main);
+  border-color: var(--text-main);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.demo-btn-create:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.demo-btn-exit {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border-color);
+}
+.demo-btn-exit:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
+}
+
+[data-theme="dark"] .demo-showcase-bar {
+  background: rgba(24, 24, 27, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
