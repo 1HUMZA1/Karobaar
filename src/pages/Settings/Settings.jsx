@@ -79,6 +79,8 @@ const Settings = () => {
     setTheme, 
     accent, 
     setAccent, 
+    requestSignOut,
+    logout,
     appUiVersion, 
     setAppUiVersion 
   } = useAppContext();
@@ -919,13 +921,11 @@ const Settings = () => {
     }
   };
 
-  const handleLogout = async () => {
-    if (window.confirm("Are you sure you want to log out of Karobaar?")) {
-      try {
-        await signOut(auth);
-      } catch (err) {
-        console.error("Logout failed", err);
-      }
+  const handleLogout = () => {
+    if (requestSignOut) {
+      requestSignOut();
+    } else {
+      logout?.();
     }
   };
 

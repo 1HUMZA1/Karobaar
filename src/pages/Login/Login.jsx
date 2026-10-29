@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { auth, googleProvider } from '../../services/firebase';
@@ -12,7 +12,8 @@ import {
   updatePassword
 } from 'firebase/auth';
 import { localDb } from '../../services/localDb';
-import { Eye, EyeOff, Sparkles, ArrowLeft, Shield } from 'lucide-react';
+import { db } from '../../services/databaseService';
+import { Eye, EyeOff, Sparkles, ArrowLeft, Shield, Loader2, ExternalLink } from 'lucide-react';
 import { KarobaarLogo } from '../../components/KarobaarLogo/KarobaarLogo';
 import { ROLE_PERMISSIONS_MAP, ROLES } from '../../utils/permissions';
 import './Login.css';
@@ -25,11 +26,15 @@ const Login = () => {
   const [viewMode, setViewMode] = useState('auth');
   const [isRegistering, setIsRegistering] = useState(false);
 
-  // Form Fields - Pre-filled with demo credentials for effortless 1-tap entry
-  const [email, setEmail] = useState(() => localStorage.getItem('karobaar_remembered_email') || 'owner@sascafeteria.com');
-  const [password, setPassword] = useState('123456');
+  // Form Fields - Respect remembered credentials or start clean
+  const [email, setEmail] = useState(() => localStorage.getItem('karobaar_remembered_email') || '');
+  const [password, setPassword] = useState(() => localStorage.getItem('karobaar_remembered_password') || '');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('karobaar_remember_me') !== 'false');
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('karobaar_remember_me') === 'true');
+
+  // External Browser Google Auth State
+  const [waitingForBrowserAuth, setWaitingForBrowserAuth] = useState(false);
+  const authPollTimerRef = useRef(null);
 
   // Forgot Password Fields
   const [resetEmail, setResetEmail] = useState('');
@@ -76,6 +81,81 @@ const Login = () => {
     handleRedirect();
   }, []);
 
+  const handleAuthenticatedGoogleUser = async (user) => {
+    setIsAuthenticating(true);
+    setGeneralError('');
+    try {
+      localStorage.removeItem('karobaar_explicit_logout');
+      if (rememberMe) {
+        localStorage.setItem('karobaar_remember_me', 'true');
+        localStorage.setItem('karobaar_remembered_email', user.email);
+      }
+
+      const uid = user.uid || user.id;
+      let karobaarUser = null;
+      try {
+        karobaarUser = await db.getUserByFirebaseUid(uid);
+      } catch (_) {}
+
+      if (karobaarUser && karobaarUser.memberships && karobaarUser.memberships.length > 0) {
+        // User already has an established business
+        const bizPromises = karobaarUser.memberships.map(id => db.getById('businesses', id));
+        const businessesData = (await Promise.all(bizPromises)).filter(Boolean);
+        const activeBiz = businessesData[0];
+        
+        const sessionUser = {
+          ...karobaarUser,
+          email: user.email,
+          name: user.name || user.displayName || karobaarUser.name,
+          activeBusinessId: activeBiz?.id || karobaarUser.memberships[0]
+        };
+        localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
+        if (activeBiz) {
+          localStorage.setItem('karobaar_session_business', JSON.stringify(activeBiz));
+          localStorage.setItem('karobaar_session_businesses', JSON.stringify(businessesData));
+        }
+        if (setCurrentUser) setCurrentUser(sessionUser);
+        navigate('/dashboard');
+      } else {
+        // New user: Route to quick Business Setup so they have their own business
+        const sessionUser = {
+          id: uid,
+          name: user.name || user.displayName || user.email?.split('@')[0] || 'Store Owner',
+          email: user.email,
+          role: 'Owner',
+          activeBusinessId: null,
+          memberships: [],
+          onboardingCompleted: false
+        };
+        localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
+        sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
+        if (setCurrentUser) setCurrentUser(sessionUser);
+        navigate('/setup');
+      }
+    } catch (e) {
+      console.error('[Google sign in complete error]', e);
+      navigate('/setup');
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  // Listen for Google Auth callback message from external tab/window
+  useEffect(() => {
+    const handleAuthMessage = async (e) => {
+      if (e.data?.type === 'KAROBAAR_GOOGLE_AUTH_SUCCESS' && e.data?.payload) {
+        if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
+        setWaitingForBrowserAuth(false);
+        await handleAuthenticatedGoogleUser(e.data.payload);
+      }
+    };
+    window.addEventListener('message', handleAuthMessage);
+    return () => {
+      window.removeEventListener('message', handleAuthMessage);
+      if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
+    };
+  }, []);
+
   // Redirect if already authenticated
   if (authStatus === 'pending_onboarding') {
     return <Navigate to="/setup" replace />;
@@ -110,10 +190,46 @@ const Login = () => {
     }
   };
 
-  // --- Google Sign-In & Verification ---
+
+
+  // --- Google Sign-In & External Browser Workflow ---
   const handleGoogleLogin = async () => {
     setIsAuthenticating(true);
     setGeneralError('');
+
+    // Detect if running inside Flutter Desktop WebView or local server
+    const isDesktopOrLocal = !!(
+      window.chrome?.webview || 
+      (window.location.hostname === '127.0.0.1' && window.location.port)
+    );
+    const port = window.location.port;
+
+    if (isDesktopOrLocal && port) {
+      setWaitingForBrowserAuth(true);
+      const authUrl = `http://127.0.0.1:${port}/#/google-auth?port=${port}`;
+      try {
+        await fetch(`/api/launch-browser?url=${encodeURIComponent(authUrl)}`);
+      } catch (_) {
+        window.open(authUrl, '_blank');
+      }
+
+      // Start polling local server for Google auth callback
+      if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
+      authPollTimerRef.current = setInterval(async () => {
+        try {
+          const res = await fetch('/api/auth-status');
+          const data = await res.json();
+          if (data?.authenticated && data?.user) {
+            clearInterval(authPollTimerRef.current);
+            setWaitingForBrowserAuth(false);
+            await handleAuthenticatedGoogleUser(data.user);
+          }
+        } catch (_) {}
+      }, 1000);
+      return;
+    }
+
+    // Standard web browser fallback
     try {
       let result = null;
       try {
@@ -124,43 +240,18 @@ const Login = () => {
           await signInWithRedirect(auth, googleProvider);
           return;
         }
+        // Fallback: open Google Auth in separate window/tab
+        setWaitingForBrowserAuth(true);
+        window.open('#/google-auth', '_blank');
+        return;
       }
 
       if (result?.user) {
-        console.log("[AUTH] Google sign-in verified:", result.user.email);
-        const userEmail = result.user.email;
-        const alreadyOnboarded = localStorage.getItem('karobaar_onboarding_completed_' + userEmail) === 'true';
-        if (!alreadyOnboarded) {
-          sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
-        }
-        try {
-          const sessionUser = {
-            id: result.user.uid,
-            name: result.user.displayName || 'Google User',
-            email: result.user.email,
-            role: 'Owner',
-            activeBusinessId: 'demo-business-1',
-            memberships: ['demo-business-1'],
-            onboardingCompleted: alreadyOnboarded
-          };
-          localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
-        } catch (e) {}
+        await handleAuthenticatedGoogleUser(result.user);
       }
-
-      if (launchReadyToUseWorkspace) {
-        await launchReadyToUseWorkspace();
-      }
-      navigate('/dashboard');
     } catch (err) {
-      console.warn("Google sign-in fallback:", err);
-      try {
-        if (launchReadyToUseWorkspace) {
-          await launchReadyToUseWorkspace();
-        }
-        navigate('/dashboard');
-      } catch (e) {
-        setGeneralError('Google verification completed. Entering workspace...');
-      }
+      console.error("Google sign-in error:", err);
+      setGeneralError(err.message || 'Google authentication failed.');
     } finally {
       setIsAuthenticating(false);
     }
@@ -377,7 +468,7 @@ const Login = () => {
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({ ...errors, email: null }); }}
                     className={`form-input ${errors.email ? 'input-error' : ''}`}
-                    placeholder="owner@sascafeteria.com"
+                    placeholder="name@business.com"
                     disabled={isAuthenticating}
                     autoComplete="email"
                   />
@@ -600,6 +691,51 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* External Browser Authentication Modal */}
+      {waitingForBrowserAuth && (
+        <div className="browser-auth-overlay">
+          <div className="browser-auth-card">
+            <div className="browser-auth-icon-spin">
+              <Loader2 className="animate-spin" size={32} color="#ffffff" />
+            </div>
+            <h3 className="browser-auth-title">Opening Google in your Browser...</h3>
+            <p className="browser-auth-desc">
+              Please complete your Google sign-in in the opened browser window. Karobaar will detect your account and continue automatically.
+            </p>
+            <div className="browser-auth-actions">
+              <button
+                type="button"
+                className="browser-auth-btn-cancel"
+                onClick={() => {
+                  if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
+                  setWaitingForBrowserAuth(false);
+                  setIsAuthenticating(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="browser-auth-btn-reopen"
+                onClick={() => {
+                  const port = window.location.port;
+                  const authUrl = port ? `http://127.0.0.1:${port}/#/google-auth?port=${port}` : '#/google-auth';
+                  if (port) {
+                    fetch(`/api/launch-browser?url=${encodeURIComponent(authUrl)}`).catch(() => {
+                      window.open(authUrl, '_blank');
+                    });
+                  } else {
+                    window.open(authUrl, '_blank');
+                  }
+                }}
+              >
+                <ExternalLink size={14} /> Open Browser
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

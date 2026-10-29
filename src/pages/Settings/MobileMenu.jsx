@@ -30,13 +30,17 @@ import { KarobaarLogo } from '../../components/KarobaarLogo/KarobaarLogo';
 import './MobileMenu.css';
 
 export const MobileMenu = () => {
-  const { currentUser, currentBusiness, logout } = useAppContext();
+  const { currentUser, currentBusiness, logout, requestSignOut } = useAppContext();
   const navigate = useNavigate();
 
   // About Screen 10 state
   const [showAbout, setShowAbout] = useState(false);
 
   const handleLogout = async () => {
+    if (requestSignOut) {
+      requestSignOut();
+      return;
+    }
     try {
       if (logout) {
         await logout();

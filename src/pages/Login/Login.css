@@ -697,6 +697,115 @@
 }
 
 /* ============================================================ */
+/* BROWSER AUTH OVERLAY MODAL                                   */
+/* ============================================================ */
+.browser-auth-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: loginFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.browser-auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 20px;
+  padding: 32px 28px;
+  text-align: center;
+  color: #ffffff;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  animation: loginScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes loginScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.browser-auth-icon-spin {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #27272a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+}
+
+.browser-auth-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px 0;
+  color: #ffffff;
+}
+
+.browser-auth-desc {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #a1a1aa;
+  margin: 0 0 24px 0;
+}
+
+.browser-auth-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.browser-auth-btn-cancel {
+  background: transparent;
+  border: 1px solid #3f3f46;
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.browser-auth-btn-cancel:hover {
+  background: #27272a;
+}
+
+.browser-auth-btn-reopen {
+  background: #ffffff;
+  border: 1px solid #ffffff;
+  color: #09090b;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.browser-auth-btn-reopen:hover {
+  background: #f4f4f5;
+}
+
+/* ============================================================ */
 /* RESPONSIVE DESIGN (Laptops, Tablets & Mobile)                 */
 /* ============================================================ */
 @media (max-width: 640px) {

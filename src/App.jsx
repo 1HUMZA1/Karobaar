@@ -22,6 +22,7 @@ import Settings from './pages/Settings/Settings';
 import Reports from './pages/Reports/Reports';
 import Notifications from './pages/Notifications/Notifications';
 import Login from './pages/Login/Login';
+import GoogleAuth from './pages/Login/GoogleAuth';
 import BusinessSetup from './pages/BusinessSetup/BusinessSetup';
 import Invoices from './pages/Invoices/Invoices';
 import Payments from './pages/Payments/Payments';
@@ -29,6 +30,7 @@ import Landing from './pages/Landing/Landing';
 import Branches from './pages/Branches/Branches';
 import HQAnalytics from './pages/Branches/HQAnalytics';
 import MobileMenu from './pages/Settings/MobileMenu';
+import SignOutModal from './components/SignOutModal/SignOutModal';
 import AccessDenied from './components/AccessDenied/AccessDenied';
 import { hasPermission, normalizeRole, PERMISSIONS } from './utils/permissions';
 
@@ -360,12 +362,14 @@ const AppContent = () => {
 
   return (
     <HashRouter>
+      <SignOutModal />
       <Routes>
         <Route path="/home" element={<Landing />} />
         <Route path="/website" element={<Landing />} />
         <Route path="/landing" element={<Landing />} />
         <Route path="/about" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/google-auth" element={<GoogleAuth />} />
         <Route path="/setup" element={<BusinessSetup />} />
         
         <Route path="/" element={

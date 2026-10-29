@@ -49,14 +49,19 @@ export const AppProvider = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [appUiVersion, setAppUiVersion] = useState(() => localStorage.getItem('karobaar-ui-version') || 'v2');
   
-  // Instant Launch: Default directly to ready-to-use SAS CAFETERIA workspace
+  // Sign Out Warning Modal State
+  const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
+  const requestSignOut = useCallback(() => setIsSignOutModalOpen(true), []);
+  const closeSignOutModal = useCallback(() => setIsSignOutModalOpen(false), []);
+
+  // Session State: Respect active session or require clean authentication
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return null;
       const u = localStorage.getItem('karobaar_session_user');
-      return u ? JSON.parse(u) : DEFAULT_USER;
-    } catch (e) { return DEFAULT_USER; }
+      return u ? JSON.parse(u) : null;
+    } catch (e) { return null; }
   });
 
   const [currentBusiness, setCurrentBusiness] = useState(() => {
@@ -64,8 +69,8 @@ export const AppProvider = ({ children }) => {
       const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return null;
       const b = localStorage.getItem('karobaar_session_business');
-      return b ? JSON.parse(b) : DEFAULT_BUSINESS;
-    } catch (e) { return DEFAULT_BUSINESS; }
+      return b ? JSON.parse(b) : null;
+    } catch (e) { return null; }
   });
 
   const [userBusinesses, setUserBusinesses] = useState(() => {
@@ -73,16 +78,17 @@ export const AppProvider = ({ children }) => {
       const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return [];
       const bs = localStorage.getItem('karobaar_session_businesses');
-      return bs ? JSON.parse(bs) : [DEFAULT_BUSINESS];
-    } catch (e) { return [DEFAULT_BUSINESS]; }
+      return bs ? JSON.parse(bs) : [];
+    } catch (e) { return []; }
   });
 
   const [authStatus, setAuthStatus] = useState(() => {
     try {
       const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return 'unauthenticated';
-      return 'authenticated'; // Instant launch into dashboard!
-    } catch (e) { return 'authenticated'; }
+      const u = localStorage.getItem('karobaar_session_user');
+      return u ? 'authenticated' : 'unauthenticated';
+    } catch (e) { return 'unauthenticated'; }
   });
 
   const [authError, setAuthError] = useState('');
@@ -181,9 +187,21 @@ export const AppProvider = ({ children }) => {
             } else {
               setAuthStatus('pending_onboarding');
             }
+          } else {
+            // Newly authenticated user without existing business membership -> route to onboarding
+            const pendingUser = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Owner',
+              email: firebaseUser.email,
+              role: 'Owner',
+              memberships: []
+            };
+            setCurrentUser(pendingUser);
+            setAuthStatus('pending_onboarding');
           }
         } catch (error) {
           console.warn("[AUTH] Cloud profile check note:", error);
+          setAuthStatus('pending_onboarding');
         }
       } else {
         const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
@@ -201,15 +219,13 @@ export const AppProvider = ({ children }) => {
               setCurrentUser(JSON.parse(savedUser));
               if (savedBiz) {
                 setCurrentBusiness(JSON.parse(savedBiz));
-              } else {
-                setCurrentBusiness(DEFAULT_BUSINESS);
               }
               setAuthStatus('authenticated');
             } catch (e) {
-              launchReadyToUseWorkspace();
+              setAuthStatus('unauthenticated');
             }
           } else {
-            launchReadyToUseWorkspace();
+            setAuthStatus('unauthenticated');
           }
         }
       }
@@ -445,6 +461,7 @@ export const AppProvider = ({ children }) => {
   }, [currentBusiness, currentUser]);
 
   const logout = async () => {
+    setIsSignOutModalOpen(false);
     try {
       localStorage.setItem('karobaar_explicit_logout', 'true');
       localStorage.removeItem('karobaar_session_user');
@@ -485,6 +502,9 @@ export const AppProvider = ({ children }) => {
       authError,
       setAuthError,
       logout,
+      isSignOutModalOpen,
+      requestSignOut,
+      closeSignOutModal,
       switchBranch,
       createNewBusiness,
       joinBusinessWithCode,

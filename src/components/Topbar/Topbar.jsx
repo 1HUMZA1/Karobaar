@@ -69,6 +69,7 @@ const Topbar = () => {
     createNewBusiness,
     joinBusinessWithCode,
     logout, 
+    requestSignOut,
     appUiVersion, 
     setAppUiVersion 
   } = useAppContext();
@@ -452,8 +453,12 @@ const Topbar = () => {
 
   const handleLogout = () => {
     setIsProfileOpen(false);
-    logout();
-    navigate('/login');
+    if (requestSignOut) {
+      requestSignOut();
+    } else {
+      logout();
+      navigate('/login');
+    }
   };
 
   return (
