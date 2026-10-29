@@ -474,30 +474,47 @@
 }
 
 /* 8. Modern Modals & Slide-up Sheets */
-.k-sheet-overlay {
+.k-sheet-overlay,
+.k-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  z-index: 1000;
+  background: rgba(9, 9, 11, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10000;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   animation: fadeIn 0.2s ease-out;
 }
 
-.k-sheet-content {
+.k-sheet-content,
+.k-modal-sheet {
   width: 100%;
   max-width: 520px;
   background: var(--bg-card, #ffffff);
-  border-radius: 28px 28px 0 0;
+  border-radius: 24px 24px 0 0;
   border-top: 1px solid var(--border-color, #e4e4e7);
   padding: 1.25rem 1.25rem 2.25rem 1.25rem;
   max-height: 88vh;
   overflow-y: auto;
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
   animation: slideUp 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-sizing: border-box;
+}
+
+[data-theme='dark'] .k-sheet-content,
+[data-theme='dark'] .k-modal-sheet {
+  background: #141416;
+  border-top-color: #27272a;
+}
+
+.k-modal-drag-pill {
+  width: 36px;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--border-strong, #cbd5e1);
+  margin: 0 auto 12px;
 }
 
 @keyframes fadeIn {
@@ -510,7 +527,8 @@
   to { transform: translateY(0); }
 }
 
-.k-sheet-header {
+.k-sheet-header,
+.k-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -519,15 +537,25 @@
   margin-bottom: 1.25rem;
 }
 
-.k-sheet-title {
+.k-sheet-title,
+.k-modal-title {
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--text-main, #09090b);
   letter-spacing: -0.02em;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.k-sheet-close-btn {
+[data-theme='dark'] .k-sheet-title,
+[data-theme='dark'] .k-modal-title {
+  color: #fafafa;
+}
+
+.k-sheet-close-btn,
+.k-modal-close-btn {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -541,8 +569,10 @@
   transition: transform 0.15s ease;
 }
 
-.k-sheet-close-btn:active {
-  transform: scale(0.9);
+[data-theme='dark'] .k-sheet-close-btn,
+[data-theme='dark'] .k-modal-close-btn {
+  background: #27272a;
+  color: #a1a1aa;
 }
 
 .k-sheet-btn-primary {

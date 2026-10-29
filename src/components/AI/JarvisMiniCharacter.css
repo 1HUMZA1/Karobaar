@@ -7,14 +7,26 @@
   position: fixed;
   bottom: 24px;
   left: 275px;
-  z-index: 1050;
+  z-index: 45;
   display: flex;
   align-items: center;
   gap: 10px;
   pointer-events: auto;
   user-select: none;
   animation: miniCharFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  transition: left 0.3s ease, bottom 0.3s ease;
+  transition: left 0.3s ease, bottom 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Smoothly hide floating dock whenever any modal, dialog or sheet is active */
+body:has(.biz-modal-overlay) .jarvis-mini-character-dock,
+body:has(.modal-backdrop) .jarvis-mini-character-dock,
+body:has(.modal-overlay) .jarvis-mini-character-dock,
+body:has(.k-modal-backdrop) .jarvis-mini-character-dock,
+body:has(.karobaar-hud-overlay-backdrop) .jarvis-mini-character-dock,
+body:has([role="dialog"]) .jarvis-mini-character-dock {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(16px) scale(0.9) !important;
 }
 
 @media (max-width: 900px) {
