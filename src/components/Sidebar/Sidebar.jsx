@@ -5,7 +5,7 @@ import {
   Users, Package, Box, ShoppingBag, Truck, UserCircle, 
   Clock, CalendarOff, Banknote, Receipt, FileText, 
   BarChart3, CheckSquare, Bell, Settings, X, CreditCard,
-  ChevronLeft, ChevronRight, Building2
+  ChevronLeft, ChevronRight, Building2, Globe, ExternalLink
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { KarobaarLogo } from '../KarobaarLogo/KarobaarLogo';
@@ -121,9 +121,16 @@ const Sidebar = () => {
         <div className="sidebar-header">
           <div 
             className="logo-container" 
-            onClick={() => { window.location.hash = '#/dashboard'; }} 
+            onClick={() => {
+              if (window.innerWidth <= 768) {
+                window.location.hash = '#/home';
+              } else {
+                window.open('#/home', '_blank');
+              }
+            }} 
             style={{ cursor: 'pointer' }}
-            onMouseEnter={(e) => handleMouseEnter(e, 'Karobaar — Turn Work Into Growth')}
+            title="Visit Karobaar Official Website"
+            onMouseEnter={(e) => handleMouseEnter(e, 'Visit Karobaar Official Website')}
             onMouseLeave={handleMouseLeave}
           >
             <KarobaarLogo 
@@ -226,6 +233,31 @@ const Sidebar = () => {
           <p className="footer-title">Karobaar OS</p>
           <p className="footer-version">v2.0.0</p>
           <p className="footer-status"><span>●</span> All systems operational</p>
+          <button 
+            type="button" 
+            className="sidebar-website-btn" 
+            onClick={() => window.open('#/home', '_blank')}
+            title="Visit Karobaar Official Website"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'transparent',
+              border: 'none',
+              padding: '6px 0 0 0',
+              marginTop: '4px',
+              color: 'var(--text-muted)',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              width: '100%',
+              textAlign: 'left'
+            }}
+          >
+            <Globe size={13} />
+            <span>Visit Website</span>
+            <ExternalLink size={10} style={{ marginLeft: 'auto' }} />
+          </button>
         </div>
       </aside>
 

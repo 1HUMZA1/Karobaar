@@ -362,6 +362,9 @@ const AppContent = () => {
     <HashRouter>
       <Routes>
         <Route path="/home" element={<Landing />} />
+        <Route path="/website" element={<Landing />} />
+        <Route path="/landing" element={<Landing />} />
+        <Route path="/about" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/setup" element={<BusinessSetup />} />
         

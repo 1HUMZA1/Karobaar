@@ -30,7 +30,8 @@ import {
   Check,
   Link,
   ShieldCheck,
-  MoreHorizontal
+  MoreHorizontal,
+  Globe
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -464,7 +465,8 @@ const Topbar = () => {
         <div 
           className="mobile-logo-header hidden-desktop" 
           style={{ display: 'flex', alignItems: 'center', marginLeft: '10px', cursor: 'pointer' }}
-          onClick={() => navigate('/dashboard')}
+          onClick={() => window.open('#/home', '_blank')}
+          title="Visit Karobaar Official Website"
         >
           <KarobaarLogo size="sm" theme="auto" showTagline={false} />
         </div>
@@ -853,6 +855,13 @@ const Topbar = () => {
                 onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
               >
                 <Settings size={16} /> All Settings
+              </div>
+              
+              <div 
+                className="profile-dropdown-item"
+                onClick={() => { setIsProfileOpen(false); window.open('#/home', '_blank'); }}
+              >
+                <Globe size={16} /> Karobaar Website
               </div>
               
               <div className="profile-dropdown-divider"></div>
