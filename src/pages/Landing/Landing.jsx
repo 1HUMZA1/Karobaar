@@ -80,14 +80,32 @@ const Landing = () => {
     setShowWindowsModal(true);
   };
 
+  const triggerDownloadWindowsZip = () => {
+    const a = document.createElement('a');
+    a.href = './downloads/Karobaar-Windows-Flutter-App.zip';
+    a.download = 'Karobaar-Windows-Flutter-App.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const triggerDownloadAndroidApk = () => {
+    const a = document.createElement('a');
+    a.href = './downloads/Karobaar-Android-App.apk';
+    a.download = 'Karobaar-Android-App.apk';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const triggerMockDownload = () => {
     // Generate a downloadable desktop configuration / setup launcher
-    const content = `[Karobaar Desktop Application]\nVersion=2.0.0\nChannel=Stable\nEnvironment=Production\nOfflineSync=Enabled\nHardwarePrint=Ready\nTimestamp=${new Date().toISOString()}`;
+    const content = `@echo off\r\nstart "" "https://1HUMZA1.github.io/Karobaar/docs/#/dashboard"\r\n`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'Karobaar-Windows-v2.0.0-Launcher.bat';
+    a.download = 'Launch-Karobaar-Web.bat';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -613,7 +631,7 @@ const Landing = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <button 
                 type="button"
-                onClick={triggerMockDownload}
+                onClick={triggerDownloadWindowsZip}
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -630,7 +648,29 @@ const Landing = () => {
                   gap: '8px'
                 }}
               >
-                <Download size={16} /> Download Launcher (.bat)
+                <Download size={16} /> Download Windows App (.zip)
+              </button>
+
+              <button 
+                type="button"
+                onClick={triggerDownloadAndroidApk}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  backgroundColor: '#18181b',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '0.92rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <Download size={16} /> Download Android App (.apk)
               </button>
 
               <button 
