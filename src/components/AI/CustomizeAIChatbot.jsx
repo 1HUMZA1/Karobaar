@@ -43,6 +43,7 @@ import JarvisMiniCharacter from './JarvisMiniCharacter';
 import JarvisConversationBubble from './JarvisConversationBubble';
 import JarvisSettingsModal from './JarvisSettingsModal';
 import JarvisCommandCenter from './JarvisCommandCenter';
+import { jarvisVoiceService } from '../../services/ai/jarvisVoiceService';
 import './CustomizeAIChatbot.css';
 
 // Smart Anti-Repetition Dynamic Greeting Pools
@@ -301,11 +302,45 @@ export const CustomizeAIChatbot = () => {
     speechPauseDelayRef.current = aiSettings.speechPauseDelay || 1.5;
   }, [aiSettings.speechPauseDelay]);
 
-  // Sync isHudOverlayOpen ref & pause background listener while HUD overlay is open
+  // Sync isHudOverlayOpen & isCommandCenterOpen refs & pause background listener while modals are open
   const isConversationBubbleOpenRef = useRef(isConversationBubbleOpen);
+  const isCommandCenterOpenRef = useRef(isCommandCenterOpen);
+
   useEffect(() => {
     isConversationBubbleOpenRef.current = isConversationBubbleOpen;
   }, [isConversationBubbleOpen]);
+
+  useEffect(() => {
+    isCommandCenterOpenRef.current = isCommandCenterOpen;
+    if (isCommandCenterOpen) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (e) {}
+        setIsListening(false);
+      }
+    } else {
+      if (isListeningEnabledRef.current && !isSpeakingRef.current && recognitionRef.current) {
+        setTimeout(() => {
+          try {
+            const timeSinceSpeech = Date.now() - lastSpeechEndTimeRef.current;
+            if (!isSpeakingRef.current && isListeningEnabledRef.current && !isHudOverlayOpenRef.current && !isCommandCenterOpenRef.current && timeSinceSpeech >= 900) {
+              recognitionRef.current.start();
+            }
+          } catch (e) {}
+        }, 300);
+      }
+    }
+  }, [isCommandCenterOpen]);
+
+  // Hook global wake-word service into Command Center opener
+  useEffect(() => {
+    jarvisVoiceService.onWakeWordDetected = (transcript) => {
+      setIsCommandCenterOpen(true);
+      const cleaned = (transcript || '').replace(/^(hey\s+)?jarvis\s*/i, '').trim();
+      if (cleaned) {
+        setCommandCenterInitialQuery(cleaned);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     isHudOverlayOpenRef.current = isHudOverlayOpen;
@@ -319,7 +354,7 @@ export const CustomizeAIChatbot = () => {
         setTimeout(() => {
           try {
             const timeSinceSpeech = Date.now() - lastSpeechEndTimeRef.current;
-            if (!isSpeakingRef.current && isListeningEnabledRef.current && !isHudOverlayOpenRef.current && timeSinceSpeech >= 900) {
+            if (!isSpeakingRef.current && isListeningEnabledRef.current && !isHudOverlayOpenRef.current && !isCommandCenterOpenRef.current && timeSinceSpeech >= 900) {
               recognitionRef.current.start();
             }
           } catch (e) {}
@@ -425,9 +460,12 @@ export const CustomizeAIChatbot = () => {
       }
 
       if (fullSoFar) {
-        // Show live real-time transcription in the dialog bubble ("see my voice")
         setInterimTranscript(fullSoFar);
-        setIsConversationBubbleOpen(true);
+        if (previewSolo || previewWake) {
+          setIsCommandCenterOpen(true);
+        } else {
+          setIsConversationBubbleOpen(true);
+        }
       }
 
       // Configurable silence delay (default: 1.5s) to guarantee listening to FULL command before reacting
@@ -437,7 +475,7 @@ export const CustomizeAIChatbot = () => {
       clearTimeout(speechSilenceTimerRef.current);
       speechSilenceTimerRef.current = setTimeout(() => {
         // Re-check speaking & cooldown guards
-        if (isSpeakingRef.current || (Date.now() - lastSpeechEndTimeRef.current) < 900 || isHudOverlayOpenRef.current) {
+        if (isSpeakingRef.current || (Date.now() - lastSpeechEndTimeRef.current) < 900 || isHudOverlayOpenRef.current || isCommandCenterOpenRef.current) {
           speechAccumulatorRef.current = '';
           setInterimTranscript('');
           return;
@@ -463,19 +501,21 @@ export const CustomizeAIChatbot = () => {
         }
 
         if (isSoloWakeWord) {
-          // User ONLY said wake word ("Hey Jarvis") and paused for full silence delay.
-          // Wake up attentively: play chime, open conversation bubble in listening mode,
-          // BUT DO NOT blurt out a loud monologue or execute unprompted actions!
+          // User ONLY said wake word ("Jarvis") and paused
           if (aiSettings.wakeChime !== false) playWakeChime();
-          setIsConversationBubbleOpen(true);
-          // Keep microphone actively listening for the upcoming user question.
+          setIsCommandCenterOpen(true);
           return;
         }
 
         // User spoke their question or command!
         if (cleanedQuery) {
-          setIsConversationBubbleOpen(true);
-          handleUserQuery(cleanedQuery);
+          if (hasWakeWord) {
+            setIsCommandCenterOpen(true);
+            setCommandCenterInitialQuery(cleanedQuery);
+          } else {
+            setIsConversationBubbleOpen(true);
+            handleUserQuery(cleanedQuery);
+          }
         }
       }, pauseDelayMs);
     };

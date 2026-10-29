@@ -1,19 +1,24 @@
 /**
  * JarvisCommandCenter.css
- * Premium Futuristic Monochrome Styling for Jarvis AI 2.0
+ * Ultra-Premium Translucent Frosted Glass Architecture for Jarvis AI 2.0
+ * Fully responsive monochrome design system supporting Dark & Light themes.
  */
 
+/* ==============================================================
+   1. BACKDROP & MODAL POSITIONING
+   ============================================================== */
 .jarvis-command-center-backdrop {
   position: fixed;
   inset: 0;
   z-index: 99990;
-  background-color: rgba(9, 9, 11, 0.75);
-  backdrop-filter: blur(10px);
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  animation: ccFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 1.25rem;
+  animation: ccFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .jarvis-command-center-backdrop.maximized {
@@ -21,23 +26,35 @@
 }
 
 @keyframes ccFadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
+/* ==============================================================
+   2. MAIN POPUP PANEL (TRANSLUCENT FROSTED GLASS)
+   ============================================================== */
 .jarvis-command-center-panel {
   width: 100%;
-  max-width: 640px;
-  height: 82vh;
-  max-height: 850px;
-  background: #09090b;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  max-width: 680px;
+  height: 84vh;
+  max-height: 840px;
+  background: rgba(14, 14, 18, 0.78);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  color: #f4f4f5;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.65), 0 0 1px 1px rgba(255, 255, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -49,14 +66,17 @@
   border: none;
 }
 
-/* Header */
+/* ==============================================================
+   3. HEADER BAR
+   ============================================================== */
 .jarvis-cc-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: #0d0d11;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(22, 22, 28, 0.6);
+  backdrop-filter: blur(20px);
   gap: 1rem;
   flex-shrink: 0;
 }
@@ -64,12 +84,12 @@
 .jarvis-cc-identity {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.9rem;
 }
 
 .jarvis-cc-orb-wrap {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,24 +106,25 @@
 .jarvis-cc-badge {
   font-size: 0.65rem;
   font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
   background: #ffffff;
   color: #09090b;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .jarvis-cc-model {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: #a1a1aa;
-  font-family: monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .jarvis-cc-status {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .status-indicator {
@@ -111,6 +132,7 @@
   height: 6px;
   border-radius: 50%;
   background: #71717a;
+  transition: all 0.3s ease;
 }
 
 .status-indicator.listening {
@@ -133,6 +155,10 @@
   background: #10b981;
 }
 
+.status-indicator.muted {
+  background: #ef4444;
+}
+
 .status-indicator.error {
   background: #ef4444;
 }
@@ -147,43 +173,54 @@
   50% { opacity: 1; transform: scale(1.2); }
 }
 
-/* Controls & Tabs */
+/* ==============================================================
+   4. HEADER CONTROLS & SLEEK TRANSLUCENT TABS
+   ============================================================== */
 .jarvis-cc-controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
 .jarvis-cc-tabs {
   display: flex;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   padding: 3px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 2px;
 }
 
 .tab-btn {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: #a1a1aa;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 5px 12px;
+  border-radius: 7px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* SLEEK TRANSLUCENT ACTIVE TAB PILL — NO HARSH SOLID WHITE BLOB */
 .tab-btn.active {
-  background: #ffffff;
-  color: #09090b;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff !important;
   font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .control-btn {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #a1a1aa;
+  color: #d4d4d8;
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -191,17 +228,19 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .control-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .control-btn.active {
+  background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .control-btn.close-btn:hover {
@@ -210,22 +249,25 @@
   color: #ef4444;
 }
 
-/* Hero Visualizer */
+/* ==============================================================
+   5. COMPACT HERO VISUALIZER (AI AVATAR SOUNDWAVE)
+   ============================================================== */
 .jarvis-cc-hero-visualizer {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem 0 0.5rem 0;
-  background: radial-gradient(circle, rgba(24, 24, 28, 0.5) 0%, transparent 70%);
+  padding: 0.85rem 0 0.35rem 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
   flex-shrink: 0;
+  transition: all 0.25s ease;
 }
 
 .jarvis-cc-listening-prompt {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
   padding: 4px 14px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.1);
@@ -233,6 +275,7 @@
   font-size: 0.78rem;
   color: #ffffff;
   font-weight: 600;
+  backdrop-filter: blur(8px);
 }
 
 .live-mic-dot {
@@ -243,21 +286,45 @@
   animation: pulseMic 1s infinite;
 }
 
-/* Messages Stream */
+/* ==============================================================
+   6. CONVERSATION MESSAGES STREAM (EXPANSIVE & CLEAN)
+   ============================================================== */
 .jarvis-cc-messages-scroll {
   flex: 1;
+  min-height: 220px;
   overflow-y: auto;
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.95rem;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.jarvis-cc-messages-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.jarvis-cc-messages-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
 }
 
 .jarvis-msg-row {
   display: flex;
   width: 100%;
+  animation: msgAppear 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes msgAppear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .jarvis-msg-row.user-side {
@@ -269,44 +336,52 @@
 }
 
 .jarvis-msg-bubble {
-  max-width: 85%;
-  padding: 0.85rem 1.1rem;
-  border-radius: 14px;
+  max-width: 84%;
+  padding: 0.85rem 1.15rem;
+  border-radius: 16px;
   font-size: 0.88rem;
-  line-height: 1.45;
+  line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .user-side .jarvis-msg-bubble {
-  background: #27272a;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .bot-side .jarvis-msg-bubble {
-  background: #18181b;
+  background: rgba(22, 22, 28, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #f4f4f5;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-bottom-left-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .msg-timestamp {
   display: block;
   font-size: 0.65rem;
   color: #71717a;
-  margin-top: 4px;
+  margin-top: 5px;
   text-align: right;
 }
 
-/* Action Confirmation Card */
+/* ==============================================================
+   7. CONSEQUENTIAL CONFIRMATION ACTION CARD
+   ============================================================== */
 .jarvis-confirmation-card {
   margin-top: 0.85rem;
   padding: 0.85rem;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.22);
 }
 
 .confirmation-header {
@@ -322,7 +397,7 @@
 
 .confirmation-summary {
   font-size: 0.82rem;
-  color: #d4d4d8;
+  color: #e4e4e7;
   margin-bottom: 10px;
   line-height: 1.4;
 }
@@ -339,8 +414,8 @@
   background: #ffffff;
   color: #09090b;
   border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
+  border-radius: 8px;
+  padding: 7px 14px;
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
@@ -358,8 +433,8 @@
   background: transparent;
   color: #a1a1aa;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 6px 12px;
+  border-radius: 8px;
+  padding: 7px 14px;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -370,15 +445,18 @@
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Quick Suggestion Chips */
+/* ==============================================================
+   8. QUICK SUGGESTION CHIPS
+   ============================================================== */
 .jarvis-cc-quick-chips {
   display: flex;
-  gap: 6px;
-  padding: 0.5rem 1.25rem;
+  gap: 7px;
+  padding: 0.6rem 1.4rem;
   overflow-x: auto;
   scrollbar-width: none;
   flex-shrink: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 18, 24, 0.45);
 }
 
 .jarvis-cc-quick-chips::-webkit-scrollbar {
@@ -386,32 +464,36 @@
 }
 
 .jarvis-cc-quick-chips button {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #d4d4d8;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 5px 13px;
   border-radius: 9999px;
   white-space: nowrap;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .jarvis-cc-quick-chips button:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.32);
 }
 
-/* Bottom Input Bar */
+/* ==============================================================
+   9. BOTTOM COMMAND INPUT BAR
+   ============================================================== */
 .jarvis-cc-input-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0.85rem 1.25rem 1.15rem 1.25rem;
-  background: #0d0d11;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 9px;
+  padding: 0.85rem 1.4rem 1.15rem 1.4rem;
+  background: rgba(18, 18, 24, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
 
@@ -421,35 +503,42 @@
   color: #ffffff;
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mic-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 .mic-button.listening {
   background: #ffffff;
   color: #09090b;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
   animation: pulseMic 1.2s infinite;
 }
 
 .command-text-input {
   flex: 1;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 11px;
   padding: 10px 14px;
   font-size: 0.88rem;
   color: #ffffff;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
 .command-text-input:focus {
-  border-color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .command-text-input::placeholder {
@@ -459,13 +548,14 @@
 .send-button, .stop-button {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .send-button {
@@ -483,10 +573,12 @@
   color: #ffffff;
 }
 
-/* Activity Panel */
+/* ==============================================================
+   10. TOOL ACTIVITY LOG PANEL
+   ============================================================== */
 .jarvis-cc-activity-panel {
   flex: 1;
-  padding: 1.25rem;
+  padding: 1.4rem;
   overflow-y: auto;
 }
 
@@ -531,10 +623,10 @@
 }
 
 .activity-item {
-  background: #18181b;
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 12px;
+  padding: 11px 14px;
 }
 
 .activity-args {
@@ -542,15 +634,17 @@
   font-size: 0.72rem;
   color: #a1a1aa;
   background: rgba(0, 0, 0, 0.4);
-  padding: 6px 8px;
-  border-radius: 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
   overflow-x: auto;
 }
 
-/* Preferences Panel */
+/* ==============================================================
+   11. PREFERENCES & SETTINGS PANEL
+   ============================================================== */
 .jarvis-cc-preferences-panel {
   flex: 1;
-  padding: 1.25rem;
+  padding: 1.4rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -568,23 +662,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1rem;
-  background: #18181b;
+  padding: 0.9rem 1.1rem;
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pref-toggle-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .pref-label {
   display: block;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   color: #ffffff;
 }
 
 .pref-sub {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.73rem;
   color: #a1a1aa;
   margin-top: 2px;
 }
@@ -597,8 +697,298 @@
 }
 
 .pref-info-block {
-  padding: 0.85rem 1rem;
-  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+}
+
+/* ==============================================================
+   12. LIGHT THEME OVERRIDES (SEAMLESS GLASS MONOCHROME)
+   ============================================================== */
+[data-theme="light"] .jarvis-command-center-backdrop,
+html:not(.dark):not([data-theme="dark"]) .jarvis-command-center-backdrop {
+  background-color: rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="light"] .jarvis-command-center-panel,
+html:not(.dark):not([data-theme="dark"]) .jarvis-command-center-panel {
+  background: rgba(255, 255, 255, 0.84);
+  color: #09090b;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.16), 0 0 1px 1px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .jarvis-cc-header,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-header {
+  background: rgba(245, 245, 248, 0.75);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .jarvis-cc-title,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-title {
+  color: #09090b;
+}
+
+[data-theme="light"] .jarvis-cc-badge,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-badge {
+  background: #09090b;
+  color: #ffffff;
+}
+
+[data-theme="light"] .jarvis-cc-model,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-model {
+  color: #71717a;
+}
+
+[data-theme="light"] .status-label,
+html:not(.dark):not([data-theme="dark"]) .status-label {
+  color: #52525b;
+}
+
+[data-theme="light"] .jarvis-cc-tabs,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-tabs {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .tab-btn,
+html:not(.dark):not([data-theme="dark"]) .tab-btn {
+  color: #52525b;
+}
+
+[data-theme="light"] .tab-btn:hover,
+html:not(.dark):not([data-theme="dark"]) .tab-btn {
+  color: #09090b;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .tab-btn.active,
+html:not(.dark):not([data-theme="dark"]) .tab-btn.active {
+  background: #09090b;
+  color: #ffffff !important;
+  border-color: #09090b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+[data-theme="light"] .control-btn,
+html:not(.dark):not([data-theme="dark"]) .control-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #3f3f46;
+}
+
+[data-theme="light"] .control-btn:hover,
+html:not(.dark):not([data-theme="dark"]) .control-btn:hover {
+  background: rgba(0, 0, 0, 0.09);
+  color: #09090b;
+}
+
+[data-theme="light"] .control-btn.active,
+html:not(.dark):not([data-theme="dark"]) .control-btn.active {
+  background: #09090b;
+  color: #ffffff;
+  border-color: #09090b;
+}
+
+[data-theme="light"] .jarvis-cc-hero-visualizer,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-hero-visualizer {
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.03) 0%, transparent 70%);
+}
+
+[data-theme="light"] .jarvis-cc-listening-prompt,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-listening-prompt {
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  color: #09090b;
+}
+
+[data-theme="light"] .live-mic-dot,
+html:not(.dark):not([data-theme="dark"]) .live-mic-dot {
+  background: #09090b;
+}
+
+[data-theme="light"] .jarvis-cc-messages-scroll,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-messages-scroll {
+  scrollbar-color: rgba(0, 0, 0, 0.16) transparent;
+}
+
+[data-theme="light"] .jarvis-cc-messages-scroll::-webkit-scrollbar-thumb,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-messages-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
+}
+
+[data-theme="light"] .user-side .jarvis-msg-bubble,
+html:not(.dark):not([data-theme="dark"]) .user-side .jarvis-msg-bubble {
+  background: #09090b;
+  color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .bot-side .jarvis-msg-bubble,
+html:not(.dark):not([data-theme="dark"]) .bot-side .jarvis-msg-bubble {
+  background: rgba(255, 255, 255, 0.92);
+  color: #09090b;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .jarvis-confirmation-card,
+html:not(.dark):not([data-theme="dark"]) .jarvis-confirmation-card {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+}
+
+[data-theme="light"] .confirmation-header,
+html:not(.dark):not([data-theme="dark"]) .confirmation-header {
+  color: #09090b;
+}
+
+[data-theme="light"] .confirmation-summary,
+html:not(.dark):not([data-theme="dark"]) .confirmation-summary {
+  color: #27272a;
+}
+
+[data-theme="light"] .confirm-btn-primary,
+html:not(.dark):not([data-theme="dark"]) .confirm-btn-primary {
+  background: #09090b;
+  color: #ffffff;
+}
+
+[data-theme="light"] .confirm-btn-primary:hover,
+html:not(.dark):not([data-theme="dark"]) .confirm-btn-primary:hover {
+  background: #27272a;
+}
+
+[data-theme="light"] .confirm-btn-secondary,
+html:not(.dark):not([data-theme="dark"]) .confirm-btn-secondary {
+  color: #52525b;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="light"] .confirm-btn-secondary:hover,
+html:not(.dark):not([data-theme="dark"]) .confirm-btn-secondary:hover {
+  color: #09090b;
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="light"] .jarvis-cc-quick-chips,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-quick-chips {
+  background: rgba(245, 245, 248, 0.65);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .jarvis-cc-quick-chips button,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-quick-chips button {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #27272a;
+}
+
+[data-theme="light"] .jarvis-cc-quick-chips button:hover,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-quick-chips button:hover {
+  background: #09090b;
+  color: #ffffff;
+  border-color: #09090b;
+}
+
+[data-theme="light"] .jarvis-cc-input-bar,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-input-bar {
+  background: rgba(245, 245, 248, 0.75);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .mic-button,
+html:not(.dark):not([data-theme="dark"]) .mic-button {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #09090b;
+}
+
+[data-theme="light"] .mic-button:hover,
+html:not(.dark):not([data-theme="dark"]) .mic-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.22);
+}
+
+[data-theme="light"] .mic-button.listening,
+html:not(.dark):not([data-theme="dark"]) .mic-button.listening {
+  background: #09090b;
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="light"] .command-text-input,
+html:not(.dark):not([data-theme="dark"]) .command-text-input {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  color: #09090b;
+}
+
+[data-theme="light"] .command-text-input:focus,
+html:not(.dark):not([data-theme="dark"]) .command-text-input:focus {
+  border-color: #09090b;
+  background: #ffffff;
+}
+
+[data-theme="light"] .send-button,
+html:not(.dark):not([data-theme="dark"]) .send-button {
+  background: #09090b;
+  color: #ffffff;
+}
+
+[data-theme="light"] .activity-panel-header h4,
+html:not(.dark):not([data-theme="dark"]) .activity-panel-header h4 {
+  color: #09090b;
+}
+
+[data-theme="light"] .activity-item,
+html:not(.dark):not([data-theme="dark"]) .activity-item {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.09);
+}
+
+[data-theme="light"] .activity-args,
+html:not(.dark):not([data-theme="dark"]) .activity-args {
+  background: rgba(0, 0, 0, 0.05);
+  color: #27272a;
+}
+
+[data-theme="light"] .jarvis-cc-preferences-panel h4,
+html:not(.dark):not([data-theme="dark"]) .jarvis-cc-preferences-panel h4 {
+  color: #09090b;
+}
+
+[data-theme="light"] .pref-toggle-row,
+html:not(.dark):not([data-theme="dark"]) .pref-toggle-row {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.09);
+}
+
+[data-theme="light"] .pref-toggle-row:hover,
+html:not(.dark):not([data-theme="dark"]) .pref-toggle-row:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(0, 0, 0, 0.16);
+}
+
+[data-theme="light"] .pref-label,
+html:not(.dark):not([data-theme="dark"]) .pref-label {
+  color: #09090b;
+}
+
+[data-theme="light"] .pref-sub,
+html:not(.dark):not([data-theme="dark"]) .pref-sub {
+  color: #52525b;
+}
+
+[data-theme="light"] .pref-toggle-row input[type="checkbox"],
+html:not(.dark):not([data-theme="dark"]) .pref-toggle-row input[type="checkbox"] {
+  accent-color: #09090b;
+}
+
+[data-theme="light"] .pref-info-block,
+html:not(.dark):not([data-theme="dark"]) .pref-info-block {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px dashed rgba(0, 0, 0, 0.16);
 }

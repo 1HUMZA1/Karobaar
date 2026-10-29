@@ -8,6 +8,8 @@ import {
   VolumeX, 
   Square, 
   Sparkles, 
+  Eye,
+  EyeOff,
   ShieldCheck, 
   RotateCcw, 
   ChevronRight, 
@@ -71,6 +73,9 @@ export const JarvisCommandCenter = ({
   const [wakeWordEnabled, setWakeWordEnabled] = useState(() => {
     return localStorage.getItem('karobaar_jarvis_wake_word') === 'true';
   });
+  const [showAnimation, setShowAnimation] = useState(() => {
+    return localStorage.getItem('karobaar_jarvis_show_animation') !== 'false';
+  });
   const [isMaximized, setIsMaximized] = useState(false);
 
   // Message History & Tool Activity Log
@@ -132,6 +137,11 @@ export const JarvisCommandCenter = ({
   useEffect(() => {
     localStorage.setItem('karobaar_jarvis_hands_free', handsFree ? 'true' : 'false');
   }, [handsFree]);
+
+  // Show animation avatar toggle setting change
+  useEffect(() => {
+    localStorage.setItem('karobaar_jarvis_show_animation', showAnimation ? 'true' : 'false');
+  }, [showAnimation]);
 
   // Wake-word setup
   useEffect(() => {
@@ -257,7 +267,9 @@ export const JarvisCommandCenter = ({
         navigate,
         toggleTheme,
         currentTheme: theme,
-        activeRoute: location.pathname
+        activeRoute: location.pathname,
+        setVoiceOutput,
+        setShowAnimation
       });
 
       // Log tool activity if present
@@ -384,9 +396,9 @@ export const JarvisCommandCenter = ({
           <div className="jarvis-cc-identity">
             <div className="jarvis-cc-orb-wrap">
               <JarvisIntelligenceOrb 
-                state={orbState}
+                state={!voiceOutput && orbState === 'idle' ? 'muted' : orbState}
                 audioLevel={audioLevel}
-                size={44}
+                size={38}
                 showRings={false}
                 interactive={false}
               />
@@ -450,6 +462,16 @@ export const JarvisCommandCenter = ({
               {voiceOutput ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>
 
+            {/* Animation Toggle (Talk with or without animation) */}
+            <button 
+              type="button"
+              className={`control-btn ${showAnimation ? 'active' : ''}`}
+              onClick={() => setShowAnimation(!showAnimation)}
+              title={showAnimation ? "AI Animation visualizer is ON (click to talk without animation)" : "Talk without animation is ON (click to show AI animation visualizer)"}
+            >
+              {showAnimation ? <Sparkles size={16} /> : <EyeOff size={16} />}
+            </button>
+
             {/* Maximize Toggle */}
             <button 
               type="button"
@@ -472,13 +494,13 @@ export const JarvisCommandCenter = ({
           </div>
         </div>
 
-        {/* Hero Interactive Orb (Centered in Chat View) */}
-        {activeTab === 'chat' && (
+        {/* Hero Interactive Orb (Centered in Chat View, compact and sleek) */}
+        {activeTab === 'chat' && showAnimation && (
           <div className="jarvis-cc-hero-visualizer">
             <JarvisIntelligenceOrb 
-              state={orbState}
+              state={!voiceOutput && orbState === 'idle' ? 'muted' : orbState}
               audioLevel={audioLevel}
-              size={isMaximized ? 210 : 150}
+              size={isMaximized ? 110 : 80}
               showRings={true}
               interactive={true}
               onClick={handleToggleMic}
@@ -599,6 +621,18 @@ export const JarvisCommandCenter = ({
                 type="checkbox" 
                 checked={handsFree} 
                 onChange={e => setHandsFree(e.target.checked)} 
+              />
+            </label>
+
+            <label className="pref-toggle-row">
+              <div>
+                <span className="pref-label">AI Visualizer Animation</span>
+                <span className="pref-sub">Display interactive AI soundwave visualizer (turn off to talk without animation)</span>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={showAnimation} 
+                onChange={e => setShowAnimation(e.target.checked)} 
               />
             </label>
 

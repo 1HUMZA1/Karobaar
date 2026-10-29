@@ -3,7 +3,7 @@
  * Central Command Engine for Project Karobaar
  *
  * Implements approved application function routing across all 10 core command categories:
- * A. Navigation Commands
+ * A. Navigation Commands ("take me to...", "go to...", "open...")
  * B. Sales & POS Commands
  * C. Inventory Commands
  * D. Financial Intelligence Commands
@@ -11,13 +11,14 @@
  * F. Invoice Commands
  * G. Staff & Attendance Commands
  * H. Business Intelligence & 5-Part Recommendations
- * I. Workspace & Appearance Settings Commands
- * J. General Assistant & Control Commands
+ * I. Workspace & Appearance Settings Commands (Instant opposite theme toggle)
+ * J. General Assistant & Control Commands (Mute / Unmute / Stop / Animation toggles)
  */
 
 import { aiService } from './aiService.js';
 import { db } from '../databaseService.js';
 import { localDb } from '../localDb.js';
+import { jarvisSpeechService } from './jarvisSpeechService.js';
 
 export class JarvisCommandRouter {
   constructor() {
@@ -27,22 +28,108 @@ export class JarvisCommandRouter {
   /**
    * Universal Command Dispatcher
    * @param {string} rawQuery - The natural language voice or text prompt
-   * @param {object} context - Execution context: { user, workspace, navigate, toggleTheme, currentTheme, activeRoute }
+   * @param {object} context - Execution context: { user, workspace, navigate, toggleTheme, currentTheme, activeRoute, setVoiceOutput, setShowAnimation }
    * @returns {Promise<object>} Command response: { text, actionTaken, requiresConfirmation, payload, state }
    */
   async routeCommand(rawQuery, context = {}) {
     const query = String(rawQuery || '').trim();
     if (!query) return { text: "I'm ready. What would you like to do?", state: 'idle' };
 
-    const lower = query.toLowerCase();
+    const lower = query.toLowerCase().replace(/[.,!?;:]/g, '').trim();
     const { user, workspace, navigate, toggleTheme, currentTheme } = context;
     const bizId = workspace?.id || 'demo-business-1';
     const userRole = user?.role || 'Owner';
 
     // ==============================================================
-    // CATEGORY J: GENERAL CONTROL COMMANDS (Stop / Cancel / Help)
+    // CATEGORY J: AUDIO MUTE & UNMUTE COMMANDS
+    // ==============================================================
+    if (
+      lower === 'mute' || 
+      lower === 'mute jarvis' || 
+      lower === 'silence' || 
+      lower === 'be quiet' || 
+      lower === 'stop talking' || 
+      lower === 'shut up' ||
+      lower.includes('mute voice') ||
+      lower.includes('turn off voice')
+    ) {
+      jarvisSpeechService.stop();
+      jarvisSpeechService.voiceEnabled = false;
+      try {
+        localStorage.setItem('karobaar_jarvis_voice_output', 'false');
+      } catch (_) {}
+      if (context.setVoiceOutput) context.setVoiceOutput(false);
+
+      return {
+        text: "Jarvis is now muted. Voice responses have been turned off.",
+        actionTaken: 'MUTE_VOICE',
+        state: 'idle'
+      };
+    }
+
+    if (
+      lower === 'unmute' || 
+      lower === 'unmute jarvis' || 
+      lower.includes('turn on voice') || 
+      lower.includes('enable voice') ||
+      lower === 'speak'
+    ) {
+      jarvisSpeechService.voiceEnabled = true;
+      try {
+        localStorage.setItem('karobaar_jarvis_voice_output', 'true');
+      } catch (_) {}
+      if (context.setVoiceOutput) context.setVoiceOutput(true);
+
+      return {
+        text: "Voice responses have been unmuted and enabled.",
+        actionTaken: 'UNMUTE_VOICE',
+        state: 'idle'
+      };
+    }
+
+    // ==============================================================
+    // ANIMATION ON / OFF (Talk without animation)
+    // ==============================================================
+    if (
+      lower.includes('hide animation') || 
+      lower.includes('turn off animation') || 
+      lower.includes('disable animation') ||
+      lower.includes('without animation') ||
+      lower === 'text only'
+    ) {
+      if (context.setShowAnimation) context.setShowAnimation(false);
+      try {
+        localStorage.setItem('karobaar_jarvis_show_animation', 'false');
+      } catch (_) {}
+      return {
+        text: "AI visualizer hidden. You can now chat in clean, text-only mode.",
+        actionTaken: 'TOGGLE_ANIMATION',
+        state: 'idle'
+      };
+    }
+
+    if (
+      lower.includes('show animation') || 
+      lower.includes('turn on animation') || 
+      lower.includes('enable animation') ||
+      lower.includes('with animation')
+    ) {
+      if (context.setShowAnimation) context.setShowAnimation(true);
+      try {
+        localStorage.setItem('karobaar_jarvis_show_animation', 'true');
+      } catch (_) {}
+      return {
+        text: "AI animation visualizer enabled.",
+        actionTaken: 'TOGGLE_ANIMATION',
+        state: 'idle'
+      };
+    }
+
+    // ==============================================================
+    // GENERAL CONTROL COMMANDS (Stop / Cancel / Help)
     // ==============================================================
     if (lower === 'stop' || lower === 'cancel' || lower === 'abort' || lower === 'never mind') {
+      jarvisSpeechService.stop();
       return {
         text: "Operation stopped. Standing by.",
         actionTaken: 'CANCEL_OPERATION',
@@ -60,20 +147,34 @@ export class JarvisCommandRouter {
     }
 
     // ==============================================================
-    // CATEGORY I: SETTINGS & APPEARANCE (Mode toggling)
+    // CATEGORY I: SETTINGS & APPEARANCE (Always toggle to opposite)
     // ==============================================================
     if (
-      lower.includes('dark mode') || 
-      lower.includes('light mode') || 
-      lower.includes('switch mode') || 
-      lower.includes('toggle mode') ||
-      lower.includes('toggle theme')
+      !lower.includes('business') && !lower.includes('store') && !lower.includes('branch') &&
+      (
+        lower === 'switch' ||
+        lower.startsWith('switch ') ||
+        lower.includes('switch theme') ||
+        lower.includes('switch mode') ||
+        lower.includes('switch display') ||
+        lower.includes('switch colour') ||
+        lower.includes('switch color') ||
+        lower.includes('toggle theme') ||
+        lower.includes('toggle mode') ||
+        lower.includes('toggle display') ||
+        lower.includes('change theme') ||
+        lower.includes('change mode') ||
+        lower.includes('dark mode') || 
+        lower.includes('light mode') ||
+        lower.includes('dark theme') ||
+        lower.includes('light theme')
+      )
     ) {
       return this._handleThemeToggle(lower, currentTheme, toggleTheme);
     }
 
     // ==============================================================
-    // CATEGORY A: NAVIGATION COMMANDS
+    // CATEGORY A: NAVIGATION COMMANDS ("Take me to...", "Open...", "Go to...")
     // ==============================================================
     const navMatch = this._matchNavigationCommand(lower);
     if (navMatch && navigate) {
@@ -96,7 +197,6 @@ export class JarvisCommandRouter {
 
     // ==============================================================
     // ADVANCED AI ENGINE ROUTING (Categories B, C, D, E, F, G, H)
-    // Runs through Gemini SDK with registered tools, RBAC, deterministic math & confirmation
     // ==============================================================
     try {
       const aiResponse = await aiService.chatWithGemini(query, {
@@ -124,84 +224,147 @@ export class JarvisCommandRouter {
 
   // --- Helpers: Navigation Matcher ---
   _matchNavigationCommand(lower) {
-    if (lower.includes('open pos') || lower.includes('go to pos') || lower.includes('billing counter')) {
+    // POS / Billing
+    if (
+      lower.includes('open pos') || lower.includes('go to pos') || lower.includes('take me to pos') ||
+      lower.includes('billing') || lower.includes('counter') || lower.includes('new sale')
+    ) {
       return { path: '/pos', label: 'Point of Sale (POS)' };
     }
-    if (lower.includes('open dashboard') || lower.includes('go to dashboard') || lower.includes('home screen')) {
+
+    // Dashboard
+    if (
+      lower.includes('open dashboard') || lower.includes('go to dashboard') || lower.includes('take me to dashboard') ||
+      lower.includes('home screen') || lower === 'dashboard'
+    ) {
       return { path: '/dashboard', label: 'Store Dashboard' };
     }
-    if (lower.includes('open inventory') || lower.includes('go to stock') || lower.includes('view products') || lower.includes('catalog')) {
+
+    // Tasks
+    if (
+      lower.includes('tasks') || lower.includes('task management') || lower.includes('to do') ||
+      lower.includes('take me to tasks') || lower.includes('open tasks')
+    ) {
+      return { path: '/tasks', label: 'Task Management' };
+    }
+
+    // Inventory & Stock
+    if (
+      lower.includes('open inventory') || lower.includes('go to inventory') || lower.includes('take me to inventory') ||
+      lower.includes('stock') || lower.includes('products') || lower.includes('catalog')
+    ) {
       return { path: '/inventory', label: 'Inventory & Stock' };
     }
-    if (lower.includes('open customers') || lower.includes('go to customers') || lower.includes('khata') || lower.includes('customer list')) {
+
+    // Customers / Khata
+    if (
+      lower.includes('open customers') || lower.includes('go to customers') || lower.includes('take me to customers') ||
+      lower.includes('khata') || lower.includes('customer list') || lower.includes('udhaar')
+    ) {
       return { path: '/customers', label: 'Customer Khata' };
     }
-    if (lower.includes('open reports') || lower.includes('go to reports') || lower.includes('analytics') || lower.includes('p&l')) {
+
+    // Reports & Analytics
+    if (
+      lower.includes('open reports') || lower.includes('go to reports') || lower.includes('take me to reports') ||
+      lower.includes('analytics') || lower.includes('p&l') || lower.includes('profit and loss')
+    ) {
       return { path: '/reports', label: 'Financial Reports' };
     }
-    if (lower.includes('open settings') || lower.includes('go to settings')) {
+
+    // Invoices
+    if (
+      lower.includes('open invoices') || lower.includes('go to invoices') || lower.includes('take me to invoices') ||
+      lower.includes('invoice list')
+    ) {
+      return { path: '/invoices', label: 'Invoices' };
+    }
+
+    // Settings
+    if (
+      lower.includes('open settings') || lower.includes('go to settings') || lower.includes('take me to settings')
+    ) {
       return { path: '/settings', label: 'Workspace Settings' };
     }
-    if (lower.includes('team management') || lower.includes('manage staff') || lower.includes('open team')) {
+
+    // Team & Staff
+    if (
+      lower.includes('team management') || lower.includes('manage staff') || lower.includes('open team') ||
+      lower.includes('take me to team') || lower.includes('employees')
+    ) {
       return { path: '/settings?tab=team', label: 'Team Management' };
     }
-    if (lower.includes('open expenses') || lower.includes('finance') || lower.includes('banking')) {
+
+    // Expenses & Finance
+    if (
+      lower.includes('open expenses') || lower.includes('go to expenses') || lower.includes('take me to expenses') ||
+      lower.includes('finance') || lower.includes('banking')
+    ) {
       return { path: '/finance', label: 'Finance & Banking' };
     }
-    if (lower.includes('open purchases') || lower.includes('suppliers')) {
+
+    // Purchases & Suppliers
+    if (
+      lower.includes('open purchases') || lower.includes('take me to purchases') || 
+      lower.includes('suppliers') || lower.includes('take me to suppliers')
+    ) {
       return { path: '/purchases', label: 'Suppliers & Purchases' };
     }
-    if (lower.includes('attendance') || lower.includes('clock in')) {
+
+    // Attendance
+    if (
+      lower.includes('attendance') || lower.includes('clock in') || lower.includes('take me to attendance')
+    ) {
       return { path: '/attendance', label: 'Staff Attendance' };
     }
+
+    // Website / Landing
+    if (
+      lower.includes('website') || lower.includes('landing') || lower.includes('take me to website') ||
+      lower.includes('marketing page')
+    ) {
+      return { path: '/home', label: 'Official Website' };
+    }
+
     return null;
   }
 
   // --- Helpers: Fast POS Matcher ---
   _matchPOSCommand(lower, bizId) {
-    if (lower.includes('start a new sale') || lower.includes('new sale') || lower.includes('clear cart')) {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('karobaar_pos_new_sale'));
-      }
+    if (lower === 'clear cart' || lower === 'empty cart') {
+      window.dispatchEvent(new CustomEvent('karobaar_pos_clear_cart'));
       return {
-        text: "Started a fresh sale register at the POS counter.",
-        actionTaken: 'POS_NEW_SALE',
+        text: "Cleared current POS register cart.",
+        actionTaken: 'POS_CLEAR_CART',
         state: 'success'
       };
     }
 
-    // Apply Discount Regex: "apply 10% discount" or "give 5 percent discount"
-    const discountMatch = lower.match(/apply\s+(\d+(\.\d+)?)\s*%\s*discount|give\s+(\d+(\.\d+)?)\s*percent\s*discount/);
+    const discountMatch = lower.match(/(?:apply|give|set)\s*(\d+)%?\s*discount/);
     if (discountMatch) {
-      const percent = parseFloat(discountMatch[1] || discountMatch[3]);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('karobaar_pos_apply_discount', { detail: { percent } }));
-      }
+      const pct = parseInt(discountMatch[1], 10);
+      window.dispatchEvent(new CustomEvent('karobaar_pos_apply_discount', { detail: { percentage: pct } }));
       return {
-        text: `Applied ${percent}% discount to the current order.`,
+        text: `Applied ${pct}% discount to the current order.`,
         actionTaken: 'POS_APPLY_DISCOUNT',
-        payload: { percent },
+        payload: { percentage: pct },
         state: 'success'
       };
     }
 
-    // Quick Payment Method: "pay with upi", "pay with cash", "pay with card"
-    if (lower.includes('pay with upi') || lower.includes('pay via qr') || lower.includes('gpay')) {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('karobaar_pos_set_payment_method', { detail: { method: 'upi' } }));
-      }
+    if (lower.includes('pay with cash') || lower.includes('cash payment')) {
+      window.dispatchEvent(new CustomEvent('karobaar_pos_select_payment', { detail: { method: 'CASH' } }));
       return {
-        text: "Set checkout payment method to UPI / QR Code.",
+        text: "Selected Cash payment tender.",
         actionTaken: 'POS_SET_PAYMENT',
         state: 'success'
       };
     }
-    if (lower.includes('pay with cash')) {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('karobaar_pos_set_payment_method', { detail: { method: 'cash' } }));
-      }
+
+    if (lower.includes('pay with upi') || lower.includes('upi payment') || lower.includes('qr payment')) {
+      window.dispatchEvent(new CustomEvent('karobaar_pos_select_payment', { detail: { method: 'UPI' } }));
       return {
-        text: "Set checkout payment method to Cash.",
+        text: "Opened UPI QR payment dialog.",
         actionTaken: 'POS_SET_PAYMENT',
         state: 'success'
       };
@@ -210,33 +373,56 @@ export class JarvisCommandRouter {
     return null;
   }
 
-  // --- Helpers: Mode Toggle ---
+  // --- Helpers: Mode Toggle (ALWAYS SWITCH TO THE OPPOSITE COLOR) ---
   _handleThemeToggle(lower, currentTheme, toggleTheme) {
-    const isDark = currentTheme === 'dark';
-
-    if (lower.includes('switch to dark') || lower.includes('turn on dark')) {
-      if (isDark) {
-        return { text: "Dark mode is already active.", state: 'idle' };
-      }
-      if (toggleTheme) toggleTheme();
-      return { text: "Switched to Dark mode.", state: 'success', actionTaken: 'TOGGLE_THEME' };
+    if (typeof document === 'undefined') {
+      return { text: "Theme toggling is only available in browser mode.", state: 'idle' };
     }
 
-    if (lower.includes('switch to light') || lower.includes('turn on light')) {
-      if (!isDark) {
-        return { text: "Light mode is already active.", state: 'idle' };
-      }
-      if (toggleTheme) toggleTheme();
-      return { text: "Switched to Light mode.", state: 'success', actionTaken: 'TOGGLE_THEME' };
+    const html = document.documentElement;
+    // Live DOM check for ground truth
+    const isDomDark = html.getAttribute('data-theme') === 'dark' || 
+                      html.classList.contains('dark') || 
+                      currentTheme === 'dark';
+
+    // The user requested: "when i say switch change the theme to the oppsite colour like when it is black change it to white and when it is white change it ti dark"
+    let nextTheme;
+
+    if (lower.includes('light') && !lower.includes('dark')) {
+      // If user asks for light and already in light -> flip to dark if command is "switch"; else ensure light
+      nextTheme = isDomDark ? 'light' : (lower.includes('switch') ? 'dark' : 'light');
+    } else if (lower.includes('dark') && !lower.includes('light')) {
+      // If user asks for dark and already in dark -> flip to light if command is "switch"; else ensure dark
+      nextTheme = !isDomDark ? 'dark' : (lower.includes('switch') ? 'light' : 'dark');
+    } else {
+      // Any generic "switch", "switch mode", "toggle", etc. -> ALWAYS flip to opposite color
+      nextTheme = isDomDark ? 'light' : 'dark';
     }
 
-    // Default toggle
-    if (toggleTheme) toggleTheme();
-    const target = isDark ? 'Light' : 'Dark';
+    // Apply directly to the DOM immediately
+    html.setAttribute('data-theme', nextTheme);
+    if (nextTheme === 'dark') {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+
+    try {
+      localStorage.setItem('karobaar_theme', nextTheme);
+    } catch (_) {}
+
+    if (toggleTheme) {
+      toggleTheme(nextTheme);
+    }
+
+    window.dispatchEvent(new CustomEvent('karobaar_theme_changed', { detail: { theme: nextTheme } }));
+
+    const targetLabel = nextTheme === 'dark' ? 'Dark' : 'Light';
     return {
-      text: `Switched display mode to ${target}.`,
+      text: `Switched display mode to ${targetLabel}.`,
       state: 'success',
-      actionTaken: 'TOGGLE_THEME'
+      actionTaken: 'TOGGLE_THEME',
+      newTheme: nextTheme
     };
   }
 
@@ -245,7 +431,8 @@ export class JarvisCommandRouter {
     const isStaff = userRole === 'Staff' || userRole === 'Cashier';
     const lines = [
       "Here are the live commands and functions you can execute right now:",
-      "• **Navigation:** 'Open POS', 'Go to inventory', 'Show reports', 'Open settings', 'Team management'",
+      "• **Navigation:** 'Take me to inventory', 'Open POS', 'Show tasks', 'Go to reports', 'Open settings'",
+      "• **Controls:** 'Switch' (flips between Dark and Light mode), 'Mute' (turns off voice), 'Hide animation' (talk without animation)",
       "• **POS Counter:** 'Start a new sale', 'Apply 10% discount', 'Pay with UPI', 'Pay with Cash'",
       "• **Inventory:** 'Which products are running low?', 'Search products [name]', 'Stock audit'",
       "• **Customer Khata:** 'Who owes me money?', 'Customer balances', 'Search customer [name]'"
@@ -255,8 +442,6 @@ export class JarvisCommandRouter {
       lines.push("• **Financial Intelligence:** 'Today's sales', 'This month's expenses', 'Calculate gross profit', 'Store health audit'");
       lines.push("• **Executive Strategy:** 'Give me business recommendations', 'Compare sales trends'");
     }
-
-    lines.push("• **Voice & Controls:** 'Switch to dark/light mode', 'Stop', 'What can Jarvis do?'");
 
     return {
       text: lines.join('\n'),

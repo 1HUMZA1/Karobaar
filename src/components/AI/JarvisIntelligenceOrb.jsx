@@ -1,24 +1,24 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect } from 'react';
 import './JarvisIntelligenceOrb.css';
 
 /**
  * JarvisIntelligenceOrb
- * Flagship Reactive AI Avatar for Karobaar
- * Direct realization of the particle waveform intelligence orb (reference image: media_1793262887591_821adc13.png)
+ * Minimalist, Clean, Luxury Monochrome Soundwave Orb for Karobaar AI
  *
  * States:
- * - 'idle'       : Subtle hypnotic breathing, gentle 3D sphere rotation, low-amplitude wave ripples.
- * - 'listening'  : Reacts directly to microphone audioLevel; particles surge and pulse outwards.
- * - 'thinking'   : Accelerated axial spin, scanning wave ribbons, dense orbital core compression.
- * - 'speaking'   : Undulating audio-frequency waveforms synchronized to speech cadences.
- * - 'executing'  : Focused energy compression with glowing particle acceleration during real operations.
- * - 'success'    : Harmonic outward wave expansion and smooth settling.
- * - 'error'      : Restrained discordant pulse, temporary particle turbulence, automatic recovery.
+ * - 'idle'       : Calm, rhythmic breathing pulse, smooth concentric halo.
+ * - 'listening'  : Clean reactive audio waveform expansion based on live microphone volume.
+ * - 'thinking'   : Elegant orbital ring rotation, scanning gradient pulse.
+ * - 'speaking'   : Harmonic vocal frequency waves pulsing with speech cadence.
+ * - 'executing'  : Focused energy compression with subtle acceleration.
+ * - 'success'    : Smooth outward harmonic settling.
+ * - 'muted'      : Dimmed, serene, motionless circle.
+ * - 'error'      : Subtle red accent pulse, gentle recovery.
  */
 export const JarvisIntelligenceOrb = ({
-  state = 'idle',            // 'idle' | 'listening' | 'thinking' | 'speaking' | 'executing' | 'success' | 'error'
+  state = 'idle',            // 'idle' | 'listening' | 'thinking' | 'speaking' | 'executing' | 'success' | 'muted' | 'error'
   audioLevel = 0,            // 0.0 to 1.0 (live microphone or speech RMS volume)
-  size = 180,                // Diameter in pixels
+  size = 90,                 // Diameter in pixels
   className = '',
   onClick = null,
   showRings = true,
@@ -30,7 +30,6 @@ export const JarvisIntelligenceOrb = ({
   const stateRef = useRef(state);
   const audioLevelRef = useRef(audioLevel);
 
-  // Keep refs synchronized without recreating animation loop
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
@@ -46,10 +45,6 @@ export const JarvisIntelligenceOrb = ({
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    // Check prefers-reduced-motion
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // High-DPI Scaling for crisp rendering on Retina screens
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = size * dpr;
     canvas.height = size * dpr;
@@ -57,12 +52,7 @@ export const JarvisIntelligenceOrb = ({
 
     const cx = size / 2;
     const cy = size / 2;
-    const baseRadius = (size / 2) * 0.76;
-
-    // Pre-calculate ribbon strands configuration
-    const NUM_RIBBONS = 28;           // Concentric waveform layers
-    const POINTS_PER_RIBBON = 64;     // Points along each ribbon
-    const TOTAL_POINTS = NUM_RIBBONS * POINTS_PER_RIBBON;
+    const baseRadius = (size / 2) * 0.45;
 
     let isVisible = true;
     const handleVisibilityChange = () => {
@@ -77,158 +67,107 @@ export const JarvisIntelligenceOrb = ({
       }
 
       const currentState = stateRef.current;
-      const currentAudio = audioLevelRef.current;
+      const currentAudio = audioLevelRef.current || 0;
 
-      // Speed & Amplitude multipliers based on real state
-      let speed = 0.018;
-      let waveAmp = 1.0;
-      let rotSpeed = 0.006;
-      let particleAlpha = 0.75;
-      let coreGlow = 0.2;
-
-      switch (currentState) {
-        case 'listening':
-          speed = 0.035;
-          waveAmp = 1.4 + currentAudio * 3.2;
-          particleAlpha = 0.95;
-          coreGlow = 0.4 + currentAudio * 0.6;
-          break;
-        case 'thinking':
-          speed = 0.065;
-          rotSpeed = 0.024;
-          waveAmp = 1.8;
-          particleAlpha = 0.85;
-          coreGlow = 0.6;
-          break;
-        case 'speaking':
-          speed = 0.042;
-          waveAmp = 1.5 + Math.sin(timeRef.current * 8) * 0.7;
-          particleAlpha = 0.9;
-          coreGlow = 0.5;
-          break;
-        case 'executing':
-          speed = 0.08;
-          rotSpeed = 0.035;
-          waveAmp = 2.2;
-          particleAlpha = 1.0;
-          coreGlow = 0.8;
-          break;
-        case 'success':
-          speed = 0.025;
-          waveAmp = 1.1;
-          particleAlpha = 0.9;
-          coreGlow = 0.5;
-          break;
-        case 'error':
-          speed = 0.05;
-          waveAmp = 2.5;
-          particleAlpha = 0.8;
-          coreGlow = 0.7;
-          break;
-        case 'idle':
-        default:
-          speed = prefersReducedMotion ? 0.005 : 0.016;
-          waveAmp = 0.9;
-          rotSpeed = 0.005;
-          particleAlpha = 0.68;
-          coreGlow = 0.25;
-          break;
-      }
-
-      timeRef.current += speed;
+      timeRef.current += 0.025;
       const t = timeRef.current;
 
-      // Clear Canvas
       ctx.clearRect(0, 0, size, size);
 
-      // Core Background Glow
-      const bgGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, baseRadius * 1.15);
-      if (currentState === 'error') {
-        bgGrad.addColorStop(0, `rgba(239, 68, 68, ${coreGlow * 0.5})`);
-        bgGrad.addColorStop(0.5, 'rgba(239, 68, 68, 0.12)');
-        bgGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      // Determine accent colors based on theme and state
+      const isError = currentState === 'error';
+      const isMuted = currentState === 'muted';
+      const isListening = currentState === 'listening';
+      const isSpeaking = currentState === 'speaking';
+      const isThinking = currentState === 'thinking';
+
+      // 1. Central Core Glowing Circle
+      const corePulse = isMuted ? 0 : isListening 
+        ? Math.sin(t * 4) * 2 + currentAudio * 12 
+        : isSpeaking 
+        ? Math.sin(t * 6) * 3 + currentAudio * 10 
+        : isThinking
+        ? Math.sin(t * 5) * 2
+        : Math.sin(t * 2) * 1.5;
+
+      const coreRadius = Math.max(6, baseRadius * 0.55 + corePulse);
+
+      // Core Gradient Glow
+      const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius * 1.8);
+      if (isError) {
+        coreGrad.addColorStop(0, 'rgba(239, 68, 68, 0.9)');
+        coreGrad.addColorStop(0.5, 'rgba(239, 68, 68, 0.4)');
+        coreGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+      } else if (isMuted) {
+        coreGrad.addColorStop(0, 'rgba(113, 113, 122, 0.5)');
+        coreGrad.addColorStop(0.6, 'rgba(113, 113, 122, 0.15)');
+        coreGrad.addColorStop(1, 'rgba(113, 113, 122, 0)');
       } else {
-        bgGrad.addColorStop(0, `rgba(255, 255, 255, ${coreGlow * 0.45})`);
-        bgGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.08)');
-        bgGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      }
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, size, size);
-
-      // Outer Constraining Orbital Ring (subtle hairline boundary)
-      if (showRings) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, baseRadius * 1.02, 0, Math.PI * 2);
-        ctx.strokeStyle = currentState === 'error' 
-          ? 'rgba(239, 68, 68, 0.3)' 
-          : 'rgba(255, 255, 255, 0.18)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        // Secondary spinning segmented ring
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(t * rotSpeed * 3);
-        ctx.beginPath();
-        ctx.arc(0, 0, baseRadius * 1.08, 0, Math.PI * 1.4);
-        ctx.strokeStyle = currentState === 'error'
-          ? 'rgba(239, 68, 68, 0.45)'
-          : 'rgba(255, 255, 255, 0.28)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 12]);
-        ctx.stroke();
-        ctx.restore();
+        coreGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        coreGrad.addColorStop(0.4, 'rgba(240, 240, 245, 0.5)');
+        coreGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
       }
 
-      // Draw Waveform Particle Strands (Direct representation of reference image)
-      ctx.fillStyle = currentState === 'error' ? '#ef4444' : '#ffffff';
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreRadius * 1.8, 0, Math.PI * 2);
+      ctx.fill();
 
-      for (let r = 0; r < NUM_RIBBONS; r++) {
-        const ribbonRatio = r / NUM_RIBBONS;
-        const ribbonRadius = baseRadius * (0.35 + ribbonRatio * 0.65);
-        const ribbonPhase = ribbonRatio * Math.PI * 2;
-        const ribbonTilt = Math.sin(ribbonRatio * Math.PI + t * 0.5) * 0.45;
+      // Solid Inner Core
+      ctx.fillStyle = isError ? '#ef4444' : isMuted ? '#71717a' : '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, Math.max(3, coreRadius * 0.6), 0, Math.PI * 2);
+      ctx.fill();
 
-        ctx.beginPath();
+      // 2. Harmonic Wave Rings (Simple, clean, non-chaotic)
+      if (showRings && !isMuted) {
+        const NUM_RINGS = isListening || isSpeaking ? 4 : 3;
 
-        for (let p = 0; p < POINTS_PER_RIBBON; p++) {
-          const theta = (p / POINTS_PER_RIBBON) * Math.PI * 2;
+        for (let i = 1; i <= NUM_RINGS; i++) {
+          const ringOffset = i * (baseRadius * 0.42);
+          const waveFactor = isListening 
+            ? Math.sin(t * 3 + i) * 3 + currentAudio * (18 + i * 8)
+            : isSpeaking
+            ? Math.sin(t * 4 + i * 1.2) * (2 + i) + currentAudio * (14 + i * 6)
+            : isThinking
+            ? Math.sin(t * 2.5 + i * 0.8) * 2
+            : Math.sin(t * 1.8 + i) * 1.8;
 
-          // Multi-harmonic sinusoidal perturbation
-          const harmonic1 = Math.sin(theta * 3 + ribbonPhase + t * 2.2) * 8.5;
-          const harmonic2 = Math.cos(theta * 5 - t * 1.8 + ribbonRatio * 4) * 5.0;
-          const harmonic3 = Math.sin(theta * 7 + t * 3.5) * (3.0 * waveAmp);
-          
-          // Breathing modulation
-          const breath = Math.sin(t * 1.2 + ribbonPhase) * 3.0;
+          const ringRadius = Math.max(8, baseRadius + ringOffset + waveFactor);
+          const alpha = isListening 
+            ? Math.max(0.1, 0.85 - i * 0.18 + currentAudio * 0.3)
+            : isSpeaking
+            ? Math.max(0.1, 0.75 - i * 0.16)
+            : isThinking
+            ? Math.max(0.1, 0.55 - i * 0.14)
+            : Math.max(0.08, 0.4 - i * 0.1);
 
-          const rDist = ribbonRadius + (harmonic1 + harmonic2 + harmonic3 + breath) * (waveAmp * 0.6);
+          ctx.strokeStyle = isError 
+            ? `rgba(239, 68, 68, ${alpha})` 
+            : `rgba(255, 255, 255, ${alpha})`;
+          ctx.lineWidth = i === 1 ? 1.5 : 1.0;
 
-          // 3D Spherical Tilt Projection
-          const x3d = rDist * Math.cos(theta);
-          const y3d = rDist * Math.sin(theta);
-          const z3d = Math.sin(theta + ribbonPhase) * (rDist * 0.35 * ribbonTilt);
-
-          // Project to 2D
-          const px = cx + x3d;
-          const py = cy + (y3d * Math.cos(ribbonTilt) - z3d * Math.sin(ribbonTilt));
-
-          // Particle point size & opacity based on z-depth and state
-          const depthAlpha = Math.max(0.15, Math.min(1.0, 0.6 + (z3d / (baseRadius * 0.5)) * 0.4));
-          const ptAlpha = particleAlpha * depthAlpha;
-          const ptSize = (0.75 + depthAlpha * 0.85) * (size > 140 ? 1.1 : 0.85);
-
-          // Draw individual particle point
-          ctx.globalAlpha = ptAlpha;
-          ctx.fillRect(px - ptSize / 2, py - ptSize / 2, ptSize, ptSize);
+          if (isThinking) {
+            // Rotating dashed orbital ring for thinking
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(t * (i % 2 === 0 ? 1 : -1) * 1.5);
+            ctx.beginPath();
+            ctx.arc(0, 0, ringRadius, 0, Math.PI * 1.4);
+            ctx.stroke();
+            ctx.restore();
+          } else {
+            ctx.beginPath();
+            ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
+            ctx.stroke();
+          }
         }
       }
 
-      ctx.globalAlpha = 1.0;
       animFrameIdRef.current = requestAnimationFrame(render);
     };
 
-    animFrameIdRef.current = requestAnimationFrame(render);
+    render();
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -240,16 +179,15 @@ export const JarvisIntelligenceOrb = ({
 
   return (
     <div 
-      className={`jarvis-intelligence-orb-container state-${state} ${interactive ? 'interactive' : ''} ${className}`}
-      style={{ width: `${size}px`, height: `${size}px` }}
+      className={`jarvis-clean-orb-container ${className} ${interactive ? 'interactive' : ''}`}
       onClick={onClick}
+      style={{ width: `${size}px`, height: `${size}px` }}
       role="img"
-      aria-label={`Jarvis AI Intelligence Orb in ${state} mode`}
+      aria-label={`Jarvis AI Animation - State: ${state}`}
     >
       <canvas 
-        ref={canvasRef} 
-        style={{ width: `${size}px`, height: `${size}px` }}
-        className="jarvis-intelligence-orb-canvas"
+        ref={canvasRef}
+        style={{ width: `${size}px`, height: `${size}px`, display: 'block' }}
       />
     </div>
   );
