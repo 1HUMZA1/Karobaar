@@ -28,7 +28,11 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "release": "powershell ./release.ps1"
+    "release": "powershell ./release.ps1",
+    "flutter:windows": "cd karobaar_app && flutter run -d windows",
+    "flutter:android": "cd karobaar_app && flutter run -d android",
+    "flutter:build:windows": "cd karobaar_app && flutter build windows",
+    "flutter:build:apk": "cd karobaar_app && flutter build apk --release"
   },
   "dependencies": {
     "@google/genai": "^2.31.0",

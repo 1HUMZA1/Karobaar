@@ -1,18 +1,22 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter/webview_flutter.dart' as wf;
+import 'package:webview_windows/webview_windows.dart' as ww;
 import 'local_server.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.white,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
+  if (Platform.isAndroid || Platform.isIOS) {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
+  }
   runApp(const KarobaarApp());
 }
 
@@ -46,8 +50,11 @@ class KarobaarWebView extends StatefulWidget {
 }
 
 class _KarobaarWebViewState extends State<KarobaarWebView> {
-  late final WebViewController _controller;
+  wf.WebViewController? _mobileController;
+  ww.WebviewController? _windowsController;
+  final bool _isWindows = Platform.isWindows;
   final LocalServer _localServer = LocalServer();
+
   bool _isServerReady = false;
   bool _isLoading = true;
   bool _hasInitialLoaded = false;
@@ -71,14 +78,46 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
   }
 
   Future<void> _startApp() async {
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+    // 1. Windows Desktop implementation using Microsoft Edge WebView2
+    if (_isWindows) {
+      _windowsController = ww.WebviewController();
+      try {
+        await _windowsController!.initialize();
+        _windowsController!.url.listen((url) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _hasInitialLoaded = true;
+            });
+          }
+        });
+        await _windowsController!.loadUrl(_currentUrl);
+      } catch (e) {
+        debugPrint('[Windows WebView error] $e');
+        try {
+          final port = await _localServer.start();
+          _currentUrl = 'http://127.0.0.1:$port/';
+          await _windowsController!.loadUrl(_currentUrl);
+        } catch (_) {}
+      }
+
+      if (mounted) {
+        setState(() {
+          _isServerReady = true;
+        });
+      }
+      return;
+    }
+
+    // 2. Android / iOS Mobile implementation using webview_flutter
+    _mobileController = wf.WebViewController()
+      ..setJavaScriptMode(wf.JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
       ..setUserAgent(
         'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 KarobaarApp/1.1.0',
       )
       ..setNavigationDelegate(
-        NavigationDelegate(
+        wf.NavigationDelegate(
           onPageStarted: (String url) {
             if (mounted && !_hasInitialLoaded) {
               setState(() {
@@ -94,25 +133,24 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
               });
             }
           },
-          onWebResourceError: (WebResourceError error) async {
+          onWebResourceError: (wf.WebResourceError error) async {
             debugPrint('[Karobaar WebResourceError] ${error.errorCode}: ${error.description}');
-            // If cloud mirror cannot be reached, fallback to offline local server
             if (_currentUrl.startsWith('https://')) {
               try {
                 final port = await _localServer.start();
                 _currentUrl = 'http://127.0.0.1:$port/';
-                await _controller.loadRequest(Uri.parse(_currentUrl));
+                await _mobileController?.loadRequest(Uri.parse(_currentUrl));
               } catch (_) {}
             }
           },
-          onNavigationRequest: (NavigationRequest request) {
-            return NavigationDecision.navigate;
+          onNavigationRequest: (wf.NavigationRequest request) {
+            return wf.NavigationDecision.navigate;
           },
         ),
       );
 
     try {
-      await _controller.loadRequest(Uri.parse(_currentUrl));
+      await _mobileController!.loadRequest(Uri.parse(_currentUrl));
     } catch (e) {
       debugPrint('[Initial load error] $e');
     }
@@ -126,8 +164,18 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
 
   @override
   void dispose() {
+    _windowsController?.dispose();
     _localServer.stop();
     super.dispose();
+  }
+
+  Widget _buildWebView() {
+    if (_isWindows && _windowsController != null && _windowsController!.value.isInitialized) {
+      return ww.Webview(_windowsController!);
+    } else if (_mobileController != null) {
+      return wf.WebViewWidget(controller: _mobileController!);
+    }
+    return _buildSplashScreen();
   }
 
   @override
@@ -137,11 +185,19 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
       onPopInvokedWithResult: (bool didPop, dynamic result) async {
         if (didPop) return;
         if (!_isServerReady) return;
-        final canGoBack = await _controller.canGoBack();
-        if (canGoBack) {
-          await _controller.goBack();
-        } else {
+
+        if (_isWindows && _windowsController != null) {
           SystemNavigator.pop();
+          return;
+        }
+
+        if (_mobileController != null) {
+          final canGoBack = await _mobileController!.canGoBack();
+          if (canGoBack) {
+            await _mobileController!.goBack();
+          } else {
+            SystemNavigator.pop();
+          }
         }
       },
       child: Scaffold(
@@ -151,7 +207,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
               ? _buildSplashScreen()
               : Stack(
                   children: [
-                    WebViewWidget(controller: _controller),
+                    _buildWebView(),
                     if (_isLoading && !_hasInitialLoaded) _buildSplashScreen(),
                   ],
                 ),
@@ -182,37 +238,38 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
                     color: Colors.black,
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
-                    height: 1.0,
+                    letterSpacing: -1.0,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             const Text(
-              'Karobaar',
+              'KAROBAAR',
               style: TextStyle(
                 color: Colors.black,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2.0,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Business Intelligence & Management',
+              style: TextStyle(
+                color: Color(0xFF71717A),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'Turn Work Into Growth.',
-              style: TextStyle(
-                color: Color(0xFF71717A),
-                fontSize: 12,
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             const SizedBox(
-              width: 24,
-              height: 24,
+              width: 22,
+              height: 22,
               child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                strokeWidth: 2.2,
+                color: Colors.black,
               ),
             ),
           ],
