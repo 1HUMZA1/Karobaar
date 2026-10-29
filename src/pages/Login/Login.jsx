@@ -16,6 +16,7 @@ import { db } from '../../services/databaseService';
 import { Eye, EyeOff, Sparkles, ArrowLeft, Shield, Loader2, ExternalLink } from 'lucide-react';
 import { KarobaarLogo } from '../../components/KarobaarLogo/KarobaarLogo';
 import { ROLE_PERMISSIONS_MAP, ROLES } from '../../utils/permissions';
+import { LiquidBackground } from '../../components/LiquidBackground/LiquidBackground';
 import './Login.css';
 
 const Login = () => {
@@ -509,6 +510,9 @@ const Login = () => {
 
   return (
     <div className="login-wrapper">
+      {/* Dynamic Liquid Black Background with Interactive Mouse Displacement */}
+      <LiquidBackground className="login-liquid-canvas" />
+
       {/* ============================================================ */}
       {/* LEFT SIDE: Brand Hero Visuals (Desktop only)                 */}
       {/* ============================================================ */}
@@ -526,9 +530,18 @@ const Login = () => {
           </p>
           
           <div className="visual-features">
-            <div className="feature-pill" style={{ animationDelay: '0.1s' }}>Smart POS</div>
-            <div className="feature-pill" style={{ animationDelay: '0.2s' }}>Inventory Tracking</div>
-            <div className="feature-pill" style={{ animationDelay: '0.3s' }}>Payroll Management</div>
+            <div className="feature-pill" style={{ animationDelay: '0.1s' }}>
+              <span className="pill-dot" />
+              Smart POS
+            </div>
+            <div className="feature-pill" style={{ animationDelay: '0.2s' }}>
+              <span className="pill-dot" />
+              Inventory Tracking
+            </div>
+            <div className="feature-pill" style={{ animationDelay: '0.3s' }}>
+              <span className="pill-dot" />
+              Payroll Management
+            </div>
           </div>
         </div>
         <div className="visual-background-shape"></div>
@@ -544,6 +557,10 @@ const Login = () => {
             {/* Karobaar Official 3-Bar Brand Logo & Tagline */}
             <div className="login-brand-header">
               <KarobaarLogo size="md" theme="auto" layout="vertical" showTagline={true} />
+              <div className="login-security-badge">
+                <Shield size={12} className="security-icon" />
+                <span>Enterprise 256-Bit SSL Secured</span>
+              </div>
             </div>
 
             {(generalError || authError) && (
