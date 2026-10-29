@@ -11,12 +11,12 @@ const AppContext = createContext();
 export { DEMO_SHOWCASE_BUSINESS, DEMO_SHOWCASE_USER, resetDemoWorkspace };
 
 export const DEFAULT_BUSINESS = {
-  id: 'demo-business-1',
-  name: 'SAS CAFETERIA',
+  id: 'biz-default',
+  name: 'My Store',
   currency: 'INR',
-  category: 'Cafeteria & Restaurant',
-  address: '123 Commercial Plaza, Main Street',
-  phone: '+91 98765 00000',
+  category: 'General Store & Services',
+  address: '',
+  phone: '',
   settings: {
     currency: 'INR',
     theme: 'light',
@@ -36,12 +36,12 @@ export const DEFAULT_BUSINESS = {
 };
 
 export const DEFAULT_USER = {
-  id: 'demo-user-1',
-  name: 'SAS Cafeteria Owner',
-  email: 'owner@sascafeteria.com',
+  id: 'user-default',
+  name: 'Store Owner',
+  email: 'owner@karobaar.app',
   role: 'Owner',
-  activeBusinessId: 'demo-business-1',
-  memberships: ['demo-business-1'],
+  activeBusinessId: 'biz-default',
+  memberships: ['biz-default'],
   onboardingCompleted: true
 };
 
@@ -62,7 +62,18 @@ export const AppProvider = ({ children }) => {
       const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return null;
       const u = localStorage.getItem('karobaar_session_user');
-      return u ? JSON.parse(u) : null;
+      if (u) {
+        const parsed = JSON.parse(u);
+        // Automatically purge any stale legacy "SAS Cafeteria" cached user
+        if (parsed?.name === 'SAS Cafeteria Owner' || parsed?.email?.includes('sascafeteria')) {
+          localStorage.removeItem('karobaar_session_user');
+          localStorage.removeItem('karobaar_session_business');
+          localStorage.removeItem('karobaar_session_businesses');
+          return null;
+        }
+        return parsed;
+      }
+      return null;
     } catch (e) { return null; }
   });
 
@@ -71,7 +82,18 @@ export const AppProvider = ({ children }) => {
       const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return null;
       const b = localStorage.getItem('karobaar_session_business');
-      return b ? JSON.parse(b) : null;
+      if (b) {
+        const parsed = JSON.parse(b);
+        if (parsed?.name === 'SAS CAFETERIA' || parsed?.id === 'demo-business-1') {
+          if (localStorage.getItem('karobaar_is_demo_mode') === 'true') {
+            return DEMO_SHOWCASE_BUSINESS;
+          }
+          localStorage.removeItem('karobaar_session_business');
+          return null;
+        }
+        return parsed;
+      }
+      return null;
     } catch (e) { return null; }
   });
 
@@ -183,24 +205,23 @@ export const AppProvider = ({ children }) => {
     setAuthStatus('unauthenticated');
   };
 
-  // Helper: Instantly provisions and logs into the ready-to-use business workspace
-  const launchReadyToUseWorkspace = async () => {
-    const businessId = 'demo-business-1';
-    try {
-      initializeDemoData(businessId).catch(() => {});
-    } catch (e) {}
+  // Helper: Instantly provisions and logs into a clean, ready-to-use business workspace
+  const launchReadyToUseWorkspace = async (customUser = null, customBiz = null) => {
+    const user = customUser || DEFAULT_USER;
+    const biz = customBiz || DEFAULT_BUSINESS;
+    const businessId = biz.id || 'biz-default';
 
     try {
       localStorage.removeItem('karobaar_explicit_logout');
-      localStorage.setItem('karobaar_session_user', JSON.stringify(DEFAULT_USER));
-      localStorage.setItem('karobaar_session_business', JSON.stringify(DEFAULT_BUSINESS));
-      localStorage.setItem('karobaar_session_businesses', JSON.stringify([DEFAULT_BUSINESS]));
+      localStorage.setItem('karobaar_session_user', JSON.stringify(user));
+      localStorage.setItem('karobaar_session_business', JSON.stringify(biz));
+      localStorage.setItem('karobaar_session_businesses', JSON.stringify([biz]));
       localStorage.setItem('karobaar-active-business', businessId);
     } catch (e) {}
 
-    setCurrentUser(DEFAULT_USER);
-    setCurrentBusiness(DEFAULT_BUSINESS);
-    setUserBusinesses([DEFAULT_BUSINESS]);
+    setCurrentUser(user);
+    setCurrentBusiness(biz);
+    setUserBusinesses([biz]);
     setAuthStatus('authenticated');
   };
 

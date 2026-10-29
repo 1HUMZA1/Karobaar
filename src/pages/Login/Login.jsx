@@ -413,12 +413,32 @@ const Login = () => {
         error.code === 'auth/invalid-credential'
       ) {
         try {
+          const userPrefix = normalizedEmail ? normalizedEmail.split('@')[0] : '';
+          const formattedName = userPrefix ? userPrefix.charAt(0).toUpperCase() + userPrefix.slice(1) : '';
+          const bizId = `biz-${Date.now()}`;
+          const newBiz = {
+            id: bizId,
+            name: formattedName ? `${formattedName}'s Store` : 'My Store',
+            currency: 'INR',
+            category: 'General Store & Services',
+            ownerEmail: normalizedEmail
+          };
+          const newUser = {
+            id: `user-${Date.now()}`,
+            name: formattedName || '',
+            email: normalizedEmail,
+            role: 'Owner',
+            activeBusinessId: bizId,
+            memberships: [bizId],
+            onboardingCompleted: false
+          };
+
           const alreadyOnboarded = localStorage.getItem('karobaar_onboarding_completed_' + normalizedEmail) === 'true';
-          if (!alreadyOnboarded && (isRegistering || (!normalizedEmail.includes('sascafeteria') && !normalizedEmail.includes('owner')))) {
+          if (!alreadyOnboarded) {
             sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
           }
           if (launchReadyToUseWorkspace) {
-            await launchReadyToUseWorkspace();
+            await launchReadyToUseWorkspace(newUser, newBiz);
           }
           navigate('/dashboard');
           return;

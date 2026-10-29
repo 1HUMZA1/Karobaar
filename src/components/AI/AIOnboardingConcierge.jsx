@@ -87,6 +87,7 @@ export const AIOnboardingConcierge = () => {
     currentBusiness, 
     setCurrentBusiness, 
     setUserBusinesses,
+    launchDemoWorkspace,
     theme, 
     setTheme, 
     appUiVersion, 
@@ -102,13 +103,55 @@ export const AIOnboardingConcierge = () => {
   const [languagePreference, setLanguagePreference] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish'); // 'hinglish' (Roman English) | 'en' (English) | 'hi' (Hindi)
 
   // Form states collected step-by-step
-  const [ownerName, setOwnerName] = useState(() => currentUser?.name || 'Shop Owner');
-  const [phone, setPhone] = useState(() => currentUser?.phone || '+91 98765 00000');
-  const [businessName, setBusinessName] = useState(() => currentBusiness?.name || 'My Store');
-  const [tagline, setTagline] = useState('The Complete Business OS');
-  const [category, setCategory] = useState('Cafeteria & Restaurant');
+  // Filter out any default placeholder / dummy / SAS fallback names so fields start blank unless the user explicitly gave a custom name
+  const isDummyName = (val) => {
+    if (!val || typeof val !== 'string') return true;
+    const l = val.trim().toLowerCase();
+    return (
+      l === 'sas cafeteria' ||
+      l === 'sas cafeteria owner' ||
+      l.includes('sas cafeteria') ||
+      l === 'shop owner' ||
+      l === 'store owner' ||
+      l === 'business owner' ||
+      l === 'my store' ||
+      l === 'my business' ||
+      l === 'demo user' ||
+      l.includes('demo')
+    );
+  };
+
+  const isDummyPhone = (val) => {
+    if (!val || typeof val !== 'string') return true;
+    const clean = val.replace(/[^0-9]/g, '');
+    return clean === '9876500000' || clean.endsWith('9876500000') || clean === '1234567890';
+  };
+
+  const [ownerName, setOwnerName] = useState(() => {
+    if (currentUser?.name && !isDummyName(currentUser.name)) {
+      return currentUser.name;
+    }
+    return '';
+  });
+  const [phone, setPhone] = useState(() => {
+    if (currentUser?.phone && !isDummyPhone(currentUser.phone)) {
+      return currentUser.phone;
+    }
+    return '';
+  });
+  const [businessName, setBusinessName] = useState(() => {
+    if (currentBusiness?.name && !isDummyName(currentBusiness.name)) {
+      return currentBusiness.name;
+    }
+    return '';
+  });
+  const [tagline, setTagline] = useState('');
+  const [category, setCategory] = useState('General Store & Services');
   const [currency, setCurrency] = useState('INR');
-  const [upiId, setUpiId] = useState(() => localStorage.getItem('karobaar_pos_upi_id') || 'merchant@okaxis');
+  const [upiId, setUpiId] = useState(() => {
+    const saved = localStorage.getItem('karobaar_pos_upi_id');
+    return (saved && saved !== 'merchant@okaxis') ? saved : '';
+  });
   const [selectedTheme, setSelectedTheme] = useState(() => theme || 'light');
   const [selectedUiVersion, setSelectedUiVersion] = useState(() => appUiVersion || 'v2');
 
@@ -392,6 +435,9 @@ export const AIOnboardingConcierge = () => {
   const handleFinishOnboarding = () => {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     setIsOpen(false);
+    if (launchDemoWorkspace) {
+      launchDemoWorkspace('Owner').catch(() => {});
+    }
   };
 
   if (!isOpen) return null;
@@ -523,7 +569,7 @@ export const AIOnboardingConcierge = () => {
                   type="text" 
                   value={phone} 
                   onChange={e => setPhone(e.target.value)} 
-                  placeholder="+91 98765 00000"
+                  placeholder="e.g. +91 98765 43210"
                   className="ai-concierge-input"
                 />
               </div>
@@ -575,7 +621,7 @@ export const AIOnboardingConcierge = () => {
                     type="text" 
                     value={businessName} 
                     onChange={e => setBusinessName(e.target.value)} 
-                    placeholder="e.g. Sharma Kirana Store, SAS Cafeteria"
+                    placeholder="e.g. Sharma Kirana Store, Royal Cafe, Apex Retail"
                     className="ai-concierge-input"
                     autoFocus
                   />
@@ -603,7 +649,7 @@ export const AIOnboardingConcierge = () => {
 
               <div className="ai-chips-container">
                 <span className="ai-chips-label">Quick Suggestions:</span>
-                {['SAS Cafeteria', 'Sharma Supermarket', 'Apex Retail Hub', 'Royal Bakers', 'City Mobile World'].map((sug, i) => (
+                {['Sharma Supermarket', 'Apex Retail Hub', 'Royal Bakers', 'City Mobile World', 'Star Cafe'].map((sug, i) => (
                   <button 
                     key={i} 
                     type="button" 

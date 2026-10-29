@@ -56,7 +56,7 @@ export const MobileMenu = () => {
     window.location.reload();
   };
 
-  const businessDisplayName = currentBusiness?.name || 'SAS CAFETERIA';
+  const businessDisplayName = currentBusiness?.name || 'My Business';
 
   // Screen 10 View (About Karobaar)
   if (showAbout) {

@@ -415,11 +415,11 @@ export const initializeDemoData = async (businessId = 'demo-business-1') => {
   if (!existingBiz) {
     const demoBusinessDoc = {
       id: businessId,
-      name: 'SAS CAFETERIA',
+      name: 'My Store',
       currency: 'INR',
-      category: 'Cafeteria & Restaurant',
-      address: '123 Commercial Plaza, Main Street',
-      phone: '+91 98765 00000',
+      category: 'General Store & Services',
+      address: '',
+      phone: '',
       settings: {
         currency: 'INR',
         theme: 'light',
@@ -444,8 +444,8 @@ export const initializeDemoData = async (businessId = 'demo-business-1') => {
   if (!existingUser) {
     const demoUserDoc = {
       id: 'demo-user-1',
-      name: 'SAS Cafeteria Owner',
-      email: 'owner@sascafeteria.com',
+      name: 'Store Owner',
+      email: 'owner@karobaar.app',
       role: 'Owner',
       activeBusinessId: businessId,
       memberships: [businessId],
@@ -506,7 +506,7 @@ export const initializeDemoData = async (businessId = 'demo-business-1') => {
 
     const demoCustomers = [
       {
-        id: 'c1', name: 'Walk-in Customer', phone: '+91 98765 43210', email: 'walkin@sas.local',
+        id: 'c1', name: 'Walk-in Customer', phone: '+91 98765 43210', email: 'walkin@customer.local',
         totalPurchases: 12, totalSpending: 3840, outstandingBalance: 0
       },
       {
@@ -523,11 +523,11 @@ export const initializeDemoData = async (businessId = 'demo-business-1') => {
     const demoEmployees = [
       {
         id: 'e1', name: 'Store Manager', role: 'Manager', department: 'Management',
-        email: 'manager@sascafeteria.com', salary: 35000, status: 'Active'
+        email: 'manager@karobaar.app', salary: 35000, status: 'Active'
       },
       {
         id: 'e2', name: 'Cashier Staff', role: 'Staff', department: 'Counter',
-        email: 'counter@sascafeteria.com', salary: 18000, status: 'Active'
+        email: 'counter@karobaar.app', salary: 18000, status: 'Active'
       }
     ];
     await db.saveCollection('employees', demoEmployees, businessId);

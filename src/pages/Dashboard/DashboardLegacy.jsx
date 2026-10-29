@@ -250,7 +250,7 @@ const DashboardLegacy = ({ onSwitchMode }) => {
       {/* 1. Header Bar with Mode Switcher */}
       <div className="legacy-header-bar">
         <div className="legacy-brand-group">
-          <h1>{currentBusiness?.name || 'SAS CAFETERIA'}</h1>
+          <h1>{currentBusiness?.name || 'My Business'}</h1>
           <p>Legacy Fast-Track Desk • Instant Business Operations</p>
         </div>
         <div className="legacy-header-controls">

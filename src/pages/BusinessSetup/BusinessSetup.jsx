@@ -263,7 +263,7 @@ const BusinessSetup = () => {
 
   // Step 1: Personal Profile
   const [personal, setPersonal] = useState({
-    fullName: currentUser?.name || '',
+    fullName: (currentUser?.name && !currentUser.name.toLowerCase().includes('sas') && !currentUser.name.toLowerCase().includes('cafeteria')) ? currentUser.name : '',
     countryCode: '+1',
     phone: auth.currentUser?.phoneNumber || '',
     language: 'English'

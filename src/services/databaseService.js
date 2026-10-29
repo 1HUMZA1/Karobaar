@@ -429,9 +429,9 @@ class DatabaseService {
         {
           id: 'demo-user-1',
           userId: 'demo-user-1',
-          name: 'SAS Cafeteria Owner',
-          email: 'owner@sascafeteria.com',
-          phone: '+91 98765 00000',
+          name: 'Store Owner',
+          email: 'owner@karobaar.app',
+          phone: '',
           role: 'Owner',
           permissions: [],
           status: 'active',
@@ -444,7 +444,7 @@ class DatabaseService {
           id: 'demo-manager-1',
           userId: 'demo-manager-1',
           name: 'Rahul Sharma',
-          email: 'rahul.manager@sascafeteria.com',
+          email: 'rahul.manager@karobaar.app',
           phone: '+91 98765 11111',
           role: 'Manager',
           permissions: [],
@@ -458,7 +458,7 @@ class DatabaseService {
           id: 'demo-cashier-1',
           userId: 'demo-cashier-1',
           name: 'Priya Patel',
-          email: 'priya.cashier@sascafeteria.com',
+          email: 'priya.cashier@karobaar.app',
           phone: '+91 98765 22222',
           role: 'Cashier',
           permissions: [],
@@ -816,7 +816,7 @@ class DatabaseService {
       // Default to demo business if nothing found
       const demoBiz = await this.getById('businesses', 'demo-business-1') || {
         id: 'demo-business-1',
-        name: 'SAS CAFETERIA',
+        name: 'My Store',
         currency: 'INR',
         userRoleInBusiness: 'Owner'
       };

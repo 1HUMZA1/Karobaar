@@ -23,7 +23,7 @@ class LocalDB {
       if (!parsed.businesses['demo-business-1']) {
         parsed.businesses['demo-business-1'] = {
           id: 'demo-business-1',
-          name: 'SAS CAFETERIA',
+          name: 'My Store',
           currency: 'INR',
           category: 'Cafeteria & Restaurant',
           address: 'Shop #4, Commercial Complex',
@@ -36,7 +36,7 @@ class LocalDB {
             lowStockThreshold: 5,
             invoicePrefix: 'INV-',
             paymentTerms: 'Immediate / Due on Receipt',
-            invoiceFooter: 'Thank you for choosing SAS CAFETERIA!',
+            invoiceFooter: 'Thank you for your business!',
             aiSettings: {
               assistantName: 'Jarvis',
               wakeWord: 'Hey Jarvis',
@@ -69,8 +69,8 @@ class LocalDB {
       if (!parsed.users['demo-user-1']) {
         parsed.users['demo-user-1'] = {
           id: 'demo-user-1',
-          name: 'SAS Cafeteria Owner',
-          email: 'owner@sascafeteria.com',
+          name: 'Store Owner',
+          email: 'owner@karobaar.app',
           role: 'Owner',
           activeBusinessId: 'demo-business-1',
           memberships: ['demo-business-1'],

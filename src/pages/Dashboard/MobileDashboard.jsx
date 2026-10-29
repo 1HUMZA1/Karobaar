@@ -191,7 +191,7 @@ export const MobileDashboard = ({
     }
   };
 
-  const businessDisplayName = currentBusiness?.name || 'SAS CAFETERIA';
+  const businessDisplayName = currentBusiness?.name || 'My Business';
 
   return (
     <div className="karobaar-mobile-dash">

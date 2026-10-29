@@ -107,7 +107,7 @@ const Settings = () => {
   const [initialBaseline, setInitialBaseline] = useState(null);
 
   // 1. Business Profile State
-  const [businessName, setBusinessName] = useState('SAS CAFETERIA');
+  const [businessName, setBusinessName] = useState(() => currentBusiness?.name || '');
   const [businessEmail, setBusinessEmail] = useState('');
   const [businessType, setBusinessType] = useState('Cafeteria / Restaurant');
   const [businessPhone, setBusinessPhone] = useState('+91 98765 43210');
@@ -166,7 +166,7 @@ const Settings = () => {
   // 5. Invoice Settings State
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
   const [paymentTerms, setPaymentTerms] = useState('Immediate / Due on Receipt');
-  const [invoiceFooter, setInvoiceFooter] = useState('Thank you for choosing SAS CAFETERIA!');
+  const [invoiceFooter, setInvoiceFooter] = useState('Thank you for your business!');
 
   // 6. Notifications State
   const [notifyLowStock, setNotifyLowStock] = useState(true);
@@ -449,7 +449,7 @@ const Settings = () => {
       }
 
       // Populate Business Profile
-      const bName = biz.name || 'SAS CAFETERIA';
+      const bName = biz.name || 'My Business';
       const bType = biz.type || 'Cafeteria / Restaurant';
       const bEmail = biz.email || '';
       const bPhone = biz.phone || settings.phone || '+91 98765 43210';
@@ -527,7 +527,7 @@ const Settings = () => {
       // Populate Invoices
       const invPrefix = settings.invoicePrefix || 'INV-';
       const invTerms = settings.paymentTerms || 'Immediate / Due on Receipt';
-      const invFooter = settings.invoiceFooter || 'Thank you for choosing SAS CAFETERIA!';
+      const invFooter = settings.invoiceFooter || 'Thank you for your business!';
       setInvoicePrefix(invPrefix);
       setPaymentTerms(invTerms);
       setInvoiceFooter(invFooter);
@@ -770,7 +770,7 @@ const Settings = () => {
       };
 
       const businessUpdates = {
-        name: (businessName || 'SAS CAFETERIA').trim(),
+        name: (businessName || 'My Business').trim(),
         type: businessType,
         email: (businessEmail || '').trim(),
         phone: (businessPhone || '').trim(),
@@ -886,7 +886,7 @@ const Settings = () => {
       const employees = await db.getCollection('employees', bizId);
       
       const backupPayload = {
-        business: currentBusiness?.name || 'SAS CAFETERIA',
+        business: currentBusiness?.name || 'My Business',
         timestamp: new Date().toISOString(),
         exportedBy: currentUser?.email || 'admin',
         totalSales: sales.length,
@@ -1063,7 +1063,7 @@ const Settings = () => {
                     className="settings-input-field" 
                     value={businessName} 
                     onChange={e => setBusinessName(e.target.value)} 
-                    placeholder="e.g. SAS CAFETERIA"
+                    placeholder="e.g. Apex Retail, Royal Cafe"
                   />
                 </div>
 
@@ -2017,8 +2017,8 @@ const Settings = () => {
                       value={defaultBranch}
                       onChange={e => setDefaultBranch(e.target.value)}
                     >
-                      <option value="main">SAS CAFETERIA (Main Counter)</option>
-                      <option value="kiosk">SAS CAFETERIA (Express Kiosk)</option>
+                      <option value="main">Main Store (Main Counter)</option>
+                      <option value="kiosk">Branch Store (Express Kiosk)</option>
                     </select>
                   </div>
 
