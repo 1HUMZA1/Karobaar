@@ -14,10 +14,28 @@ const GoogleAuth = () => {
   const targetPort = searchParams.get('port') || (window.location.port ? window.location.port : null);
 
   const notifyApp = async (payload) => {
-    // 1. Post to LocalServer callback (trying localhost, 127.0.0.1)
+    // 1. Broadcast via localStorage (synchronous across same origin)
+    try {
+      localStorage.setItem('karobaar_google_auth_payload', JSON.stringify({
+        timestamp: Date.now(),
+        user: payload
+      }));
+      localStorage.setItem('karobaar_session_user', JSON.stringify(payload));
+      localStorage.setItem('karobaar_remember_me', 'true');
+      localStorage.setItem('karobaar_remembered_email', payload.email);
+      localStorage.removeItem('karobaar_explicit_logout');
+    } catch (_) {}
+
+    // 2. BroadcastChannel
+    try {
+      const channel = new BroadcastChannel('karobaar_google_auth');
+      channel.postMessage({ type: 'KAROBAAR_GOOGLE_AUTH_SUCCESS', payload });
+      setTimeout(() => { try { channel.close(); } catch (_) {} }, 2500);
+    } catch (_) {}
+
+    // 3. Post to LocalServer callback (trying localhost, 127.0.0.1)
     if (targetPort) {
       const hosts = Array.from(new Set([window.location.hostname || 'localhost', 'localhost', '127.0.0.1']));
-      let delivered = false;
       for (const host of hosts) {
         try {
           await fetch(`http://${host}:${targetPort}/api/auth-callback`, {
@@ -25,32 +43,21 @@ const GoogleAuth = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          delivered = true;
           break;
         } catch (_) {}
       }
-      if (!delivered) {
-        try {
-          const img = new Image();
-          img.src = `http://localhost:${targetPort}/api/auth-callback?data=${encodeURIComponent(JSON.stringify(payload))}`;
-        } catch (_) {}
-      }
+      try {
+        const img = new Image();
+        img.src = `http://localhost:${targetPort}/api/auth-callback?data=${encodeURIComponent(JSON.stringify(payload))}`;
+      } catch (_) {}
     }
 
-    // 2. Post to opener window if opened via window.open
+    // 4. Post to opener window if opened via window.open
     if (window.opener) {
       try {
         window.opener.postMessage({ type: 'KAROBAAR_GOOGLE_AUTH_SUCCESS', payload }, '*');
       } catch (_) {}
     }
-
-    // 3. Store in current browser localStorage
-    try {
-      localStorage.setItem('karobaar_session_user', JSON.stringify(payload));
-      localStorage.setItem('karobaar_remember_me', 'true');
-      localStorage.setItem('karobaar_remembered_email', payload.email);
-      localStorage.removeItem('karobaar_explicit_logout');
-    } catch (_) {}
 
     setStatus('success');
     setUserData(payload);

@@ -20,7 +20,16 @@ import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { authStatus, authError, launchReadyToUseWorkspace, setCurrentUser, theme } = useAppContext();
+  const { 
+    authStatus, 
+    setAuthStatus, 
+    authError, 
+    launchReadyToUseWorkspace, 
+    setCurrentUser, 
+    setCurrentBusiness, 
+    setUserBusinesses, 
+    theme 
+  } = useAppContext();
 
   // Navigation: 'auth' | 'forgot_password'
   const [viewMode, setViewMode] = useState('auth');
@@ -115,7 +124,10 @@ const Login = () => {
           localStorage.setItem('karobaar_session_businesses', JSON.stringify(businessesData));
         }
         if (setCurrentUser) setCurrentUser(sessionUser);
-        navigate('/dashboard');
+        if (setCurrentBusiness && activeBiz) setCurrentBusiness(activeBiz);
+        if (setUserBusinesses && businessesData.length) setUserBusinesses(businessesData);
+        if (setAuthStatus) setAuthStatus('authenticated');
+        navigate('/dashboard', { replace: true });
       } else {
         // New user: Route to quick Business Setup so they have their own business
         const sessionUser = {
@@ -130,18 +142,50 @@ const Login = () => {
         localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
         sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
         if (setCurrentUser) setCurrentUser(sessionUser);
-        navigate('/setup');
+        if (setAuthStatus) setAuthStatus('pending_onboarding');
+        navigate('/setup', { replace: true });
       }
     } catch (e) {
       console.error('[Google sign in complete error]', e);
-      navigate('/setup');
+      if (setAuthStatus) setAuthStatus('pending_onboarding');
+      navigate('/setup', { replace: true });
     } finally {
       setIsAuthenticating(false);
     }
   };
 
-  // Listen for Google Auth callback message from external tab/window
+  // Cross-tab & Multi-channel Google Auth listeners
   useEffect(() => {
+    // 1. Storage Event Listener (synchronously catches auth payload across windows)
+    const handleStorageEvent = (e) => {
+      if (e.key === 'karobaar_google_auth_payload' && e.newValue) {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (data?.user) {
+            localStorage.removeItem('karobaar_google_auth_payload');
+            if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
+            setWaitingForBrowserAuth(false);
+            handleAuthenticatedGoogleUser(data.user);
+          }
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+
+    // 2. BroadcastChannel
+    let channel = null;
+    try {
+      channel = new BroadcastChannel('karobaar_google_auth');
+      channel.onmessage = (event) => {
+        if (event.data?.type === 'KAROBAAR_GOOGLE_AUTH_SUCCESS' && event.data?.payload) {
+          if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
+          setWaitingForBrowserAuth(false);
+          handleAuthenticatedGoogleUser(event.data.payload);
+        }
+      };
+    } catch (_) {}
+
+    // 3. postMessage listener
     const handleAuthMessage = async (e) => {
       if (e.data?.type === 'KAROBAAR_GOOGLE_AUTH_SUCCESS' && e.data?.payload) {
         if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
@@ -150,8 +194,11 @@ const Login = () => {
       }
     };
     window.addEventListener('message', handleAuthMessage);
+
     return () => {
+      window.removeEventListener('storage', handleStorageEvent);
       window.removeEventListener('message', handleAuthMessage);
+      try { channel?.close(); } catch (_) {}
       if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
     };
   }, []);
@@ -214,11 +261,27 @@ const Login = () => {
         window.open(authUrl, '_blank');
       }
 
-      // Start polling local server for Google auth callback
+      // Start polling local server and localStorage for Google auth callback
       if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
       authPollTimerRef.current = setInterval(async () => {
+        // 1. Check local storage directly (synchronous cross-window)
         try {
-          const res = await fetch('/api/auth-status');
+          const cached = localStorage.getItem('karobaar_google_auth_payload');
+          if (cached) {
+            const data = JSON.parse(cached);
+            if (data?.user) {
+              localStorage.removeItem('karobaar_google_auth_payload');
+              clearInterval(authPollTimerRef.current);
+              setWaitingForBrowserAuth(false);
+              await handleAuthenticatedGoogleUser(data.user);
+              return;
+            }
+          }
+        } catch (_) {}
+
+        // 2. Poll LocalServer API
+        try {
+          const res = await fetch(`http://localhost:${port}/api/auth-status`);
           const data = await res.json();
           if (data?.authenticated && data?.user) {
             clearInterval(authPollTimerRef.current);
@@ -226,7 +289,7 @@ const Login = () => {
             await handleAuthenticatedGoogleUser(data.user);
           }
         } catch (_) {}
-      }, 1000);
+      }, 800);
       return;
     }
 
@@ -704,7 +767,7 @@ const Login = () => {
             <p className="browser-auth-desc">
               Please complete your Google sign-in in the opened browser window. Karobaar will detect your account and continue automatically.
             </p>
-            <div className="browser-auth-actions">
+            <div className="browser-auth-actions" style={{ marginBottom: '12px' }}>
               <button
                 type="button"
                 className="browser-auth-btn-cancel"
@@ -734,6 +797,50 @@ const Login = () => {
                 <ExternalLink size={14} /> Open Browser
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const port = window.location.port;
+                  if (port) {
+                    const res = await fetch(`http://localhost:${port}/api/auth-status`);
+                    const data = await res.json();
+                    if (data?.user) {
+                      setWaitingForBrowserAuth(false);
+                      await handleAuthenticatedGoogleUser(data.user);
+                      return;
+                    }
+                  }
+                } catch (_) {}
+
+                try {
+                  const cached = localStorage.getItem('karobaar_session_user') || localStorage.getItem('karobaar_google_auth_payload');
+                  if (cached) {
+                    const data = JSON.parse(cached);
+                    const userObj = data.user || data;
+                    if (userObj?.email) {
+                      setWaitingForBrowserAuth(false);
+                      await handleAuthenticatedGoogleUser(userObj);
+                      return;
+                    }
+                  }
+                } catch (_) {}
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: '10px',
+                background: '#ffffff',
+                color: '#09090b',
+                fontWeight: 600,
+                fontSize: '0.86rem',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              ✓ Completed Sign-In? Click to Enter
+            </button>
           </div>
         </div>
       )}

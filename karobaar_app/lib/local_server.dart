@@ -26,7 +26,8 @@ class LocalServer {
       return Response.ok('', headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Private-Network': 'true',
       });
     }
 
@@ -40,6 +41,9 @@ class LocalServer {
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Private-Network': 'true',
             'Cache-Control': 'no-cache',
           },
         );
@@ -49,6 +53,9 @@ class LocalServer {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Allow-Private-Network': 'true',
           'Cache-Control': 'no-cache',
         },
       );
@@ -69,6 +76,19 @@ class LocalServer {
         debugPrint('[LocalServer Auth Callback] Received auth for: ${pendingAuthSession?['email']}');
       } catch (e) {
         debugPrint('[LocalServer Auth Error] $e');
+      }
+
+      if (request.method == 'POST') {
+        return Response.ok(
+          jsonEncode({'success': true, 'email': pendingAuthSession?['email']}),
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Private-Network': 'true',
+          },
+        );
       }
       return Response.ok(
         '''<!DOCTYPE html>
