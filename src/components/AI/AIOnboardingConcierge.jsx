@@ -26,11 +26,119 @@ import {
   Moon, 
   Zap,
   Globe,
-  CheckCircle
+  CheckCircle,
+  Square,
+  Sliders,
+  ClipboardList,
+  Building2,
+  ChevronDown,
+  Headphones,
+  Radio
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { db } from '../../services/databaseService';
 import './AIOnboardingConcierge.css';
+
+
+export const AI_LANGUAGES = [
+  { code: 'hinglish', label: 'Hinglish', native: 'हिंग्लिश', speechLang: 'hi-IN', flag: '🇮🇳' },
+  { code: 'en', label: 'English', native: 'English', speechLang: 'en-US', flag: '🌐' },
+  { code: 'hi', label: 'Hindi', native: 'हिन्दी', speechLang: 'hi-IN', flag: '🇮🇳' },
+  { code: 'ur', label: 'Urdu', native: 'اردو', speechLang: 'ur-PK', flag: '🇵🇰' },
+  { code: 'bn', label: 'Bengali', native: 'বাংলা', speechLang: 'bn-IN', flag: '🇮🇳' },
+  { code: 'ta', label: 'Tamil', native: 'தமிழ்', speechLang: 'ta-IN', flag: '🇮🇳' },
+  { code: 'te', label: 'Telugu', native: 'తెలుగు', speechLang: 'te-IN', flag: '🇮🇳' },
+  { code: 'mr', label: 'Marathi', native: 'मराठी', speechLang: 'mr-IN', flag: '🇮🇳' },
+  { code: 'gu', label: 'Gujarati', native: 'ગુજરાતી', speechLang: 'gu-IN', flag: '🇮🇳' },
+  { code: 'ar', label: 'Arabic', native: 'العربية', speechLang: 'ar-SA', flag: '🇸🇦' },
+  { code: 'es', label: 'Spanish', native: 'Español', speechLang: 'es-ES', flag: '🇪🇸' }
+];
+
+export const TEST_PHRASES = {
+  hinglish: 'Namaste! Main Karobaar Customize AI hoon. Main aapki dukaan ka setup aur billing asaan banaunga.',
+  en: 'Hello! I am Karobaar Customize AI. I will help you set up and manage your business smoothly.',
+  hi: 'नमस्ते! मैं करोबार कस्टमाइज़ AI हूँ। मैं आपकी दुकान का सेटअप और बिलिंग आसान बनाऊँगा।',
+  ur: 'السلام علیکم! میں کاروبار کسٹمائز AI ہوں۔ میں آپ کی دکان کا سیٹ اپ آسان بناؤں گا۔',
+  bn: 'নমস্কার! আমি কারবার কাস্টমাইজ এআই। আপনার দোকানের সেটআপ ও হিসাব সহজ করে দেব।',
+  ta: 'வணக்கம்! நான் காரோபார் AI உதவியாளர். உங்கள் கடை அமைப்பை எளிதாக்குவேன்.',
+  te: 'నమస్కారం! నేను కారోబార్ AI అసిస్టెంట్‌ని. మీ దుకాణం సెటప్‌ను సులభతరం చేస్తాను.',
+  mr: 'नमस्कार! मी कारोबार कस्टमाईझ AI आहे. तुमच्या दुकानाचे व्यवस्थापन सोपे करूया.',
+  gu: 'નમસ્તે! હું કારોબાર કસ્ટમાઇઝ AI છું. તમારી દુકાનનું સેટઅપ સરળ બનાવીશ.',
+  ar: 'مرحباً! أنا مساعد كاروبار الذكي. سأساعدك في تهيئة وإدارة متجرك بكل سهولة.',
+  es: '¡Hola! Soy Karobaar Asistente IA. Te ayudaré a configurar y gestionar tu negocio con éxito.'
+};
+
+export const AI_STEP_PROMPTS = {
+  step1: {
+    hinglish: 'Namaste! Karobaar me aapka swagat hai. Main Customize AI hoon. Chaliye aapki dukaan ka pura setup step-by-step karte hain. Kripya apna naam aur phone number batayein ya type karein.',
+    en: 'Welcome to Karobaar! I am Customize AI, your business assistant. Let us set up your store step-by-step. What is your full name and contact number?',
+    hi: 'नमस्ते! करोबार में आपका स्वागत है। मैं कस्टमाइज़ AI हूँ। चलिए आपकी दुकान का पूरा सेटअप स्टेप-बाय-स्टेप करते हैं। कृपया अपना नाम और फ़ोन नंबर दर्ज करें।',
+    ur: 'خوش آمدید! میں آپ کا کسٹمائز AI اسسٹنٹ ہوں۔ چلیے آپ کی دکان کا مکمل سیٹ اپ کرتے ہیں۔ براہ کرم اپنا نام اور فون نمبر درج کریں۔',
+    bn: 'কারবারে স্বাগতম! আমি আপনার কাস্টমাইজ এআই। আসুন ধাপে ধাপে আপনার দোকান সেটআপ করি। দয়া করে আপনার নাম ও ফোন নম্বর লিখুন।',
+    ta: 'காரோபாருக்கு வரவேற்கிறோம்! நான் உங்கள் AI உதவியாளர். உங்கள் கடையை அமைப்போம். உங்கள் பெயர் மற்றும் தொலைபேசி எண்ணை உள்ளிடவும்.',
+    te: 'కారోబార్‌కు స్వాగతం! నేను మీ AI అసిస్టెంట్‌ని. మీ దుకాణాన్ని సెటప్ చేద్దాం. దయచేసి మీ పేరు మరియు ఫోన్ నంబర్‌ను నమోదు చేయండి.',
+    mr: 'कारोबार मध्ये आपले स्वागत आहे! मी तुमचा AI सहाय्यक आहे. चला तुमच्या दुकानाचे सेटअप करूया. कृपया तुमचे नाव व फोन नंबर टाका.',
+    gu: 'કારોબારમાં આપનું સ્વાગત છે! હું તમારો AI સહાયક છું. ચાલો તમારી દુકાનનું સેટઅપ કરીએ. કૃપા કરીને તમારું નામ અને ફોન નંબર દાખલ કરો.',
+    ar: 'مرحباً بك في كاروبار! أنا مساعدك الذكي. دعنا نقوم بتهيئة متجرك خطوة بخطوة. يرجى إدخال اسمك ورقم هاتفك.',
+    es: '¡Bienvenido a Karobaar! Soy tu asistente de IA. Configuremos tu tienda paso a paso. Ingresa tu nombre y número de teléfono.'
+  },
+  step2: (name, lang) => {
+    switch (lang) {
+      case 'hi': return `बहुत खूब, ${name || ''}! अब अपनी दुकान, कैफे या व्यापार का नाम बताएँ:`;
+      case 'ur': return `بہت خوب، ${name || ''}! اب اپنی دکان یا کاروبار کا نام درج کریں:`;
+      case 'bn': return `চমৎকার, ${name || ''}! এবার আপনার দোকান বা ব্যবসার নাম লিখুন:`;
+      case 'ta': return `சிறப்பு, ${name || ''}! இப்போது உங்கள் கடை அல்லது வணிகத்தின் பெயரை உள்ளிடவும்:`;
+      case 'te': return `చాలా బాగుంది, ${name || ''}! ఇప్పుడు మీ దుకాణం లేదా వ్యాపారం పేరు నమోదు చేయండి:`;
+      case 'mr': return `उत्तम, ${name || ''}! आता आपल्या दुकानाचे किंवा व्यवसायाचे नाव टाका:`;
+      case 'gu': return `સરસ, ${name || ''}! હવે તમારી દુકાન અથવા વ્યવસાયનું નામ દાખલ કરો:`;
+      case 'ar': return `رائع، ${name || ''}! الآن ما هو اسم متجرك أو شركتك؟`;
+      case 'es': return `¡Excelente, ${name || ''}! ¿Cuál es el nombre de tu tienda o negocio?`;
+      case 'en': return `Awesome, ${name || 'there'}! What is the name of your shop or enterprise?`;
+      case 'hinglish':
+      default: return `Bahut badhiya, ${name || 'ji'}! Ab apni dukaan ya business ka naam batayein:`;
+    }
+  },
+  step3: {
+    hinglish: 'Aapka business kis type ka hai? Jaise Cafeteria, Kirana store, ya Kapde ki dukaan? Select karte hi main ready-to-sell inventory apne aap load kar dunga.',
+    en: 'What type of business do you run? Select your category, and I will preload ready-to-sell products with prices for you.',
+    hi: 'आपकी दुकान किस तरह की है? जैसे कैफेटेरिया, किराना स्टोर, या कपड़े की दुकान? मैं आपके लिए रेडी-टू-सेल माल तुरंत लोड कर दूँगा।',
+    ur: 'آپ کا کاروبار کس قسم کا ہے؟ جیسے کیفے، کریانہ اسٹور، یا گارمنٹس؟ میں آپ کے لیے ضروری سامان خود شامل کر دوں گا۔',
+    bn: 'আপনার ব্যবসা কোন ধরনের? যেমন ক্যাফে, মুদিখানা বা কাপড়ের দোকান? আমি উপযুক্ত স্টক লোড করে দেব।',
+    ta: 'உங்கள் வணிகம் எத்தகையது? கஃபே, மளிகை அல்லது துணிக்கடையா? நான் தயாரான சரக்குகளை ஏற்றுவேன்.',
+    te: 'మీ వ్యాపారం ఏ రకమైనది? కేఫ్, కిరాణా లేదా దుస్తుల దుకాణమా? నేను సిద్ధంగా ఉన్న వస్తువులను లోడ్ చేస్తాను.',
+    mr: 'तुमचा व्यवसाय कोणत्या प्रकारचा आहे? कॅफे, किराणा किंवा कपड्यांचे दुकान? मी तयार इन्व्हेंटरी लोड करेन.',
+    gu: 'તમારો વ્યવસાય કેવા પ્રકારનો છે? કેફે, કરિયાણું કે કપડાં? હું તૈયાર માલ આપમેળે ઉમેરી આપીશ.',
+    ar: 'ما هو نوع نشاطك التجاري؟ مثل مقهى، بقالة، أو ملابس؟ سأقوم بتحميل المنتجات والأسعار تلقائياً.',
+    es: '¿Qué tipo de negocio tienes? Cafetería, supermercado o tienda de ropa. Cargaré los productos por ti.'
+  },
+  step4: {
+    hinglish: 'QR code se customer payments lene ke liye apni UPI ID enter karein (jaise naam@okaxis), aur apni billing currency chunein:',
+    en: 'Enter your UPI ID or payment handle for QR customer payments, and choose your preferred currency:',
+    hi: 'QR कोड से पेमेंट्स लेने के लिए अपनी UPI ID डालें, जैसे नाम @ ओकेएक्सिस, और अपनी करंसी चुनें:',
+    ur: 'ادائیگی اور کیو آر کوڈ کے لیے اپنی UPI یا شناختی تفصیل درج کریں اور کرنسی منتخب کریں:',
+    bn: 'পেমেন্ট পাওয়ার জন্য ইউপিআই আইডি দিন এবং মুদ্রা নির্বাচন করুন:',
+    ta: 'QR கட்டணங்களை ஏற்க உங்கள் UPI முகவரியை உள்ளிட்டு நாணயத்தை தேர்ந்தெடுக்கவும்:',
+    te: 'కస్టమర్ చెల్లింపుల కోసం మీ UPI ఐడిని నమోదు చేసి కరెన్సీని ఎంచుకోండి:',
+    mr: 'पेमेंट स्वीकारण्यासाठी तुमची UPI आयडी टाका आणि चलन निवडा:',
+    gu: 'ગ્રાહક ચુકવણી સ્વીકારવા માટે તમારી UPI ID દાખલ કરો અને કરન્સી પસંદ કરો:',
+    ar: 'أدخل معرف الدفع الرقمي الخاص بك واختر العملة المفضلة لديك:',
+    es: 'Ingresa tu identificador de pagos y selecciona tu moneda preferida:'
+  },
+  step5: {
+    hinglish: 'Apni pasand ki Black and White monochrome theme aur dashboard desk select karein:',
+    en: 'Choose your high-contrast monochrome theme and dashboard operating layout:',
+    hi: 'अपनी पसंद की ब्लैक एंड व्हाइट थीम और डैशबोर्ड स्टाइल चुनें:',
+    ur: 'اپنی پسند کا بلیک اینڈ وائٹ تھیم اور ڈیش بورڈ ڈیزائن منتخب کریں:',
+    bn: 'আপনার পছন্দের মনোক্রোম থিম ও ড্যাশবোর্ড মোড নির্বাচন করুন:',
+    ta: 'உங்களுக்கு விருப்பமான கருப்பு வெள்ளை தீம் மற்றும் டாஷ்போர்டு பாணியை தேர்வு செய்யவும்:',
+    te: 'మీకు ఇష్టమైన మోనోక్రోమ్ థీమ్ మరియు డాష్‌బోర్డ్ శైలిని ఎంచుకోండి:',
+    mr: 'आपली आवडती मोनोक्रोम थीम आणि डॅशबोर्ड शैली निवडा:',
+    gu: 'તમારી પસંદની મોનોક્રોમ થીમ અને ડેશબોર્ડ સ્ટાઈલ પસંદ કરો:',
+    ar: 'اختر النمط الأحادي عالي التباين وواجهة لوحة التحكم المفضلة لديك:',
+    es: 'Selecciona tu tema monocromático y la vista de panel que prefieras:'
+  }
+};
 
 // Starter Product Templates by Business Category
 const CATEGORY_PRODUCTS = {
@@ -81,6 +189,7 @@ const CATEGORY_PRODUCTS = {
 };
 
 export const AIOnboardingConcierge = () => {
+  const navigate = useNavigate();
   const { 
     currentUser, 
     setCurrentUser, 
@@ -100,7 +209,17 @@ export const AIOnboardingConcierge = () => {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
-  const [languagePreference, setLanguagePreference] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish'); // 'hinglish' (Roman English) | 'en' (English) | 'hi' (Hindi)
+  const [languagePreference, setLanguagePreference] = useState(() => localStorage.getItem('karobaar_ai_language') || 'hinglish');
+  const [availableVoices, setAvailableVoices] = useState([]);
+  const [selectedVoiceGender, setSelectedVoiceGender] = useState(() => localStorage.getItem('karobaar_ai_voice_gender') || 'female');
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState(() => localStorage.getItem('karobaar_ai_voice_uri') || '');
+  const [voicePitch, setVoicePitch] = useState(() => parseFloat(localStorage.getItem('karobaar_ai_voice_pitch') || '1.0'));
+  const [voiceRate, setVoiceRate] = useState(() => parseFloat(localStorage.getItem('karobaar_ai_voice_rate') || '1.0'));
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const [showVoiceMenu, setShowVoiceMenu] = useState(false);
+  const [isSpeakingTest, setIsSpeakingTest] = useState(false);
+  const langMenuRef = useRef(null);
+  const voiceMenuRef = useRef(null);
 
   // Form states collected step-by-step
   // Filter out any default placeholder / dummy / SAS fallback names so fields start blank unless the user explicitly gave a custom name
@@ -161,6 +280,39 @@ export const AIOnboardingConcierge = () => {
 
   const recognitionRef = useRef(null);
 
+  // Close menus on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target)) {
+        setShowLangMenu(false);
+      }
+      if (voiceMenuRef.current && !voiceMenuRef.current.contains(e.target)) {
+        setShowVoiceMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  // Detect and maintain all installed browser voices
+  useEffect(() => {
+    const updateVoices = () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        const vList = window.speechSynthesis.getVoices() || [];
+        setAvailableVoices(vList);
+      }
+    };
+    updateVoices();
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
+
   // Check on mount if onboarding is required (Never blocks existing working sessions)
   useEffect(() => {
     const isTriggered = sessionStorage.getItem('karobaar_trigger_ai_onboarding') === 'true';
@@ -207,28 +359,93 @@ export const AIOnboardingConcierge = () => {
     }
   }, [languagePreference, step]);
 
-  // AI Speech output helper
-  const speakAI = (text) => {
-    if (!voiceEnabled || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
+    // Voice selector helper: matches by explicit URI, language, and gender persona
+  const getSelectedVoice = (targetLang) => {
+    if (!availableVoices.length) return null;
 
-    const clean = text.replace(/[*#_`]/g, '').replace(/₹/g, 'Rupees ').trim();
-    const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-
-    const voices = window.speechSynthesis.getVoices();
-    if (languagePreference === 'hi' || /[\u0900-\u097F]/.test(clean)) {
-      const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('swara') || v.name.toLowerCase().includes('madhur'));
-      if (hiVoice) utterance.voice = hiVoice;
-      utterance.lang = 'hi-IN';
-    } else {
-      const enVoice = voices.find(v => v.lang === 'en-IN' || v.name.toLowerCase().includes('india') || v.name.toLowerCase().includes('neerja'));
-      if (enVoice) utterance.voice = enVoice;
-      utterance.lang = 'en-IN';
+    if (selectedVoiceURI) {
+      const exact = availableVoices.find(v => v.voiceURI === selectedVoiceURI || v.name === selectedVoiceURI);
+      if (exact) return exact;
     }
 
-    window.speechSynthesis.speak(utterance);
+    const langObj = AI_LANGUAGES.find(l => l.code === (targetLang || languagePreference)) || AI_LANGUAGES[0];
+    const speechCode = langObj.speechLang.toLowerCase().split('-')[0];
+
+    let matching = availableVoices.filter(v => v.lang.toLowerCase().startsWith(speechCode));
+    if (!matching.length) {
+      matching = availableVoices.filter(v => v.lang.toLowerCase().includes('in') || v.lang.toLowerCase().startsWith('en'));
+    }
+    if (!matching.length) matching = availableVoices;
+
+    if (selectedVoiceGender === 'female' || selectedVoiceGender === 'friendly') {
+      const female = matching.find(v => {
+        const n = v.name.toLowerCase();
+        return n.includes('female') || n.includes('zira') || n.includes('samantha') || n.includes('karen') || n.includes('victoria') || n.includes('swara') || n.includes('veena') || n.includes('neerja');
+      });
+      if (female) return female;
+    } else if (selectedVoiceGender === 'male') {
+      const male = matching.find(v => {
+        const n = v.name.toLowerCase();
+        return n.includes('male') || n.includes('david') || n.includes('mark') || n.includes('george') || n.includes('rishi') || n.includes('madhur') || n.includes('prabhat');
+      });
+      if (male) return male;
+    }
+
+    return matching[0] || availableVoices[0] || null;
+  };
+
+  // AI Speech output helper with full pitch, rate, persona and voice support
+  const speakAI = (text, options = {}) => {
+    if (!voiceEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+
+      const clean = text.replace(/[*#_`]/g, '').replace(/₹/g, 'Rupees ').trim();
+      const utterance = new SpeechSynthesisUtterance(clean);
+
+      const targetLang = options.lang || languagePreference;
+      const langObj = AI_LANGUAGES.find(l => l.code === targetLang) || AI_LANGUAGES[0];
+      utterance.lang = langObj.speechLang;
+
+      const voice = options.voice || getSelectedVoice(targetLang);
+      if (voice) {
+        utterance.voice = voice;
+      }
+
+      utterance.rate = options.rate !== undefined ? options.rate : voiceRate;
+      utterance.pitch = options.pitch !== undefined ? options.pitch : voicePitch;
+
+      if (options.onStart) utterance.onstart = options.onStart;
+      if (options.onEnd) utterance.onend = options.onEnd;
+      if (options.onError) utterance.onerror = options.onError;
+
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('[AI Speech error]', e);
+    }
+  };
+
+  // Interactive Test Voice Sample playback
+  const handleTestVoiceSample = () => {
+    if (isSpeakingTest) {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      setIsSpeakingTest(false);
+      return;
+    }
+
+    const samplePhrase = TEST_PHRASES[languagePreference] || TEST_PHRASES.en;
+    setIsSpeakingTest(true);
+    speakAI(samplePhrase, {
+      onEnd: () => setIsSpeakingTest(false),
+      onError: () => setIsSpeakingTest(false)
+    });
+  };
+
+  // Switcher to Traditional /setup wizard
+  const handleOpenTraditionalSetup = () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    setIsOpen(false);
+    navigate('/setup?new=true');
   };
 
   // Speak AI prompt whenever step changes
@@ -460,22 +677,231 @@ export const AIOnboardingConcierge = () => {
           </div>
 
           <div className="ai-onboarding-header-actions">
-            {/* Language toggle: Hinglish (Roman English) / English / Hindi */}
-            <button 
-              type="button" 
-              className="ai-lang-pill-btn"
-              onClick={() => {
-                const nextLang = languagePreference === 'hinglish' ? 'en' : languagePreference === 'en' ? 'hi' : 'hinglish';
-                setLanguagePreference(nextLang);
-                localStorage.setItem('karobaar_ai_language', nextLang);
-              }}
-              title="Change spoken language (Hinglish / English / Hindi)"
+            {/* Traditional Setup Switcher Button in Header */}
+            <button
+              type="button"
+              onClick={handleOpenTraditionalSetup}
+              className="ai-header-setup-btn"
+              title="Open full classic setup page (/setup) - Comprehensive 6-step wizard"
             >
-              <Globe size={13} />
-              <span>
-                {languagePreference === 'hinglish' ? 'Hinglish (Roman)' : languagePreference === 'hi' ? 'हिंदी (Hindi)' : 'English'}
-              </span>
+              <ClipboardList size={13} />
+              <span>Full Setup Page</span>
             </button>
+
+            {/* Language Dropdown Selector */}
+            <div className="ai-menu-anchor" ref={langMenuRef}>
+              <button 
+                type="button" 
+                className={`ai-lang-pill-btn ${showLangMenu ? 'active' : ''}`}
+                onClick={() => {
+                  setShowLangMenu(!showLangMenu);
+                  setShowVoiceMenu(false);
+                }}
+                title="Select Spoken Language (11 Languages Available)"
+              >
+                <Globe size={13} />
+                <span>
+                  {AI_LANGUAGES.find(l => l.code === languagePreference)?.flag} {AI_LANGUAGES.find(l => l.code === languagePreference)?.label || 'Language'}
+                </span>
+                <ChevronDown size={11} style={{ transform: showLangMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }} />
+              </button>
+
+              {showLangMenu && (
+                <div className="ai-dropdown-popover ai-lang-popover">
+                  <div className="ai-popover-header">
+                    <span>Select Language / भाषा चुनें</span>
+                    <button type="button" onClick={() => setShowLangMenu(false)} className="ai-popover-close"><X size={13} /></button>
+                  </div>
+                  <div className="ai-lang-grid">
+                    {AI_LANGUAGES.map(lang => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        className={`ai-lang-option ${languagePreference === lang.code ? 'active' : ''}`}
+                        onClick={() => {
+                          setLanguagePreference(lang.code);
+                          localStorage.setItem('karobaar_ai_language', lang.code);
+                          setShowLangMenu(false);
+                          speakAI(TEST_PHRASES[lang.code] || TEST_PHRASES.en, { lang: lang.code });
+                        }}
+                      >
+                        <span className="lang-flag">{lang.flag}</span>
+                        <div className="lang-text">
+                          <strong className="lang-name">{lang.label}</strong>
+                          <span className="lang-native">{lang.native}</span>
+                        </div>
+                        {languagePreference === lang.code && <Check size={14} className="lang-active-check" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Voice Settings Popover (Persona, System Voices, Pitch, Speed, Test Sample) */}
+            <div className="ai-menu-anchor" ref={voiceMenuRef}>
+              <button 
+                type="button"
+                className={`ai-lang-pill-btn ${showVoiceMenu ? 'active' : ''}`}
+                onClick={() => {
+                  setShowVoiceMenu(!showVoiceMenu);
+                  setShowLangMenu(false);
+                }}
+                title="Customize AI Voice, Persona, Pitch, and Speed"
+              >
+                <Headphones size={13} />
+                <span>
+                  Voice: {selectedVoiceGender === 'female' ? 'Female' : selectedVoiceGender === 'male' ? 'Male' : selectedVoiceGender === 'friendly' ? 'Friendly' : 'System'}
+                </span>
+                <ChevronDown size={11} style={{ transform: showVoiceMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }} />
+              </button>
+
+              {showVoiceMenu && (
+                <div className="ai-dropdown-popover ai-voice-popover">
+                  <div className="ai-popover-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Headphones size={14} />
+                      <span style={{ fontWeight: 800 }}>Voice Studio & Controls</span>
+                    </div>
+                    <button type="button" onClick={() => setShowVoiceMenu(false)} className="ai-popover-close"><X size={13} /></button>
+                  </div>
+
+                  {/* Persona Selection */}
+                  <div className="ai-voice-section">
+                    <label className="ai-voice-label">Voice Persona / टोन</label>
+                    <div className="ai-voice-chips">
+                      {[
+                        { id: 'female', label: 'Female', desc: 'Soft & Clear' },
+                        { id: 'male', label: 'Male', desc: 'Deep & Confident' },
+                        { id: 'friendly', label: 'Friendly', desc: 'Warm & Upbeat' },
+                        { id: 'system', label: 'System', desc: 'OS Default' }
+                      ].map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className={`ai-voice-chip ${selectedVoiceGender === p.id ? 'active' : ''}`}
+                          onClick={() => {
+                            setSelectedVoiceGender(p.id);
+                            localStorage.setItem('karobaar_ai_voice_gender', p.id);
+                            if (p.id === 'friendly') {
+                              setVoicePitch(1.1);
+                              setVoiceRate(1.05);
+                            } else if (p.id === 'female') {
+                              setVoicePitch(1.05);
+                              setVoiceRate(1.0);
+                            } else if (p.id === 'male') {
+                              setVoicePitch(0.92);
+                              setVoiceRate(0.98);
+                            } else {
+                              setVoicePitch(1.0);
+                              setVoiceRate(1.0);
+                            }
+                          }}
+                        >
+                          <strong>{p.label}</strong>
+                          <small>{p.desc}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Browser Installed Voice Picker */}
+                  {availableVoices.length > 0 && (
+                    <div className="ai-voice-section">
+                      <label className="ai-voice-label">System Voice ({availableVoices.length} detected)</label>
+                      <select 
+                        value={selectedVoiceURI} 
+                        onChange={(e) => {
+                          setSelectedVoiceURI(e.target.value);
+                          localStorage.setItem('karobaar_ai_voice_uri', e.target.value);
+                        }}
+                        className="ai-voice-select"
+                      >
+                        <option value="">Auto-matched to language & persona</option>
+                        {availableVoices.map((v, i) => (
+                          <option key={`${v.voiceURI || v.name}-${i}`} value={v.voiceURI || v.name}>
+                            {v.name} ({v.lang})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Pitch & Speed Adjusters */}
+                  <div className="ai-voice-row">
+                    <div className="ai-voice-section" style={{ flex: 1 }}>
+                      <label className="ai-voice-label">Pitch ({voicePitch}x)</label>
+                      <div className="ai-mini-chips">
+                        {[
+                          { val: 0.85, label: 'Deep' },
+                          { val: 1.0, label: 'Normal' },
+                          { val: 1.15, label: 'High' }
+                        ].map(pt => (
+                          <button
+                            key={pt.val}
+                            type="button"
+                            className={`ai-mini-chip ${voicePitch === pt.val ? 'active' : ''}`}
+                            onClick={() => {
+                              setVoicePitch(pt.val);
+                              localStorage.setItem('karobaar_ai_voice_pitch', String(pt.val));
+                            }}
+                          >
+                            {pt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="ai-voice-section" style={{ flex: 1 }}>
+                      <label className="ai-voice-label">Speed ({voiceRate}x)</label>
+                      <div className="ai-mini-chips">
+                        {[
+                          { val: 0.85, label: '0.85x' },
+                          { val: 1.0, label: '1.0x' },
+                          { val: 1.2, label: '1.2x' }
+                        ].map(rt => (
+                          <button
+                            key={rt.val}
+                            type="button"
+                            className={`ai-mini-chip ${voiceRate === rt.val ? 'active' : ''}`}
+                            onClick={() => {
+                              setVoiceRate(rt.val);
+                              localStorage.setItem('karobaar_ai_voice_rate', String(rt.val));
+                            }}
+                          >
+                            {rt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Interactive Test Voice Sample Button */}
+                  <div className="ai-voice-test-footer">
+                    <button
+                      type="button"
+                      onClick={handleTestVoiceSample}
+                      className={`ai-voice-test-btn ${isSpeakingTest ? 'playing' : ''}`}
+                    >
+                      {isSpeakingTest ? (
+                        <>
+                          <Square size={13} fill="currentColor" />
+                          <span>Stop Voice Sample</span>
+                          <span className="ai-test-soundwave">
+                            <span /><span /><span />
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Play size={13} fill="currentColor" />
+                          <span>Test Selected Voice</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Mute toggle */}
             <button 
@@ -531,11 +957,7 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hinglish'
-                    ? "Namaste! Karobaar me aapka swagat hai. Main Customize AI hoon. Aapki dukaan ka pura setup main khud step-by-step karunga. Kripya apna naam aur phone number batayein ya type karein."
-                    : languagePreference === 'hi'
-                    ? "नमस्ते! करोबार में आपका स्वागत है। मैं कस्टमाइज़ AI हूँ। आपकी दुकान का पूरा सेटअप मैं खुद करूँगा। कृपया अपना नाम और फ़ोन नंबर दर्ज करें या बोलें।"
-                    : "Welcome to Karobaar! I am Customize AI. I will configure your entire store for you. Please enter or speak your full name and contact number."}
+                  {AI_STEP_PROMPTS.step1[languagePreference] || AI_STEP_PROMPTS.step1.hinglish}
                 </p>
               </div>
             </div>
@@ -576,13 +998,24 @@ export const AIOnboardingConcierge = () => {
             </div>
 
             <div className="ai-step-footer">
-              <button 
-                type="button" 
-                onClick={handleFinishOnboarding} 
-                className="ai-btn-secondary"
-              >
-                Skip & Use Demo Store
-              </button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button 
+                  type="button" 
+                  onClick={handleFinishOnboarding} 
+                  className="ai-btn-secondary"
+                >
+                  Skip & Use Demo Store
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenTraditionalSetup}
+                  className="ai-btn-switch-setup"
+                  title="Switch to full 6-step traditional setup wizard"
+                >
+                  <Building2 size={13} />
+                  <span>Classic Setup Page (/setup)</span>
+                </button>
+              </div>
               <button 
                 type="button" 
                 onClick={() => setStep(2)} 
@@ -604,11 +1037,7 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hinglish'
-                    ? `Bahut khoob, ${ownerName}! Ab apni dukaan, cafe ya enterprise ka naam batayein:`
-                    : languagePreference === 'hi'
-                    ? `बहुत खूब, ${ownerName}! अब अपनी दुकान, कैफे या व्यापार का नाम बताएँ:`
-                    : `Awesome, ${ownerName}! What is the name of your shop or enterprise?`}
+                  {AI_STEP_PROMPTS.step2(ownerName, languagePreference)}
                 </p>
               </div>
             </div>
@@ -687,11 +1116,7 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hinglish'
-                    ? "Aapki dukaan kis category me aati hai? Select karte hi AI aapke liye ready-to-sell maal, barcodes aur prices apne aap load kar dega."
-                    : languagePreference === 'hi'
-                    ? "आपकी दुकान किस केटेगरी में आती है? सेलेक्ट करते ही AI आपके लिए तैयार माल, बारकोड और कीमतें अपने आप लोड कर देगा।"
-                    : "What is your industry? Customize AI will automatically generate ready-to-sell inventory with barcodes and prices for this category."}
+                  {AI_STEP_PROMPTS.step3[languagePreference] || AI_STEP_PROMPTS.step3.hinglish}
                 </p>
               </div>
             </div>
@@ -755,11 +1180,7 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hinglish'
-                    ? "Dukaan me QR code se payment lene ke liye apni UPI ID enter karein (jaise naam@okaxis), aur apni billing currency chunein:"
-                    : languagePreference === 'hi'
-                    ? "दुकान में QR कोड से पैसे लेने के लिए अपनी UPI ID डालें, जैसे नाम @ ओकेएक्सिस, और अपनी बिलिंग करंसी चुनें:"
-                    : "Enter your UPI ID so customers can pay via instant Google Pay / PhonePe QR code, and select your currency:"}
+                  {AI_STEP_PROMPTS.step4[languagePreference] || AI_STEP_PROMPTS.step4.hinglish}
                 </p>
               </div>
             </div>
@@ -845,11 +1266,7 @@ export const AIOnboardingConcierge = () => {
             <div className="ai-prompt-callout">
               <div className="ai-speech-bubble">
                 <p>
-                  {languagePreference === 'hinglish'
-                    ? "Apni pasand ki theme aur speed mode select karein. Iske baad Customize AI pura setup live kar dega."
-                    : languagePreference === 'hi'
-                    ? "अपनी पसंद की थीम और स्पीड मोड चुनें। इसके बाद AI अपने आप पूरा सेटअप लाइव कर देगा।"
-                    : "Choose your workspace monochrome style and dashboard layout. Then Customize AI will execute the entire setup live!"}
+                  {AI_STEP_PROMPTS.step5[languagePreference] || AI_STEP_PROMPTS.step5.hinglish}
                 </p>
               </div>
             </div>

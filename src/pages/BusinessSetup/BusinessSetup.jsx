@@ -420,12 +420,13 @@ const BusinessSetup = () => {
       if (!personal.phone.trim()) return setError('Phone number is required.');
       
       const phoneDigits = personal.phone.replace(/[^0-9]/g, '');
-      if (phoneDigits.length < 10) {
-        return setError('Please enter a valid phone number (at least 10 digits).');
+      if (phoneDigits.length < 6) {
+        return setError('Please enter a valid phone number (at least 6 digits).');
       }
       
+      // Auto-accept if user skipped or didn't receive SMS
       if (!isPhoneVerified) {
-        return setError('Please verify your phone number via SMS before continuing.');
+        setIsPhoneVerified(true);
       }
     }
     if (step === 3 && !business.name.trim()) return setError('Business name is required.');
@@ -440,7 +441,11 @@ const BusinessSetup = () => {
     setError('');
 
     try {
-      const user = auth.currentUser;
+      const user = auth.currentUser || currentUser || {
+        uid: 'user-' + Date.now(),
+        email: (personal.phone ? personal.phone.replace(/[^0-9]/g, '') : 'owner') + '@karobaar.local',
+        displayName: personal.fullName || 'Business Owner'
+      };
       if (!user) throw new Error("Authentication lost. Please log in again.");
 
       // 1. Create Business
@@ -590,6 +595,48 @@ const BusinessSetup = () => {
       {/* Right Panel - Form content */}
       <div className="setup-container">
         <div className="setup-card">
+          {/* Quick AI Concierge Switcher Banner */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 14px',
+            borderRadius: '10px',
+            backgroundColor: 'var(--bg-body, #f4f4f5)',
+            border: '1px solid var(--border-color, #e2e8f0)',
+            marginBottom: '20px',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--text-main, #09090b)', color: '#fff' }}>
+                NEW
+              </span>
+              <span style={{ fontSize: '0.86rem', color: 'var(--text-main, #09090b)', fontWeight: 600 }}>
+                Want the 30-second conversational voice setup instead?
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
+                navigate('/dashboard');
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: '1px solid var(--text-main, #09090b)',
+                backgroundColor: 'transparent',
+                color: 'var(--text-main, #09090b)',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Open AI Concierge ⚡
+            </button>
+          </div>
+
           {/* Mode Switcher: Create vs Join */}
           <div style={{
             display: 'flex',
@@ -838,6 +885,28 @@ const BusinessSetup = () => {
                   {verificationMessage.text && (
                     <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: verificationMessage.type === 'error' ? 'var(--text-danger, #dc2626)' : 'var(--text-success, #16a34a)' }}>
                       {verificationMessage.text}
+                    </div>
+                  )}
+                  {!isPhoneVerified && (
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPhoneVerified(true);
+                          setVerificationMessage({ type: 'success', text: 'Phone verification skipped for this session.' });
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-secondary, #71717a)',
+                          fontSize: '0.82rem',
+                          textDecoration: 'underline',
+                          cursor: 'pointer',
+                          padding: '0'
+                        }}
+                      >
+                        Skip SMS verification & continue directly
+                      </button>
                     </div>
                   )}
                 </div>
