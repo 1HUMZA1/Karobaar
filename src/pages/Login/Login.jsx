@@ -510,7 +510,7 @@ const Login = () => {
             
             {/* Karobaar Official 3-Bar Brand Logo & Tagline */}
             <div className="login-brand-header">
-              <KarobaarLogo size="md" theme={theme === "dark" ? "light" : "dark"} layout="vertical" showTagline={true} />
+              <KarobaarLogo size="md" theme="auto" layout="vertical" showTagline={true} />
             </div>
 
             {(generalError || authError) && (
@@ -630,18 +630,18 @@ const Login = () => {
 
                 {/* Clean Instant Demo Access Button & Role Test Pills */}
                 {!isRegistering && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <button 
                       type="button" 
                       className="login-demo-btn"
                       onClick={() => handleQuickRoleLogin('Owner')}
                       disabled={isAuthenticating}
                     >
-                      <Sparkles size={16} />
-                      <span>Explore Live Demo Store (Showcase Workspace)</span>
+                      <Sparkles size={15} />
+                      <span>Explore Live Demo Store</span>
                     </button>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
+                    <div className="login-test-roles">
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>Test Roles:</span>
                       {[
                         { label: 'Manager', role: ROLES.MANAGER },
@@ -652,17 +652,8 @@ const Login = () => {
                         <button
                           key={r.role}
                           type="button"
+                          className="login-role-pill"
                           onClick={() => handleQuickRoleLogin(r.role)}
-                          style={{
-                            padding: '3px 8px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            borderRadius: '6px',
-                            border: '1px solid var(--border-color)',
-                            background: 'transparent',
-                            color: 'var(--text-main)',
-                            cursor: 'pointer'
-                          }}
                         >
                           {r.label}
                         </button>

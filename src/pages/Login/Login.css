@@ -6,9 +6,10 @@
 .login-wrapper {
   display: flex;
   min-height: 100vh;
+  height: 100vh;
   width: 100%;
   background-color: var(--bg-body, #f8fafc);
-  overflow-x: hidden;
+  overflow: hidden;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   transition: background-color 0.3s ease;
 }
@@ -17,21 +18,47 @@
 /* LEFT SIDE: Brand Hero Visuals (Desktop)                      */
 /* ============================================================ */
 .login-visuals {
-  flex: 1.1;
+  flex: 1.05;
   background: radial-gradient(circle at 20% 30%, #1e2029 0%, #0d0e12 100%);
   color: #ffffff;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 4rem 4.5rem;
+  padding: clamp(2rem, 4vh, 4rem) clamp(2rem, 3.5vw, 4.5rem);
   overflow: hidden;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+  transition: padding 0.3s ease;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1040px) {
   .login-visuals {
     display: none;
+  }
+}
+
+@media (min-width: 1041px) and (max-width: 1240px) {
+  .login-visuals {
+    flex: 0.95;
+    padding: 2.25rem 2rem;
+  }
+  .visuals-content {
+    max-width: 380px;
+  }
+  .visual-logo {
+    margin-bottom: 1.5rem;
+  }
+  .visual-title {
+    font-size: 1.85rem;
+    margin-bottom: 0.75rem;
+  }
+  .visual-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  .feature-pill {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
   }
 }
 
@@ -125,9 +152,26 @@
   align-items: center;
   background-color: var(--bg-body, #f8fafc);
   position: relative;
-  padding: 2.5rem 1.5rem;
-  min-height: 100vh;
+  padding: clamp(0.75rem, 2vh, 2rem) clamp(0.75rem, 2vw, 1.5rem);
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
   box-sizing: border-box;
+}
+
+/* Subtle modern scrollbar for container when window is compact */
+.login-container::-webkit-scrollbar {
+  width: 5px;
+}
+.login-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.login-container::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+.login-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.65);
 }
 
 /* Subtle dot pattern with low opacity */
@@ -147,17 +191,20 @@
   max-width: 440px;
   position: relative;
   z-index: 1;
-  animation: loginFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: loginFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   margin: auto 0;
+  box-sizing: border-box;
 }
 
 .login-card {
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 20px;
-  padding: 2.5rem 2.25rem;
+  padding: clamp(1.25rem, 2.5vh, 2.25rem) clamp(1.25rem, 2.8vw, 2.25rem);
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
   transition: all 0.3s ease;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 /* Header & Brand in Card */
@@ -166,7 +213,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-bottom: 2rem;
+  margin-bottom: clamp(0.75rem, 1.8vh, 1.6rem);
   text-align: center;
 }
 
@@ -227,18 +274,18 @@
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
+  gap: clamp(0.55rem, 1.25vh, 1.1rem);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.25rem;
   text-align: left;
 }
 
 .form-group label {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary, #334155);
   letter-spacing: 0.01em;
@@ -246,11 +293,11 @@
 
 .form-input {
   width: 100%;
-  height: 46px;
-  padding: 0.65rem 1rem;
+  height: clamp(38px, 4.4vh, 46px);
+  padding: 0.5rem 0.95rem;
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 12px;
-  font-size: 0.925rem;
+  font-size: 0.9rem;
   font-family: inherit;
   background-color: var(--bg-hover, #f8fafc);
   color: var(--text-main, #0f172a);
@@ -316,8 +363,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
-  padding-top: 0.1rem;
+  font-size: 0.82rem;
+  padding-top: 0.05rem;
 }
 
 .remember-me-label {
@@ -343,7 +390,7 @@
   border: none;
   padding: 0;
   color: #0f172a;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s;
@@ -357,13 +404,13 @@
 /* Primary Submit Button */
 .login-submit-btn {
   width: 100%;
-  height: 46px;
-  padding: 0.75rem 1.25rem;
+  height: clamp(38px, 4.4vh, 46px);
+  padding: 0.6rem 1.25rem;
   background-color: #0f172a;
   color: #ffffff;
   border: none;
   border-radius: 12px;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   cursor: pointer;
@@ -373,7 +420,7 @@
   justify-content: center;
   gap: 8px;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
-  margin-top: 0.25rem;
+  margin-top: 0.1rem;
 }
 
 .login-submit-btn:hover:not(:disabled) {
@@ -394,12 +441,12 @@
 /* Google Sign-In Button */
 .login-google-btn {
   width: 100%;
-  height: 44px;
+  height: clamp(36px, 4.2vh, 44px);
   background-color: #ffffff;
   color: #334155;
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 12px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -438,7 +485,7 @@
 .login-divider-row {
   display: flex;
   align-items: center;
-  margin: 0.25rem 0;
+  margin: clamp(0.1rem, 0.6vh, 0.25rem) 0;
   gap: 12px;
 }
 
@@ -459,12 +506,12 @@
 /* Instant Demo Access Button (Clean, Non-intrusive card) */
 .login-demo-btn {
   width: 100%;
-  height: 42px;
+  height: clamp(36px, 4vh, 42px);
   background: var(--bg-hover, #f8fafc);
   color: var(--text-main, #0f172a);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 12px;
-  font-size: 0.875rem;
+  font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -489,11 +536,38 @@
   cursor: not-allowed;
 }
 
+/* Test Roles Quick Access */
+.login-test-roles {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.login-role-pill {
+  padding: 2.5px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: transparent;
+  color: var(--text-main, #0f172a);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.login-role-pill:hover {
+  background: var(--bg-hover, #f1f5f9);
+  border-color: var(--text-muted, #94a3b8);
+}
+
 /* Switch Between Sign In and Sign Up */
 .toggle-mode-text {
   text-align: center;
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
+  margin-top: clamp(0.2rem, 0.8vh, 0.4rem);
+  font-size: 0.82rem;
   color: var(--text-secondary, #64748b);
   font-weight: 500;
 }
@@ -680,6 +754,17 @@
   color: #ffffff;
 }
 
+[data-theme="dark"] .login-role-pill {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .login-role-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
 [data-theme="dark"] .toggle-mode-text {
   color: #94a3b8;
 }
@@ -806,20 +891,160 @@
 }
 
 /* ============================================================ */
-/* RESPONSIVE DESIGN (Laptops, Tablets & Mobile)                 */
+/* RESPONSIVE DESIGN (Restore Down / Mini-size / Mobile)        */
 /* ============================================================ */
-@media (max-width: 640px) {
+@media (max-width: 1040px) {
+  .login-visuals {
+    display: none;
+  }
   .login-container {
-    padding: 1.5rem 1rem;
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    padding: clamp(0.75rem, 2vh, 1.5rem) 1rem;
+  }
+  .login-card-wrapper {
+    max-width: 440px;
+    margin: auto;
+  }
+}
+
+@media (max-height: 760px) {
+  .login-container {
+    padding: 0.65rem 1rem;
   }
   .login-card {
-    padding: 2rem 1.35rem;
+    padding: 1.15rem 1.6rem;
     border-radius: 16px;
   }
   .login-brand-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .login-brand-header .karobaar-k-emblem {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1.05rem !important;
+    border-radius: 8px !important;
+  }
+  .login-brand-header .karobaar-brand-name {
+    font-size: 1.15rem !important;
+  }
+  .login-brand-header .karobaar-brand-tagline {
+    display: none;
+  }
+  .login-form {
+    gap: 0.5rem;
+  }
+  .form-group {
+    gap: 0.18rem;
+  }
+  .form-group label {
+    font-size: 0.76rem;
+  }
+  .form-input {
+    height: 38px;
+    font-size: 0.86rem;
+    padding: 0.4rem 0.8rem;
+  }
+  .login-options-row {
+    font-size: 0.76rem;
+    padding-top: 0;
+  }
+  .login-submit-btn {
+    height: 38px;
+    font-size: 0.88rem;
+    margin-top: 0;
+  }
+  .login-google-btn {
+    height: 36px;
+    font-size: 0.84rem;
+    gap: 8px;
+  }
+  .google-icon-svg {
+    width: 16px;
+    height: 16px;
+  }
+  .login-divider-row {
+    margin: 0.05rem 0;
+  }
+  .login-demo-btn {
+    height: 34px;
+    font-size: 0.8rem;
+  }
+  .toggle-mode-text {
+    margin-top: 0.2rem;
+    font-size: 0.76rem;
+  }
+  .login-role-pill {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+  .visual-content {
+    transform: scale(0.9);
+    transform-origin: center left;
+  }
+}
+
+@media (max-height: 620px) {
+  .login-container {
+    padding: 0.4rem 0.75rem;
+    overflow-y: auto;
+  }
+  .login-card {
+    padding: 0.85rem 1.25rem;
+    border-radius: 14px;
+  }
+  .login-brand-header {
+    margin-bottom: 0.4rem;
+  }
+  .login-brand-header .karobaar-k-emblem {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.95rem !important;
+  }
+  .login-brand-header .karobaar-brand-name {
+    font-size: 1.05rem !important;
+  }
+  .login-form {
+    gap: 0.38rem;
+  }
+  .form-input {
+    height: 34px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.82rem;
+  }
+  .login-submit-btn {
+    height: 34px;
+    font-size: 0.84rem;
+  }
+  .login-google-btn {
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  .login-demo-btn {
+    height: 30px;
+    font-size: 0.78rem;
+  }
+  .feature-pill {
+    display: none;
+  }
+  .visual-subtitle {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-container {
+    padding: 1rem 0.75rem;
+  }
+  .login-card {
+    padding: 1.5rem 1.15rem;
+    border-radius: 16px;
+  }
+  .login-brand-header {
+    margin-bottom: 1.25rem;
   }
   .visual-title {
-    font-size: 2rem;
+    font-size: 1.85rem;
   }
 }
