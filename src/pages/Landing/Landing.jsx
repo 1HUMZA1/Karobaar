@@ -529,124 +529,124 @@ const Landing = () => {
       </header>
 
       {/* 3. Features Section (#features) with Smooth 3D Tilted Boxes */}
-      <section id="features" style={{ padding: '6rem 2rem 5.5rem', backgroundColor: '#fafafa', borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7' }}>
+      <section id="features" style={{ padding: '4rem 2rem 4.5rem', backgroundColor: '#fafafa', borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <h2 style={{ fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 10px 0', color: '#09090b' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 10px 0', color: '#09090b' }}>
               Everything your business needs to grow.
             </h2>
-            <p style={{ fontSize: '1.05rem', color: '#71717a', maxWidth: '600px', margin: '0 auto' }}>
+            <p className="text-balanced" style={{ fontSize: '1.05rem', color: '#71717a', maxWidth: '780px', margin: '0 auto', lineHeight: 1.5 }}>
               Built for speed, keyboard efficiency, and seamless multi-device store operations.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
             
             {/* Card 1: Lightning Fast POS */}
             <TiltCard 
-              maxTilt={10} 
-              scale={1.03} 
+              maxTilt={9} 
+              scale={1.025} 
               perspective={1000}
-              style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
+              style={{ backgroundColor: '#ffffff', padding: '1.6rem 1.75rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
             >
-              <div className="tilt-parallax-icon" style={{ width: '48px', height: '48px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                <ShoppingBag size={24} color="#09090b" />
+              <div className="tilt-parallax-icon" style={{ width: '42px', height: '42px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                <ShoppingBag size={22} color="#09090b" />
               </div>
-              <h3 className="tilt-parallax-title" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#09090b' }}>
+              <h3 className="tilt-parallax-title" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.45rem', color: '#09090b' }}>
                 Lightning Fast POS
               </h3>
-              <p className="tilt-parallax-text" style={{ color: '#52525b', lineHeight: 1.55, fontSize: '0.92rem', margin: 0 }}>
-                Instant keyboard-optimized billing, barcode scanner input, WhatsApp receipts, and held orders. Works 100% offline.
+              <p className="tilt-parallax-text text-balanced" style={{ color: '#52525b', lineHeight: 1.5, fontSize: '0.9rem', margin: 0 }}>
+                Instant keyboard billing, barcode scanner input, WhatsApp receipts, and offline mode.
               </p>
             </TiltCard>
 
             {/* Card 2: Live Inventory Guard */}
             <TiltCard 
-              maxTilt={10} 
-              scale={1.03} 
+              maxTilt={9} 
+              scale={1.025} 
               perspective={1000}
-              style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
+              style={{ backgroundColor: '#ffffff', padding: '1.6rem 1.75rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
             >
-              <div className="tilt-parallax-icon" style={{ width: '48px', height: '48px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                <Layers size={24} color="#09090b" />
+              <div className="tilt-parallax-icon" style={{ width: '42px', height: '42px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                <Layers size={22} color="#09090b" />
               </div>
-              <h3 className="tilt-parallax-title" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#09090b' }}>
+              <h3 className="tilt-parallax-title" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.45rem', color: '#09090b' }}>
                 Live Inventory Guard
               </h3>
-              <p className="tilt-parallax-text" style={{ color: '#52525b', lineHeight: 1.55, fontSize: '0.92rem', margin: 0 }}>
-                Automatic low-stock warnings, purchase order dispatch, supplier ledger tracking, and multi-warehouse management.
+              <p className="tilt-parallax-text text-balanced" style={{ color: '#52525b', lineHeight: 1.5, fontSize: '0.9rem', margin: 0 }}>
+                Automatic low-stock alerts, purchase orders, supplier ledgers, and multi-warehouse sync.
               </p>
             </TiltCard>
 
             {/* Card 3: Staff & Internal Tasks */}
             <TiltCard 
-              maxTilt={10} 
-              scale={1.03} 
+              maxTilt={9} 
+              scale={1.025} 
               perspective={1000}
-              style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
+              style={{ backgroundColor: '#ffffff', padding: '1.6rem 1.75rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
             >
-              <div className="tilt-parallax-icon" style={{ width: '48px', height: '48px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                <Users size={24} color="#09090b" />
+              <div className="tilt-parallax-icon" style={{ width: '42px', height: '42px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                <Users size={22} color="#09090b" />
               </div>
-              <h3 className="tilt-parallax-title" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#09090b' }}>
+              <h3 className="tilt-parallax-title" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.45rem', color: '#09090b' }}>
                 Staff & Internal Tasks
               </h3>
-              <p className="tilt-parallax-text" style={{ color: '#52525b', lineHeight: 1.55, fontSize: '0.92rem', margin: 0 }}>
-                Internal task assignment, attendance kiosk mode, role permissions (Cashier, Manager, Admin), and shift reconciliation.
+              <p className="tilt-parallax-text text-balanced" style={{ color: '#52525b', lineHeight: 1.5, fontSize: '0.9rem', margin: 0 }}>
+                Internal task assignments, attendance kiosk mode, role permissions, and shift reports.
               </p>
             </TiltCard>
 
             {/* Card 4: Financial Reports & GST */}
             <TiltCard 
-              maxTilt={10} 
-              scale={1.03} 
+              maxTilt={9} 
+              scale={1.025} 
               perspective={1000}
-              style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
+              style={{ backgroundColor: '#ffffff', padding: '1.6rem 1.75rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
             >
-              <div className="tilt-parallax-icon" style={{ width: '48px', height: '48px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                <BarChart2 size={24} color="#09090b" />
+              <div className="tilt-parallax-icon" style={{ width: '42px', height: '42px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                <BarChart2 size={22} color="#09090b" />
               </div>
-              <h3 className="tilt-parallax-title" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#09090b' }}>
+              <h3 className="tilt-parallax-title" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.45rem', color: '#09090b' }}>
                 Financial Reports & GST
               </h3>
-              <p className="tilt-parallax-text" style={{ color: '#52525b', lineHeight: 1.55, fontSize: '0.92rem', margin: 0 }}>
-                Real-time gross profit calculation, expense categorization, daily register closure summaries, and one-click export.
+              <p className="tilt-parallax-text text-balanced" style={{ color: '#52525b', lineHeight: 1.5, fontSize: '0.9rem', margin: 0 }}>
+                Real-time gross profit, expense categorization, daily register closure, and one-click export.
               </p>
             </TiltCard>
 
             {/* Card 5: Jarvis Voice Co-Pilot */}
             <TiltCard 
-              maxTilt={10} 
-              scale={1.03} 
+              maxTilt={9} 
+              scale={1.025} 
               perspective={1000}
-              style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
+              style={{ backgroundColor: '#ffffff', padding: '1.6rem 1.75rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
             >
-              <div className="tilt-parallax-icon" style={{ width: '48px', height: '48px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                <Cpu size={24} color="#09090b" />
+              <div className="tilt-parallax-icon" style={{ width: '42px', height: '42px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                <Cpu size={22} color="#09090b" />
               </div>
-              <h3 className="tilt-parallax-title" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#09090b' }}>
+              <h3 className="tilt-parallax-title" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.45rem', color: '#09090b' }}>
                 Jarvis Voice Co-Pilot
               </h3>
-              <p className="tilt-parallax-text" style={{ color: '#52525b', lineHeight: 1.55, fontSize: '0.92rem', margin: 0 }}>
-                Speak natural commands: "Hey Jarvis, what were today's sales?" or "Create task: Restock milk tomorrow".
+              <p className="tilt-parallax-text text-balanced" style={{ color: '#52525b', lineHeight: 1.5, fontSize: '0.9rem', margin: 0 }}>
+                Hands-free voice commands for live sales, inventory queries, and instant task creation.
               </p>
             </TiltCard>
 
             {/* Card 6: Multi-Terminal Sync */}
             <TiltCard 
-              maxTilt={10} 
-              scale={1.03} 
+              maxTilt={9} 
+              scale={1.025} 
               perspective={1000}
-              style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
+              style={{ backgroundColor: '#ffffff', padding: '1.6rem 1.75rem', borderRadius: '18px', border: '1px solid #e4e4e7', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}
             >
-              <div className="tilt-parallax-icon" style={{ width: '48px', height: '48px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                <RefreshCw size={24} color="#09090b" />
+              <div className="tilt-parallax-icon" style={{ width: '42px', height: '42px', backgroundColor: '#f4f4f5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                <RefreshCw size={22} color="#09090b" />
               </div>
-              <h3 className="tilt-parallax-title" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#09090b' }}>
+              <h3 className="tilt-parallax-title" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.45rem', color: '#09090b' }}>
                 Multi-Terminal Sync
               </h3>
-              <p className="tilt-parallax-text" style={{ color: '#52525b', lineHeight: 1.55, fontSize: '0.92rem', margin: 0 }}>
-                Operate multiple cash registers simultaneously with instant cloud synchronization between PC, laptops, and mobile registers.
+              <p className="tilt-parallax-text text-balanced" style={{ color: '#52525b', lineHeight: 1.5, fontSize: '0.9rem', margin: 0 }}>
+                Simultaneous multi-counter sync between desktop PC counters, mobile tablets, and laptops.
               </p>
             </TiltCard>
 
@@ -655,37 +655,37 @@ const Landing = () => {
       </section>
 
       {/* 4. Platforms Section (#platforms) with Smooth 3D Tilted Boxes */}
-      <section id="platforms" style={{ padding: '6rem 2rem', maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '1rem', color: '#09090b' }}>
+      <section id="platforms" style={{ padding: '4.5rem 2rem 4rem', maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.85rem', color: '#09090b' }}>
           Available on every screen you use.
         </h2>
-        <p style={{ fontSize: '1.05rem', color: '#71717a', maxWidth: '640px', margin: '0 auto 3.5rem auto' }}>
+        <p className="text-balanced" style={{ fontSize: '1.05rem', color: '#71717a', maxWidth: '680px', margin: '0 auto 2.5rem auto', lineHeight: 1.5 }}>
           Run Karobaar natively on your desktop counter, in your browser, or on mobile registers.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', textAlign: 'left' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', textAlign: 'left' }}>
           
           {/* Platform 1: Windows Desktop */}
           <TiltCard 
             maxTilt={9} 
-            scale={1.03} 
+            scale={1.025} 
             perspective={1000}
-            style={{ border: '1.5px solid #e4e4e7', borderRadius: '18px', padding: '2rem', background: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}
+            style={{ border: '1.5px solid #e4e4e7', borderRadius: '18px', padding: '1.6rem 1.75rem', background: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}
           >
-            <div className="tilt-parallax-icon" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-              <Monitor size={28} color="#09090b" />
-              <h3 className="tilt-parallax-title" style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0 }}>
+            <div className="tilt-parallax-icon" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.85rem' }}>
+              <Monitor size={26} color="#09090b" />
+              <h3 className="tilt-parallax-title" style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
                 Windows Desktop
               </h3>
             </div>
-            <p className="tilt-parallax-text" style={{ color: '#52525b', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-              Full standalone app for Windows 10 & 11. Direct ESC/POS thermal receipt printing, USB barcode scanners, and persistent offline database.
+            <p className="tilt-parallax-text text-balanced" style={{ color: '#52525b', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+              Full standalone app for Windows 10 & 11. Direct ESC/POS thermal printing, barcode scanners, and persistent offline storage.
             </p>
             <button 
               type="button"
               className="tilt-parallax-btn"
               onClick={handleDownloadWindows}
-              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #09090b', background: '#09090b', color: '#ffffff', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #09090b', background: '#09090b', color: '#ffffff', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start' }}
             >
               <Download size={14} /> Download Installer
             </button>
@@ -694,24 +694,24 @@ const Landing = () => {
           {/* Platform 2: Cloud Web PWA */}
           <TiltCard 
             maxTilt={9} 
-            scale={1.03} 
+            scale={1.025} 
             perspective={1000}
-            style={{ border: '1.5px solid #e4e4e7', borderRadius: '18px', padding: '2rem', background: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}
+            style={{ border: '1.5px solid #e4e4e7', borderRadius: '18px', padding: '1.6rem 1.75rem', background: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}
           >
-            <div className="tilt-parallax-icon" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-              <Globe size={28} color="#09090b" />
-              <h3 className="tilt-parallax-title" style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0 }}>
+            <div className="tilt-parallax-icon" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.85rem' }}>
+              <Globe size={26} color="#09090b" />
+              <h3 className="tilt-parallax-title" style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
                 Cloud Web PWA
               </h3>
             </div>
-            <p className="tilt-parallax-text" style={{ color: '#52525b', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-              Access your store dashboard from any browser (Chrome, Edge, Safari). Zero installation needed, automatic background updates.
+            <p className="tilt-parallax-text text-balanced" style={{ color: '#52525b', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+              Access your store dashboard from any browser (Chrome, Edge, Safari). Zero setup needed with automatic background updates.
             </p>
             <button 
               type="button"
               className="tilt-parallax-btn"
               onClick={handleLaunchApp}
-              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e4e4e7', background: '#f4f4f5', color: '#09090b', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e4e4e7', background: '#f4f4f5', color: '#09090b', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start' }}
             >
               <ExternalLink size={14} /> Launch in Browser
             </button>
@@ -720,24 +720,24 @@ const Landing = () => {
           {/* Platform 3: Android & Mobile */}
           <TiltCard 
             maxTilt={9} 
-            scale={1.03} 
+            scale={1.025} 
             perspective={1000}
-            style={{ border: '1.5px solid #e4e4e7', borderRadius: '18px', padding: '2rem', background: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}
+            style={{ border: '1.5px solid #e4e4e7', borderRadius: '18px', padding: '1.6rem 1.75rem', background: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}
           >
-            <div className="tilt-parallax-icon" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-              <Smartphone size={28} color="#09090b" />
-              <h3 className="tilt-parallax-title" style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0 }}>
+            <div className="tilt-parallax-icon" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.85rem' }}>
+              <Smartphone size={26} color="#09090b" />
+              <h3 className="tilt-parallax-title" style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
                 Android & Mobile
               </h3>
             </div>
-            <p className="tilt-parallax-text" style={{ color: '#52525b', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-              Optimized touch interface for tablets and smartphones. Camera barcode scanning, mobile orders, and remote owner monitoring.
+            <p className="tilt-parallax-text text-balanced" style={{ color: '#52525b', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+              Optimized touch interface for tablets and smartphones. Camera barcode scanning, mobile orders, and remote monitoring.
             </p>
             <button 
               type="button"
               className="tilt-parallax-btn"
               onClick={handleLaunchApp}
-              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e4e4e7', background: '#f4f4f5', color: '#09090b', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e4e4e7', background: '#f4f4f5', color: '#09090b', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start' }}
             >
               <Smartphone size={14} /> Open Mobile App
             </button>

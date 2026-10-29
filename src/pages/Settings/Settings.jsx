@@ -83,6 +83,8 @@ const Settings = () => {
     setAppUiVersion 
   } = useAppContext();
 
+  const activeBizId = currentBusiness?.id || currentUser?.activeBusinessId || 'demo-business-1';
+
   const [activeTab, setActiveTab] = useState(initialTab);
   
   useEffect(() => {

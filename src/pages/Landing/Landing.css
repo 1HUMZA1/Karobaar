@@ -1,0 +1,157 @@
+/* Landing.css - High Performance 3D Tilt Animations & Heroic App Showcase */
+
+.tilt-card {
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.25s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  display: flex;
+  flex-direction: column;
+}
+
+.tilt-card:hover {
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.12), 0 8px 20px -6px rgba(0, 0, 0, 0.08) !important;
+}
+
+.text-balanced {
+  text-wrap: balance;
+  text-wrap: pretty;
+}
+
+/* Floating 3D Parallax Layers */
+.tilt-parallax-icon {
+  transform: translateZ(28px);
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease;
+}
+
+.tilt-parallax-title {
+  transform: translateZ(22px);
+  transform-style: preserve-3d;
+}
+
+.tilt-parallax-text {
+  transform: translateZ(16px);
+  transform-style: preserve-3d;
+}
+
+.tilt-parallax-btn {
+  transform: translateZ(26px);
+  transform-style: preserve-3d;
+}
+
+/* Heroic App Frame Ambient Lighting */
+.hero-glow-backdrop {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  height: 480px;
+  background: radial-gradient(ellipse at center, rgba(9, 9, 11, 0.08) 0%, rgba(99, 102, 241, 0.06) 40%, rgba(16, 185, 129, 0.04) 65%, transparent 80%);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+  animation: heroAmbientGlow 6s ease-in-out infinite alternate;
+}
+
+@keyframes heroAmbientGlow {
+  0% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  100% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+
+/* Pulse animation for live indicators */
+@keyframes pulseDot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}
+
+.live-pulse-dot {
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+/* Hero Screen Switcher Tab Button */
+.hero-tab-btn {
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.hero-tab-btn.active {
+  background-color: #ffffff;
+  color: #09090b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.hero-tab-btn:not(.active) {
+  background-color: transparent;
+  color: #64748b;
+}
+
+.hero-tab-btn:not(.active):hover {
+  color: #0f172a;
+}
+
+/* Hover overlay on the hero app screen */
+.hero-preview-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(9, 9, 11, 0.65) 0%, rgba(9, 9, 11, 0.15) 30%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.2, 0, 0, 1);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2rem;
+}
+
+.hero-preview-container:hover .hero-preview-overlay {
+  opacity: 1;
+}
+
+/* Interactive Pill Badges */
+.security-pill-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.4rem;
+  border-radius: 14px;
+  background-color: #ffffff;
+  border: 1.5px solid #e4e4e7;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #18181b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, box-shadow 0.25s ease;
+}
+
+@media (max-width: 768px) {
+  .hero-tab-btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+  .hero-glow-backdrop {
+    width: 100%;
+    height: 250px;
+  }
+}
