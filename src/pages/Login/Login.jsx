@@ -200,13 +200,14 @@ const Login = () => {
     // Detect if running inside Flutter Desktop WebView or local server
     const isDesktopOrLocal = !!(
       window.chrome?.webview || 
-      (window.location.hostname === '127.0.0.1' && window.location.port)
+      (window.location.hostname === '127.0.0.1' && window.location.port) ||
+      (window.location.hostname === 'localhost' && window.location.port)
     );
     const port = window.location.port;
 
     if (isDesktopOrLocal && port) {
       setWaitingForBrowserAuth(true);
-      const authUrl = `http://127.0.0.1:${port}/#/google-auth?port=${port}`;
+      const authUrl = `http://localhost:${port}/#/google-auth?port=${port}`;
       try {
         await fetch(`/api/launch-browser?url=${encodeURIComponent(authUrl)}`);
       } catch (_) {
@@ -720,7 +721,7 @@ const Login = () => {
                 className="browser-auth-btn-reopen"
                 onClick={() => {
                   const port = window.location.port;
-                  const authUrl = port ? `http://127.0.0.1:${port}/#/google-auth?port=${port}` : '#/google-auth';
+                  const authUrl = port ? `http://localhost:${port}/#/google-auth?port=${port}` : '#/google-auth';
                   if (port) {
                     fetch(`/api/launch-browser?url=${encodeURIComponent(authUrl)}`).catch(() => {
                       window.open(authUrl, '_blank');

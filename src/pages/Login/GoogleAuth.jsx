@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { auth, googleProvider } from '../../services/firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { KarobaarLogo } from '../../components/KarobaarLogo/KarobaarLogo';
-import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, ArrowRight, ExternalLink } from 'lucide-react';
 
 const GoogleAuth = () => {
   const [searchParams] = useSearchParams();
@@ -14,19 +14,25 @@ const GoogleAuth = () => {
   const targetPort = searchParams.get('port') || (window.location.port ? window.location.port : null);
 
   const notifyApp = async (payload) => {
-    // 1. Post to LocalServer callback if on desktop / local port
+    // 1. Post to LocalServer callback (trying localhost, 127.0.0.1)
     if (targetPort) {
-      try {
-        await fetch(`http://127.0.0.1:${targetPort}/api/auth-callback`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      } catch (err) {
-        // Fallback to GET image ping
+      const hosts = Array.from(new Set([window.location.hostname || 'localhost', 'localhost', '127.0.0.1']));
+      let delivered = false;
+      for (const host of hosts) {
+        try {
+          await fetch(`http://${host}:${targetPort}/api/auth-callback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          delivered = true;
+          break;
+        } catch (_) {}
+      }
+      if (!delivered) {
         try {
           const img = new Image();
-          img.src = `http://127.0.0.1:${targetPort}/api/auth-callback?data=${encodeURIComponent(JSON.stringify(payload))}`;
+          img.src = `http://localhost:${targetPort}/api/auth-callback?data=${encodeURIComponent(JSON.stringify(payload))}`;
         } catch (_) {}
       }
     }
@@ -87,12 +93,24 @@ const GoogleAuth = () => {
     } catch (err) {
       console.error('[GoogleAuth Error]', err);
       setStatus('error');
-      setErrorMessage(err.message || 'Failed to authenticate with Google. Please try again.');
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+        setErrorMessage(
+          `Domain "${window.location.hostname}" is not authorized by Firebase. Please use "localhost" or add this domain in Firebase Console.`
+        );
+      } else {
+        setErrorMessage(err.message || 'Failed to authenticate with Google. Please try again.');
+      }
     }
   };
 
   useEffect(() => {
-    // Check if returning from a redirect
+    // 1. If loaded under 127.0.0.1 IP, immediately normalize to localhost so Firebase Auth whitelist succeeds
+    if (window.location.hostname === '127.0.0.1') {
+      window.location.replace(window.location.href.replace('127.0.0.1', 'localhost'));
+      return;
+    }
+
+    // 2. Check if returning from a redirect
     const checkRedirect = async () => {
       try {
         const result = await getRedirectResult(auth);
@@ -118,6 +136,9 @@ const GoogleAuth = () => {
 
     checkRedirect();
   }, []);
+
+  const isUnauthorizedDomain = errorMessage.includes('not authorized by Firebase') || errorMessage.includes('unauthorized-domain');
+  const isIpAddress = window.location.hostname === '127.0.0.1';
 
   return (
     <div style={{
@@ -250,21 +271,66 @@ const GoogleAuth = () => {
             <p style={{ color: '#f87171', fontSize: '0.88rem', lineHeight: 1.5, margin: '0 0 20px 0' }}>
               {errorMessage}
             </p>
-            <button
-              onClick={handleStartGoogleSignIn}
-              style={{
-                backgroundColor: '#ffffff',
-                color: '#09090b',
-                border: 'none',
-                padding: '10px 22px',
-                borderRadius: '10px',
-                fontWeight: 600,
-                fontSize: '0.88rem',
-                cursor: 'pointer'
-              }}
-            >
-              Try Again
-            </button>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {isIpAddress && (
+                <button
+                  onClick={() => window.location.replace(window.location.href.replace('127.0.0.1', 'localhost'))}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#09090b',
+                    border: 'none',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Switch to localhost (Recommended)
+                </button>
+              )}
+
+              {isUnauthorizedDomain && (
+                <a
+                  href="https://console.firebase.google.com/project/karobaaaar/authentication/settings"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    backgroundColor: '#27272a',
+                    color: '#ffffff',
+                    border: '1px solid #3f3f46',
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    fontWeight: 500,
+                    fontSize: '0.84rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  Open Firebase Authorized Domains <ExternalLink size={13} />
+                </a>
+              )}
+
+              <button
+                onClick={handleStartGoogleSignIn}
+                style={{
+                  backgroundColor: isIpAddress ? 'transparent' : '#ffffff',
+                  color: isIpAddress ? '#ffffff' : '#09090b',
+                  border: isIpAddress ? '1px solid #3f3f46' : 'none',
+                  padding: '10px 22px',
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         )}
       </div>
