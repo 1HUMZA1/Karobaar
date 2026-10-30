@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { db } from '../../services/databaseService';
+import { localDb } from '../../services/localDb';
 import { Button } from '../../components/ui/Button';
 import { auth } from '../../services/firebase';
 import { signOut, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
@@ -538,7 +539,18 @@ const CustomSelect = ({ value, onChange, options, placeholder }) => {
 };
 
 const BusinessSetup = () => {
-  const { authStatus, currentUser, refreshUserProfile } = useAppContext();
+  const { 
+    authStatus, 
+    setAuthStatus, 
+    currentUser, 
+    setCurrentUser, 
+    currentBusiness, 
+    setCurrentBusiness, 
+    userBusinesses, 
+    setUserBusinesses, 
+    refreshUserProfile, 
+    refreshBusinessProfile 
+  } = useAppContext();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const joinParam = searchParams.get('join') || '';
@@ -1041,7 +1053,7 @@ const BusinessSetup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSubmitState('Saving locally...');
+    setSubmitState('Saving business profile...');
     setError('');
 
     try {
@@ -1053,22 +1065,64 @@ const BusinessSetup = () => {
       if (!user) throw new Error("Authentication lost. Please log in again.");
 
       const finalEmail = personal.email ? personal.email.trim().toLowerCase() : (user.email ? user.email.toLowerCase() : '');
+      const fullPhone = personal.countryCode 
+        ? `${personal.countryCode} ${(personal.phone || '').replace(/[^0-9]/g, '')}`.trim()
+        : (personal.phone || '').trim();
 
-      // 1. Create Business
-      const newBusiness = await db.add('businesses', {
-        name: business.name,
-        type: business.type,
-        country: business.country,
-        city: business.city,
-        ownerId: user.uid,
-        ownerEmail: finalEmail,
-        modules: modules.reduce((acc, mod) => ({ ...acc, [mod]: true }), {}),
-        settings: {
-          currency: preferences.currency,
-          dateFormat: preferences.dateFormat,
-          lowStockThreshold: Number(preferences.lowStockThreshold) || 5
-        }
+      const ownerName = personal.fullName?.trim() || user.displayName || 'Business Owner';
+      const cleanBizName = (business.name || 'My Business').trim();
+
+      // Build complete module mapping
+      const moduleMap = {};
+      MODULES_LIST.forEach(m => {
+        moduleMap[m.id] = modules.includes(m.id);
       });
+
+      // 1. Create Business with ALL answers from setup
+      const businessPayload = {
+        name: cleanBizName,
+        businessName: cleanBizName,
+        type: business.type || business.category || 'General',
+        category: business.category || business.type || 'General',
+        country: business.country || '',
+        city: business.city || '',
+        address: business.address || '',
+        state: business.state || '',
+        taxNumber: (business.taxNumber || '').trim(),
+        gstNumber: (business.taxNumber || '').trim(),
+        annualRevenue: business.annualRevenue || '',
+        employeeCount: business.employeeCount || '',
+        appKnowledge: appKnowledge || 'Newbie',
+        ownerId: user.uid,
+        ownerName: ownerName,
+        ownerEmail: finalEmail,
+        email: finalEmail,
+        phone: fullPhone,
+        currency: preferences.currency || 'USD',
+        modules: moduleMap,
+        settings: {
+          businessName: cleanBizName,
+          category: business.category || business.type || 'General',
+          type: business.type || business.category || 'General',
+          taxNumber: (business.taxNumber || '').trim(),
+          gstNumber: (business.taxNumber || '').trim(),
+          address: business.address || '',
+          city: business.city || '',
+          country: business.country || '',
+          state: business.state || '',
+          phone: fullPhone,
+          email: finalEmail,
+          currency: preferences.currency || 'USD',
+          dateFormat: preferences.dateFormat || 'DD/MM/YYYY',
+          lowStockThreshold: Number(preferences.lowStockThreshold) || 5,
+          theme: 'light',
+          appKnowledge: appKnowledge || 'Newbie',
+          employeeCount: business.employeeCount || '',
+          annualRevenue: business.annualRevenue || ''
+        }
+      };
+
+      const newBusiness = await db.add('businesses', businessPayload);
 
       if (!newBusiness || !newBusiness.id) {
         throw new Error("Failed to create business profile.");
@@ -1077,32 +1131,65 @@ const BusinessSetup = () => {
       // 2. Add Membership
       await db.add('members', {
         userId: user.uid,
+        name: ownerName,
+        email: finalEmail,
+        phone: fullPhone,
         role: 'OWNER',
         addedAt: new Date().toISOString()
       }, newBusiness.id, user.uid);
 
-      // 3. Mark Onboarding Complete
-      await db.add('users', {
+      // 3. Mark Onboarding Complete in users collection
+      const userProfile = {
         firebaseUid: user.uid,
+        id: user.uid,
         email: finalEmail,
-        name: personal.fullName,
+        name: ownerName,
+        displayName: ownerName,
         photoURL: user.photoURL || '',
-        phone: personal.phone,
+        phone: fullPhone,
         emailVerified: isEmailVerified,
         phoneVerified: isPhoneVerified,
-        country: business.country,
-        language: personal.language,
-        role: 'OWNER', // frontend reference
+        country: business.country || '',
+        city: business.city || '',
+        language: personal.language || 'English',
+        role: 'Owner',
+        activeBusinessId: newBusiness.id,
         memberships: [newBusiness.id],
         accountStatus: 'active',
-        appKnowledge: appKnowledge, // Newbie, Rookie, Pro
+        appKnowledge: appKnowledge || 'Newbie',
         personalPreferences: {
           theme: 'light',
           density: 'comfortable',
           layout: 'modern'
         },
         onboardingCompleted: true
-      }, null, user.uid);
+      };
+
+      await db.add('users', userProfile, null, user.uid);
+      localDb.save('users', user.uid, userProfile, true);
+      localDb.save('businesses', newBusiness.id, newBusiness, true);
+
+      // 4. Update localStorage keys
+      try {
+        localStorage.removeItem('karobaar_explicit_logout');
+        localStorage.setItem('karobaar_session_user', JSON.stringify(userProfile));
+        localStorage.setItem('karobaar_session_business', JSON.stringify(newBusiness));
+        localStorage.setItem('karobaar_session_businesses', JSON.stringify([newBusiness]));
+        localStorage.setItem('karobaar-active-business', newBusiness.id);
+        localStorage.setItem('karobaar_onboarding_completed', 'true');
+        if (finalEmail) {
+          localStorage.setItem(`karobaar_onboarding_completed_${finalEmail.toLowerCase()}`, 'true');
+        }
+        if (user.email) {
+          localStorage.setItem(`karobaar_onboarding_completed_${user.email.toLowerCase()}`, 'true');
+        }
+      } catch (e) {}
+
+      // 5. Update React AppContext state
+      setCurrentUser(userProfile);
+      setCurrentBusiness(newBusiness);
+      setUserBusinesses([newBusiness]);
+      setAuthStatus('authenticated');
 
       setSubmitState('✓ Saved locally');
 
@@ -1115,7 +1202,8 @@ const BusinessSetup = () => {
       setSubmitState('Opening your dashboard...');
 
       // Navigate to dashboard cleanly
-      navigate('/dashboard');
+      window.location.hash = '#/dashboard';
+      window.location.reload();
     } catch (err) {
       console.error("[SETUP ERROR]", err);
       setError(err.message || 'Unable to save your business information. Please try again.');

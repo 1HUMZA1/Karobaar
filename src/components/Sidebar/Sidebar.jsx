@@ -180,10 +180,10 @@ const Sidebar = () => {
               onClick={() => {
                 window.location.hash = '#/dashboard';
               }}
-              onMouseEnter={(e) => handleMouseEnter(e, currentBusiness?.name || 'My Business')}
+              onMouseEnter={(e) => handleMouseEnter(e, currentBusiness?.name || currentBusiness?.businessName || 'My Business')}
               onMouseLeave={handleMouseLeave}
             >
-              {currentBusiness?.name || 'My Business'}
+              {currentBusiness?.name || currentBusiness?.businessName || 'My Business'}
             </div>
           )}
         </div>
@@ -193,8 +193,26 @@ const Sidebar = () => {
             // Filter items in this group
             const visibleItems = group.items.filter(item => {
               const normUserRole = normalizeRole(userRole);
-              const hasRole = normUserRole === ROLES.OWNER || item.roles.map(r => normalizeRole(r).toLowerCase()).includes(normUserRole.toLowerCase());
-              const isModuleEnabled = item.moduleId === 'core' || enabledModules[item.moduleId] === true || enabledModules[item.moduleId] === "true";
+              const isOwner = normUserRole === ROLES.OWNER || userRole === 'Owner' || userRole === 'OWNER';
+              const hasRole = isOwner || item.roles.map(r => normalizeRole(r).toLowerCase()).includes(normUserRole.toLowerCase());
+              
+              const modulesConfigured = currentBusiness?.modules && Object.keys(currentBusiness.modules).length > 0;
+              let isModuleEnabled = item.moduleId === 'core';
+              if (!isModuleEnabled) {
+                if (modulesConfigured) {
+                  isModuleEnabled = enabledModules[item.moduleId] === true || 
+                    enabledModules[item.moduleId] === "true" ||
+                    (item.moduleId === 'pos' && enabledModules.sales) ||
+                    (item.moduleId === 'sales' && enabledModules.pos) ||
+                    (item.moduleId === 'purchases' && enabledModules.inventory) ||
+                    (item.moduleId === 'suppliers' && enabledModules.inventory) ||
+                    (item.moduleId === 'invoices' && (enabledModules.sales || enabledModules.expenses)) ||
+                    (item.moduleId === 'payments' && (enabledModules.sales || enabledModules.expenses));
+                } else if (isOwner) {
+                  // If modules are not yet explicitly set, Owner defaults to having all operational modules visible
+                  isModuleEnabled = true;
+                }
+              }
               return hasRole && isModuleEnabled;
             });
 

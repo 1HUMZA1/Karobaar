@@ -93,6 +93,22 @@ export const AppProvider = ({ children }) => {
         }
         return parsed;
       }
+      // Auto-heal from localDb
+      const activeBizId = localStorage.getItem('karobaar-active-business');
+      const allLocal = localDb.getAll('businesses') || [];
+      if (activeBizId) {
+        const found = allLocal.find(x => x && x.id === activeBizId && !String(x.id).startsWith('demo-'));
+        if (found) {
+          localStorage.setItem('karobaar_session_business', JSON.stringify(found));
+          return found;
+        }
+      }
+      const realBiz = allLocal.find(x => x && !String(x.id).startsWith('demo-') && !String(x.id).includes('demo') && x.name && x.name !== 'My Business' && x.name !== 'My Store');
+      if (realBiz) {
+        localStorage.setItem('karobaar_session_business', JSON.stringify(realBiz));
+        localStorage.setItem('karobaar-active-business', realBiz.id);
+        return realBiz;
+      }
       return null;
     } catch (e) { return null; }
   });
@@ -102,7 +118,17 @@ export const AppProvider = ({ children }) => {
       const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return [];
       const bs = localStorage.getItem('karobaar_session_businesses');
-      return bs ? JSON.parse(bs) : [];
+      if (bs) {
+        const parsed = JSON.parse(bs);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      const allLocal = localDb.getAll('businesses') || [];
+      const real = allLocal.filter(x => x && !String(x.id).startsWith('demo-') && !String(x.id).includes('demo') && x.name && x.name !== 'My Business' && x.name !== 'My Store');
+      if (real.length > 0) {
+        localStorage.setItem('karobaar_session_businesses', JSON.stringify(real));
+        return real;
+      }
+      return [];
     } catch (e) { return []; }
   });
 
@@ -256,8 +282,9 @@ export const AppProvider = ({ children }) => {
               const userObj = {
                 ...(karobaarUser || {}),
                 id: firebaseUser.uid,
-                name: firebaseUser.displayName || karobaarUser?.name || 'Business Owner',
-                email: firebaseUser.email,
+                name: karobaarUser?.name || activeBusinessData.ownerName || firebaseUser.displayName || 'Business Owner',
+                email: firebaseUser.email || karobaarUser?.email || '',
+                phone: karobaarUser?.phone || activeBusinessData.phone || '',
                 role: karobaarUser?.role || 'Owner',
                 activeBusinessId: activeBusinessData.id,
                 memberships: businessesData.map(b => b.id),
@@ -279,26 +306,61 @@ export const AppProvider = ({ children }) => {
               setAuthStatus('pending_onboarding');
             }
           } else {
-            // NEW USER: route to setup page!
-            const pendingUser = {
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Business Owner',
-              email: firebaseUser.email,
-              role: 'Owner',
-              memberships: [],
-              onboardingCompleted: false
-            };
-            setCurrentUser(pendingUser);
-            setCurrentBusiness(null);
-            setUserBusinesses([]);
-            try {
-              localStorage.setItem('karobaar_session_user', JSON.stringify(pendingUser));
-              localStorage.removeItem('karobaar_session_business');
-              localStorage.removeItem('karobaar_session_businesses');
-              localStorage.removeItem('karobaar-active-business');
-              localStorage.removeItem(`karobaar_onboarding_completed_${firebaseUser.email.toLowerCase()}`);
-            } catch (e) {}
-            setAuthStatus('pending_onboarding');
+            // Check if there is an active or local business before treating as brand-new!
+            const allLocal = localDb.getAll('businesses') || [];
+            const realBiz = allLocal.find(b => b && !String(b.id).startsWith('demo-') && !String(b.id).includes('demo') && b.name && b.name !== 'My Business' && b.name !== 'My Store');
+            if (realBiz) {
+              // Auto-adopt this real business for the authenticated user!
+              realBiz.ownerId = firebaseUser.uid;
+              if (firebaseUser.email) realBiz.ownerEmail = firebaseUser.email;
+              localDb.save('businesses', realBiz.id, realBiz);
+              setCurrentBusiness(realBiz);
+              setUserBusinesses([realBiz]);
+              const userObj = {
+                ...(karobaarUser || {}),
+                id: firebaseUser.uid,
+                name: karobaarUser?.name || realBiz.ownerName || firebaseUser.displayName || 'Business Owner',
+                email: firebaseUser.email || karobaarUser?.email || '',
+                phone: karobaarUser?.phone || realBiz.phone || '',
+                role: 'Owner',
+                activeBusinessId: realBiz.id,
+                memberships: [realBiz.id],
+                onboardingCompleted: true
+              };
+              setCurrentUser(userObj);
+              try {
+                localStorage.setItem('karobaar_session_user', JSON.stringify(userObj));
+                localStorage.setItem('karobaar_session_business', JSON.stringify(realBiz));
+                localStorage.setItem('karobaar_session_businesses', JSON.stringify([realBiz]));
+                localStorage.setItem('karobaar-active-business', realBiz.id);
+                if (firebaseUser.email) {
+                  localStorage.setItem(`karobaar_onboarding_completed_${firebaseUser.email.toLowerCase()}`, 'true');
+                }
+              } catch (e) {}
+              db.startRealtimeSync(realBiz.id);
+              setAuthStatus('authenticated');
+            } else {
+              // NEW USER: route to setup page!
+              const pendingUser = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Business Owner',
+                email: firebaseUser.email,
+                role: 'Owner',
+                memberships: [],
+                onboardingCompleted: false
+              };
+              setCurrentUser(pendingUser);
+              setCurrentBusiness(null);
+              setUserBusinesses([]);
+              try {
+                localStorage.setItem('karobaar_session_user', JSON.stringify(pendingUser));
+                localStorage.removeItem('karobaar_session_business');
+                localStorage.removeItem('karobaar_session_businesses');
+                localStorage.removeItem('karobaar-active-business');
+                localStorage.removeItem(`karobaar_onboarding_completed_${firebaseUser.email.toLowerCase()}`);
+              } catch (e) {}
+              setAuthStatus('pending_onboarding');
+            }
           }
         } catch (error) {
           console.warn("[AUTH] Cloud profile check note:", error);
@@ -326,7 +388,33 @@ export const AppProvider = ({ children }) => {
               setAuthStatus('unauthenticated');
             }
           } else {
-            setAuthStatus('unauthenticated');
+            // Auto-heal check if business exists locally
+            const allLocal = localDb.getAll('businesses') || [];
+            const realBiz = allLocal.find(b => b && !String(b.id).startsWith('demo-') && !String(b.id).includes('demo') && b.name && b.name !== 'My Business' && b.name !== 'My Store');
+            if (realBiz) {
+              setCurrentBusiness(realBiz);
+              setUserBusinesses([realBiz]);
+              const fallbackUser = {
+                id: realBiz.ownerId || 'owner-' + realBiz.id,
+                name: realBiz.ownerName || 'Business Owner',
+                email: realBiz.email || realBiz.ownerEmail || 'owner@karobaar.local',
+                phone: realBiz.phone || '',
+                role: 'Owner',
+                activeBusinessId: realBiz.id,
+                memberships: [realBiz.id],
+                onboardingCompleted: true
+              };
+              setCurrentUser(fallbackUser);
+              try {
+                localStorage.setItem('karobaar_session_user', JSON.stringify(fallbackUser));
+                localStorage.setItem('karobaar_session_business', JSON.stringify(realBiz));
+                localStorage.setItem('karobaar_session_businesses', JSON.stringify([realBiz]));
+                localStorage.setItem('karobaar-active-business', realBiz.id);
+              } catch (e) {}
+              setAuthStatus('authenticated');
+            } else {
+              setAuthStatus('unauthenticated');
+            }
           }
         }
       }
@@ -334,6 +422,68 @@ export const AppProvider = ({ children }) => {
 
     return () => unsubscribe();
   }, []);
+
+  // Periodic Auto-heal to guarantee real business data is ALWAYS mounted and never lost
+  useEffect(() => {
+    const healSession = () => {
+      try {
+        const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
+        if (wasLoggedOut) return;
+
+        const allLocal = localDb.getAll('businesses') || [];
+        const realBusinesses = allLocal.filter(b => b && !String(b.id).startsWith('demo-') && !String(b.id).includes('demo') && b.name && b.name !== 'My Business' && b.name !== 'My Store');
+        
+        let candidate = null;
+        const activeBizId = localStorage.getItem('karobaar-active-business');
+        if (activeBizId) {
+          candidate = allLocal.find(b => b && b.id === activeBizId && !String(b.id).startsWith('demo-'));
+        }
+        if (!candidate && realBusinesses.length > 0) {
+          candidate = realBusinesses[realBusinesses.length - 1];
+        }
+
+        if (candidate) {
+          if (!currentBusiness || currentBusiness.id !== candidate.id || !currentBusiness.name || currentBusiness.name === 'My Business') {
+            setCurrentBusiness(candidate);
+            localStorage.setItem('karobaar_session_business', JSON.stringify(candidate));
+            localStorage.setItem('karobaar-active-business', candidate.id);
+          }
+          if (!userBusinesses || userBusinesses.length === 0) {
+            setUserBusinesses(realBusinesses.length > 0 ? realBusinesses : [candidate]);
+            localStorage.setItem('karobaar_session_businesses', JSON.stringify(realBusinesses.length > 0 ? realBusinesses : [candidate]));
+          }
+
+          // Heal user name & phone
+          const allUsers = localDb.getAll('users') || [];
+          const realUser = allUsers.find(u => u && !String(u.id).startsWith('demo-') && u.name && u.name !== 'Store Owner' && u.name !== 'dev 1');
+          const resolvedName = realUser?.name || candidate.ownerName;
+          if (resolvedName && (!currentUser?.name || currentUser.name === 'Store Owner' || currentUser.name === 'dev 1' || currentUser.name === 'User')) {
+            setCurrentUser(prev => ({
+              ...(prev || {}),
+              name: resolvedName,
+              displayName: resolvedName,
+              phone: prev?.phone || realUser?.phone || candidate.phone || '',
+              activeBusinessId: candidate.id
+            }));
+            try {
+              const savedUser = JSON.parse(localStorage.getItem('karobaar_session_user') || '{}');
+              localStorage.setItem('karobaar_session_user', JSON.stringify({
+                ...savedUser,
+                name: resolvedName,
+                displayName: resolvedName,
+                phone: savedUser.phone || realUser?.phone || candidate.phone || '',
+                activeBusinessId: candidate.id
+              }));
+            } catch (e) {}
+          }
+        }
+      } catch (e) {
+        console.warn('[Auto-heal session note]', e);
+      }
+    };
+
+    healSession();
+  }, [currentBusiness?.id]);
 
   const toggleTheme = (forcedMode) => {
     const currentDomTheme = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme')) 

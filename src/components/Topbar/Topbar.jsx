@@ -732,7 +732,7 @@ const Topbar = () => {
             title="Switch Workspace / Multi-Business"
           >
             <Building2 size={14} />
-            <span className="topbar-biz-pill-name">{currentBusiness?.name || 'Workspace'}</span>
+            <span className="topbar-biz-pill-name">{currentBusiness?.name || currentBusiness?.businessName || 'Workspace'}</span>
             <span className="topbar-biz-pill-role">{currentUser?.role || 'Owner'}</span>
             <ChevronDown size={12} style={{ transform: isBizDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
           </button>
@@ -820,8 +820,8 @@ const Topbar = () => {
             )}
           </div>
           <div className="user-info hidden-mobile">
-            <span className="user-name">{currentUser?.name || 'User'}</span>
-            <span className="user-business">{currentBusiness?.businessName || currentBusiness?.name || 'Business'}</span>
+            <span className="user-name">{currentUser?.name || currentUser?.displayName || currentBusiness?.ownerName || 'User'}</span>
+            <span className="user-business">{currentBusiness?.name || currentBusiness?.businessName || 'Business'}</span>
           </div>
           
           {isProfileOpen && (
@@ -830,8 +830,8 @@ const Topbar = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="profile-dropdown-header">
-                <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>{currentUser?.name || 'User'}</p>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>{currentUser?.email || ''}</p>
+                <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>{currentUser?.name || currentUser?.displayName || currentBusiness?.ownerName || 'User'}</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>{currentUser?.email || currentBusiness?.email || currentBusiness?.ownerEmail || ''}</p>
               </div>
               
               <div 

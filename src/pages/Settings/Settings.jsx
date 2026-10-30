@@ -108,12 +108,12 @@ const Settings = () => {
   const [initialBaseline, setInitialBaseline] = useState(null);
 
   // 1. Business Profile State
-  const [businessName, setBusinessName] = useState(() => currentBusiness?.name || '');
-  const [businessEmail, setBusinessEmail] = useState('');
-  const [businessType, setBusinessType] = useState('Cafeteria / Restaurant');
-  const [businessPhone, setBusinessPhone] = useState('+91 98765 43210');
-  const [businessAddress, setBusinessAddress] = useState('Shop #4, Commercial Complex');
-  const [taxId, setTaxId] = useState('GSTIN-29AAAAA0000A1Z5');
+  const [businessName, setBusinessName] = useState(() => currentBusiness?.name || currentBusiness?.businessName || '');
+  const [businessEmail, setBusinessEmail] = useState(() => currentBusiness?.email || currentBusiness?.ownerEmail || currentUser?.email || '');
+  const [businessType, setBusinessType] = useState(() => currentBusiness?.type || currentBusiness?.category || 'Wholesale & Distribution');
+  const [businessPhone, setBusinessPhone] = useState(() => currentBusiness?.phone || currentBusiness?.settings?.phone || currentUser?.phone || '');
+  const [businessAddress, setBusinessAddress] = useState(() => currentBusiness?.address || currentBusiness?.settings?.address || '');
+  const [taxId, setTaxId] = useState(() => currentBusiness?.taxNumber || currentBusiness?.gstNumber || currentBusiness?.settings?.taxNumber || '');
 
   // 2. Appearance & Mode State
   const [selectedTheme, setSelectedTheme] = useState(() => localStorage.getItem('karobaar-theme') || 'light');
@@ -159,10 +159,10 @@ const Settings = () => {
   };
 
   // 4. Preferences & Tax State
-  const [currency, setCurrency] = useState('INR');
-  const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
-  const [lowStockThreshold, setLowStockThreshold] = useState(5);
-  const [taxRate, setTaxRate] = useState(5);
+  const [currency, setCurrency] = useState(() => currentBusiness?.currency || currentBusiness?.settings?.currency || 'USD');
+  const [dateFormat, setDateFormat] = useState(() => currentBusiness?.settings?.dateFormat || 'DD/MM/YYYY');
+  const [lowStockThreshold, setLowStockThreshold] = useState(() => currentBusiness?.settings?.lowStockThreshold ?? 5);
+  const [taxRate, setTaxRate] = useState(() => currentBusiness?.settings?.taxRate ?? 0);
 
   // 5. Invoice Settings State
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
@@ -178,8 +178,8 @@ const Settings = () => {
   const [enabledModules, setEnabledModules] = useState({});
 
   // 8. Account & Security State
-  const [accountDisplayName, setAccountDisplayName] = useState('');
-  const [accountPhone, setAccountPhone] = useState('+91 98765 43210');
+  const [accountDisplayName, setAccountDisplayName] = useState(() => currentUser?.name || currentUser?.displayName || currentBusiness?.ownerName || '');
+  const [accountPhone, setAccountPhone] = useState(() => currentUser?.phone || currentBusiness?.phone || '');
   const [defaultBranch, setDefaultBranch] = useState('main');
   const [autoLockTimeout, setAutoLockTimeout] = useState('30m');
   
@@ -450,12 +450,12 @@ const Settings = () => {
       }
 
       // Populate Business Profile
-      const bName = biz.name || 'My Business';
-      const bType = biz.type || 'Cafeteria / Restaurant';
-      const bEmail = biz.email || '';
-      const bPhone = biz.phone || settings.phone || '+91 98765 43210';
-      const bAddr = biz.address || settings.address || 'Shop #4, Commercial Complex';
-      const bTaxId = settings.taxId || 'GSTIN-29AAAAA0000A1Z5';
+      const bName = biz.name || biz.businessName || settings.businessName || '';
+      const bType = biz.type || biz.category || settings.type || settings.category || 'Wholesale & Distribution';
+      const bEmail = biz.email || biz.ownerEmail || settings.email || currentUser?.email || '';
+      const bPhone = biz.phone || settings.phone || currentUser?.phone || '';
+      const bAddr = biz.address || settings.address || '';
+      const bTaxId = biz.taxNumber || biz.gstNumber || settings.taxNumber || settings.taxId || '';
 
       setBusinessName(bName);
       setBusinessType(bType);
@@ -516,10 +516,10 @@ const Settings = () => {
       setStoreUpiMode(uMode);
 
       // Populate Preferences
-      const prefCurr = settings.currency || 'INR';
+      const prefCurr = settings.currency || biz.currency || 'USD';
       const prefDate = settings.dateFormat || 'DD/MM/YYYY';
       const prefLow = settings.lowStockThreshold ?? 5;
-      const prefTax = settings.taxRate ?? 5;
+      const prefTax = settings.taxRate ?? 0;
       setCurrency(prefCurr);
       setDateFormat(prefDate);
       setLowStockThreshold(prefLow);
@@ -550,8 +550,8 @@ const Settings = () => {
       setNotifyDailyReport(notRep);
 
       // Populate Account Details
-      const uName = userRecord?.name || 'HUMZA';
-      const uPhone = userRecord?.phone || '+91 98765 43210';
+      const uName = userRecord?.name || userRecord?.displayName || biz.ownerName || 'Business Owner';
+      const uPhone = userRecord?.phone || biz.phone || settings.phone || '';
       const uBranch = userRecord?.defaultBranch || 'main';
       const uLock = userRecord?.autoLockTimeout || '30m';
       setAccountDisplayName(uName);
@@ -760,10 +760,15 @@ const Settings = () => {
 
       const businessUpdates = {
         name: (businessName || 'My Business').trim(),
+        businessName: (businessName || 'My Business').trim(),
         type: businessType,
+        category: businessType,
         email: (businessEmail || '').trim(),
         phone: (businessPhone || '').trim(),
         address: (businessAddress || '').trim(),
+        taxNumber: (taxId || '').trim(),
+        gstNumber: (taxId || '').trim(),
+        currency: currency || 'USD',
         settings: updatedSettings,
         modules: enabledModules
       };

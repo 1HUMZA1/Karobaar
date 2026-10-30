@@ -62,15 +62,34 @@ const Dashboard = ({ onSwitchMode }) => {
   const [rawProducts, setRawProducts] = useState([]);
   const [rawAttendance, setRawAttendance] = useState([]);
 
-  // Robust currency resolver
+  // Robust multi-currency resolver
   const currencySymbol = useMemo(() => {
-    const c = currentBusiness?.currency || currentBusiness?.settings?.currency || 'INR';
-    if (c === 'INR' || c === '₹') return '₹';
-    if (c === 'USD' || c === '$') return '$';
-    if (c === 'EUR' || c === '€') return '€';
-    if (c === 'GBP' || c === '£') return '£';
-    if (c === 'AED') return 'AED ';
-    return c.length <= 3 ? c + ' ' : '₹';
+    const c = currentBusiness?.currency || currentBusiness?.settings?.currency || 'USD';
+    const map = {
+      'AED': 'AED ',
+      'USD': '$',
+      'INR': '₹',
+      'PKR': 'Rs ',
+      'EUR': '€',
+      'GBP': '£',
+      'SAR': 'SAR ',
+      'CAD': 'CA$ ',
+      'AUD': 'A$ ',
+      'QAR': 'QAR ',
+      'KWD': 'KWD ',
+      'BHD': 'BHD ',
+      'OMR': 'OMR ',
+      'BDT': 'Tk ',
+      'SGD': 'S$ ',
+      'MYR': 'RM ',
+      'PHP': '₱',
+      'TRY': '₺',
+      'JPY': '¥',
+      'CNY': '¥'
+    };
+    if (map[c]) return map[c];
+    if (c === '$' || c === '₹' || c === '€' || c === '£') return c;
+    return c.length <= 4 ? `${c} ` : '$';
   }, [currentBusiness]);
 
   // Demo Mode detection
@@ -437,7 +456,7 @@ const Dashboard = ({ onSwitchMode }) => {
     return 'Good evening';
   };
 
-  const fullGreetingText = `${getGreeting()}, ${currentBusiness?.name || 'Business'}`;
+  const fullGreetingText = `${getGreeting()}, ${currentBusiness?.name || currentBusiness?.businessName || currentUser?.name || 'Business'}`;
   const [greetingTyped, setGreetingTyped] = useState('');
 
   useEffect(() => {

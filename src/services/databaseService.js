@@ -144,6 +144,26 @@ class DatabaseService {
         console.warn('[getBusinessesForUser Cloud Note]', e);
       }
     }
+
+    // Resilient Fallback: If no match found by ownerId or email, check if there is an active business in localStorage or a non-demo business in localDb
+    if (matches.length === 0) {
+      const activeBizId = typeof localStorage !== 'undefined' ? localStorage.getItem('karobaar-active-business') : null;
+      if (activeBizId) {
+        const activeBiz = allLocal.find(b => b && b.id === activeBizId && !String(b.id).startsWith('demo-'));
+        if (activeBiz) {
+          if (userId && !activeBiz.ownerId) activeBiz.ownerId = userId;
+          matches.push(activeBiz);
+        }
+      }
+      if (matches.length === 0) {
+        const localRealBiz = allLocal.find(b => b && !String(b.id).startsWith('demo-') && !String(b.id).includes('demo') && b.name && b.name !== 'My Business' && b.name !== 'My Store');
+        if (localRealBiz) {
+          if (userId && !localRealBiz.ownerId) localRealBiz.ownerId = userId;
+          matches.push(localRealBiz);
+        }
+      }
+    }
+
     return matches;
   }
 

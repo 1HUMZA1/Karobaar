@@ -46,7 +46,17 @@ const DashboardLegacy = ({ onSwitchMode }) => {
     datasets: []
   });
 
-  const currencySymbol = currentBusiness?.settings?.currency === 'INR' ? '₹' : '$';
+  const currencySymbol = useMemo(() => {
+    const c = currentBusiness?.currency || currentBusiness?.settings?.currency || 'USD';
+    const map = {
+      'AED': 'AED ', 'USD': '$', 'INR': '₹', 'PKR': 'Rs ', 'EUR': '€', 'GBP': '£',
+      'SAR': 'SAR ', 'CAD': 'CA$ ', 'AUD': 'A$ ', 'QAR': 'QAR ', 'KWD': 'KWD ',
+      'BHD': 'BHD ', 'OMR': 'OMR ', 'BDT': 'Tk ', 'SGD': 'S$ ', 'MYR': 'RM '
+    };
+    if (map[c]) return map[c];
+    if (c === '$' || c === '₹' || c === '€' || c === '£') return c;
+    return c.length <= 4 ? `${c} ` : '$';
+  }, [currentBusiness]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -250,7 +260,7 @@ const DashboardLegacy = ({ onSwitchMode }) => {
       {/* 1. Header Bar with Mode Switcher */}
       <div className="legacy-header-bar">
         <div className="legacy-brand-group">
-          <h1>{currentBusiness?.name || 'My Business'}</h1>
+          <h1>{currentBusiness?.name || currentBusiness?.businessName || 'My Business'}</h1>
           <p>Legacy Fast-Track Desk • Instant Business Operations</p>
         </div>
         <div className="legacy-header-controls">
