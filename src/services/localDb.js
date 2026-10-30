@@ -231,7 +231,7 @@ class LocalDB {
   }
 
   getPendingQueue() {
-    return this.queue.filter(q => q.status === 'pending' || q.status === 'failed');
+    return this.queue.filter(q => q.status === 'pending' || (q.status === 'failed' && (q.retryCount || 0) < 5));
   }
 
   markQueueItemSuccess(queueId) {

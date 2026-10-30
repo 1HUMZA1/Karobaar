@@ -177,6 +177,11 @@ class DatabaseService {
         delete cleanData._localUpdatedAt;
         delete cleanData.id;
 
+        // Truncate or omit huge base64 images that exceed Firestore 1MB document boundary
+        if (cleanData.imageUrl && typeof cleanData.imageUrl === 'string' && cleanData.imageUrl.length > 700000) {
+          delete cleanData.imageUrl;
+        }
+
         if (item.operation === 'SET') {
           await this._withTimeout(setDoc(docRef, cleanData, { merge: true }), 8000);
         } else if (item.operation === 'DELETE') {

@@ -15,8 +15,30 @@ export class ErrorBoundary extends React.Component {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
-  handleReset = () => {
+  handleReset = async () => {
+    if (typeof window !== 'undefined' && 'caches' in window) {
+      try {
+        const names = await caches.keys();
+        await Promise.all(names.map(name => caches.delete(name)));
+      } catch (e) {}
+    }
+    const hadInitError = this.state.error?.message?.includes('initialization') || this.state.error?.message?.includes('dynamically imported');
     this.setState({ hasError: false, error: null });
+    if (hadInitError) {
+      window.location.reload();
+    }
+  };
+
+  handleGoDashboard = async () => {
+    if (typeof window !== 'undefined' && 'caches' in window) {
+      try {
+        const names = await caches.keys();
+        await Promise.all(names.map(name => caches.delete(name)));
+      } catch (e) {}
+    }
+    this.setState({ hasError: false, error: null });
+    window.location.hash = '#/dashboard';
+    window.location.reload();
   };
 
   render() {
@@ -85,7 +107,7 @@ export class ErrorBoundary extends React.Component {
 
               <button 
                 type="button" 
-                onClick={() => window.location.href = '#/dashboard'}
+                onClick={this.handleGoDashboard}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',

@@ -106,12 +106,13 @@ const AppContent = () => {
   const { authStatus, currentUser, currentBusiness } = useAppContext();
   const [sloganIndex, setSloganIndex] = useState(0);
   const [quoteFade, setQuoteFade] = useState('in'); // 'in' | 'out' | 'prep'
-  const [progress, setProgress] = useState(0);
+  const isAlreadyShown = typeof window !== 'undefined' && sessionStorage.getItem('karobaar_splash_shown') === 'true';
+  const [splashFinished, setSplashFinished] = useState(isAlreadyShown);
+  const [progress, setProgress] = useState(isAlreadyShown ? 100 : 0);
   const [statusMessage, setStatusMessage] = useState("Initializing workspace...");
-  const [splashFinished, setSplashFinished] = useState(false);
   const [isSlow, setIsSlow] = useState(false);
 
-  // Rotating quotes with smooth fade-in and fade-out
+  // Rotating quotes with smooth fade-in and fade-out (only runs during initial boot)
   useEffect(() => {
     if (splashFinished) return;
 
@@ -129,7 +130,7 @@ const AppContent = () => {
     return () => clearInterval(quoteInterval);
   }, [splashFinished]);
 
-  // Smooth 0 to 100 countdown progress ticker
+  // Smooth 0 to 100 countdown progress ticker (runs strictly ONCE per session)
   useEffect(() => {
     if (splashFinished) return;
 
@@ -146,7 +147,7 @@ const AppContent = () => {
         }
 
         // Normal smooth progression
-        const step = Math.floor(Math.random() * 4) + 3;
+        const step = Math.floor(Math.random() * 5) + 4;
         const next = Math.min(100, prev + step);
 
         if (next < 25) setStatusMessage("Initializing workspace...");
@@ -157,11 +158,11 @@ const AppContent = () => {
 
         return next;
       });
-    }, 45);
+    }, 40);
 
     const slowTimer = setTimeout(() => {
       setIsSlow(true);
-    }, 4500);
+    }, 4000);
 
     return () => {
       clearInterval(timer);
@@ -169,23 +170,31 @@ const AppContent = () => {
     };
   }, [authStatus, splashFinished]);
 
-  // When 100% countdown finishes and auth is loaded, complete splash
+  // When 100% countdown finishes and auth is loaded, complete splash and lock session flag
   useEffect(() => {
+    if (splashFinished) return;
     if (progress >= 100 && authStatus !== 'loading') {
       const finishTimer = setTimeout(() => {
+        try {
+          sessionStorage.setItem('karobaar_splash_shown', 'true');
+        } catch (e) {}
         setSplashFinished(true);
-      }, 240);
+      }, 200);
       return () => clearTimeout(finishTimer);
     }
-  }, [progress, authStatus]);
+  }, [progress, authStatus, splashFinished]);
 
-  // Safety limit: ensure workspace opens smoothly within 2.2s
+  // Safety limit: ensure workspace opens smoothly within 1.8s
   useEffect(() => {
+    if (splashFinished) return;
     const safetyLimit = setTimeout(() => {
+      try {
+        sessionStorage.setItem('karobaar_splash_shown', 'true');
+      } catch (e) {}
       setSplashFinished(true);
-    }, 2200);
+    }, 1800);
     return () => clearTimeout(safetyLimit);
-  }, []);
+  }, [splashFinished]);
 
   if (!splashFinished) {
     return (

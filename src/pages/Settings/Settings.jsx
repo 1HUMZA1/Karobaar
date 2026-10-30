@@ -840,16 +840,23 @@ const Settings = () => {
   };
 
   // Global keyboard shortcut: Ctrl+S / Cmd+S to save all workspace settings
+  const handleSaveRef = useRef(handleSave);
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  });
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
-        handleSave();
+        if (handleSaveRef.current) {
+          handleSaveRef.current();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave]);
+  }, []);
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();

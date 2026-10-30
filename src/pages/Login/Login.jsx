@@ -529,7 +529,6 @@ const Login = () => {
       setSuccessMessage('Password successfully updated! Entering your workspace...');
       setTimeout(() => {
         navigate('/dashboard');
-        window.location.reload();
       }, 500);
     } catch (err) {
       console.error("Reset error:", err);
