@@ -1,46 +1,164 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Karobaar — Google Sign-In</title>
   <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       background-color: #09090b;
       color: #fafafa;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      margin: 0;
+      padding: 24px;
       text-align: center;
-      padding: 20px;
-      box-sizing: border-box;
+      user-select: none;
+    }
+    .auth-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 16px;
+      padding: 36px 32px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .brand-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: #ffffff;
+      color: #09090b;
+      font-weight: 800;
+      font-size: 20px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .brand-name {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fafafa;
     }
     .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3.5px solid rgba(255,255,255,0.15);
+      width: 44px;
+      height: 44px;
+      border: 3.5px solid rgba(255, 255, 255, 0.12);
       border-top-color: #38bdf8;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin: 0 auto 18px;
+      margin-bottom: 20px;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .success-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1.5px solid rgba(34, 197, 94, 0.4);
+      color: #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 18px;
+    }
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .subtitle {
+      font-size: 13.5px;
+      color: #a1a1aa;
+      line-height: 1.5;
+      margin-bottom: 24px;
+      max-width: 340px;
+    }
+    .google-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: #ffffff;
+      color: #0f172a;
+      border: none;
+      padding: 12px 24px;
+      font-size: 14.5px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+    }
+    .google-btn:hover {
+      background: #f1f5f9;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(255, 255, 255, 0.22);
+    }
+    .google-btn:active {
+      transform: translateY(0);
+    }
+    .google-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .footer-note {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #71717a;
+    }
   </style>
 </head>
 <body>
-  <div id="status-card">
-    <div class="spinner"></div>
-    <div style="font-size: 16px; font-weight: 600; margin-bottom: 6px;">Opening Google Accounts...</div>
-    <div style="font-size: 13px; color: #a1a1aa;">Choose your account in Google to continue to Karobaar.</div>
+  <div class="auth-card">
+    <div class="brand-badge">
+      <div class="brand-logo">K</div>
+      <div class="brand-name">Karobaar OS</div>
+    </div>
+
+    <div id="status-container">
+      <div class="spinner"></div>
+      <div class="title">Opening Google Accounts...</div>
+      <div class="subtitle">Select your account in the Google chooser to continue.</div>
+    </div>
+
+    <div class="footer-note">Secure Google OAuth 2.0 Verification</div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDVy8pjz-L9C6vm3Z9v-mBCa6isM2hKh_M",
@@ -58,74 +176,124 @@
 
     const searchParams = new URLSearchParams(window.location.search);
     const port = searchParams.get('port') || (window.location.port ? window.location.port : null);
+    const container = document.getElementById('status-container');
 
-    async function runAuth() {
+    function renderPrompt(title, desc) {
+      container.innerHTML = `
+        <div class="title">${title || 'Select Google Account'}</div>
+        <div class="subtitle">${desc || 'Choose your Google account to complete sign-in and open your workspace.'}</div>
+        <button id="signin-action-btn" class="google-btn" type="button">
+          <svg class="google-icon" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Continue with Google
+        </button>
+      `;
+      document.getElementById('signin-action-btn').addEventListener('click', () => {
+        executeSignIn(true);
+      });
+    }
+
+    function renderSuccess(userName) {
+      container.innerHTML = `
+        <div class="success-icon">✓</div>
+        <div class="title">Google Sign-In Complete!</div>
+        <div class="subtitle">Welcome, <strong>${userName}</strong>. Returning to Karobaar Desktop...</div>
+      `;
+    }
+
+    function renderLoading(title, desc) {
+      container.innerHTML = `
+        <div class="spinner"></div>
+        <div class="title">${title || 'Verifying Google Account...'}</div>
+        <div class="subtitle">${desc || 'Connecting your workspace session.'}</div>
+      `;
+    }
+
+    async function handleAuthSuccess(user) {
+      const payload = {
+        uid: user.uid,
+        id: user.uid,
+        email: user.email,
+        name: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL || '',
+        role: 'Owner'
+      };
+
+      renderSuccess(payload.name);
+
+      // 1. Broadcast to localStorage across all tabs/windows
       try {
-        // 1. Check if returning from Google OAuth redirect
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
-          const user = result.user;
-          const payload = {
-            uid: user.uid,
-            id: user.uid,
-            email: user.email,
-            name: user.displayName || user.email.split('@')[0],
-            photoURL: user.photoURL || '',
-            role: 'Owner'
-          };
+        localStorage.setItem('karobaar_google_auth_payload', JSON.stringify({ user: payload }));
+        localStorage.setItem('karobaar_session_user', JSON.stringify(payload));
+      } catch (_) {}
 
-          // Broadcast to local storage immediately
-          try {
-            localStorage.setItem('karobaar_google_auth_payload', JSON.stringify({ user: payload }));
-            localStorage.setItem('karobaar_session_user', JSON.stringify(payload));
-            const bc = new BroadcastChannel('karobaar_google_auth');
-            bc.postMessage({ type: 'KAROBAAR_GOOGLE_AUTH_SUCCESS', payload });
-          } catch (_) {}
+      // 2. BroadcastChannel
+      try {
+        const bc = new BroadcastChannel('karobaar_google_auth');
+        bc.postMessage({ type: 'KAROBAAR_GOOGLE_AUTH_SUCCESS', payload });
+      } catch (_) {}
 
-          // Post to Local Server callback
-          if (port) {
-            try {
-              await fetch(`http://localhost:${port}/api/auth-callback`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-              });
-            } catch (_) {}
+      // 3. Post to Local Server callback
+      if (port) {
+        try {
+          await fetch(`http://localhost:${port}/api/auth-callback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } catch (_) {}
 
-            try {
-              const img = new Image();
-              img.src = `http://localhost:${port}/api/auth-callback?data=${encodeURIComponent(JSON.stringify(payload))}`;
-            } catch (_) {}
-          }
+        try {
+          const img = new Image();
+          img.src = `http://localhost:${port}/api/auth-callback?data=${encodeURIComponent(JSON.stringify(payload))}`;
+        } catch (_) {}
+      }
 
-          document.getElementById('status-card').innerHTML = `
-            <div style="width:48px;height:48px;border-radius:50%;background:rgba(34,197,94,0.15);color:#22c55e;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;">✓</div>
-            <h3 style="margin:0 0 6px 0;font-size:18px;font-weight:700;">Google Sign-In Complete</h3>
-            <p style="color:#a1a1aa;font-size:13px;margin:0;">Returning to Karobaar Desktop...</p>
-          `;
-
-          setTimeout(() => {
-            window.close();
-          }, 1000);
-          return;
+      // 4. Try posting to window.opener
+      try {
+        if (window.opener) {
+          window.opener.postMessage({ type: 'KAROBAAR_GOOGLE_AUTH_SUCCESS', payload }, '*');
         }
+      } catch (_) {}
 
-        // 2. Initial launch: Immediately redirect directly to Google accounts picker!
-        await signInWithRedirect(auth, provider);
+      // 5. Automatically close popup window
+      setTimeout(() => {
+        try {
+          window.close();
+        } catch (_) {}
+      }, 700);
+    }
+
+    async function executeSignIn(fromUserClick = false) {
+      try {
+        renderLoading('Opening Google Accounts...', 'Choose your Google account in the popup window.');
+        const result = await signInWithPopup(auth, provider);
+        if (result && result.user) {
+          await handleAuthSuccess(result.user);
+        } else {
+          renderPrompt('Select Google Account', 'Click below to pick your Google account.');
+        }
       } catch (err) {
-        console.error('Google Auth Error:', err);
-        document.getElementById('status-card').innerHTML = `
-          <div style="color:#ef4444;font-size:14px;max-width:320px;line-height:1.5;">
-            ${err.message || 'Google authentication failed. Please try again.'}
-          </div>
-          <button onclick="location.reload()" style="margin-top:16px;padding:8px 18px;background:#ffffff;color:#09090b;border:none;border-radius:8px;font-weight:700;cursor:pointer;">
-            Try Again
-          </button>
-        `;
+        console.warn("[Google Auth Result]:", err?.code, err?.message);
+        if (err.code === 'auth/popup-blocked') {
+          // Automatic popup was blocked by browser -> show button so user click opens it smoothly
+          renderPrompt('Click to Choose Account', 'Your browser requires a click to open Google Accounts.');
+        } else if (err.code === 'auth/popup-closed-by-user') {
+          renderPrompt('Sign-In Cancelled', 'Click below whenever you wish to sign in with Google.');
+        } else if (err.code === 'auth/cancelled-popup-request') {
+          renderPrompt('Choose Google Account', 'Click below to open the Google accounts chooser.');
+        } else {
+          renderPrompt('Google Sign-In', err.message || 'Please click below to try again.');
+        }
       }
     }
 
-    runAuth();
+    // Attempt automatic popup launch on window open
+    executeSignIn(false);
   </script>
 </body>
 </html>

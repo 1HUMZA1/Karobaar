@@ -7,6 +7,64 @@ function karobaarAiDevPlugin() {
   return {
     name: 'karobaar-ai-dev-backend',
     configureServer(server) {
+      const devInvitations = new Map();
+
+      server.middlewares.use('/api/invitations', async (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          return res.end();
+        }
+
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', chunk => body += chunk);
+          req.on('end', () => {
+            try {
+              if (body) {
+                const inv = JSON.parse(body);
+                const code = (inv.code || '').trim().toUpperCase();
+                const id = (inv.id || '').trim();
+                if (code) devInvitations.set(code, inv);
+                if (id) devInvitations.set(id, inv);
+                const noHyphens = code.replace(/[^A-Z0-9]/g, '');
+                if (noHyphens) devInvitations.set(noHyphens, inv);
+              }
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true }));
+            } catch (err) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
+        if (req.method === 'GET') {
+          const url = new URL(req.url, 'http://localhost');
+          const queryCode = (url.searchParams.get('code') || '').trim().toUpperCase();
+          if (queryCode) {
+            let matched = devInvitations.get(queryCode);
+            if (!matched) {
+              const noHyphens = queryCode.replace(/[^A-Z0-9]/g, '');
+              matched = devInvitations.get(noHyphens);
+            }
+            if (matched) {
+              res.statusCode = 200;
+              return res.end(JSON.stringify({ success: true, invitation: matched }));
+            }
+            res.statusCode = 200;
+            return res.end(JSON.stringify({ success: false, message: 'Invitation not found' }));
+          }
+          res.statusCode = 200;
+          return res.end(JSON.stringify({ success: true, invitations: Array.from(devInvitations.values()) }));
+        }
+      });
+
       server.middlewares.use('/api/ai/models', async (req, res) => {
         try {
           const { handleAiModelsRequest } = await import('./server/ai-middleware.js');

@@ -12,6 +12,7 @@ class LocalServer {
   static Map<String, dynamic>? pendingAuthSession;
   static Map<String, dynamic>? lastAuthSession;
   static DateTime? lastAuthTime;
+  static final Map<String, Map<String, dynamic>> _invitations = {};
 
   Future<int> start() async {
     final handler = const Pipeline().addHandler(_handleRequest);
@@ -37,11 +38,12 @@ class LocalServer {
     // 1. API: Check auth status
     if (path == 'api/auth-status') {
       final isManual = request.url.queryParameters['manual'] == 'true';
-      final session = isManual ? (lastAuthSession ?? pendingAuthSession) : pendingAuthSession;
+      final isRecent = lastAuthSession != null &&
+          lastAuthTime != null &&
+          DateTime.now().difference(lastAuthTime!).inSeconds < 60;
+      final session = pendingAuthSession ?? (isManual || isRecent ? lastAuthSession : null);
       if (session != null) {
-        if (!isManual) {
-          pendingAuthSession = null; // consume pending for auto-poll
-        }
+        pendingAuthSession = null; // consume pending for auto-poll
         return Response.ok(
           jsonEncode({'authenticated': true, 'user': session}),
           headers: {
@@ -65,6 +67,85 @@ class LocalServer {
           'Cache-Control': 'no-cache',
         },
       );
+    }
+
+    // 1b. API: Workspace Invitations Relay (Shared across all windows & browsers on device)
+    if (path == 'api/invitations') {
+      if (request.method == 'POST') {
+        try {
+          final bodyStr = await request.readAsString();
+          if (bodyStr.isNotEmpty) {
+            final inv = jsonDecode(bodyStr) as Map<String, dynamic>;
+            final code = (inv['code'] ?? '').toString().trim().toUpperCase();
+            final id = (inv['id'] ?? '').toString().trim();
+            if (code.isNotEmpty) _invitations[code] = inv;
+            if (id.isNotEmpty) _invitations[id] = inv;
+            // Also store without hyphens
+            final noHyphens = code.replaceAll(RegExp(r'[^A-Z0-9]'), '');
+            if (noHyphens.isNotEmpty) _invitations[noHyphens] = inv;
+            debugPrint('[LocalServer Invitations] Stored invite: $code');
+          }
+        } catch (e) {
+          debugPrint('[LocalServer Invitations Error] $e');
+        }
+        return Response.ok(
+          jsonEncode({'success': true}),
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Private-Network': 'true',
+          },
+        );
+      }
+
+      if (request.method == 'GET') {
+        final queryCode = request.url.queryParameters['code']?.trim().toUpperCase();
+        if (queryCode != null && queryCode.isNotEmpty) {
+          var matched = _invitations[queryCode];
+          if (matched == null) {
+            final noHyphens = queryCode.replaceAll(RegExp(r'[^A-Z0-9]'), '');
+            matched = _invitations[noHyphens];
+          }
+          if (matched != null) {
+            return Response.ok(
+              jsonEncode({'success': true, 'invitation': matched}),
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Private-Network': 'true',
+                'Cache-Control': 'no-cache',
+              },
+            );
+          }
+          return Response.ok(
+            jsonEncode({'success': false, 'message': 'Invitation not found'}),
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': '*',
+              'Access-Control-Allow-Private-Network': 'true',
+              'Cache-Control': 'no-cache',
+            },
+          );
+        }
+
+        return Response.ok(
+          jsonEncode({'success': true, 'invitations': _invitations.values.toList()}),
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Private-Network': 'true',
+            'Cache-Control': 'no-cache',
+          },
+        );
+      }
     }
 
     // 2. API: Callback when external browser finishes Google sign-in

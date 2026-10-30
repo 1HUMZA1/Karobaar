@@ -673,6 +673,22 @@ class DatabaseService {
       }
     } catch (_) {}
 
+    // Multi-process LocalServer & Dev server relay (accessible to all windows/browsers)
+    if (typeof window !== 'undefined') {
+      try {
+        const curPort = window.location.port;
+        const targets = ['/api/invitations'];
+        if (curPort) targets.push(`http://localhost:${curPort}/api/invitations`);
+        targets.forEach(url => {
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(invitation)
+          }).catch(() => {});
+        });
+      } catch (_) {}
+    }
+
     // 2. Save in Cloud Firestore across both top-level and business subcollections
     if (typeof navigator !== 'undefined' && navigator.onLine) {
       try {
@@ -753,6 +769,35 @@ class DatabaseService {
           if (k.replace(/[^A-Z0-9]/g, '') === cleanNoHyphens) {
             return allMap[k];
           }
+        }
+      } catch (_) {}
+    }
+
+    // 1b. Fast LocalServer & Dev Relay Lookup (bridges separate browser profiles, WebView2, and incognito)
+    if (typeof window !== 'undefined') {
+      try {
+        const curPort = window.location.port;
+        const lookupTargets = [
+          `/api/invitations?code=${encodeURIComponent(cleanCode)}`
+        ];
+        if (curPort) {
+          lookupTargets.push(`http://localhost:${curPort}/api/invitations?code=${encodeURIComponent(cleanCode)}`);
+        }
+        for (const url of lookupTargets) {
+          try {
+            const res = await this._withTimeout(fetch(url), 1500).catch(() => null);
+            if (res && res.ok) {
+              const data = await res.json().catch(() => null);
+              if (data && data.success && data.invitation) {
+                const found = data.invitation;
+                localDb.save('invitation_codes', cleanCode, found, false);
+                if (found.businessId) {
+                  localDb.save('invitations', found.id || cleanCode, found, false, found.businessId);
+                }
+                return found;
+              }
+            }
+          } catch (_) {}
         }
       } catch (_) {}
     }
