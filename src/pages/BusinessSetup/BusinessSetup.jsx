@@ -423,6 +423,7 @@ export const getCountryPhoneConfig = (countryCode) => {
 const CustomSelect = ({ value, onChange, options, placeholder }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
+  const [openUpward, setOpenUpward] = React.useState(false);
   const selectRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -436,6 +437,23 @@ const CustomSelect = ({ value, onChange, options, placeholder }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isOpen && selectRef.current) {
+      const rect = selectRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      // If less than 240px below and more room above, open upwards!
+      if (spaceBelow < 240 && rect.top > spaceBelow) {
+        setOpenUpward(true);
+      } else {
+        setOpenUpward(false);
+      }
+    }
+    setIsOpen(!isOpen);
+    setSearch("");
+  };
+
   const filteredOptions = React.useMemo(() => {
     if (!search) return options;
     return options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
@@ -445,7 +463,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }) => {
     <div ref={selectRef} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 1 }}>
       <div 
         className="setup-input" 
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(!isOpen); setSearch(""); }}
+        onClick={handleToggle}
         style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card, #fff)' }}
       >
         <span style={{ opacity: value ? 1 : 0.5, color: 'var(--text-main, #000)' }}>
@@ -456,44 +474,52 @@ const CustomSelect = ({ value, onChange, options, placeholder }) => {
       
       {isOpen && (
         <div style={{
-          position: 'absolute', top: '100%', left: 0, minWidth: '260px',
-          background: 'var(--bg-card, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)',
-          borderRadius: '8px', marginTop: '4px', zIndex: 1001,
-          boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-          display: 'flex', flexDirection: 'column',
+          position: 'absolute',
+          ...(openUpward 
+            ? { bottom: 'calc(100% + 4px)', left: 0 } 
+            : { top: 'calc(100% + 4px)', left: 0 }),
+          minWidth: '240px',
+          width: '100%',
+          background: 'var(--bg-card, #ffffff)',
+          border: '1px solid var(--border-color, #e2e8f0)',
+          borderRadius: '8px',
+          zIndex: 1001,
+          boxShadow: '0 10px 25px rgba(0,0,0,0.18)',
+          display: 'flex',
+          flexDirection: 'column',
           overflow: 'hidden'
         }}>
           {options.length > 10 && (
-            <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color, #e2e8f0)', background: 'var(--bg-card, #fff)' }}>
+            <div style={{ padding: '0.45rem', borderBottom: '1px solid var(--border-color, #e2e8f0)', background: 'var(--bg-card, #fff)' }}>
               <input 
                 type="text" 
                 placeholder="Search..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onClick={e => e.stopPropagation()}
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)' }}
+                style={{ width: '100%', padding: '0.45rem 0.65rem', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)', fontSize: '0.86rem' }}
                 autoFocus
               />
             </div>
           )}
           
           <div 
-            style={{ maxHeight: '220px', overflowY: 'auto', overscrollBehavior: 'contain' }} 
+            style={{ maxHeight: '180px', overflowY: 'auto', overscrollBehavior: 'contain' }} 
             onWheel={(e) => e.stopPropagation()}
           >
             {filteredOptions.length === 0 && (
-              <div style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>No matches found</div>
+              <div style={{ padding: '0.65rem 0.85rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No matches found</div>
             )}
             {filteredOptions.map((opt, i) => (
               <div 
                 key={i} 
                 onClick={(e) => { e.stopPropagation(); onChange({ target: { value: opt.value } }); setIsOpen(false); setSearch(""); }}
                 style={{
-                  padding: '0.85rem 1rem', cursor: 'pointer',
+                  padding: '0.65rem 0.85rem', cursor: 'pointer',
                   background: value === opt.value ? 'var(--bg-hover, #f1f5f9)' : 'transparent',
                   borderBottom: i < filteredOptions.length - 1 ? '1px solid var(--border-color, #e2e8f0)' : 'none',
                   color: 'var(--text-main, #000)',
-                  fontSize: '0.9rem',
+                  fontSize: '0.86rem',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis'
@@ -1428,80 +1454,82 @@ const BusinessSetup = () => {
                 </div>
               )}
 
-              <form onSubmit={handleJoinInviteSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div className="setup-form-group full-width">
-                  <label style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '6px' }}>Invitation Code</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      type="text"
-                      className="setup-input"
-                      value={joinCodeInput}
-                      onChange={e => {
-                        const val = e.target.value.toUpperCase();
-                        setJoinCodeInput(val);
-                        setInviteError('');
-                        if (val.length >= 5 || val.includes('JOIN=') || val.includes('DATA=')) {
-                          verifyInviteCode(val);
-                        }
-                      }}
-                      placeholder="e.g. KB-INV-9X7P or KB-XXXXX"
-                      style={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '0.05em', fontFamily: 'monospace' }}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => verifyInviteCode()}
-                      disabled={isVerifyingInvite}
-                      style={{
-                        padding: '0 18px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        background: 'transparent',
-                        color: 'var(--text-main)',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {isVerifyingInvite ? 'Checking...' : 'Verify'}
-                    </button>
+              <form onSubmit={handleJoinInviteSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                <div className="setup-step-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="setup-form-group full-width">
+                    <label style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '6px' }}>Invitation Code</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="text"
+                        className="setup-input"
+                        value={joinCodeInput}
+                        onChange={e => {
+                          const val = e.target.value.toUpperCase();
+                          setJoinCodeInput(val);
+                          setInviteError('');
+                          if (val.length >= 5 || val.includes('JOIN=') || val.includes('DATA=')) {
+                            verifyInviteCode(val);
+                          }
+                        }}
+                        placeholder="e.g. KB-INV-9X7P or KB-XXXXX"
+                        style={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '0.05em', fontFamily: 'monospace' }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => verifyInviteCode()}
+                        disabled={isVerifyingInvite}
+                        style={{
+                          padding: '0 18px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)',
+                          background: 'transparent',
+                          color: 'var(--text-main)',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {isVerifyingInvite ? 'Checking...' : 'Verify'}
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {invitePreview && (
-                  <div style={{
-                    padding: '16px',
-                    borderRadius: '12px',
-                    border: '1.5px solid var(--text-main)',
-                    backgroundColor: 'rgba(0,0,0,0.02)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-                        ✓ Invitation Verified
-                      </span>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--text-main)', color: 'var(--bg-body)' }}>
-                        {invitePreview.role}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                      {invitePreview.businessName || 'Business Workspace'}
-                    </div>
-
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                      Invited by: <strong>{invitePreview.invitedByName || 'Owner'}</strong>
-                    </div>
-
-                    {invitePreview.notes && (
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                        "{invitePreview.notes}"
+                  {invitePreview && (
+                    <div style={{
+                      padding: '16px',
+                      borderRadius: '12px',
+                      border: '1.5px solid var(--text-main)',
+                      backgroundColor: 'rgba(0,0,0,0.02)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                          ✓ Invitation Verified
+                        </span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--text-main)', color: 'var(--bg-body)' }}>
+                          {invitePreview.role}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                )}
+
+                      <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                        {invitePreview.businessName || 'Business Workspace'}
+                      </div>
+
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                        Invited by: <strong>{invitePreview.invitedByName || 'Owner'}</strong>
+                      </div>
+
+                      {invitePreview.notes && (
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                          "{invitePreview.notes}"
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className="setup-footer">
                   <button
@@ -1551,7 +1579,7 @@ const BusinessSetup = () => {
           {error && <div className="setup-error">{error}</div>}
 
           <form onSubmit={step === 6 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}>
-            
+            <div className="setup-step-body">
             {step === 1 && (
               <div className="step-content setup-form-grid">
                 <div id="recaptcha-container"></div>
@@ -2018,6 +2046,7 @@ const BusinessSetup = () => {
                 </div>
               </div>
             )}
+            </div>
 
             <div className="setup-footer">
               <button 

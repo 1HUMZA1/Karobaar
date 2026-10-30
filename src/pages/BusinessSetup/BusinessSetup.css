@@ -156,30 +156,50 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Natural top-down flow so overflow scroll works smoothly */
   align-items: center;
-  padding: 1.5rem 2rem 1.5rem 2rem;
+  padding: 1.25rem 2rem 1rem 2rem;
   position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   height: 100vh;
   max-height: 100vh;
   box-sizing: border-box;
-  scroll-behavior: smooth;
 }
 
 .setup-card {
   width: 100%;
   max-width: 620px;
   margin: 0 auto;
-  padding-bottom: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   animation: fadeSlideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   transition: max-width 0.25s ease;
+  overflow: hidden;
 }
 
 .setup-card.choice-mode {
   max-width: 860px;
+  overflow-y: auto;
+}
+
+.setup-card form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.setup-step-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  padding-bottom: 0.5rem;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
 }
 
 .setup-header {
@@ -585,20 +605,17 @@
 
 /* Footer & Buttons - Always Docked & Fully Visible */
 .setup-footer {
-  position: sticky;
-  bottom: 0;
-  background: var(--bg-body, #f8fafc);
-  z-index: 40;
+  flex-shrink: 0;
   display: flex;
   gap: 0.75rem;
-  margin-top: 1.25rem;
-  padding-top: 0.85rem;
-  padding-bottom: 0.85rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
   border-top: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-body, #f8fafc);
   width: 100%;
   box-sizing: border-box;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  z-index: 50;
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
 }
 
