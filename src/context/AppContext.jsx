@@ -279,10 +279,12 @@ export const AppProvider = ({ children }) => {
             const activeBusinessData = businessesData.find(b => b.id === activeId) || businessesData[0];
             if (activeBusinessData) {
               setCurrentBusiness(activeBusinessData);
+              const resolvedOwnerName = karobaarUser?.name || activeBusinessData.ownerName || (currentUser?.name && currentUser.name !== 'dev 1' && currentUser.name !== 'Store Owner' ? currentUser.name : null) || firebaseUser.displayName || 'Business Owner';
               const userObj = {
                 ...(karobaarUser || {}),
                 id: firebaseUser.uid,
-                name: karobaarUser?.name || activeBusinessData.ownerName || firebaseUser.displayName || 'Business Owner',
+                name: resolvedOwnerName,
+                displayName: resolvedOwnerName,
                 email: firebaseUser.email || karobaarUser?.email || '',
                 phone: karobaarUser?.phone || activeBusinessData.phone || '',
                 role: karobaarUser?.role || 'Owner',
@@ -308,7 +310,41 @@ export const AppProvider = ({ children }) => {
           } else {
             // Check if there is an active or local business before treating as brand-new!
             const allLocal = localDb.getAll('businesses') || [];
-            const realBiz = allLocal.find(b => b && !String(b.id).startsWith('demo-') && !String(b.id).includes('demo') && b.name && b.name !== 'My Business' && b.name !== 'My Store');
+            let realBiz = allLocal.find(b => b && !String(b.id).startsWith('demo-') && !String(b.id).includes('demo') && b.name && b.name !== 'My Business' && b.name !== 'My Store');
+            
+            // Also check session business or setup draft
+            if (!realBiz) {
+              try {
+                const draftStr = localStorage.getItem('karobaar_setup_draft');
+                if (draftStr) {
+                  const d = JSON.parse(draftStr);
+                  if (d.business && d.business.name) {
+                    realBiz = {
+                      id: localStorage.getItem('karobaar-active-business') || ('biz_' + Date.now()),
+                      name: d.business.name.trim(),
+                      businessName: d.business.name.trim(),
+                      type: d.business.type || 'Wholesale',
+                      country: d.business.country || 'India',
+                      city: d.business.city || '',
+                      ownerName: d.personal?.fullName || 'Business Owner',
+                      phone: d.personal?.phone || '',
+                      email: firebaseUser.email || d.personal?.email || '',
+                      currency: d.preferences?.currency || 'INR'
+                    };
+                  }
+                }
+                if (!realBiz) {
+                  const savedBizStr = localStorage.getItem('karobaar_session_business');
+                  if (savedBizStr) {
+                    const sb = JSON.parse(savedBizStr);
+                    if (sb && sb.name && !String(sb.id).startsWith('demo-')) {
+                      realBiz = sb;
+                    }
+                  }
+                }
+              } catch (_) {}
+            }
+
             if (realBiz) {
               // Auto-adopt this real business for the authenticated user!
               realBiz.ownerId = firebaseUser.uid;
@@ -316,10 +352,12 @@ export const AppProvider = ({ children }) => {
               localDb.save('businesses', realBiz.id, realBiz);
               setCurrentBusiness(realBiz);
               setUserBusinesses([realBiz]);
+              const resolvedOwnerName = karobaarUser?.name || realBiz.ownerName || (currentUser?.name && currentUser.name !== 'dev 1' ? currentUser.name : null) || firebaseUser.displayName || 'Business Owner';
               const userObj = {
                 ...(karobaarUser || {}),
                 id: firebaseUser.uid,
-                name: karobaarUser?.name || realBiz.ownerName || firebaseUser.displayName || 'Business Owner',
+                name: resolvedOwnerName,
+                displayName: resolvedOwnerName,
                 email: firebaseUser.email || karobaarUser?.email || '',
                 phone: karobaarUser?.phone || realBiz.phone || '',
                 role: 'Owner',
@@ -456,8 +494,13 @@ export const AppProvider = ({ children }) => {
           // Heal user name & phone
           const allUsers = localDb.getAll('users') || [];
           const realUser = allUsers.find(u => u && !String(u.id).startsWith('demo-') && u.name && u.name !== 'Store Owner' && u.name !== 'dev 1');
-          const resolvedName = realUser?.name || candidate.ownerName;
-          if (resolvedName && (!currentUser?.name || currentUser.name === 'Store Owner' || currentUser.name === 'dev 1' || currentUser.name === 'User')) {
+          let draftOwner = null;
+          try {
+            const d = JSON.parse(localStorage.getItem('karobaar_setup_draft') || '{}');
+            if (d.personal?.fullName) draftOwner = d.personal.fullName.trim();
+          } catch (_) {}
+          const resolvedName = draftOwner || realUser?.name || candidate.ownerName;
+          if (resolvedName && (!currentUser?.name || currentUser.name === 'Store Owner' || currentUser.name === 'dev 1' || currentUser.name === 'User' || currentUser.name === 'Business Owner')) {
             setCurrentUser(prev => ({
               ...(prev || {}),
               name: resolvedName,

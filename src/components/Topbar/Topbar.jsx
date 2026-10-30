@@ -820,8 +820,30 @@ const Topbar = () => {
             )}
           </div>
           <div className="user-info hidden-mobile">
-            <span className="user-name">{currentUser?.name || currentUser?.displayName || currentBusiness?.ownerName || 'User'}</span>
-            <span className="user-business">{currentBusiness?.name || currentBusiness?.businessName || 'Business'}</span>
+            <span className="user-name">
+              {(() => {
+                let uName = currentUser?.name || currentUser?.displayName || currentBusiness?.ownerName;
+                if (!uName || uName === 'dev 1' || uName === 'Store Owner') {
+                  try {
+                    const d = JSON.parse(localStorage.getItem('karobaar_setup_draft') || '{}');
+                    if (d.personal?.fullName) uName = d.personal.fullName.trim();
+                  } catch (_) {}
+                }
+                return uName || 'User';
+              })()}
+            </span>
+            <span className="user-business">
+              {(() => {
+                let bName = currentBusiness?.name || currentBusiness?.businessName;
+                if (!bName || bName === 'Business' || bName === 'My Business') {
+                  try {
+                    const d = JSON.parse(localStorage.getItem('karobaar_setup_draft') || '{}');
+                    if (d.business?.name) bName = d.business.name.trim();
+                  } catch (_) {}
+                }
+                return bName || 'Workspace';
+              })()}
+            </span>
           </div>
           
           {isProfileOpen && (

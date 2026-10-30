@@ -1306,7 +1306,7 @@ const Settings = () => {
                     placeholder="Mr. H"
                   />
                   {/* Preset Assistant Names */}
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <div className="settings-preset-chips">
                     {[
                       { name: 'Jarvis', badge: 'Default' },
                       { name: 'Mr. H', badge: 'Preset' },
@@ -1319,18 +1319,14 @@ const Settings = () => {
                           setAiAssistantName(preset.name);
                           setAiWakeWord(preset.name === 'Mr. H' ? 'Hey Mr. H' : preset.name);
                         }}
-                        className={`px-3 py-1.5 text-xs rounded-lg border font-bold transition-all flex items-center gap-1.5 ${
-                          (aiAssistantName || 'Jarvis') === preset.name
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-sm'
-                            : 'bg-transparent text-text-secondary border-border-color hover:text-text-main hover:bg-[var(--bg-hover)]'
-                        }`}
+                        className={`settings-preset-chip ${(aiAssistantName || 'Jarvis') === preset.name ? 'active' : ''}`}
                       >
                         <span>{preset.name}</span>
-                        <span className="opacity-70 text-[10px]">({preset.badge})</span>
+                        <span style={{ opacity: 0.7, fontSize: '10px' }}>({preset.badge})</span>
                       </button>
                     ))}
                   </div>
-                  <span className="text-[11px] text-text-muted mt-1.5 block">
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px', display: 'block' }}>
                     ⚡ <strong>Single Active Identity:</strong> Only the currently selected name will wake the assistant via voice at any given time.
                   </span>
                 </div>
@@ -1402,133 +1398,163 @@ const Settings = () => {
               </div>
 
               {/* Section 2: Automated Business Triggers */}
-              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
-                <h3 className="text-sm font-bold text-text-main mb-3">Automated Business Triggers</h3>
-                <div className="space-y-3">
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
+                <h3 className="settings-section-heading" style={{ marginBottom: '1rem' }}>Automated Business Triggers</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">Hands-Free Voice Wake-Up ("{aiAssistantName || 'Jarvis'}")</div>
-                      <div className="text-xs text-text-secondary">AI listens continuously in the background for your voice wake call and triggers live conversation</div>
+                      <div className="settings-toggle-title">Hands-Free Voice Wake-Up ("{aiAssistantName || 'Jarvis'}")</div>
+                      <div className="settings-toggle-desc">AI listens continuously in the background for your voice wake call and triggers live conversation</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={aiBackgroundWake} 
-                      onChange={e => setAiBackgroundWake(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={aiBackgroundWake} 
+                        onChange={e => setAiBackgroundWake(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
 
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">Floating AI Launcher Bubble</div>
-                      <div className="text-xs text-text-secondary">Display the quick-action Customize AI button on the bottom right of the screen</div>
+                      <div className="settings-toggle-title">Floating AI Launcher Bubble</div>
+                      <div className="settings-toggle-desc">Display the quick-action Customize AI button on the bottom right of the screen</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={aiFloatingBubble} 
-                      onChange={e => setAiFloatingBubble(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={aiFloatingBubble} 
+                        onChange={e => setAiFloatingBubble(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
 
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">Automatic Low-Stock Re-Order Alerts</div>
-                      <div className="text-xs text-text-secondary">AI actively audits inventory and notifies when items fall below threshold</div>
+                      <div className="settings-toggle-title">Automatic Low-Stock Re-Order Alerts</div>
+                      <div className="settings-toggle-desc">AI actively audits inventory and notifies when items fall below threshold</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={autoAlertLowStock} 
-                      onChange={e => setAutoAlertLowStock(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={autoAlertLowStock} 
+                        onChange={e => setAutoAlertLowStock(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
 
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">Auto-Print Thermal Receipt on POS Checkout</div>
-                      <div className="text-xs text-text-secondary">Immediately triggers receipt print dialogue upon recording a sale</div>
+                      <div className="settings-toggle-title">Auto-Print Thermal Receipt on POS Checkout</div>
+                      <div className="settings-toggle-desc">Immediately triggers receipt print dialogue upon recording a sale</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={autoPrintReceipt} 
-                      onChange={e => setAutoPrintReceipt(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={autoPrintReceipt} 
+                        onChange={e => setAutoPrintReceipt(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
 
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">Daily Evening Sales Summary Notification</div>
-                      <div className="text-xs text-text-secondary">Summarizes total revenue, transactions count, and top-selling items at closing</div>
+                      <div className="settings-toggle-title">Daily Evening Sales Summary Notification</div>
+                      <div className="settings-toggle-desc">Summarizes total revenue, transactions count, and top-selling items at closing</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={dailySummaryNotification} 
-                      onChange={e => setDailySummaryNotification(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={dailySummaryNotification} 
+                        onChange={e => setDailySummaryNotification(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
 
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">POS Barcode Rapid-Add on Enter</div>
-                      <div className="text-xs text-text-secondary">Auto-adds matched barcode items into current cart immediately without clicking</div>
+                      <div className="settings-toggle-title">POS Barcode Rapid-Add on Enter</div>
+                      <div className="settings-toggle-desc">Auto-adds matched barcode items into current cart immediately without clicking</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={rapidBarcodeAdd} 
-                      onChange={e => setRapidBarcodeAdd(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={rapidBarcodeAdd} 
+                        onChange={e => setRapidBarcodeAdd(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
                 </div>
               </div>
 
               {/* Section 3: Autonomous Intelligence & Safety Controls */}
-              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
-                <h3 className="text-sm font-bold text-text-main mb-3">Autonomous Intelligence & Safety Controls</h3>
-                <div className="space-y-3">
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
+                <h3 className="settings-section-heading" style={{ marginBottom: '1rem' }}>Autonomous Intelligence & Safety Controls</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">Require Explicit Confirmation for Consequential Writes</div>
-                      <div className="text-xs text-text-secondary">AI presents a reviewable draft before creating orders, adjusting stock, or recording payments</div>
+                      <div className="settings-toggle-title">Require Explicit Confirmation for Consequential Writes</div>
+                      <div className="settings-toggle-desc">AI presents a reviewable draft before creating orders, adjusting stock, or recording payments</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={aiConfirmSensitive} 
-                      onChange={e => setAiConfirmSensitive(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={aiConfirmSensitive} 
+                        onChange={e => setAiConfirmSensitive(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
 
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">Autonomous Stockout Risk Analysis</div>
-                      <div className="text-xs text-text-secondary">Continuously monitors inventory turnover and predicts days of coverage remaining</div>
+                      <div className="settings-toggle-title">Autonomous Stockout Risk Analysis</div>
+                      <div className="settings-toggle-desc">Continuously monitors inventory turnover and predicts days of coverage remaining</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={aiStockoutAlerts} 
-                      onChange={e => setAiStockoutAlerts(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={aiStockoutAlerts} 
+                        onChange={e => setAiStockoutAlerts(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
 
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">Sales Velocity & Period-over-Period Comparisons</div>
-                      <div className="text-xs text-text-secondary">Automatically compares sales pace against previous weeks and months to highlight trends</div>
+                      <div className="settings-toggle-title">Sales Velocity & Period-over-Period Comparisons</div>
+                      <div className="settings-toggle-desc">Automatically compares sales pace against previous weeks and months to highlight trends</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={aiSalesComparison} 
-                      onChange={e => setAiSalesComparison(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={aiSalesComparison} 
+                        onChange={e => setAiSalesComparison(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
 
                   <label className="settings-toggle-row">
                     <div>
-                      <div className="font-semibold text-sm">High Expense Anomaly Warnings</div>
-                      <div className="text-xs text-text-secondary">Flags operational expenditures that deviate unusually from store baseline averages</div>
+                      <div className="settings-toggle-title">High Expense Anomaly Warnings</div>
+                      <div className="settings-toggle-desc">Flags operational expenditures that deviate unusually from store baseline averages</div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={aiExpenseAnomaly} 
-                      onChange={e => setAiExpenseAnomaly(e.target.checked)} 
-                    />
+                    <div className="settings-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={aiExpenseAnomaly} 
+                        onChange={e => setAiExpenseAnomaly(e.target.checked)} 
+                      />
+                      <span className="settings-slider"></span>
+                    </div>
                   </label>
                 </div>
               </div>
@@ -1735,12 +1761,22 @@ const Settings = () => {
                     value={currency} 
                     onChange={e => setCurrency(e.target.value)}
                   >
-                    <option value="INR">Indian Rupee (₹)</option>
                     <option value="USD">US Dollar ($)</option>
-                    <option value="EUR">Euro (€)</option>
                     <option value="AED">UAE Dirham (AED)</option>
                     <option value="SAR">Saudi Riyal (SAR)</option>
+                    <option value="PKR">Pakistani Rupee (Rs)</option>
+                    <option value="INR">Indian Rupee (₹)</option>
+                    <option value="EUR">Euro (€)</option>
                     <option value="GBP">British Pound (£)</option>
+                    <option value="QAR">Qatari Riyal (QAR)</option>
+                    <option value="KWD">Kuwaiti Dinar (KWD)</option>
+                    <option value="BHD">Bahraini Dinar (BHD)</option>
+                    <option value="OMR">Omani Rial (OMR)</option>
+                    <option value="CAD">Canadian Dollar (CA$)</option>
+                    <option value="AUD">Australian Dollar (A$)</option>
+                    <option value="BDT">Bangladeshi Taka (Tk)</option>
+                    <option value="SGD">Singapore Dollar (S$)</option>
+                    <option value="MYR">Malaysian Ringgit (RM)</option>
                   </select>
                 </div>
 
@@ -1900,28 +1936,37 @@ const Settings = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3">
-                <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer border-[var(--border-color)]">
-                  <input type="checkbox" checked={notifyLowStock} onChange={e => setNotifyLowStock(e.target.checked)} className="w-4 h-4" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label className="settings-toggle-row">
                   <div>
-                    <span className="font-bold text-sm block">Low Stock Alerts</span>
-                    <span className="text-xs text-text-secondary">Notify when product quantities fall below minimum threshold.</span>
+                    <div className="settings-toggle-title">Low Stock Alerts</div>
+                    <div className="settings-toggle-desc">Notify when product quantities fall below minimum threshold</div>
+                  </div>
+                  <div className="settings-switch">
+                    <input type="checkbox" checked={notifyLowStock} onChange={e => setNotifyLowStock(e.target.checked)} />
+                    <span className="settings-slider"></span>
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer border-[var(--border-color)]">
-                  <input type="checkbox" checked={notifyNewSale} onChange={e => setNotifyNewSale(e.target.checked)} className="w-4 h-4" />
+                <label className="settings-toggle-row">
                   <div>
-                    <span className="font-bold text-sm block">New Sale Alerts</span>
-                    <span className="text-xs text-text-secondary">Show notification for every completed invoice and payment.</span>
+                    <div className="settings-toggle-title">New Sale Alerts</div>
+                    <div className="settings-toggle-desc">Show notification for every completed invoice and payment</div>
+                  </div>
+                  <div className="settings-switch">
+                    <input type="checkbox" checked={notifyNewSale} onChange={e => setNotifyNewSale(e.target.checked)} />
+                    <span className="settings-slider"></span>
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer border-[var(--border-color)]">
-                  <input type="checkbox" checked={notifyDailyReport} onChange={e => setNotifyDailyReport(e.target.checked)} className="w-4 h-4" />
+                <label className="settings-toggle-row">
                   <div>
-                    <span className="font-bold text-sm block">End-of-Day Summary</span>
-                    <span className="text-xs text-text-secondary">Generate automated closing summary at shift completion.</span>
+                    <div className="settings-toggle-title">End-of-Day Summary</div>
+                    <div className="settings-toggle-desc">Generate automated closing summary at shift completion</div>
+                  </div>
+                  <div className="settings-switch">
+                    <input type="checkbox" checked={notifyDailyReport} onChange={e => setNotifyDailyReport(e.target.checked)} />
+                    <span className="settings-slider"></span>
                   </div>
                 </label>
               </div>

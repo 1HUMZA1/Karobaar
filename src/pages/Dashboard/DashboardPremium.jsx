@@ -448,7 +448,7 @@ const Dashboard = ({ onSwitchMode }) => {
     navigate('/login');
   };
 
-  // Greeting
+  // Greeting: Display actual Business Name (e.g. SAS KHALU) or Owner Name (e.g. 1_HUMZA_1)
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -456,7 +456,22 @@ const Dashboard = ({ onSwitchMode }) => {
     return 'Good evening';
   };
 
-  const fullGreetingText = `${getGreeting()}, ${currentBusiness?.name || currentBusiness?.businessName || currentUser?.name || 'Business'}`;
+  const getResolvedDisplayName = () => {
+    let name = currentBusiness?.name || currentBusiness?.businessName;
+    if (!name || name === 'My Business' || name === 'Business') {
+      try {
+        const d = JSON.parse(localStorage.getItem('karobaar_setup_draft') || '{}');
+        if (d.business?.name) name = d.business.name.trim();
+        else if (d.personal?.fullName) name = d.personal.fullName.trim();
+      } catch (_) {}
+    }
+    if (!name || name === 'My Business' || name === 'Business') {
+      name = currentUser?.name || currentUser?.displayName;
+    }
+    return (name && name !== 'dev 1' && name !== 'Store Owner') ? name : (currentBusiness?.name || 'Partner');
+  };
+
+  const fullGreetingText = `${getGreeting()}, ${getResolvedDisplayName()}`;
   const [greetingTyped, setGreetingTyped] = useState('');
 
   useEffect(() => {

@@ -180,10 +180,28 @@ const Sidebar = () => {
               onClick={() => {
                 window.location.hash = '#/dashboard';
               }}
-              onMouseEnter={(e) => handleMouseEnter(e, currentBusiness?.name || currentBusiness?.businessName || 'My Business')}
+              onMouseEnter={(e) => {
+                let bName = currentBusiness?.name || currentBusiness?.businessName;
+                if (!bName || bName === 'My Business' || bName === 'Business') {
+                  try {
+                    const d = JSON.parse(localStorage.getItem('karobaar_setup_draft') || '{}');
+                    if (d.business?.name) bName = d.business.name.trim();
+                  } catch (_) {}
+                }
+                handleMouseEnter(e, bName || 'My Business');
+              }}
               onMouseLeave={handleMouseLeave}
             >
-              {currentBusiness?.name || currentBusiness?.businessName || 'My Business'}
+              {(() => {
+                let bName = currentBusiness?.name || currentBusiness?.businessName;
+                if (!bName || bName === 'My Business' || bName === 'Business') {
+                  try {
+                    const d = JSON.parse(localStorage.getItem('karobaar_setup_draft') || '{}');
+                    if (d.business?.name) bName = d.business.name.trim();
+                  } catch (_) {}
+                }
+                return bName || 'My Business';
+              })()}
             </div>
           )}
         </div>
