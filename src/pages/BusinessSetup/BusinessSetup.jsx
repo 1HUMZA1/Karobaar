@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { auth } from '../../services/firebase';
 import { signOut, RecaptchaVerifier, linkWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { Country, City } from 'country-state-city';
-import { Building2, Link, Users, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Building2, Link, Users, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Store, Sparkles } from 'lucide-react';
 import './BusinessSetup.css';
 
 const MODULES_LIST = [
@@ -190,7 +190,11 @@ const BusinessSetup = () => {
   const joinParam = searchParams.get('join') || '';
   const newParam = searchParams.get('new') === 'true';
 
-  const [setupMode, setSetupMode] = useState(() => joinParam ? 'join' : 'create'); // 'create' | 'join'
+  const [setupMode, setSetupMode] = useState(() => {
+    if (joinParam) return 'join';
+    if (newParam) return 'create';
+    return 'choose';
+  }); // 'choose' | 'create' | 'join'
   const [joinCodeInput, setJoinCodeInput] = useState(joinParam);
   const [invitePreview, setInvitePreview] = useState(null);
   const [isVerifyingInvite, setIsVerifyingInvite] = useState(false);
@@ -428,7 +432,7 @@ const BusinessSetup = () => {
   const [submitState, setSubmitState] = useState(''); // '', 'Saving locally...', 'Saved locally', 'Opening your dashboard...'
 
   // Early returns strictly AFTER all hooks are called
-  if (authStatus === 'authenticated' && !joinParam && !newParam && currentUser?.onboardingCompleted && setupMode === 'create') {
+  if (authStatus === 'authenticated' && !joinParam && !newParam && currentUser?.onboardingCompleted) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -543,7 +547,15 @@ const BusinessSetup = () => {
     }
   };
 
-  const stepsList = [
+  const stepsList = setupMode === 'choose' ? [
+    { id: 1, title: 'Choose Path', desc: 'Create or join a business' },
+    { id: 2, title: 'Configure Workspace', desc: 'Details & initial preferences' },
+    { id: 3, title: 'Enter Dashboard', desc: 'Launch your store workspace' }
+  ] : setupMode === 'join' ? [
+    { id: 1, title: 'Enter Code', desc: 'Input owner invitation code' },
+    { id: 2, title: 'Verify Details', desc: 'Confirm role & business' },
+    { id: 3, title: 'Enter Workspace', desc: 'Access your team dashboard' }
+  ] : [
     { id: 1, title: 'Personal Profile', desc: 'Your contact details' },
     { id: 2, title: 'App Experience', desc: 'Tailor your learning' },
     { id: 3, title: 'Business Details', desc: 'Basic company info' },
@@ -551,6 +563,12 @@ const BusinessSetup = () => {
     { id: 5, title: 'Select Modules', desc: 'Features you need' },
     { id: 6, title: 'Preferences', desc: 'Regional settings' }
   ];
+
+  const currentStepNumber = setupMode === 'choose'
+    ? 1
+    : setupMode === 'join'
+      ? (invitePreview ? 2 : 1)
+      : step;
 
   const handleLogout = async () => {
     try {
@@ -574,10 +592,10 @@ const BusinessSetup = () => {
           {stepsList.map((s) => (
             <div 
               key={s.id} 
-              className={`progress-step ${step === s.id ? 'active' : ''} ${step > s.id ? 'completed' : ''}`}
+              className={`progress-step ${currentStepNumber === s.id ? 'active' : ''} ${currentStepNumber > s.id ? 'completed' : ''}`}
             >
               <div className="step-indicator">
-                {step > s.id ? (
+                {currentStepNumber > s.id ? (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 ) : (
                   s.id
@@ -668,57 +686,178 @@ const BusinessSetup = () => {
             </button>
           </div>
 
-          {/* Mode Switcher: Create vs Join */}
-          <div style={{
-            display: 'flex',
-            borderBottom: '1px solid var(--border-color, #e2e8f0)',
-            marginBottom: '24px',
-            gap: '8px'
-          }}>
-            <button
-              type="button"
-              onClick={() => setSetupMode('create')}
-              style={{
-                padding: '10px 16px',
-                background: 'none',
-                border: 'none',
-                borderBottom: setupMode === 'create' ? '2.5px solid var(--text-main, #09090b)' : '2.5px solid transparent',
-                color: setupMode === 'create' ? 'var(--text-main, #09090b)' : 'var(--text-secondary, #64748b)',
-                fontWeight: 700,
-                fontSize: '0.92rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <Building2 size={16} />
-              <span>Create New Business</span>
-            </button>
+          {setupMode === 'choose' ? (
+            <div className="setup-choice-screen">
+              <div className="setup-header" style={{ marginBottom: '1.25rem' }}>
+                <h2>Get Started with Karobaar</h2>
+                <p>Choose an option below to set up your workspace according to your role.</p>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setSetupMode('join')}
-              style={{
-                padding: '10px 16px',
-                background: 'none',
-                border: 'none',
-                borderBottom: setupMode === 'join' ? '2.5px solid var(--text-main, #09090b)' : '2.5px solid transparent',
-                color: setupMode === 'join' ? 'var(--text-main, #09090b)' : 'var(--text-secondary, #64748b)',
-                fontWeight: 700,
-                fontSize: '0.92rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <Link size={16} />
-              <span>Join with Invite Code</span>
-            </button>
-          </div>
+              <div className="setup-choice-container">
+                {/* Question 1: Create a Business */}
+                <div 
+                  className="setup-choice-card"
+                  onClick={() => {
+                    setSetupMode('create');
+                    setStep(1);
+                  }}
+                >
+                  <div className="setup-choice-top">
+                    <div className="setup-choice-icon-wrap">
+                      <Building2 size={24} />
+                    </div>
+                    <span className="setup-choice-badge badge-owner">
+                      Owner / Founder
+                    </span>
+                  </div>
 
-          {setupMode === 'join' ? (
+                  <div className="setup-choice-content">
+                    <h3>1. Create a New Business</h3>
+                    <p>
+                      Are you starting or managing your own business? Build a fresh workspace for your shop, retail store, wholesale agency, or enterprise from scratch.
+                    </p>
+                    <ul className="setup-choice-perks">
+                      <li>
+                        <CheckCircle2 size={16} />
+                        <span>Full administrative ownership, company profile & store branding</span>
+                      </li>
+                      <li>
+                        <CheckCircle2 size={16} />
+                        <span>Pre-configured POS, Inventory, Invoices, Expenses & Tax</span>
+                      </li>
+                      <li>
+                        <CheckCircle2 size={16} />
+                        <span>Generate secure team invite codes for cashiers, managers & accountants</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="setup-choice-action">
+                    <span>Set Up New Business Workspace</span>
+                    <ArrowRight size={18} />
+                  </div>
+                </div>
+
+                {/* Question 2: Join an Existing Business */}
+                <div 
+                  className="setup-choice-card"
+                  onClick={() => {
+                    setSetupMode('join');
+                  }}
+                >
+                  <div className="setup-choice-top">
+                    <div className="setup-choice-icon-wrap">
+                      <Users size={24} />
+                    </div>
+                    <span className="setup-choice-badge badge-staff">
+                      Staff / Cashier / Manager
+                    </span>
+                  </div>
+
+                  <div className="setup-choice-content">
+                    <h3>2. Join an Existing Business</h3>
+                    <p>
+                      Were you invited by your store owner or manager? Enter your invitation code (e.g., KB-INV-XXXXX) to instantly connect to your team's live workspace.
+                    </p>
+                    <ul className="setup-choice-perks">
+                      <li>
+                        <CheckCircle2 size={16} />
+                        <span>Instant access — zero business configuration required</span>
+                      </li>
+                      <li>
+                        <CheckCircle2 size={16} />
+                        <span>Pre-assigned role permissions (Manager, Cashier, Accountant, etc.)</span>
+                      </li>
+                      <li>
+                        <CheckCircle2 size={16} />
+                        <span>Live multi-user sync with real-time stock and checkout</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="setup-choice-action">
+                    <span>Enter Workspace Invitation Code</span>
+                    <ArrowRight size={18} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Top Navigation Bar: Back & Switch */}
+              <div className="setup-top-nav">
+                <button
+                  type="button"
+                  className="setup-nav-back-btn"
+                  onClick={() => setSetupMode('choose')}
+                >
+                  <ArrowLeft size={16} />
+                  <span>Back to Selection</span>
+                </button>
+                <div className="setup-nav-switch">
+                  {setupMode === 'create' ? (
+                    <button type="button" onClick={() => setSetupMode('join')} className="setup-nav-link-btn">
+                      Have an invite code? <strong>Join existing workspace →</strong>
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => { setSetupMode('create'); setStep(1); }} className="setup-nav-link-btn">
+                      Want to start fresh? <strong>Create a new business →</strong>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Mode Switcher: Create vs Join */}
+              <div style={{
+                display: 'flex',
+                borderBottom: '1px solid var(--border-color, #e2e8f0)',
+                marginBottom: '24px',
+                gap: '8px'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => { setSetupMode('create'); setStep(1); }}
+                  style={{
+                    padding: '10px 16px',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: setupMode === 'create' ? '2.5px solid var(--text-main, #09090b)' : '2.5px solid transparent',
+                    color: setupMode === 'create' ? 'var(--text-main, #09090b)' : 'var(--text-secondary, #64748b)',
+                    fontWeight: 700,
+                    fontSize: '0.92rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Building2 size={16} />
+                  <span>Create New Business</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSetupMode('join')}
+                  style={{
+                    padding: '10px 16px',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: setupMode === 'join' ? '2.5px solid var(--text-main, #09090b)' : '2.5px solid transparent',
+                    color: setupMode === 'join' ? 'var(--text-main, #09090b)' : 'var(--text-secondary, #64748b)',
+                    fontWeight: 700,
+                    fontSize: '0.92rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Link size={16} />
+                  <span>Join with Invite Code</span>
+                </button>
+              </div>
+
+              {setupMode === 'join' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div className="setup-header" style={{ marginBottom: '12px' }}>
                 <h2>Join an Existing Workspace</h2>
@@ -835,8 +974,8 @@ const BusinessSetup = () => {
           ) : (
             <>
           <div className="setup-header">
-            <h2>{stepsList[step - 1].title}</h2>
-            <p>{stepsList[step - 1].desc}</p>
+            <h2>{stepsList[step - 1]?.title || 'Business Setup'}</h2>
+            <p>{stepsList[step - 1]?.desc || 'Configure your business parameters'}</p>
           </div>
 
           {error && <div className="setup-error">{error}</div>}
@@ -1197,6 +1336,8 @@ const BusinessSetup = () => {
           </form>
           </>
           )}
+        </>
+        )}
         </div>
       </div>
     </div>
