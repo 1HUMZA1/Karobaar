@@ -158,7 +158,7 @@
   flex-direction: column;
   justify-content: flex-start; /* Natural top-down flow so overflow scroll works smoothly */
   align-items: center;
-  padding: 2.25rem 2.5rem 6.5rem 2.5rem; /* Generous bottom padding guarantees buttons never cut off */
+  padding: 1.5rem 2rem 1.5rem 2rem;
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
@@ -172,7 +172,7 @@
   width: 100%;
   max-width: 620px;
   margin: 0 auto;
-  padding-bottom: 2.5rem;
+  padding-bottom: 1rem;
   box-sizing: border-box;
   animation: fadeSlideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   transition: max-width 0.25s ease;
@@ -183,42 +183,37 @@
 }
 
 .setup-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .setup-header h2 {
-  font-size: 1.85rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--text-main);
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
   letter-spacing: -0.5px;
 }
 
 .setup-header p {
   color: var(--text-secondary);
-  font-size: 0.96rem;
+  font-size: 0.95rem;
   line-height: 1.45;
-}
-
-.setup-header p {
-  color: var(--text-secondary);
-  font-size: 1.1rem;
 }
 
 .setup-error {
   background-color: rgba(220, 38, 38, 0.1);
   border-left: 4px solid #dc2626;
   color: #dc2626;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 6px;
-  margin-bottom: 2rem;
-  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.88rem;
   font-weight: 500;
 }
 
 .step-content {
   animation: fadeSlideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  min-height: 280px;
+  min-height: auto;
 }
 
 /* Setup Form Elements */
@@ -301,6 +296,63 @@
 .module-card.selected .module-checkbox {
   background-color: var(--text-main);
   border-color: var(--text-main);
+}
+
+/* Step 2 App Experience Cards */
+.setup-step-desc {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.experience-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.experience-card {
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+}
+
+.experience-card:hover {
+  border-color: var(--text-secondary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.experience-card.selected {
+  border-color: var(--text-main);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.experience-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.experience-card-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-main);
+}
+
+.experience-card-sub {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  margin-left: 1.85rem;
+  line-height: 1.4;
 }
 
 /* Setup Choice Screen */
@@ -531,22 +583,36 @@
   color: #2563eb;
 }
 
-/* Footer & Buttons */
+/* Footer & Buttons - Always Docked & Fully Visible */
 .setup-footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-body, #f8fafc);
+  z-index: 40;
   display: flex;
-  gap: 1rem;
-  margin-top: 1.75rem;
-  padding-top: 1.25rem;
-  padding-bottom: 0.75rem;
-  border-top: 1px solid var(--border-color);
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-top: 1px solid var(--border-color, #e2e8f0);
   width: 100%;
   box-sizing: border-box;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] .setup-footer,
+.dark .setup-footer {
+  background: var(--bg-body, #09090b);
+  border-top-color: var(--border-color, #27272a);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .setup-btn {
-  padding: 0.85rem 1.75rem;
-  min-height: 48px;
-  font-size: 0.98rem;
+  padding: 0.75rem 1.5rem;
+  min-height: 44px;
+  font-size: 0.95rem;
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
@@ -590,6 +656,266 @@
   100% { opacity: 1; transform: translateY(0); }
 }
 
+/* ==========================================================================
+   Windows Desktop Adaptive Scaling & Compact Density
+   Triggers when the window is restored down, minimized in size, or run on 
+   smaller screens/laptops (e.g. height < 850px, width < 1180px)
+   ========================================================================== */
+@media (max-height: 850px), (max-width: 1150px) {
+  .setup-visuals {
+    flex: 0 0 260px;
+    max-width: 270px;
+    padding: 1.25rem 1.15rem 1rem 1.15rem;
+  }
+
+  .setup-brand {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .setup-sidebar-role {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .setup-progress {
+    gap: 0.65rem;
+  }
+
+  .progress-step {
+    gap: 10px;
+  }
+
+  .progress-step::after {
+    top: 26px;
+    left: 12px;
+    height: calc(100% + 0.65rem - 26px);
+  }
+
+  .step-indicator {
+    width: 26px;
+    height: 26px;
+    font-size: 0.78rem;
+  }
+
+  .step-text h3 {
+    font-size: 0.88rem;
+  }
+
+  .step-text p {
+    font-size: 0.75rem;
+    margin-top: 2px;
+  }
+
+  .setup-container {
+    padding: 1rem 1.75rem 0.85rem 1.75rem;
+  }
+
+  .setup-card {
+    padding-bottom: 0.5rem;
+  }
+
+  .setup-header {
+    margin-bottom: 0.85rem;
+  }
+
+  .setup-header h2 {
+    font-size: 1.45rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .setup-header p {
+    font-size: 0.88rem;
+  }
+
+  .setup-top-nav {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .setup-nav-back-btn {
+    padding: 4px 10px;
+    font-size: 0.78rem;
+  }
+
+  .setup-role-pill {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+
+  .setup-form-grid {
+    gap: 0.85rem;
+  }
+
+  .setup-form-group {
+    margin-bottom: 0.85rem;
+  }
+
+  .setup-form-group label {
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .setup-input {
+    padding: 0.6rem 0.85rem;
+    font-size: 0.9rem;
+    min-height: 38px;
+  }
+
+  .setup-step-desc {
+    font-size: 0.86rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .experience-cards-list {
+    gap: 0.45rem;
+  }
+
+  .experience-card {
+    padding: 0.6rem 0.85rem;
+    gap: 0.2rem;
+  }
+
+  .experience-card-title {
+    font-size: 0.92rem;
+  }
+
+  .experience-card-sub {
+    font-size: 0.78rem;
+    margin-left: 1.5rem;
+    line-height: 1.35;
+  }
+
+  .setup-footer {
+    margin-top: 0.75rem;
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .setup-btn {
+    min-height: 38px;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .setup-choice-container {
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+
+  .setup-choice-card {
+    padding: 1.15rem;
+    gap: 0.85rem;
+  }
+
+  .setup-choice-icon-wrap {
+    width: 38px;
+    height: 38px;
+  }
+
+  .setup-choice-content h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .setup-choice-content p {
+    font-size: 0.84rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .setup-choice-perks li {
+    font-size: 0.78rem;
+    gap: 6px;
+  }
+
+  .setup-choice-action {
+    padding-top: 0.65rem;
+    font-size: 0.88rem;
+  }
+}
+
+/* Extra Compact Mode for small window sizes (< 700px height or restored windows) */
+@media (max-height: 700px) {
+  .setup-visuals {
+    flex: 0 0 210px;
+    max-width: 220px;
+    padding: 0.75rem 0.65rem;
+  }
+
+  .setup-progress {
+    gap: 0.4rem;
+  }
+
+  .step-text p {
+    display: none; /* Hide step subtitle on small height to fit all 6 steps perfectly */
+  }
+
+  .progress-step::after {
+    top: 20px;
+    left: 9px;
+    height: calc(100% + 0.4rem - 20px);
+  }
+
+  .step-indicator {
+    width: 20px;
+    height: 20px;
+    font-size: 0.68rem;
+  }
+
+  .setup-container {
+    padding: 0.5rem 1rem 0.5rem 1rem;
+  }
+
+  .setup-header {
+    margin-bottom: 0.45rem;
+  }
+
+  .setup-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .setup-header p {
+    font-size: 0.8rem;
+  }
+
+  .setup-form-grid {
+    gap: 0.45rem;
+  }
+
+  .setup-form-group {
+    margin-bottom: 0.45rem;
+  }
+
+  .setup-input {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.82rem;
+    min-height: 34px;
+  }
+
+  .experience-card {
+    padding: 0.4rem 0.65rem;
+    gap: 0.15rem;
+  }
+
+  .experience-card-sub {
+    font-size: 0.72rem;
+    margin-left: 1.35rem;
+  }
+
+  .setup-footer {
+    margin-top: 0.45rem;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .setup-btn {
+    min-height: 34px;
+    padding: 0.4rem 1rem;
+    font-size: 0.84rem;
+  }
+}
+
 @media (max-width: 900px) {
   .setup-wrapper {
     flex-direction: column;
@@ -598,6 +924,6 @@
     display: none; /* Hide stepper on mobile to save space */
   }
   .setup-container {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1rem;
   }
 }

@@ -401,3 +401,26 @@ table tr:hover td {
 [data-theme="dark"] table tr:hover td {
   background-color: rgba(255, 255, 255, 0.04);
 }
+
+/* ==========================================================================
+   Windows Desktop Adaptive Scaling & Proportional Density
+   Ensures UI elements, cards, inputs and typography dynamically scale down
+   when the window is restored down, resized smaller, or run on smaller screens
+   ========================================================================== */
+@media (max-height: 850px), (max-width: 1180px) {
+  :root {
+    font-size: 14px;
+  }
+}
+
+@media (max-height: 700px), (max-width: 950px) {
+  :root {
+    font-size: 13px;
+  }
+}
+
+@media (max-height: 600px) {
+  :root {
+    font-size: 12px;
+  }
+}

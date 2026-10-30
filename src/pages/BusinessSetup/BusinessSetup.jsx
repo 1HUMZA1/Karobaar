@@ -1792,54 +1792,51 @@ const BusinessSetup = () => {
 
             {step === 2 && (
               <div className="step-content">
-                <p style={{margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem'}}>
+                <p className="setup-step-desc">
                   How familiar are you with business management applications? This helps us tailor your experience.
                 </p>
-                <div className="setup-modules-grid" style={{ gridTemplateColumns: '1fr' }}>
+                <div className="experience-cards-list">
                   <div 
-                    className={`module-card ${appKnowledge === 'Newbie' ? 'selected' : ''}`}
+                    className={`module-card experience-card ${appKnowledge === 'Newbie' ? 'selected' : ''}`}
                     onClick={() => setAppKnowledge('Newbie')}
-                    style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div className="experience-card-head">
                       <div className="module-checkbox">
                         {appKnowledge === 'Newbie' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                       </div>
-                      <span style={{fontWeight: 600, fontSize: '1.05rem'}}>Newbie</span>
+                      <span className="experience-card-title">Newbie</span>
                     </div>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '1.75rem', lineHeight: 1.4 }}>
+                    <span className="experience-card-sub">
                       I'm new to business management apps and need step-by-step guidance.
                     </span>
                   </div>
 
                   <div 
-                    className={`module-card ${appKnowledge === 'Rookie' ? 'selected' : ''}`}
+                    className={`module-card experience-card ${appKnowledge === 'Rookie' ? 'selected' : ''}`}
                     onClick={() => setAppKnowledge('Rookie')}
-                    style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div className="experience-card-head">
                       <div className="module-checkbox">
                         {appKnowledge === 'Rookie' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                       </div>
-                      <span style={{fontWeight: 600, fontSize: '1.05rem'}}>Rookie</span>
+                      <span className="experience-card-title">Rookie</span>
                     </div>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '1.75rem', lineHeight: 1.4 }}>
+                    <span className="experience-card-sub">
                       I have some experience with these tools, but might need occasional help.
                     </span>
                   </div>
 
                   <div 
-                    className={`module-card ${appKnowledge === 'Pro' ? 'selected' : ''}`}
+                    className={`module-card experience-card ${appKnowledge === 'Pro' ? 'selected' : ''}`}
                     onClick={() => setAppKnowledge('Pro')}
-                    style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div className="experience-card-head">
                       <div className="module-checkbox">
                         {appKnowledge === 'Pro' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                       </div>
-                      <span style={{fontWeight: 600, fontSize: '1.05rem'}}>Pro</span>
+                      <span className="experience-card-title">Pro</span>
                     </div>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '1.75rem', lineHeight: 1.4 }}>
+                    <span className="experience-card-sub">
                       I'm an experienced user and know exactly what I'm doing. No instructions needed.
                     </span>
                   </div>
