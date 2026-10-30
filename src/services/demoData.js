@@ -4,9 +4,9 @@ import { subDays, subHours, formatISO } from 'date-fns';
 
 export const DEMO_SHOWCASE_BUSINESS = {
   id: 'karobaar-demo-store',
-  name: 'Karobaar Showcase Demo',
-  businessName: 'Karobaar Showcase Demo',
-  category: 'Omnichannel Superstore & Cafe',
+  name: 'Karobaar Demo Store',
+  businessName: 'Karobaar Demo Store',
+  category: 'Retail & Superstore',
   currency: 'INR',
   address: 'Suite 404, Tech Park Boulevard',
   phone: '+91 98000 11223',
@@ -409,7 +409,7 @@ export const initializeDemoData = async (businessId = 'demo-business-1') => {
   }
 
   // -------------------------------------------------------------
-  // 2. Real / Local Business Fallback ('demo-business-1' SAS CAFETERIA)
+  // 2. Real / Local Business Fallback ('demo-business-1')
   // -------------------------------------------------------------
   const existingBiz = localDb.get('businesses', businessId);
   if (!existingBiz) {
@@ -456,7 +456,7 @@ export const initializeDemoData = async (businessId = 'demo-business-1') => {
 
   const products = await db.getCollection('products', businessId);
   if (products.length === 0) {
-    console.log('Initializing Karobaar real cafeteria data for:', businessId);
+    console.log('Initializing Karobaar sample store data for:', businessId);
     
     const demoProducts = [
       {
@@ -571,7 +571,7 @@ export const initializeDemoData = async (businessId = 'demo-business-1') => {
         amount: 3200, date: formatISO(subDays(today, 2)), paymentMethod: 'UPI', note: 'Monthly electricity charges'
       },
       {
-        id: 'ex2', description: 'Cafeteria Monthly Rent', category: 'Rent',
+        id: 'ex2', description: 'Store Showroom Monthly Rent', category: 'Rent',
         amount: 15000, date: formatISO(subDays(today, 5)), paymentMethod: 'Bank Transfer', note: 'Shop premise lease'
       },
       {

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { useAppContext } from '../../context/AppContext';
 import Sidebar from '../Sidebar/Sidebar';
 import Topbar from '../Topbar/Topbar';
 import BottomNav from '../BottomNav/BottomNav';
@@ -32,11 +33,14 @@ const Layout = () => {
     };
   }, []);
 
+  const { requireAuthAndSetup } = useAppContext();
+
   useEffect(() => {
     const handleGlobalShortcuts = (e) => {
       // F2 -> Instant Quick POS / New Sale
       if (e.key === 'F2') {
         e.preventDefault();
+        if (requireAuthAndSetup && requireAuthAndSetup('POS New Sale Register')) return;
         navigate('/pos');
       }
       // F1 -> Instant Dashboard
@@ -47,7 +51,7 @@ const Layout = () => {
     };
     window.addEventListener('keydown', handleGlobalShortcuts);
     return () => window.removeEventListener('keydown', handleGlobalShortcuts);
-  }, [navigate]);
+  }, [navigate, requireAuthAndSetup]);
 
   return (
     <div className="layout-wrapper">

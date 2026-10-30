@@ -71,7 +71,9 @@ const Topbar = () => {
     logout, 
     requestSignOut,
     appUiVersion, 
-    setAppUiVersion 
+    setAppUiVersion,
+    isDemoMode,
+    requireAuthAndSetup 
   } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('All'); // 'All' | 'Pages' | 'Products' | 'Orders' | 'Actions'
@@ -659,7 +661,10 @@ const Topbar = () => {
         {/* 1-Click Fast POS Access */}
         <button 
           className="topbar-quick-sale-btn"
-          onClick={() => navigate('/pos')}
+          onClick={() => {
+            if (requireAuthAndSetup && requireAuthAndSetup('POS New Sale Register')) return;
+            navigate('/pos');
+          }}
           title="Open POS Register (F2)"
         >
           <Zap size={14} />
@@ -732,8 +737,8 @@ const Topbar = () => {
             title="Switch Workspace / Multi-Business"
           >
             <Building2 size={14} />
-            <span className="topbar-biz-pill-name">{currentBusiness?.name || currentBusiness?.businessName || 'Workspace'}</span>
-            <span className="topbar-biz-pill-role">{currentUser?.role || 'Owner'}</span>
+            <span className="topbar-biz-pill-name">{isDemoMode ? 'Karobaar Demo Store' : (currentBusiness?.name || currentBusiness?.businessName || 'Workspace')}</span>
+            <span className="topbar-biz-pill-role">{isDemoMode ? 'Preview' : (currentUser?.role || 'Owner')}</span>
             <ChevronDown size={12} style={{ transform: isBizDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
           </button>
 
@@ -822,6 +827,7 @@ const Topbar = () => {
           <div className="user-info hidden-mobile">
             <span className="user-name">
               {(() => {
+                if (isDemoMode) return 'Demo User';
                 let uName = currentUser?.name || currentUser?.displayName || currentBusiness?.ownerName;
                 if (!uName || uName === 'dev 1' || uName === 'Store Owner') {
                   try {
@@ -834,6 +840,7 @@ const Topbar = () => {
             </span>
             <span className="user-business">
               {(() => {
+                if (isDemoMode) return 'Karobaar Demo Store';
                 let bName = currentBusiness?.name || currentBusiness?.businessName;
                 if (!bName || bName === 'Business' || bName === 'My Business') {
                   try {

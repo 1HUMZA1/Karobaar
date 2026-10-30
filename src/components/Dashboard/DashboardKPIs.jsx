@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DollarSign, ShoppingBag, TrendingUp, CreditCard, ArrowUpRight, ArrowDownRight, Wallet, AlertTriangle, Layers, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAppContext } from '../../context/AppContext';
 import { PaymentMethodModal, UdhaarBreakdownModal, StockHealthModal } from './DashboardModals';
 
 const Sparkline = ({ color, trend }) => {
@@ -34,6 +35,7 @@ export const DashboardKPIs = ({
   products = []
 }) => {
   const navigate = useNavigate();
+  const { requireAuthAndSetup } = useAppContext();
 
   // Modals state
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
@@ -88,7 +90,7 @@ export const DashboardKPIs = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* 1. Revenue */}
         <div 
-          onClick={() => navigate('/orders')}
+          onClick={() => { if (requireAuthAndSetup && requireAuthAndSetup('Sales Orders')) return; navigate('/orders'); }}
           className="kpi-card bg-[var(--bg-card)] rounded-xl p-3.5 sm:p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] cursor-pointer group"
           title="Click to view all Orders & Sales"
         >
@@ -118,7 +120,7 @@ export const DashboardKPIs = ({
         
         {/* 2. Orders */}
         <div 
-          onClick={() => navigate('/orders')}
+          onClick={() => { if (requireAuthAndSetup && requireAuthAndSetup('Sales Orders')) return; navigate('/orders'); }}
           className="kpi-card bg-[var(--bg-card)] rounded-xl p-3.5 sm:p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] cursor-pointer group"
           title="Click to view Order History"
         >
@@ -148,7 +150,7 @@ export const DashboardKPIs = ({
 
         {/* 3. Gross & Net Profit */}
         <div 
-          onClick={() => !isProfitMasked && navigate('/reports')}
+          onClick={() => { if (requireAuthAndSetup && requireAuthAndSetup('Profit & Loss Reports')) return; if (!isProfitMasked) navigate('/reports'); }}
           className={`kpi-card bg-[var(--bg-card)] rounded-xl p-3.5 sm:p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] group ${isProfitMasked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'}`}
           title={isProfitMasked ? "Restricted: Financial reports are restricted for this role" : "Click to view Profit & Loss Reports"}
         >
@@ -188,7 +190,7 @@ export const DashboardKPIs = ({
 
         {/* 4. Operating Expenses */}
         <div 
-          onClick={() => !isExpensesMasked && navigate('/expenses')}
+          onClick={() => { if (requireAuthAndSetup && requireAuthAndSetup('Operating Expenses')) return; if (!isExpensesMasked) navigate('/expenses'); }}
           className={`kpi-card bg-[var(--bg-card)] rounded-xl p-3.5 sm:p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] group ${isExpensesMasked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'}`}
           title={isExpensesMasked ? "Restricted: Operating expenses are restricted for this role" : "Click to view Operating Expenses & Ledger"}
         >
@@ -255,7 +257,7 @@ export const DashboardKPIs = ({
         {/* Customer Udhaar (Receivables) - Clickable Drilldown */}
         <div 
           data-test="udhaar-card"
-          onClick={() => setShowUdhaarModal(true)}
+          onClick={() => { if (requireAuthAndSetup && requireAuthAndSetup('Khata & Udhaar')) return; setShowUdhaarModal(true); }}
           className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-[var(--text-main)] hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-between group"
           title="Click to view all customer Khata balances"
         >
@@ -275,7 +277,7 @@ export const DashboardKPIs = ({
         {/* Inventory Restock Alert - Clickable Drilldown */}
         <div 
           data-test="stock-card"
-          onClick={() => setShowStockModal(true)}
+          onClick={() => { if (requireAuthAndSetup && requireAuthAndSetup('Stock Management')) return; setShowStockModal(true); }}
           className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-[var(--text-main)] hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-between group"
           title="Click to audit low-stock items and reorder recommendations"
         >

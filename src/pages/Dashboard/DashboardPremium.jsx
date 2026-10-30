@@ -40,7 +40,8 @@ const Dashboard = ({ onSwitchMode }) => {
     currentUser, 
     currentBusiness, 
     exitDemoWorkspace, 
-    resetDemoWorkspace 
+    resetDemoWorkspace,
+    requireAuthAndSetup
   } = useAppContext();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isResettingDemo, setIsResettingDemo] = useState(false);
@@ -457,6 +458,9 @@ const Dashboard = ({ onSwitchMode }) => {
   };
 
   const getResolvedDisplayName = () => {
+    if (isDemoMode) {
+      return 'Karobaar Demo Store';
+    }
     let name = currentBusiness?.name || currentBusiness?.businessName;
     if (!name || name === 'My Business' || name === 'Business') {
       try {
@@ -536,7 +540,7 @@ const Dashboard = ({ onSwitchMode }) => {
               <Sparkles size={13} /> DEMO WORKSPACE
             </span>
             <div className="demo-showcase-info">
-              <strong>Karobaar Showcase Demo:</strong> Sample business with live sales, inventory, and analytics. All features are fully unlocked.
+              <strong>Karobaar Demo Preview:</strong> Sample retail store. To use live registers and features, first sign in and do setup.
             </div>
           </div>
           <div className="demo-showcase-bar-actions">
@@ -620,7 +624,10 @@ const Dashboard = ({ onSwitchMode }) => {
 
             <button 
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#09090b] text-[#ffffff] hover:bg-zinc-800 transition-all duration-200 text-xs font-bold"
-              onClick={() => setShowLegacyConfirmModal(true)}
+              onClick={() => {
+                if (requireAuthAndSetup && requireAuthAndSetup('Legacy Operations Desk')) return;
+                setShowLegacyConfirmModal(true);
+              }}
               title="Switch to Legacy Operations Desk"
             >
               <Sparkles size={12} />
@@ -718,7 +725,10 @@ const Dashboard = ({ onSwitchMode }) => {
         {/* 1-Tap Quick Action Chips */}
         <div className="flex items-center gap-2 overflow-x-auto">
           <button 
-            onClick={() => navigate('/pos')}
+            onClick={() => {
+              if (requireAuthAndSetup && requireAuthAndSetup('POS New Sale Register')) return;
+              navigate('/pos');
+            }}
             className="cmd-primary-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
             title="Open POS (F2)"
           >
@@ -728,7 +738,10 @@ const Dashboard = ({ onSwitchMode }) => {
           </button>
           
           <button 
-            onClick={() => navigate('/products')}
+            onClick={() => {
+              if (requireAuthAndSetup && requireAuthAndSetup('Products & Inventory')) return;
+              navigate('/products');
+            }}
             className="cmd-ghost-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <Package size={13} className="text-text-secondary" />
@@ -736,7 +749,10 @@ const Dashboard = ({ onSwitchMode }) => {
           </button>
 
           <button 
-            onClick={() => navigate('/customers')}
+            onClick={() => {
+              if (requireAuthAndSetup && requireAuthAndSetup('Customers Khata')) return;
+              navigate('/customers');
+            }}
             className="cmd-ghost-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <Users size={13} className="text-text-secondary" />
@@ -744,7 +760,10 @@ const Dashboard = ({ onSwitchMode }) => {
           </button>
 
           <button 
-            onClick={() => navigate('/expenses')}
+            onClick={() => {
+              if (requireAuthAndSetup && requireAuthAndSetup('Expenses & Cashflow')) return;
+              navigate('/expenses');
+            }}
             className="cmd-ghost-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <Receipt size={13} className="text-text-secondary" />

@@ -31,12 +31,13 @@ import Branches from './pages/Branches/Branches';
 import HQAnalytics from './pages/Branches/HQAnalytics';
 import MobileMenu from './pages/Settings/MobileMenu';
 import SignOutModal from './components/SignOutModal/SignOutModal';
+import DemoRestrictedModal from './components/DemoRestrictedModal/DemoRestrictedModal';
 import AccessDenied from './components/AccessDenied/AccessDenied';
 import { hasPermission, normalizeRole, PERMISSIONS } from './utils/permissions';
 
 // Protected Route Component with Role & Permission Enforcement
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission, moduleId }) => {
-  const { authStatus, userRole, currentUser, currentBusiness } = useAppContext();
+  const { authStatus, userRole, currentUser, currentBusiness, isDemoMode, requireAuthAndSetup } = useAppContext();
   
   if (authStatus === 'unauthenticated') {
     return <Navigate to="/login" replace />;
@@ -44,6 +45,12 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission, moduleId }
 
   if (authStatus === 'pending_onboarding') {
     return <Navigate to="/setup" replace />;
+  }
+
+  // Demo Mode Restriction: Block operational subpages in preview mode
+  if (isDemoMode && moduleId && moduleId !== 'core') {
+    requireAuthAndSetup?.(moduleId);
+    return <Navigate to="/dashboard" replace />;
   }
   
   // Role Check (Normalized role comparison, Owner always has access)
@@ -382,6 +389,7 @@ const RootResumeRedirect = () => {
   return (
     <HashRouter>
       <SignOutModal />
+      <DemoRestrictedModal />
       <Routes>
         <Route path="/home" element={<Landing />} />
         <Route path="/website" element={<Landing />} />

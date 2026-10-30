@@ -56,6 +56,10 @@ export const AppProvider = ({ children }) => {
   const requestSignOut = useCallback(() => setIsSignOutModalOpen(true), []);
   const closeSignOutModal = useCallback(() => setIsSignOutModalOpen(false), []);
 
+  // Demo Restriction Modal State
+  const [isDemoRestrictedModalOpen, setIsDemoRestrictedModalOpen] = useState(false);
+  const [demoRestrictedFeatureName, setDemoRestrictedFeatureName] = useState('');
+
   // Session State: Respect active session or require clean authentication
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -65,7 +69,7 @@ export const AppProvider = ({ children }) => {
       if (u) {
         const parsed = JSON.parse(u);
         // Automatically purge any stale legacy "SAS Cafeteria" cached user
-        if (parsed?.name === 'SAS Cafeteria Owner' || parsed?.email?.includes('sascafeteria')) {
+        if (parsed?.name === 'SAS Cafeteria Owner' || parsed?.email?.includes('sascafeteria') || parsed?.name?.toLowerCase().includes('cafeteria')) {
           localStorage.removeItem('karobaar_session_user');
           localStorage.removeItem('karobaar_session_business');
           localStorage.removeItem('karobaar_session_businesses');
@@ -84,7 +88,7 @@ export const AppProvider = ({ children }) => {
       const b = localStorage.getItem('karobaar_session_business');
       if (b) {
         const parsed = JSON.parse(b);
-        if (parsed?.name === 'SAS CAFETERIA' || parsed?.id === 'demo-business-1') {
+        if (parsed?.name === 'SAS CAFETERIA' || parsed?.id === 'demo-business-1' || parsed?.name?.toLowerCase().includes('cafeteria')) {
           if (localStorage.getItem('karobaar_is_demo_mode') === 'true') {
             return DEMO_SHOWCASE_BUSINESS;
           }
@@ -230,6 +234,37 @@ export const AppProvider = ({ children }) => {
     setUserBusinesses([]);
     setAuthStatus('unauthenticated');
   };
+
+  // Demo Mode check & Guard: blocks operations in preview demo mode
+  const isDemoMode = Boolean(
+    (typeof localStorage !== 'undefined' && localStorage.getItem('karobaar_is_demo_mode') === 'true') ||
+    currentBusiness?.isDemo ||
+    currentBusiness?.id === 'karobaar-demo-store' ||
+    currentUser?.isDemo ||
+    currentUser?.email === 'demo@karobaar.app'
+  );
+
+  const requireAuthAndSetup = useCallback((featureName = 'this feature') => {
+    const isDemo = Boolean(
+      (typeof localStorage !== 'undefined' && localStorage.getItem('karobaar_is_demo_mode') === 'true') ||
+      currentBusiness?.isDemo ||
+      currentBusiness?.id === 'karobaar-demo-store' ||
+      currentUser?.isDemo ||
+      currentUser?.email === 'demo@karobaar.app'
+    );
+
+    if (isDemo) {
+      setDemoRestrictedFeatureName(featureName);
+      setIsDemoRestrictedModalOpen(true);
+      return true; // blocked
+    }
+    return false; // allowed
+  }, [currentBusiness, currentUser]);
+
+  const closeDemoRestrictedModal = useCallback(() => {
+    setIsDemoRestrictedModalOpen(false);
+    setDemoRestrictedFeatureName('');
+  }, []);
 
   // Helper: Instantly provisions and logs into a clean, ready-to-use business workspace
   const launchReadyToUseWorkspace = async (customUser = null, customBiz = null) => {
@@ -799,6 +834,11 @@ export const AppProvider = ({ children }) => {
       isSignOutModalOpen,
       requestSignOut,
       closeSignOutModal,
+      isDemoMode,
+      isDemoRestrictedModalOpen,
+      demoRestrictedFeatureName,
+      requireAuthAndSetup,
+      closeDemoRestrictedModal,
       switchBranch,
       createNewBusiness,
       joinBusinessWithCode,

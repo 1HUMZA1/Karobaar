@@ -78,7 +78,7 @@ const navGroups = [
 ];
 
 const Sidebar = () => {
-  const { sidebarOpen, setSidebarOpen, userRole, currentBusiness, userBusinesses, switchBranch } = useAppContext();
+  const { sidebarOpen, setSidebarOpen, userRole, currentBusiness, userBusinesses, switchBranch, isDemoMode, requireAuthAndSetup } = useAppContext();
   const [isPinned, setIsPinned] = useState(true);
   const [tooltip, setTooltip] = useState(null); // { name: string, top: number, left: number }
 
@@ -193,6 +193,7 @@ const Sidebar = () => {
               onMouseLeave={handleMouseLeave}
             >
               {(() => {
+                if (isDemoMode) return 'Karobaar Demo Store';
                 let bName = currentBusiness?.name || currentBusiness?.businessName;
                 if (!bName || bName === 'My Business' || bName === 'Business') {
                   try {
@@ -247,7 +248,11 @@ const Sidebar = () => {
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         onMouseEnter={(e) => handleMouseEnter(e, item.name)}
                         onMouseLeave={handleMouseLeave}
-                        onClick={() => {
+                        onClick={(e) => {
+                          if (item.path !== '/dashboard' && requireAuthAndSetup && requireAuthAndSetup(item.name)) {
+                            e.preventDefault();
+                            return;
+                          }
                           setTooltip(null);
                           if (window.innerWidth <= 768) {
                             setSidebarOpen(false);

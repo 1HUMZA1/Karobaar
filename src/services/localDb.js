@@ -38,7 +38,7 @@ class LocalDB {
           id: 'demo-business-1',
           name: 'My Store',
           currency: 'INR',
-          category: 'Cafeteria & Restaurant',
+          category: 'Retail & Superstore',
           address: 'Shop #4, Commercial Complex',
           phone: '+91 98765 43210',
           settings: {

@@ -183,9 +183,9 @@ export const AI_STEP_PROMPTS_PHONETIC = {
     }
   },
   step3: {
-    hinglish: 'Aapka business kis type ka hai? Jaise Cafeteria, Kirana store, ya Kapde ki dukaan? Select karte hi main ready-to-sell inventory apne aap load kar dunga.',
+    hinglish: 'Aapka business kis type ka hai? Jaise Supermarket, Kirana store, ya Kapde ki dukaan? Select karte hi main ready-to-sell inventory apne aap load kar dunga.',
     en: 'What type of business do you run? Select your category, and I will preload ready-to-sell products with prices for you.',
-    hi: 'Aapki dukaan kis tarah ki hai? Jaise Cafeteria, Kirana store, ya Kapde ki dukaan? Main aapke liye ready-to-sell maal turant load kar doonga.',
+    hi: 'Aapki dukaan kis tarah ki hai? Jaise Supermarket, Kirana store, ya Kapde ki dukaan? Main aapke liye ready-to-sell maal turant load kar doonga.',
     ur: 'Aap ka karobaar kis qism ka hai? Jaise Cafe, Karyana store, ya Garments? Main aapke liye zaroori saamaan khud shaamil kar doonga.',
     bn: 'Aaponar business kon dhoroner? Jemon Cafe, Mudikhana ba Kapoder dokan? Aami ready-to-sell stock load kore debo.',
     ta: 'Ungal vanigam ethagaiyadhu? Cafe, Maligai alladhu Thunikkadaya? Naan thayaaraana sarakkugalai yetruven.',
@@ -254,7 +254,7 @@ export const AI_STEP_PROMPTS = {
     }
   },
   step3: {
-    hinglish: 'Aapka business kis type ka hai? Jaise Cafeteria, Kirana store, ya Kapde ki dukaan? Select karte hi main ready-to-sell inventory apne aap load kar dunga.',
+    hinglish: 'Aapka business kis type ka hai? Jaise Supermarket, Kirana store, ya Kapde ki dukaan? Select karte hi main ready-to-sell inventory apne aap load kar dunga.',
     en: 'What type of business do you run? Select your category, and I will preload ready-to-sell products with prices for you.',
     hi: 'आपकी दुकान किस तरह की है? जैसे कैफेटेरिया, किराना स्टोर, या कपड़े की दुकान? मैं आपके लिए रेडी-टू-सेल माल तुरंत लोड कर दूँगा।',
     ur: 'آپ کا کاروبار کس قسم کا ہے؟ جیسے کیفے، کریانہ اسٹور، یا گارمنٹس؟ میں آپ کے لیے ضروری سامان خود شامل کر دوں گا۔',
@@ -846,7 +846,7 @@ export const AIOnboardingConcierge = () => {
       speakAI(languagePreference === 'hi' ? "आपकी दुकान के लिए माल और बारकोड लोड हो रहे हैं..." : "Injecting category catalog products...");
       await new Promise(r => setTimeout(r, 700));
 
-      const starterProducts = CATEGORY_PRODUCTS[category] || CATEGORY_PRODUCTS['Cafeteria & Restaurant'];
+      const starterProducts = CATEGORY_PRODUCTS[category] || CATEGORY_PRODUCTS['Grocery & Kirana'] || CATEGORY_PRODUCTS['Retail & Clothing'];
       await db.saveCollection('products', starterProducts, businessId);
 
       // Phase 4: Configure UPI and theme

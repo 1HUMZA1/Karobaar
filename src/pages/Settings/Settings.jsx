@@ -927,7 +927,7 @@ const Settings = () => {
   };
 
   const handleResetData = () => {
-    if (window.confirm("Warning: Resetting local data will restore the standard cafeteria records. Continue?")) {
+    if (window.confirm("Warning: Resetting local data will restore the standard sample records. Continue?")) {
       localStorage.clear();
       window.location.reload();
     }
@@ -1997,7 +1997,7 @@ const Settings = () => {
 
                 <div className="pt-4 border-t border-[var(--border-color)] mt-2">
                   <h4 className="font-bold text-sm text-text-main mb-1">Database Maintenance</h4>
-                  <p className="text-xs text-text-secondary mb-3">Re-seed standard cafeteria demo data if needed.</p>
+                  <p className="text-xs text-text-secondary mb-3">Re-seed standard sample demo data if needed.</p>
                   <button type="button" className="settings-btn-secondary" onClick={handleResetData}>
                     <RotateCcw size={15} />
                     <span>Reset to Default Demo State</span>

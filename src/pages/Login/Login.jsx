@@ -423,7 +423,7 @@ const Login = () => {
         await signInWithEmailAndPassword(auth, email.trim(), password);
         const userEmail = email.trim().toLowerCase();
         const alreadyOnboarded = localStorage.getItem('karobaar_onboarding_completed_' + userEmail) === 'true';
-        if (!alreadyOnboarded && userEmail !== 'owner@sascafeteria.com') {
+        if (!alreadyOnboarded && userEmail !== 'demo@karobaar.app') {
           sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
         }
       }
@@ -433,8 +433,7 @@ const Login = () => {
       // Resilient Fallback: If demo email or network is unavailable, enter workspace smoothly
       const normalizedEmail = email.trim().toLowerCase();
       if (
-        normalizedEmail.includes('sascafeteria') || 
-        normalizedEmail.includes('demo') || 
+                normalizedEmail.includes('demo') || 
         normalizedEmail.includes('owner') ||
         !navigator.onLine ||
         error.code === 'auth/network-request-failed' ||
