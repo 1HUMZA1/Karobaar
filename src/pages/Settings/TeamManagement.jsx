@@ -516,7 +516,7 @@ export const TeamManagement = () => {
               overflow: 'hidden'
             }}>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', minWidth: '960px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left', fontSize: '0.9rem' }}>
+                <table style={{ width: '100%', minWidth: '780px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left', fontSize: '0.9rem' }}>
                   <thead>
                     <tr style={{
                       borderBottom: '1px solid var(--border-color, #e2e8f0)',
@@ -527,12 +527,12 @@ export const TeamManagement = () => {
                       fontSize: '0.74rem',
                       fontWeight: 800
                     }}>
-                      <th style={{ padding: '18px 24px', minWidth: '260px' }}>Team Member</th>
-                      <th style={{ padding: '18px 20px', minWidth: '130px' }}>Role</th>
-                      <th style={{ padding: '18px 20px', minWidth: '130px' }}>Status</th>
-                      <th style={{ padding: '18px 20px', minWidth: '200px' }}>Contact Verification</th>
-                      <th style={{ padding: '18px 20px', minWidth: '140px' }}>Joined Date</th>
-                      <th style={{ padding: '18px 24px', minWidth: '220px', textAlign: 'right' }}>Actions</th>
+                      <th style={{ padding: '16px 20px', minWidth: '220px' }}>Team Member</th>
+                      <th style={{ padding: '16px 16px', minWidth: '100px' }}>Role</th>
+                      <th style={{ padding: '16px 16px', minWidth: '100px' }}>Status</th>
+                      <th style={{ padding: '16px 16px', minWidth: '160px' }}>Verification</th>
+                      <th style={{ padding: '16px 16px', minWidth: '110px' }}>Joined Date</th>
+                      <th style={{ padding: '16px 20px', minWidth: '180px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -781,7 +781,7 @@ export const TeamManagement = () => {
               overflow: 'hidden'
             }}>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', minWidth: '980px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left', fontSize: '0.9rem' }}>
+                <table style={{ width: '100%', minWidth: '780px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left', fontSize: '0.9rem' }}>
                   <thead>
                     <tr style={{
                       borderBottom: '1px solid var(--border-color, #e2e8f0)',
@@ -792,12 +792,12 @@ export const TeamManagement = () => {
                       fontSize: '0.74rem',
                       fontWeight: 800
                     }}>
-                      <th style={{ padding: '18px 24px', minWidth: '260px' }}>Invited Recipient</th>
-                      <th style={{ padding: '18px 20px', minWidth: '130px' }}>Role</th>
-                      <th style={{ padding: '18px 24px', minWidth: '190px' }}>Invite Code</th>
-                      <th style={{ padding: '18px 20px', minWidth: '130px' }}>Status</th>
-                      <th style={{ padding: '18px 20px', minWidth: '140px' }}>Expiration</th>
-                      <th style={{ padding: '18px 24px', minWidth: '260px', textAlign: 'right' }}>Actions</th>
+                      <th style={{ padding: '16px 20px', minWidth: '220px' }}>Invited Recipient</th>
+                      <th style={{ padding: '16px 16px', minWidth: '100px' }}>Role</th>
+                      <th style={{ padding: '16px 16px', minWidth: '160px' }}>Invite Code</th>
+                      <th style={{ padding: '16px 16px', minWidth: '100px' }}>Status</th>
+                      <th style={{ padding: '16px 16px', minWidth: '110px' }}>Expiration</th>
+                      <th style={{ padding: '16px 20px', minWidth: '180px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -897,41 +897,24 @@ export const TeamManagement = () => {
                             {inv.expiresAt ? new Date(inv.expiresAt).toLocaleDateString() : '7 days'}
                           </td>
 
-                          <td style={{ padding: '18px 24px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <td style={{ padding: '16px 20px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap' }}>
                             {isPending && canManageTeam && (
-                              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopyRawCode(inv.code)}
-                                  style={{
-                                    padding: '7px 12px',
-                                    borderRadius: '8px',
-                                    border: '1px solid var(--border-color)',
-                                    background: 'transparent',
-                                    color: 'var(--text-main)',
-                                    fontSize: '0.82rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    whiteSpace: 'nowrap'
-                                  }}
-                                  title="Copy clean code (e.g. KB-INV-XXXXX)"
-                                >
-                                  {copiedCode === `raw_${inv.code}` ? 'Copied Code!' : 'Copy Code'}
-                                </button>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyInviteCode(inv.code)}
                                   style={{
-                                    padding: '7px 14px',
+                                    padding: '6px 12px',
                                     borderRadius: '8px',
                                     border: '1px solid var(--border-color)',
                                     background: 'transparent',
                                     color: 'var(--text-main)',
-                                    fontSize: '0.82rem',
+                                    fontSize: '0.8rem',
                                     fontWeight: 600,
                                     cursor: 'pointer',
                                     whiteSpace: 'nowrap'
                                   }}
+                                  title="Copy invite link"
                                 >
                                   {copiedCode === inv.code ? 'Copied Link!' : 'Copy Link'}
                                 </button>
@@ -939,16 +922,17 @@ export const TeamManagement = () => {
                                   type="button"
                                   onClick={() => handleRevokeInvite(inv.id)}
                                   style={{
-                                    padding: '7px 12px',
+                                    padding: '6px 10px',
                                     borderRadius: '8px',
                                     border: '1px solid rgba(239, 68, 68, 0.3)',
                                     background: 'rgba(239, 68, 68, 0.05)',
                                     color: '#ef4444',
-                                    fontSize: '0.82rem',
+                                    fontSize: '0.8rem',
                                     fontWeight: 600,
                                     cursor: 'pointer',
                                     whiteSpace: 'nowrap'
                                   }}
+                                  title="Revoke invitation"
                                 >
                                   Revoke
                                 </button>
