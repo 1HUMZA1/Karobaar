@@ -40,7 +40,6 @@ import { aiSettingsService } from '../../services/ai/aiSettingsService';
 import { executeKarobaarTool } from '../../services/aiToolsService';
 import KarobaarAIOverlay from './KarobaarAIOverlay';
 import JarvisMiniCharacter from './JarvisMiniCharacter';
-import JarvisConversationBubble from './JarvisConversationBubble';
 import JarvisSettingsModal from './JarvisSettingsModal';
 import JarvisCommandCenter from './JarvisCommandCenter';
 import { jarvisVoiceService } from '../../services/ai/jarvisVoiceService';
@@ -365,200 +364,44 @@ export const CustomizeAIChatbot = () => {
 
   // Toggle voice input recording / mute
   const toggleVoiceListening = () => {
-    const next = !voiceEnabled;
-    setVoiceEnabled(next);
-    isListeningEnabledRef.current = next;
-    if (!next && recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch (e) {}
+    setIsCommandCenterOpen(true);
+    if (jarvisVoiceService.isListening) {
+      jarvisVoiceService.stopListening();
       setIsListening(false);
-    } else if (next && recognitionRef.current && !isSpeakingRef.current && !isHudOverlayOpenRef.current) {
-      try { recognitionRef.current.start(); } catch (e) {}
+    } else {
+      jarvisVoiceService.startListening();
+      setIsListening(true);
     }
   };
 
-  // Continuous Ambient Listener: Listens to the FULL command and reacts only after true silence
+  // Connect singleton Jarvis voice service with UI state
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.warn('Speech Recognition is not supported on this browser.');
-      return;
+    jarvisVoiceService.onWakeWordDetected = (transcript) => {
+      setIsCommandCenterOpen(true);
+      const cleaned = (transcript || '').replace(/^(hey\s+)?jarvis\s*/i, '').trim();
+      if (cleaned) {
+        setCommandCenterInitialQuery(cleaned);
+      }
+    };
+
+    jarvisVoiceService.onStateChange = ({ isListening: listening }) => {
+      setIsListening(listening);
+    };
+
+    jarvisVoiceService.onAudioLevel = (lvl) => {
+      setAudioLevel(lvl);
+    };
+
+    if (aiSettings.backgroundWake !== false) {
+      jarvisVoiceService.startWakeWordListening(assistantName.toLowerCase());
+    } else {
+      jarvisVoiceService.stopWakeWordListening();
     }
-
-    let isMounted = true;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    // Map configured language to recognition acoustic model
-    const langAcousticMap = {
-      'hinglish': 'en-IN',
-      'hi': 'hi-IN',
-      'en-in': 'en-IN',
-      'en': 'en-US',
-      'en-gb': 'en-GB',
-      'ur': 'ur-PK',
-      'ar': 'ar-SA',
-      'es': 'es-ES'
-    };
-    recognition.lang = langAcousticMap[aiLanguage] || 'en-IN';
-
-    recognition.onstart = () => {
-      if (isMounted) setIsListening(true);
-    };
-
-    recognition.onresult = (event) => {
-      // ANTI-ECHO GUARD 1: Assistant is currently speaking out loud!
-      if (isSpeakingRef.current) {
-        speechAccumulatorRef.current = '';
-        setInterimTranscript('');
-        return;
-      }
-
-      // ANTI-ECHO GUARD 2: Within 900ms acoustic echo cooldown buffer
-      const timeSinceSpeech = Date.now() - lastSpeechEndTimeRef.current;
-      if (timeSinceSpeech < 900) {
-        speechAccumulatorRef.current = '';
-        setInterimTranscript('');
-        return;
-      }
-
-      // If HUD overlay is open, background ambient listener yields
-      if (isHudOverlayOpenRef.current) {
-        speechAccumulatorRef.current = '';
-        setInterimTranscript('');
-        return;
-      }
-
-      let currentInterim = '';
-      let newlyFinal = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const piece = event.results[i][0]?.transcript || '';
-        if (event.results[i].isFinal) {
-          newlyFinal += piece + ' ';
-        } else {
-          currentInterim += piece;
-        }
-      }
-
-      if (newlyFinal) {
-        speechAccumulatorRef.current = (speechAccumulatorRef.current + ' ' + newlyFinal).trim();
-      }
-
-      // Combine accumulated finalized speech with current interim words
-      const fullSoFar = (speechAccumulatorRef.current + ' ' + currentInterim).trim();
-
-      // STRICT PRIVACY & NO SELF-ACTING GUARD:
-      // If idle (conversation bubble is closed), do NOT react to room noise unless
-      // the user explicitly addressed Jarvis with the wake word ("Hey Jarvis", "Jarvis")!
-      const isAlreadyEngaged = isConversationBubbleOpenRef.current;
-      const { isSoloWakeWord: previewSolo, hasWakeWord: previewWake } = cleanSpokenQuery(fullSoFar, assistantName);
-
-      if (!isAlreadyEngaged && !previewSolo && !previewWake) {
-        // Ambient speech not addressed to Jarvis. Do not pop up bubble, do not act!
-        return;
-      }
-
-      if (fullSoFar) {
-        setInterimTranscript(fullSoFar);
-        if (previewSolo || previewWake) {
-          setIsCommandCenterOpen(true);
-        } else {
-          setIsConversationBubbleOpen(true);
-        }
-      }
-
-      // Configurable silence delay (default: 1.5s) to guarantee listening to FULL command before reacting
-      const pauseDelayMs = Math.round((Number(speechPauseDelayRef.current) || 1.5) * 1000);
-
-      // RESET silence debounce timer on every word / syllable. Never cut off mid-sentence!
-      clearTimeout(speechSilenceTimerRef.current);
-      speechSilenceTimerRef.current = setTimeout(() => {
-        // Re-check speaking & cooldown guards
-        if (isSpeakingRef.current || (Date.now() - lastSpeechEndTimeRef.current) < 900 || isHudOverlayOpenRef.current || isCommandCenterOpenRef.current) {
-          speechAccumulatorRef.current = '';
-          setInterimTranscript('');
-          return;
-        }
-
-        const raw = (speechAccumulatorRef.current + ' ' + currentInterim).trim();
-        speechAccumulatorRef.current = '';
-        setInterimTranscript('');
-
-        if (!raw || raw.length < 2) return;
-
-        // Anti-Echo Check: Drop self-hearing audio
-        if (isSelfEcho(raw, lastSpokenTextRef.current, recentSpokenListRef.current)) {
-          console.warn('[Anti-Echo Filter] Dropped self-hearing transcript:', raw);
-          return;
-        }
-
-        const { isSoloWakeWord, hasWakeWord, cleanedQuery } = cleanSpokenQuery(raw, assistantName);
-
-        // If assistant was NOT already engaged and neither wake word nor solo wake word was spoken, drop it!
-        if (!isAlreadyEngaged && !hasWakeWord && !isSoloWakeWord) {
-          return;
-        }
-
-        if (isSoloWakeWord) {
-          // User ONLY said wake word ("Jarvis") and paused
-          if (aiSettings.wakeChime !== false) playWakeChime();
-          setIsCommandCenterOpen(true);
-          return;
-        }
-
-        // User spoke their question or command!
-        if (cleanedQuery) {
-          if (hasWakeWord) {
-            setIsCommandCenterOpen(true);
-            setCommandCenterInitialQuery(cleanedQuery);
-          } else {
-            setIsConversationBubbleOpen(true);
-            handleUserQuery(cleanedQuery);
-          }
-        }
-      }, pauseDelayMs);
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        setIsListening(false);
-        isListeningEnabledRef.current = false;
-        setVoiceEnabled(false);
-      }
-    };
-
-    recognition.onend = () => {
-      if (isMounted) {
-        setIsListening(false);
-        const inCooldown = (Date.now() - lastSpeechEndTimeRef.current) < 900;
-        if (isListeningEnabledRef.current && !isSpeakingRef.current && !inCooldown && !isHudOverlayOpenRef.current) {
-          setTimeout(() => {
-            try {
-              const stillInCooldown = (Date.now() - lastSpeechEndTimeRef.current) < 900;
-              if (isMounted && isListeningEnabledRef.current && !isSpeakingRef.current && !stillInCooldown && !isHudOverlayOpenRef.current) {
-                recognition.start();
-              }
-            } catch (e) {}
-          }, 250);
-        }
-      }
-    };
-
-    if (!isHudOverlayOpenRef.current) {
-      try {
-        recognition.start();
-      } catch (e) {}
-    }
-
-    recognitionRef.current = recognition;
 
     return () => {
-      isMounted = false;
-      clearTimeout(speechSilenceTimerRef.current);
-      try { recognition.abort(); } catch (e) {}
+      jarvisVoiceService.stopWakeWordListening();
     };
-  }, [assistantName, aiLanguage, voiceEnabled]);
+  }, [assistantName, aiSettings.backgroundWake]);
 
   // Speech Output Helper with Custom Voices, Volume, Cadence & Strict Anti-Echo Locks
   const speakText = (text) => {
@@ -1127,7 +970,7 @@ export const CustomizeAIChatbot = () => {
 
   return (
     <>
-      {/* 1. Small Animated AI Assistant Character in Below-Left Side */}
+      {/* 1. Ultra-Modern Floating AI Capsule Dock (Bottom-Right) */}
       <JarvisMiniCharacter 
         isListening={isListening}
         isSpeaking={isSpeaking}
@@ -1135,8 +978,7 @@ export const CustomizeAIChatbot = () => {
         audioLevel={audioLevel}
         voiceEnabled={voiceEnabled}
         assistantName={assistantName}
-        characterStyle={aiSettings.characterStyle || 'orb'}
-        isBubbleOpen={isConversationBubbleOpen || isCommandCenterOpen}
+        isBubbleOpen={isCommandCenterOpen}
         onCharacterClick={() => {
           if (isSpeaking) {
             stopSpeaking();
@@ -1148,7 +990,7 @@ export const CustomizeAIChatbot = () => {
         onToggleMic={toggleVoiceListening}
       />
 
-      {/* 2. Flagship Jarvis Command Center with Reactive Intelligence Orb */}
+      {/* 2. Flagship Jarvis Copilot Panel with Floating Frosted Glass */}
       <JarvisCommandCenter 
         isOpen={isCommandCenterOpen}
         onClose={() => {
@@ -1157,29 +999,6 @@ export const CustomizeAIChatbot = () => {
         }}
         assistantName={assistantName}
         initialQuery={commandCenterInitialQuery}
-      />
-
-      {/* 3. Human-Like Floating Conversational Dialog */}
-      <JarvisConversationBubble 
-        isOpen={isConversationBubbleOpen}
-        onClose={() => setIsConversationBubbleOpen(false)}
-        assistantName={assistantName}
-        messages={messages}
-        interimTranscript={interimTranscript}
-        isListening={isListening}
-        isSpeaking={isSpeaking}
-        isTyping={isTyping}
-        voiceEnabled={voiceEnabled}
-        theme={theme}
-        onSendMessage={(text) => handleUserQuery(text)}
-        onConfirmAction={(msgId, actionObj) => handleConfirmSensitiveAction(msgId, actionObj)}
-        onToggleMic={toggleVoiceListening}
-        onStopSpeaking={stopSpeaking}
-        onOpenSettings={() => setIsSettingsModalOpen(true)}
-        onOpenFullHud={() => {
-          setIsConversationBubbleOpen(false);
-          setIsCommandCenterOpen(true);
-        }}
       />
 
       {/* 3. Comprehensive Settings Center Modal */}

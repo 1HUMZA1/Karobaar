@@ -19,6 +19,7 @@ import { aiService } from './aiService.js';
 import { db } from '../databaseService.js';
 import { localDb } from '../localDb.js';
 import { jarvisSpeechService } from './jarvisSpeechService.js';
+import { processJarvisQuery } from '../../components/AI/jarvisEngine.js';
 
 export class JarvisCommandRouter {
   constructor() {
@@ -214,11 +215,30 @@ export class JarvisCommandRouter {
         state: aiResponse.requiresConfirmation ? 'awaiting_confirmation' : 'success'
       };
     } catch (err) {
-      console.error('[JarvisCommandRouter] AI dispatch failed, falling back:', err);
-      return {
-        text: `I encountered an issue processing that: ${err.message}. Please try again or rephrase.`,
-        state: 'error'
-      };
+      console.warn('[JarvisCommandRouter] Remote AI fallback to local engine:', err);
+      try {
+        const localResult = await processJarvisQuery(query, {
+          db,
+          businessId: bizId,
+          currentBusiness: workspace,
+          currentUser: user,
+          navigate,
+          theme: currentTheme,
+          toggleTheme
+        });
+        return {
+          text: localResult.replyText || localResult.spokenText || "I've checked your store data and handled your request.",
+          actionTaken: localResult.actionData?.type || null,
+          toolCalls: [],
+          requiresConfirmation: false,
+          state: 'success'
+        };
+      } catch (localErr) {
+        return {
+          text: `I'm ready to assist with your store. You can ask about today's sales, stock levels, khata balances, or open POS.`,
+          state: 'idle'
+        };
+      }
     }
   }
 

@@ -1,18 +1,12 @@
 import React, { useMemo } from 'react';
-import { Mic, MicOff, Settings, Sparkles, Volume2 } from 'lucide-react';
-import JarvisIntelligenceOrb from './JarvisIntelligenceOrb';
+import { Mic, MicOff, Settings, Sparkles, MessageSquare, ChevronUp, ChevronDown } from 'lucide-react';
 import './JarvisMiniCharacter.css';
 
 /**
  * JarvisMiniCharacter
- * Small, lovable futuristic animated AI assistant character located in the below-left side.
- * Actively listens, reacts to human voice with audio waveforms, and engages naturally.
- *
- * States:
- * - 'idle': Gentle breathing animation, friendly digital eyes with periodic blinks, antenna radar ping
- * - 'listening': Attentive wide eyes, dynamic sound-wave bars dancing to mic audio
- * - 'thinking': Visor scanning beam, fast pulse
- * - 'speaking': Joyful eyes, mouth waveform pulsating to speech cadence
+ * Redesigned Ultra-Modern Floating AI Capsule Dock (Linear & Apple Intelligence Inspired).
+ * Positioned cleanly at bottom-right corner.
+ * Features reactive visual feedback, soundwave equalizers, live status indicator, and instant copilot trigger.
  */
 export const JarvisMiniCharacter = ({
   isListening = false,
@@ -21,7 +15,7 @@ export const JarvisMiniCharacter = ({
   audioLevel = 0,
   voiceEnabled = true,
   assistantName = 'Jarvis',
-  characterStyle = 'robot', // 'robot' | 'orb' | 'pulse'
+  characterStyle = 'orb',
   isBubbleOpen = false,
   onCharacterClick = () => {},
   onSettingsClick = () => {},
@@ -31,208 +25,123 @@ export const JarvisMiniCharacter = ({
   const currentState = useMemo(() => {
     if (isSpeaking) return 'speaking';
     if (isThinking) return 'thinking';
-    if (isListening && voiceEnabled) return 'listening';
+    if (isListening) return 'listening';
     return 'idle';
-  }, [isSpeaking, isThinking, isListening, voiceEnabled]);
+  }, [isSpeaking, isThinking, isListening]);
 
-  // Audio waveform bars (3 left, 3 right)
-  const miniBars = useMemo(() => {
-    const base = [8, 16, 24];
-    return base.map((h, i) => {
-      if (currentState === 'listening') {
-        const factor = 0.5 + audioLevel * 1.5 + Math.sin(i * 1.5 + Date.now() / 150) * 0.4;
-        return Math.max(5, Math.min(28, Math.round(h * factor)));
-      }
-      if (currentState === 'speaking') {
-        const factor = 0.7 + Math.sin(i * 2 + Date.now() / 120) * 0.5;
-        return Math.max(6, Math.min(26, Math.round(h * factor)));
-      }
-      return 6; // idle flat dot
-    });
+  // Audio equalizer bars (3 reactive bars for voice feedback)
+  const soundBars = useMemo(() => {
+    const heights = [6, 14, 8];
+    if (currentState === 'listening') {
+      return [
+        Math.max(5, Math.min(22, Math.round(6 + audioLevel * 20))),
+        Math.max(8, Math.min(26, Math.round(14 + audioLevel * 24))),
+        Math.max(6, Math.min(20, Math.round(8 + audioLevel * 18)))
+      ];
+    }
+    if (currentState === 'speaking') {
+      return [10, 20, 12];
+    }
+    return [4, 4, 4];
   }, [currentState, audioLevel]);
+
+  const statusLabel = useMemo(() => {
+    switch (currentState) {
+      case 'listening': return 'Listening...';
+      case 'thinking': return 'Thinking...';
+      case 'speaking': return 'Speaking...';
+      default: return 'Ready';
+    }
+  }, [currentState]);
 
   return (
     <div 
-      className={`jarvis-mini-character-dock ${currentState} ${isBubbleOpen ? 'bubble-open' : ''}`}
+      className={`jarvis-floating-dock ${currentState} ${isBubbleOpen ? 'panel-open' : ''}`}
       role="region"
-      aria-label={`${assistantName} Voice Assistant Character`}
+      aria-label={`${assistantName} AI Copilot`}
     >
-      {/* Mini Robot Avatar Button */}
+      {/* Ambient Pulsing Aura */}
+      {(currentState === 'listening' || currentState === 'speaking') && (
+        <div className="jarvis-dock-aura" />
+      )}
+
+      {/* Main Interactive Pill */}
       <div 
-        className="jarvis-avatar-container"
+        className="jarvis-pill-button"
         onClick={onCharacterClick}
-        title={`${assistantName} AI • Click to speak or chat (Press or say "Hey ${assistantName}")`}
+        title={`${assistantName} AI • Click to chat or press Mic to speak`}
       >
-        {/* Radar Pulse Rings (when listening or waking) */}
-        {(currentState === 'listening' || currentState === 'speaking') && (
-          <div className="jarvis-pulse-ring-ambient" />
-        )}
-
-        {/* Small Animated Character based on Character Style */}
-        <div className="jarvis-svg-wrap">
-          {characterStyle === 'robot' ? (
-            <svg 
-              viewBox="0 0 100 100" 
-              className={`jarvis-character-svg style-robot state-${currentState}`}
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <filter id="jarvisGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-                <linearGradient id="jarvisHelmetGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#27272a" />
-                  <stop offset="100%" stopColor="#09090b" />
-                </linearGradient>
-                <linearGradient id="jarvisVisorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#18181b" />
-                  <stop offset="100%" stopColor="#000000" />
-                </linearGradient>
-              </defs>
-
-              {/* Top Antenna */}
-              <g className="jarvis-antenna">
-                <rect x="48" y="6" width="4" height="15" rx="2" fill="#71717a" stroke="#d4d4d8" strokeWidth="0.75" />
-                <circle 
-                  cx="50" 
-                  cy="6" 
-                  r="4.5" 
-                  fill="#ffffff" 
-                  className="antenna-tip-light" 
-                  filter="url(#jarvisGlow)" 
-                />
-              </g>
-
-              {/* Left and Right Ear Muffs (Audio Receivers) */}
-              <rect x="11" y="38" width="6" height="24" rx="3" fill="#3f3f46" stroke="#ffffff" strokeWidth="0.8" />
-              <rect x="83" y="38" width="6" height="24" rx="3" fill="#3f3f46" stroke="#ffffff" strokeWidth="0.8" />
-
-              {/* Outer Helmet Head */}
-              <rect 
-                x="16" 
-                y="20" 
-                width="68" 
-                height="60" 
-                rx="22" 
-                fill="url(#jarvisHelmetGrad)" 
-                stroke="#ffffff" 
-                strokeWidth="1.8" 
-                className="jarvis-helmet-body"
-              />
-
-              {/* Inner Visor Display */}
-              <rect 
-                x="23" 
-                y="28" 
-                width="54" 
-                height="44" 
-                rx="15" 
-                fill="url(#jarvisVisorGrad)" 
-                stroke="rgba(255, 255, 255, 0.35)" 
-                strokeWidth="1" 
-                className="jarvis-visor"
-              />
-
-              {/* STATE-BASED DIGITAL FACE EXPRESSIONS */}
-              {currentState === 'listening' ? (
-                <g className="jarvis-face-listening">
-                  <rect x="31" y="42" width="11" height="16" rx="5.5" fill="#ffffff" filter="url(#jarvisGlow)" className="eye-listening-l" />
-                  <rect x="58" y="42" width="11" height="16" rx="5.5" fill="#ffffff" filter="url(#jarvisGlow)" className="eye-listening-r" />
-                  <path d="M 44 63 Q 50 67 56 63" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" fill="none" />
-                </g>
-              ) : currentState === 'speaking' ? (
-                <g className="jarvis-face-speaking">
-                  <path d="M 32 49 Q 38 41 44 49" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" fill="none" filter="url(#jarvisGlow)" />
-                  <path d="M 56 49 Q 62 41 68 49" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" fill="none" filter="url(#jarvisGlow)" />
-                  <rect x="42" y="60" width="16" height="4" rx="2" fill="#ffffff" filter="url(#jarvisGlow)" className="mouth-speaking-bar" />
-                </g>
-              ) : currentState === 'thinking' ? (
-                <g className="jarvis-face-thinking">
-                  <rect x="28" y="46" width="14" height="8" rx="4" fill="#ffffff" className="eye-thinking-l" />
-                  <rect x="58" y="46" width="14" height="8" rx="4" fill="#ffffff" className="eye-thinking-r" />
-                  <rect x="25" y="48" width="50" height="3" rx="1.5" fill="#ffffff" filter="url(#jarvisGlow)" className="visor-scan-beam" />
-                </g>
-              ) : (
-                <g className="jarvis-face-idle">
-                  <path d="M 32 47 Q 38 44 44 47" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" fill="none" className="eye-idle-l" />
-                  <path d="M 56 47 Q 62 44 68 47" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" fill="none" className="eye-idle-r" />
-                  <circle cx="50" cy="58" r="1.5" fill="rgba(255, 255, 255, 0.7)" />
-                </g>
-              )}
-            </svg>
+        {/* Futuristic Glowing AI Orb Indicator */}
+        <div className={`jarvis-orb-indicator state-${currentState}`}>
+          {currentState === 'listening' || currentState === 'speaking' ? (
+            <div className="jarvis-soundwave-mini">
+              <span style={{ height: `${soundBars[0]}px` }} />
+              <span style={{ height: `${soundBars[1]}px` }} />
+              <span style={{ height: `${soundBars[2]}px` }} />
+            </div>
+          ) : currentState === 'thinking' ? (
+            <div className="jarvis-spinner-ring" />
           ) : (
-            <JarvisIntelligenceOrb 
-              state={currentState}
-              audioLevel={audioLevel}
-              size={48}
-              showRings={false}
-              interactive={false}
-            />
+            <div className="jarvis-idle-core">
+              <Sparkles size={13} className="jarvis-sparkle-icon" />
+            </div>
           )}
         </div>
 
-        {/* Live Audio Waves (Beside the character) */}
-        {(currentState === 'listening' || currentState === 'speaking') && (
-          <div className="jarvis-side-soundwaves">
-            {miniBars.map((h, i) => (
-              <span 
-                key={`mini-bar-${i}`} 
-                className="mini-soundwave-bar" 
-                style={{ height: `${h}px` }} 
-              />
-            ))}
+        {/* Brand & Live Status */}
+        <div className="jarvis-dock-meta">
+          <div className="jarvis-dock-name-row">
+            <span className="jarvis-dock-name">{assistantName}</span>
+            <span className="jarvis-dock-tag">AI 2.0</span>
           </div>
-        )}
+          <div className="jarvis-dock-sub">
+            <span className={`jarvis-status-dot dot-${currentState}`} />
+            <span className="jarvis-status-text">{statusLabel}</span>
+          </div>
+        </div>
+
+        {/* Chat Toggle Indicator */}
+        <div className="jarvis-toggle-icon-wrap">
+          {isBubbleOpen ? (
+            <ChevronDown size={14} className="jarvis-chevron" />
+          ) : (
+            <MessageSquare size={13} className="jarvis-msg-icon" />
+          )}
+        </div>
       </div>
 
-      {/* Pill Badge with Status & Quick Controls */}
-      <div className="jarvis-character-badge">
-        <button 
-          type="button" 
-          className="jarvis-status-pill-btn"
-          onClick={onCharacterClick}
-          title={currentState === 'listening' ? "Listening... click to pause" : "Click to speak with Jarvis"}
-        >
-          <span className={`status-dot ${currentState}`} />
-          <span className="status-name">{assistantName}</span>
-          <span className="status-state-desc">
-            {currentState === 'listening' 
-              ? 'Listening...' 
-              : currentState === 'speaking' 
-                ? 'Speaking...' 
-                : currentState === 'thinking' 
-                  ? 'Thinking...' 
-                  : 'Ready'}
-          </span>
-        </button>
+      {/* Push-to-Talk Mic Quick Trigger */}
+      <button
+        type="button"
+        className={`jarvis-mic-pill-btn ${isListening ? 'active-listening' : ''}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleMic();
+        }}
+        title={isListening ? "Stop listening" : "Click to speak to Jarvis"}
+        aria-label="Toggle microphone"
+      >
+        {isListening ? (
+          <div className="jarvis-mic-pulse-ring" />
+        ) : null}
+        <Mic size={15} />
+      </button>
 
-        {/* Mic Toggle Button */}
-        <button 
-          type="button" 
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleMic();
-          }} 
-          className={`jarvis-pill-icon-btn ${isListening ? 'active' : 'muted'}`}
-          title={isListening ? "Mute Microphone" : "Turn on Microphone"}
-        >
-          {isListening ? <Mic size={12} /> : <MicOff size={12} />}
-        </button>
-
-        {/* Settings Button */}
-        <button 
-          type="button" 
+      {/* Settings Shortcut */}
+      {onSettingsClick && (
+        <button
+          type="button"
+          className="jarvis-settings-pill-btn"
           onClick={(e) => {
             e.stopPropagation();
             onSettingsClick();
-          }} 
-          className="jarvis-pill-icon-btn"
-          title="Open Jarvis Voice & AI Settings"
+          }}
+          title="Jarvis AI Settings"
+          aria-label="Jarvis Settings"
         >
-          <Settings size={12} />
+          <Settings size={14} />
         </button>
-      </div>
+      )}
     </div>
   );
 };

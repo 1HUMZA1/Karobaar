@@ -6,26 +6,25 @@ import {
   MicOff, 
   Volume2, 
   VolumeX, 
-  Square, 
   Sparkles, 
-  Eye,
-  EyeOff,
-  ShieldCheck, 
   RotateCcw, 
-  ChevronRight, 
+  Maximize2, 
+  Minimize2, 
   Check, 
   AlertTriangle,
-  Maximize2,
-  Minimize2,
-  Settings,
-  HelpCircle,
-  Activity,
+  ArrowRight,
+  TrendingUp,
+  Package,
+  CreditCard,
+  ShoppingCart,
+  Moon,
+  Sun,
+  ShieldCheck,
   Layers,
-  ArrowRight
+  Activity
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import JarvisIntelligenceOrb from './JarvisIntelligenceOrb';
 import { jarvisVoiceService } from '../../services/ai/jarvisVoiceService';
 import { jarvisSpeechService } from '../../services/ai/jarvisSpeechService';
 import { jarvisCommandRouter } from '../../services/ai/jarvisCommandRouter';
@@ -33,10 +32,10 @@ import { aiActionService } from '../../services/ai/aiActionService';
 import './JarvisCommandCenter.css';
 
 /**
- * JarvisCommandCenter
- * Next-Generation Autonomous AI Co-Pilot for Karobaar
- * Features the reactive intelligence orb avatar, real-time voice recognition,
- * Gemini 2.5 tool execution, and consequential action confirmation.
+ * JarvisCommandCenter (Redesigned Copilot 2.0)
+ * Ultra-Modern Translucent Floating Copilot Panel for Karobaar.
+ * Fluid spring animations, soundwave audio feedback, quick action carousel,
+ * and direct store database intelligence.
  */
 export const JarvisCommandCenter = ({
   isOpen = false,
@@ -61,22 +60,13 @@ export const JarvisCommandCenter = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
   const [inputText, setInputText] = useState('');
-  const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'activity' | 'settings'
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'activity'
+  const [isMaximized, setIsMaximized] = useState(false);
 
   // Preferences & Toggles
   const [voiceOutput, setVoiceOutput] = useState(() => {
     return localStorage.getItem('karobaar_jarvis_voice_output') !== 'false';
   });
-  const [handsFree, setHandsFree] = useState(() => {
-    return localStorage.getItem('karobaar_jarvis_hands_free') === 'true';
-  });
-  const [wakeWordEnabled, setWakeWordEnabled] = useState(() => {
-    return localStorage.getItem('karobaar_jarvis_wake_word') === 'true';
-  });
-  const [showAnimation, setShowAnimation] = useState(() => {
-    return localStorage.getItem('karobaar_jarvis_show_animation') !== 'false';
-  });
-  const [isMaximized, setIsMaximized] = useState(false);
 
   // Message History & Tool Activity Log
   const [messages, setMessages] = useState(() => {
@@ -88,7 +78,7 @@ export const JarvisCommandCenter = ({
       {
         id: 'msg-welcome',
         sender: 'bot',
-        text: `Hello! I am ${assistantName}, your autonomous business intelligence co-pilot for ${currentBusiness?.name || 'your store'}. How can I assist your operations today?`,
+        text: `Hello! I am ${assistantName}, your autonomous business intelligence co-pilot for **${currentBusiness?.name || 'your store'}**. How can I assist your operations today?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -101,6 +91,15 @@ export const JarvisCommandCenter = ({
   const inputRef = useRef(null);
   const isExecutingRef = useRef(false);
 
+  // Quick Action Suggestions Chips
+  const quickChips = [
+    { label: "Today's Sales & Profit", icon: TrendingUp, query: "Show today's sales and profit summary" },
+    { label: "Low Stock Items", icon: Package, query: "Check low stock alerts" },
+    { label: "Pending Khata Balances", icon: CreditCard, query: "Show pending customer khata balances" },
+    { label: "Open POS / New Sale", icon: ShoppingCart, query: "Open POS billing" },
+    { label: "Toggle Dark Theme", icon: theme === 'dark' ? Sun : Moon, query: "Toggle theme" }
+  ];
+
   // Persist Messages
   useEffect(() => {
     try {
@@ -110,13 +109,15 @@ export const JarvisCommandCenter = ({
 
   // Auto-scroll messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, interimTranscript, orbState]);
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, interimTranscript, orbState, isOpen]);
 
   // Focus input on open
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 200);
+      setTimeout(() => inputRef.current?.focus(), 220);
       if (initialQuery) {
         handleExecute(initialQuery);
       }
@@ -124,6 +125,8 @@ export const JarvisCommandCenter = ({
       jarvisSpeechService.stop();
       jarvisVoiceService.stopListening();
       setOrbState('idle');
+      setIsListening(false);
+      setIsSpeaking(false);
     }
   }, [isOpen]);
 
@@ -132,26 +135,6 @@ export const JarvisCommandCenter = ({
     jarvisSpeechService.voiceEnabled = voiceOutput;
     localStorage.setItem('karobaar_jarvis_voice_output', voiceOutput ? 'true' : 'false');
   }, [voiceOutput]);
-
-  // Hands-free setting change
-  useEffect(() => {
-    localStorage.setItem('karobaar_jarvis_hands_free', handsFree ? 'true' : 'false');
-  }, [handsFree]);
-
-  // Show animation avatar toggle setting change
-  useEffect(() => {
-    localStorage.setItem('karobaar_jarvis_show_animation', showAnimation ? 'true' : 'false');
-  }, [showAnimation]);
-
-  // Wake-word setup
-  useEffect(() => {
-    if (wakeWordEnabled && !isListening && !isSpeaking) {
-      jarvisVoiceService.startWakeWordListening(assistantName.toLowerCase());
-    } else {
-      jarvisVoiceService.stopWakeWordListening();
-    }
-    localStorage.setItem('karobaar_jarvis_wake_word', wakeWordEnabled ? 'true' : 'false');
-  }, [wakeWordEnabled, assistantName, isListening, isSpeaking]);
 
   // Configure Voice & Speech Callbacks
   useEffect(() => {
@@ -187,12 +170,6 @@ export const JarvisCommandCenter = ({
     jarvisSpeechService.onEnd = () => {
       setIsSpeaking(false);
       setOrbState('idle');
-      // If hands-free mode is enabled, start listening for next turn
-      if (handsFree && isOpen) {
-        setTimeout(() => {
-          handleToggleMic();
-        }, 500);
-      }
     };
 
     jarvisSpeechService.onAudioLevel = (level) => {
@@ -210,9 +187,9 @@ export const JarvisCommandCenter = ({
       jarvisSpeechService.stop();
       jarvisVoiceService.stopListening();
     };
-  }, [handsFree, isOpen]);
+  }, [isOpen]);
 
-  // Toggle Mic (Push-to-talk / Click-to-talk)
+  // Toggle Mic
   const handleToggleMic = () => {
     if (isListening) {
       jarvisVoiceService.stopListening();
@@ -230,15 +207,18 @@ export const JarvisCommandCenter = ({
     }
   };
 
-  // Stop Generation / Cancel
-  const handleStop = () => {
-    isExecutingRef.current = false;
-    jarvisSpeechService.stop();
-    jarvisVoiceService.stopListening();
-    setIsListening(false);
-    setIsSpeaking(false);
-    setOrbState('idle');
-    setPendingConfirmation(null);
+  // Clear Chat History
+  const handleClearHistory = () => {
+    const welcome = {
+      id: `msg-welcome-${Date.now()}`,
+      sender: 'bot',
+      text: `Chat history cleared. How may I assist your business today?`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages([welcome]);
+    try {
+      localStorage.removeItem('karobaar_jarvis_chat_history');
+    } catch (_) {}
   };
 
   // Execute User Query
@@ -268,8 +248,7 @@ export const JarvisCommandCenter = ({
         toggleTheme,
         currentTheme: theme,
         activeRoute: location.pathname,
-        setVoiceOutput,
-        setShowAnimation
+        setVoiceOutput
       });
 
       // Log tool activity if present
@@ -330,7 +309,7 @@ export const JarvisCommandCenter = ({
       const errorMsg = {
         id: `bot-err-${Date.now()}`,
         sender: 'bot',
-        text: `I ran into an issue: ${err.message}. Please try again.`,
+        text: `I encountered an issue processing that: ${err.message || 'Service busy'}. Please try again.`,
         isError: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
@@ -382,173 +361,217 @@ export const JarvisCommandCenter = ({
     }
   };
 
+  // Helper to render markdown formatting (bold, code, links)
+  const renderFormatted = (text) => {
+    if (!text) return '';
+    const lines = text.split('\n');
+    return lines.map((line, lIdx) => {
+      // Split by bold (**text**)
+      const parts = line.split(/(\*\*.*?\*\*)/g);
+      return (
+        <div key={lIdx} className="jarvis-msg-line">
+          {parts.map((part, pIdx) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return <strong key={pIdx} className="jarvis-bold">{part.slice(2, -2)}</strong>;
+            }
+            if (part.startsWith('`') && part.endsWith('`')) {
+              return <code key={pIdx} className="jarvis-code">{part.slice(1, -1)}</code>;
+            }
+            return part;
+          })}
+        </div>
+      );
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className={`jarvis-command-center-backdrop ${isMaximized ? 'maximized' : ''}`}>
-      <div 
-        className="jarvis-command-center-panel"
-        role="dialog"
-        aria-label={`${assistantName} Command Center`}
-      >
-        {/* Top Header Bar */}
-        <div className="jarvis-cc-header">
-          <div className="jarvis-cc-identity">
-            <div className="jarvis-cc-orb-wrap">
-              <JarvisIntelligenceOrb 
-                state={!voiceOutput && orbState === 'idle' ? 'muted' : orbState}
-                audioLevel={audioLevel}
-                size={38}
-                showRings={false}
-                interactive={false}
-              />
+    <div 
+      className={`jarvis-copilot-container ${isMaximized ? 'copilot-maximized' : ''}`}
+      role="dialog"
+      aria-label={`${assistantName} Copilot`}
+    >
+      {/* Optional Backdrop when Maximized */}
+      {isMaximized && (
+        <div 
+          className="jarvis-copilot-backdrop"
+          onClick={() => setIsMaximized(false)}
+        />
+      )}
+
+      {/* Main Floating Copilot Card */}
+      <div className="jarvis-copilot-card">
+        {/* Top Header */}
+        <div className="jarvis-copilot-header">
+          <div className="jarvis-copilot-brand">
+            <div className={`jarvis-header-orb state-${orbState}`}>
+              {orbState === 'thinking' ? (
+                <div className="jarvis-header-spinner" />
+              ) : (
+                <Sparkles size={14} className="jarvis-header-sparkle" />
+              )}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="jarvis-cc-title">{assistantName}</h3>
-                <span className="jarvis-cc-badge">AI 2.0</span>
-                <span className="jarvis-cc-model">Gemini 2.5 Flash</span>
+              <div className="jarvis-title-row">
+                <span className="jarvis-brand-name">{assistantName}</span>
+                <span className="jarvis-brand-pill">AI 2.0</span>
+                <span className="jarvis-brand-model">Gemini 2.5</span>
               </div>
-              <div className="jarvis-cc-status">
-                <span className={`status-indicator ${orbState}`} />
-                <span className="status-label">
+              <div className="jarvis-status-row">
+                <span className={`jarvis-state-dot dot-${orbState}`} />
+                <span className="jarvis-state-label">
                   {orbState === 'listening' ? 'Listening to voice...' :
-                   orbState === 'thinking' ? 'Analyzing business context...' :
+                   orbState === 'thinking' ? 'Analyzing store records...' :
                    orbState === 'speaking' ? 'Speaking...' :
                    orbState === 'executing' ? 'Executing verified action...' :
-                   orbState === 'error' ? 'Connection fault' :
-                   'Ready • Connected to store database'}
+                   orbState === 'error' ? 'Connection retry' :
+                   'Connected • Live Store Database'}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="jarvis-cc-controls">
-            {/* View Tabs */}
-            <div className="jarvis-cc-tabs">
-              <button 
-                type="button" 
-                className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}
+          {/* Action Toolbar */}
+          <div className="jarvis-copilot-toolbar">
+            {/* View Mode Toggle: Chat vs Activity */}
+            <div className="jarvis-view-tabs">
+              <button
+                type="button"
+                className={`jarvis-view-tab ${activeTab === 'chat' ? 'active' : ''}`}
                 onClick={() => setActiveTab('chat')}
-                title="Command & Chat"
+                title="Chat view"
               >
                 Chat
               </button>
-              <button 
-                type="button" 
-                className={`tab-btn ${activeTab === 'activity' ? 'active' : ''}`}
+              <button
+                type="button"
+                className={`jarvis-view-tab ${activeTab === 'activity' ? 'active' : ''}`}
                 onClick={() => setActiveTab('activity')}
-                title="Real-time Tool Execution Logs"
+                title="Tool execution logs"
               >
-                Activity ({activityLogs.length})
-              </button>
-              <button 
-                type="button" 
-                className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
-                onClick={() => setActiveTab('settings')}
-                title="Voice & Preferences"
-              >
-                Preferences
+                Logs {activityLogs.length > 0 ? `(${activityLogs.length})` : ''}
               </button>
             </div>
 
-            {/* Audio Voice Toggle */}
-            <button 
+            {/* Voice Mute / Unmute */}
+            <button
               type="button"
-              className={`control-btn ${voiceOutput ? 'active' : ''}`}
+              className={`jarvis-tool-btn ${voiceOutput ? 'active' : 'muted'}`}
               onClick={() => setVoiceOutput(!voiceOutput)}
-              title={voiceOutput ? "Voice output enabled (click to mute)" : "Voice output muted (click to enable)"}
+              title={voiceOutput ? "Voice output enabled (click to mute)" : "Voice output muted (click to unmute)"}
+              aria-label="Toggle voice output"
             >
-              {voiceOutput ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              {voiceOutput ? <Volume2 size={15} /> : <VolumeX size={15} />}
             </button>
 
-            {/* Animation Toggle (Talk with or without animation) */}
-            <button 
+            {/* Clear History */}
+            <button
               type="button"
-              className={`control-btn ${showAnimation ? 'active' : ''}`}
-              onClick={() => setShowAnimation(!showAnimation)}
-              title={showAnimation ? "AI Animation visualizer is ON (click to talk without animation)" : "Talk without animation is ON (click to show AI animation visualizer)"}
+              className="jarvis-tool-btn"
+              onClick={handleClearHistory}
+              title="Clear chat history"
+              aria-label="Clear chat history"
             >
-              {showAnimation ? <Sparkles size={16} /> : <EyeOff size={16} />}
+              <RotateCcw size={14} />
             </button>
 
-            {/* Maximize Toggle */}
-            <button 
+            {/* Maximize / Restore */}
+            <button
               type="button"
-              className="control-btn"
+              className="jarvis-tool-btn"
               onClick={() => setIsMaximized(!isMaximized)}
-              title={isMaximized ? "Restore size" : "Maximize view"}
+              title={isMaximized ? "Restore floating window" : "Maximize view"}
+              aria-label="Toggle maximize"
             >
-              {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
 
-            {/* Close Button */}
-            <button 
+            {/* Close */}
+            <button
               type="button"
-              className="control-btn close-btn"
+              className="jarvis-tool-btn close-btn"
               onClick={onClose}
-              title="Close Jarvis"
+              title="Close Jarvis (or press Esc)"
+              aria-label="Close"
             >
-              <X size={17} />
+              <X size={16} />
             </button>
           </div>
         </div>
 
-        {/* Hero Interactive Orb (Centered in Chat View, compact and sleek) */}
-        {activeTab === 'chat' && showAnimation && (
-          <div className="jarvis-cc-hero-visualizer">
-            <JarvisIntelligenceOrb 
-              state={!voiceOutput && orbState === 'idle' ? 'muted' : orbState}
-              audioLevel={audioLevel}
-              size={isMaximized ? 110 : 80}
-              showRings={true}
-              interactive={true}
-              onClick={handleToggleMic}
-            />
-            {isListening && (
-              <div className="jarvis-cc-listening-prompt">
-                <span className="live-mic-dot" />
-                <span>{interimTranscript || "Listening... speak your command"}</span>
-              </div>
-            )}
+        {/* Quick Action Suggestion Carousel */}
+        {activeTab === 'chat' && (
+          <div className="jarvis-quick-chips-bar">
+            {quickChips.map((chip, idx) => {
+              const Icon = chip.icon;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className="jarvis-quick-chip"
+                  onClick={() => handleExecute(chip.query)}
+                >
+                  <Icon size={12} className="jarvis-chip-icon" />
+                  <span>{chip.label}</span>
+                </button>
+              );
+            })}
           </div>
         )}
 
-        {/* Content Body: Chat Stream */}
-        {activeTab === 'chat' && (
-          <div className="jarvis-cc-messages-scroll" role="log">
-            {messages.map(msg => (
+        {/* Content Body */}
+        {activeTab === 'chat' ? (
+          <div className="jarvis-chat-stream">
+            {messages.map((msg) => (
               <div 
                 key={msg.id} 
-                className={`jarvis-msg-row ${msg.sender === 'user' ? 'user-side' : 'bot-side'}`}
+                className={`jarvis-message-row ${msg.sender === 'user' ? 'user-side' : 'bot-side'}`}
               >
-                <div className="jarvis-msg-bubble">
-                  <div className="msg-content">
-                    {msg.text}
+                {msg.sender === 'bot' && (
+                  <div className="jarvis-bot-avatar">
+                    <Sparkles size={12} />
+                  </div>
+                )}
+                
+                <div className={`jarvis-bubble ${msg.sender === 'user' ? 'user-bubble' : 'bot-bubble'} ${msg.isError ? 'error-bubble' : ''}`}>
+                  <div className="jarvis-bubble-body">
+                    {renderFormatted(msg.text)}
                   </div>
 
-                  {/* Reviewable Consequential Confirmation Action Card */}
+                  {/* Consequential Action Confirmation Box */}
                   {msg.requiresConfirmation && msg.actionDetails && (
-                    <div className="jarvis-confirmation-card">
-                      <div className="confirmation-header">
-                        <ShieldCheck size={16} />
-                        <span>Action Review Required</span>
+                    <div className="jarvis-confirm-box">
+                      <div className="jarvis-confirm-header">
+                        <AlertTriangle size={15} className="jarvis-confirm-icon" />
+                        <span>Action Requires Confirmation</span>
                       </div>
-                      <div className="confirmation-summary">
+                      <p className="jarvis-confirm-summary">
                         {msg.actionDetails.summary}
-                      </div>
-                      <div className="confirmation-actions">
+                      </p>
+                      <div className="jarvis-confirm-actions">
                         <button
                           type="button"
-                          className="confirm-btn-primary"
+                          className="jarvis-confirm-btn approve"
                           onClick={() => handleConfirmAction(msg.actionDetails)}
                         >
                           <Check size={14} /> Confirm & Execute
                         </button>
                         <button
                           type="button"
-                          className="confirm-btn-secondary"
-                          onClick={() => handleStop()}
+                          className="jarvis-confirm-btn cancel"
+                          onClick={() => {
+                            setPendingConfirmation(null);
+                            setMessages(prev => [
+                              ...prev,
+                              {
+                                id: `bot-cancel-${Date.now()}`,
+                                sender: 'bot',
+                                text: 'Action cancelled. Your store data remains unchanged.',
+                                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                              }
+                            ]);
+                          }}
                         >
                           <X size={14} /> Cancel
                         </button>
@@ -556,168 +579,123 @@ export const JarvisCommandCenter = ({
                     </div>
                   )}
 
-                  <span className="msg-timestamp">{msg.timestamp}</span>
+                  <div className="jarvis-bubble-time">
+                    {msg.timestamp}
+                  </div>
                 </div>
               </div>
             ))}
+
+            {/* Dynamic Soundwave & Interim Voice Transcription */}
+            {isListening && (
+              <div className="jarvis-voice-stream-card">
+                <div className="jarvis-voice-stream-head">
+                  <div className="jarvis-live-mic-badge">
+                    <Mic size={12} className="mic-spin" />
+                    <span>Listening to you...</span>
+                  </div>
+                  {/* Dynamic Soundbars */}
+                  <div className="jarvis-stream-soundbars">
+                    <span style={{ height: `${Math.max(4, audioLevel * 20)}px` }} />
+                    <span style={{ height: `${Math.max(6, audioLevel * 30)}px` }} />
+                    <span style={{ height: `${Math.max(4, audioLevel * 18)}px` }} />
+                    <span style={{ height: `${Math.max(8, audioLevel * 26)}px` }} />
+                    <span style={{ height: `${Math.max(4, audioLevel * 14)}px` }} />
+                  </div>
+                </div>
+                <div className="jarvis-interim-text">
+                  {interimTranscript || 'Speak your request clearly...'}
+                </div>
+              </div>
+            )}
+
+            {/* Dancing Dots Typing Indicator */}
+            {orbState === 'thinking' && !isListening && (
+              <div className="jarvis-message-row bot-side">
+                <div className="jarvis-bot-avatar">
+                  <Sparkles size={12} />
+                </div>
+                <div className="jarvis-bubble bot-bubble jarvis-typing-bubble">
+                  <div className="jarvis-dancing-dots">
+                    <span className="dot dot-1" />
+                    <span className="dot dot-2" />
+                    <span className="dot dot-3" />
+                  </div>
+                  <span className="jarvis-typing-text">Jarvis is analyzing...</span>
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
-        )}
-
-        {/* Content Body: Activity Tool Logs */}
-        {activeTab === 'activity' && (
-          <div className="jarvis-cc-activity-panel">
-            <div className="activity-panel-header">
-              <Activity size={16} />
-              <h4>Live Application Tool Activity</h4>
-            </div>
+        ) : (
+          /* Activity Logs Tab */
+          <div className="jarvis-activity-stream">
             {activityLogs.length === 0 ? (
-              <div className="activity-empty">
-                <Layers size={32} />
-                <p>No backend tool calls executed yet in this session.</p>
-                <span>Ask about sales, stock, or customer balances to see real-time database queries.</span>
+              <div className="jarvis-activity-empty">
+                <Layers size={32} className="jarvis-empty-icon" />
+                <h4>No actions logged yet</h4>
+                <p>Jarvis tool calls and verified system modifications will appear here in real-time.</p>
               </div>
             ) : (
-              <div className="activity-list">
-                {activityLogs.map(log => (
-                  <div key={log.id} className="activity-item">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-xs">{log.toolName}</span>
-                      <span className="text-[10px] text-zinc-400">{log.timestamp}</span>
-                    </div>
-                    <pre className="activity-args">
-                      {JSON.stringify(log.args, null, 2)}
-                    </pre>
+              activityLogs.map((log) => (
+                <div key={log.id} className="jarvis-activity-card">
+                  <div className="jarvis-act-head">
+                    <span className="jarvis-act-name">{log.toolName}</span>
+                    <span className="jarvis-act-time">{log.timestamp}</span>
                   </div>
-                ))}
-              </div>
+                  <pre className="jarvis-act-args">
+                    {JSON.stringify(log.args, null, 2)}
+                  </pre>
+                  <div className="jarvis-act-status">
+                    <Check size={12} /> Verified Execution
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}
 
-        {/* Content Body: Preferences Panel */}
-        {activeTab === 'settings' && (
-          <div className="jarvis-cc-preferences-panel">
-            <h4>Jarvis Voice & Interaction Settings</h4>
-            
-            <label className="pref-toggle-row">
-              <div>
-                <span className="pref-label">Spoken Voice Responses</span>
-                <span className="pref-sub">Jarvis reads business answers aloud via speech synthesis</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={voiceOutput} 
-                onChange={e => setVoiceOutput(e.target.checked)} 
-              />
-            </label>
-
-            <label className="pref-toggle-row">
-              <div>
-                <span className="pref-label">Hands-Free Conversation</span>
-                <span className="pref-sub">Automatically listens for follow-up question after speaking</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={handsFree} 
-                onChange={e => setHandsFree(e.target.checked)} 
-              />
-            </label>
-
-            <label className="pref-toggle-row">
-              <div>
-                <span className="pref-label">AI Visualizer Animation</span>
-                <span className="pref-sub">Display interactive AI soundwave visualizer (turn off to talk without animation)</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={showAnimation} 
-                onChange={e => setShowAnimation(e.target.checked)} 
-              />
-            </label>
-
-            <label className="pref-toggle-row">
-              <div>
-                <span className="pref-label">Wake-Word Detection</span>
-                <span className="pref-sub">Listens continuously for "Hey Jarvis" or "{assistantName}"</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={wakeWordEnabled} 
-                onChange={e => setWakeWordEnabled(e.target.checked)} 
-              />
-            </label>
-
-            <div className="pref-info-block">
-              <span className="font-bold block mb-1">Active AI Model</span>
-              <span className="text-zinc-400 text-xs">Gemini 2.5 Flash • Official Google GenAI SDK v2.31.0</span>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Suggestion Chips */}
-        {activeTab === 'chat' && (
-          <div className="jarvis-cc-quick-chips">
-            <button type="button" onClick={() => handleExecute("How much did my business sell today?")}>
-              Today's Sales
-            </button>
-            <button type="button" onClick={() => handleExecute("Which products are running low?")}>
-              Low Stock
-            </button>
-            <button type="button" onClick={() => handleExecute("Audit store health and recommendations")}>
-              Store Briefing
-            </button>
-            <button type="button" onClick={() => handleExecute("Who owes me money?")}>
-              Customer Udhaar
-            </button>
-            <button type="button" onClick={() => handleExecute("Switch display mode")}>
-              Dark / Light
-            </button>
-            <button type="button" onClick={() => handleExecute("What can Jarvis do?")}>
-              Capabilities
-            </button>
-          </div>
-        )}
-
-        {/* Bottom Input Command Bar */}
-        <form className="jarvis-cc-input-bar" onSubmit={(e) => { e.preventDefault(); handleExecute(inputText); }}>
+        {/* Input Bar */}
+        <form 
+          className="jarvis-copilot-input-bar"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleExecute(inputText);
+          }}
+        >
+          {/* Push to talk voice mic */}
           <button
             type="button"
-            className={`mic-button ${isListening ? 'listening' : ''}`}
+            className={`jarvis-input-mic-btn ${isListening ? 'listening' : ''}`}
             onClick={handleToggleMic}
-            title={isListening ? "Listening... click to stop" : "Click to speak voice command"}
+            title={isListening ? "Stop listening" : "Click to speak"}
+            aria-label="Microphone"
           >
-            {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+            {isListening ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
 
+          {/* Text Input */}
           <input
             ref={inputRef}
             type="text"
-            className="command-text-input"
+            className="jarvis-input-field"
             value={inputText}
-            onChange={e => setInputText(e.target.value)}
-            placeholder={isListening ? "Listening... speak now" : "Type a command or ask Jarvis anything..."}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder={isListening ? "Listening... speak now" : `Ask ${assistantName} anything or type command...`}
+            disabled={isListening}
           />
 
-          {(orbState === 'thinking' || isSpeaking) ? (
-            <button
-              type="button"
-              className="stop-button"
-              onClick={handleStop}
-              title="Stop generation"
-            >
-              <Square size={16} />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              className="send-button"
-              disabled={!inputText.trim()}
-              title="Send command"
-            >
-              <Send size={16} />
-            </button>
-          )}
+          {/* Send Button */}
+          <button
+            type="submit"
+            className="jarvis-input-send-btn"
+            disabled={!inputText.trim() || isListening}
+            title="Send query (Enter)"
+            aria-label="Send query"
+          >
+            <Send size={15} />
+          </button>
         </form>
       </div>
     </div>

@@ -22,6 +22,8 @@ class JarvisVoiceService {
     this.isListening = false;
     this.isWakeWordActive = false;
     this.isPushToTalkActive = false;
+    this._recognitionStarting = false;
+    this._wakeWordStarting = false;
     this.audioLevel = 0;
     this.animFrameId = null;
 
@@ -49,102 +51,127 @@ class JarvisVoiceService {
   _initSpeechRecognition() {
     if (!this.isSupported()) return;
 
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    try {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    // 1. Primary Command Recognition
-    this.recognition = new SpeechRec();
-    this.recognition.continuous = false;
-    this.recognition.interimResults = true;
-    this.recognition.maxAlternatives = 1;
-    this.recognition.lang = this.language;
+      // 1. Primary Command Recognition
+      this.recognition = new SpeechRec();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = true;
+      this.recognition.maxAlternatives = 1;
+      this.recognition.lang = this.language;
 
-    this.recognition.onstart = () => {
-      this.isListening = true;
-      this._startAudioMeter();
-      if (this.onStateChange) this.onStateChange({ isListening: true });
-    };
+      this.recognition.onstart = () => {
+        this._recognitionStarting = false;
+        this.isListening = true;
+        this._startAudioMeter();
+        if (this.onStateChange) this.onStateChange({ isListening: true });
+      };
 
-    this.recognition.onresult = (event) => {
-      let interim = '';
-      let final = '';
+      this.recognition.onresult = (event) => {
+        let interim = '';
+        let final = '';
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          final += transcript;
-        } else {
-          interim += transcript;
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += transcript;
+          } else {
+            interim += transcript;
+          }
         }
-      }
 
-      if (interim && this.onInterimTranscript) {
-        this.onInterimTranscript(interim);
-      }
-
-      if (final && this.onFinalTranscript) {
-        this.onFinalTranscript(final.trim());
-      }
-    };
-
-    this.recognition.onerror = (event) => {
-      // Don't report 'no-speech' or 'aborted' as critical errors
-      if (event.error !== 'no-speech' && event.error !== 'aborted') {
-        console.warn('[JarvisVoice] Recognition error:', event.error);
-        if (this.onError) this.onError(event.error);
-      }
-      this._stopAudioMeter();
-      this.isListening = false;
-      if (this.onStateChange) this.onStateChange({ isListening: false });
-    };
-
-    this.recognition.onend = () => {
-      this.isListening = false;
-      this._stopAudioMeter();
-      if (this.onStateChange) this.onStateChange({ isListening: false });
-
-      // If wake-word was active before, resume wake-word listening
-      if (this.isWakeWordActive && !this.isPushToTalkActive) {
-        this.startWakeWordListening();
-      }
-    };
-
-    // 2. Continuous Wake-Word Recognition
-    this.wakeWordRecognition = new SpeechRec();
-    this.wakeWordRecognition.continuous = true;
-    this.wakeWordRecognition.interimResults = false;
-    this.wakeWordRecognition.lang = this.language;
-
-    this.wakeWordRecognition.onresult = (event) => {
-      const lastIndex = event.results.length - 1;
-      const transcript = (event.results[lastIndex][0].transcript || '').toLowerCase().trim();
-
-      const normalizedWake = this.wakeWord.toLowerCase();
-      if (transcript.includes(normalizedWake) || transcript.includes('hey jarvis') || transcript.includes('wake up')) {
-        console.log('[JarvisVoice] Wake word detected:', transcript);
-        if (this.onWakeWordDetected) {
-          this.onWakeWordDetected(transcript);
+        if (interim && this.onInterimTranscript) {
+          this.onInterimTranscript(interim);
         }
-      }
-    };
 
-    this.wakeWordRecognition.onerror = (e) => {
-      if (e.error !== 'no-speech' && e.error !== 'aborted') {
-        console.warn('[JarvisVoice] Wake-word error:', e.error);
-      }
-    };
+        if (final && this.onFinalTranscript) {
+          this.onFinalTranscript(final.trim());
+        }
+      };
 
-    this.wakeWordRecognition.onend = () => {
-      // Automatically restart wake-word recognition if enabled and not speaking/actively listening
-      if (this.isWakeWordActive && !this.isListening) {
-        setTimeout(() => {
-          try {
+      this.recognition.onerror = (event) => {
+        this._recognitionStarting = false;
+        // Don't report benign 'no-speech' or 'aborted' as critical errors
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          console.warn('[JarvisVoice] Recognition notice:', event.error);
+          if (this.onError) this.onError(event.error);
+        }
+        this._stopAudioMeter();
+        this.isListening = false;
+        if (this.onStateChange) this.onStateChange({ isListening: false });
+      };
+
+      this.recognition.onend = () => {
+        this._recognitionStarting = false;
+        this.isListening = false;
+        this._stopAudioMeter();
+        if (this.onStateChange) this.onStateChange({ isListening: false });
+
+        // If wake-word was active before, resume wake-word listening smoothly
+        if (this.isWakeWordActive && !this.isPushToTalkActive) {
+          setTimeout(() => {
             if (this.isWakeWordActive && !this.isListening) {
-              this.wakeWordRecognition.start();
+              this.startWakeWordListening(this.wakeWord);
             }
-          } catch (e) {}
-        }, 600);
-      }
-    };
+          }, 300);
+        }
+      };
+
+      // 2. Continuous Wake-Word Recognition
+      this.wakeWordRecognition = new SpeechRec();
+      this.wakeWordRecognition.continuous = true;
+      this.wakeWordRecognition.interimResults = false;
+      this.wakeWordRecognition.lang = this.language;
+
+      this.wakeWordRecognition.onstart = () => {
+        this._wakeWordStarting = false;
+      };
+
+      this.wakeWordRecognition.onresult = (event) => {
+        const lastIndex = event.results.length - 1;
+        const transcript = (event.results[lastIndex][0].transcript || '').toLowerCase().trim();
+
+        const normalizedWake = this.wakeWord.toLowerCase();
+        if (
+          transcript.includes(normalizedWake) || 
+          transcript.includes('hey jarvis') || 
+          transcript.includes('wake jarvis') || 
+          transcript.includes('hello jarvis')
+        ) {
+          console.log('[JarvisVoice] Wake word detected:', transcript);
+          if (this.onWakeWordDetected) {
+            this.onWakeWordDetected(transcript);
+          }
+        }
+      };
+
+      this.wakeWordRecognition.onerror = (e) => {
+        this._wakeWordStarting = false;
+        if (e.error !== 'no-speech' && e.error !== 'aborted') {
+          console.warn('[JarvisVoice] Wake-word notice:', e.error);
+        }
+      };
+
+      this.wakeWordRecognition.onend = () => {
+        this._wakeWordStarting = false;
+        // Automatically restart wake-word recognition if enabled and not speaking/actively listening
+        if (this.isWakeWordActive && !this.isListening) {
+          setTimeout(() => {
+            try {
+              if (this.isWakeWordActive && !this.isListening && !this._wakeWordStarting) {
+                this._wakeWordStarting = true;
+                this.wakeWordRecognition.start();
+              }
+            } catch (e) {
+              this._wakeWordStarting = false;
+            }
+          }, 600);
+        }
+      };
+    } catch (err) {
+      console.warn('[JarvisVoice] Speech recognition init bypassed:', err);
+    }
   }
 
   /**
@@ -152,6 +179,7 @@ class JarvisVoiceService {
    */
   startListening(lang = 'en-US') {
     if (!this.recognition) return false;
+    if (this.isListening || this._recognitionStarting) return true;
 
     // Pause wake-word while active command recognition is running
     this._pauseWakeWord();
@@ -160,9 +188,11 @@ class JarvisVoiceService {
       this.language = lang;
       this.recognition.lang = lang;
       this.isPushToTalkActive = true;
+      this._recognitionStarting = true;
       this.recognition.start();
       return true;
     } catch (err) {
+      this._recognitionStarting = false;
       // Already running or permission denied
       return false;
     }
@@ -173,6 +203,7 @@ class JarvisVoiceService {
    */
   stopListening() {
     this.isPushToTalkActive = false;
+    this._recognitionStarting = false;
     if (this.recognition && this.isListening) {
       try {
         this.recognition.stop();
@@ -189,9 +220,13 @@ class JarvisVoiceService {
     this.wakeWord = wakePhrase || 'jarvis';
     this.isWakeWordActive = true;
 
+    if (this.isListening || this._wakeWordStarting) return;
+
     try {
+      this._wakeWordStarting = true;
       this.wakeWordRecognition.start();
     } catch (e) {
+      this._wakeWordStarting = false;
       // already active
     }
   }
@@ -201,6 +236,7 @@ class JarvisVoiceService {
    */
   stopWakeWordListening() {
     this.isWakeWordActive = false;
+    this._wakeWordStarting = false;
     if (this.wakeWordRecognition) {
       try {
         this.wakeWordRecognition.stop();
@@ -209,6 +245,7 @@ class JarvisVoiceService {
   }
 
   _pauseWakeWord() {
+    this._wakeWordStarting = false;
     if (this.wakeWordRecognition) {
       try {
         this.wakeWordRecognition.stop();
@@ -217,7 +254,7 @@ class JarvisVoiceService {
   }
 
   /**
-   * Web Audio API RMS Volume Level Meter
+   * Web Audio API RMS Volume Level Meter (safely guarded against autoplay policy)
    */
   async _startAudioMeter() {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) return;
@@ -225,16 +262,21 @@ class JarvisVoiceService {
     try {
       if (!this.audioContext) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
         this.audioContext = new AudioCtx();
       }
 
       if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
+        try {
+          await this.audioContext.resume();
+        } catch (_) {}
       }
 
       if (!this.mediaStream) {
         this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       }
+
+      if (this.audioContext.state === 'closed') return;
 
       const source = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.analyser = this.audioContext.createAnalyser();
@@ -269,7 +311,7 @@ class JarvisVoiceService {
 
       updateMeter();
     } catch (err) {
-      // Fallback silently without breaking text interaction
+      // Fallback silently without breaking speech or text interaction
     }
   }
 
@@ -279,7 +321,9 @@ class JarvisVoiceService {
       this.animFrameId = null;
     }
     if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
+      try {
+        this.mediaStream.getTracks().forEach(track => track.stop());
+      } catch (_) {}
       this.mediaStream = null;
     }
     this.audioLevel = 0;
