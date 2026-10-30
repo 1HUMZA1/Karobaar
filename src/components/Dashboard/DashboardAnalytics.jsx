@@ -97,6 +97,14 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
+    layout: {
+      padding: {
+        left: 12,
+        right: 14,
+        top: 8,
+        bottom: 8
+      }
+    },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -116,14 +124,15 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
     scales: {
       x: { 
         grid: { display: false }, 
-        ticks: { color: '#666666', font: { size: 11, family: 'Inter' } },
+        ticks: { color: 'var(--text-muted, #71717a)', font: { size: 11, family: 'Inter' }, padding: 6 },
         border: { display: false }
       },
       y: { 
-        grid: { color: '#252525', drawBorder: false }, 
+        grid: { color: 'rgba(120, 120, 120, 0.1)', drawBorder: false }, 
         ticks: { 
-          color: '#666666', 
+          color: 'var(--text-muted, #71717a)', 
           font: { size: 11, family: 'Inter' },
+          padding: 10,
           callback: (value) => `${currencySymbol}${value >= 1000 ? (value/1000).toFixed(1) + 'k' : value}`
         },
         border: { display: false }
@@ -159,7 +168,7 @@ export const DashboardAnalytics = ({ chartData, currencySymbol, stats = {}, tren
           </div>
         </div>
         
-        <div className="p-5 flex-1 relative min-h-[300px]">
+        <div className="px-6 pb-6 pt-2 flex-1 relative min-h-[300px]">
           {chartData.labels.length > 0 ? (
             <Line data={chartObj} options={chartOptions} />
           ) : (

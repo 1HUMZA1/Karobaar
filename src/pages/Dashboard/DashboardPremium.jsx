@@ -530,7 +530,7 @@ const Dashboard = ({ onSwitchMode }) => {
   }
 
   return (
-    <div className="dashboard-container max-w-[1600px] mx-auto hidden-mobile">
+    <div className="dashboard-container max-w-[1600px] mx-auto hidden-mobile pb-28">
       
       {/* 0. Demo Mode Interactive Showcase Banner */}
       {isDemoMode && (
