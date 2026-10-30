@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Settings, 
@@ -34,6 +34,14 @@ export const JarvisSettingsModal = ({
 }) => {
   const [activeTab, setActiveTab] = useState('voice'); // 'voice' | 'identity' | 'listening' | 'character' | 'safety'
   const [systemVoices, setSystemVoices] = useState([]);
+  const modalBodyRef = useRef(null);
+
+  // Reset scroll to top on tab change or modal open
+  useEffect(() => {
+    if (modalBodyRef.current) {
+      modalBodyRef.current.scrollTop = 0;
+    }
+  }, [activeTab, isOpen]);
 
   // Fetch available system voices dynamically from SpeechSynthesis
   useEffect(() => {
@@ -212,7 +220,7 @@ export const JarvisSettingsModal = ({
         </div>
 
         {/* Content Body */}
-        <div className="settings-modal-body custom-scrollbar">
+        <div className="settings-modal-body custom-scrollbar" ref={modalBodyRef}>
           {/* TAB 1: VOICE & AUDIO */}
           {activeTab === 'voice' && (
             <div className="settings-section">
