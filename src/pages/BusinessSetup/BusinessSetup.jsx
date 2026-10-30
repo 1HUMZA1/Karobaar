@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { auth } from '../../services/firebase';
 import { signOut, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { Country, City } from 'country-state-city';
-import { Building2, Link, Users, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Store, Sparkles, LogOut } from 'lucide-react';
+import { Building2, Rocket, Link, Users, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Store, Sparkles, LogOut } from 'lucide-react';
 import './BusinessSetup.css';
 
 const MODULES_LIST = [
@@ -1189,17 +1189,23 @@ const BusinessSetup = () => {
     }
 
     if (step === 3) {
+      // Auto-assign smart defaults so user is never blocked
       if (!business.name?.trim()) {
-        newFieldErrors.businessName = 'Business Name is required.';
+        setBusiness(prev => ({ ...prev, name: 'SAS AND SONS' }));
+        business.name = 'SAS AND SONS';
       }
       if (!business.type?.trim() || business.type === 'Select Type') {
-        newFieldErrors.businessType = 'Please select a Business Type.';
+        setBusiness(prev => ({ ...prev, type: 'Wholesale' }));
+        business.type = 'Wholesale';
       }
       if (!business.country?.trim() || business.country === 'Select Country') {
-        newFieldErrors.country = 'Please select your Country.';
+        setBusiness(prev => ({ ...prev, country: 'India', city: 'Main Branch' }));
+        business.country = 'India';
+        business.city = 'Main Branch';
       }
       if (!business.city?.trim() || business.city === 'Select a country first' || business.city === 'Select a city') {
-        newFieldErrors.city = 'Please select or enter your City.';
+        setBusiness(prev => ({ ...prev, city: 'Main Branch' }));
+        business.city = 'Main Branch';
       }
     }
 
@@ -1246,13 +1252,37 @@ const BusinessSetup = () => {
       setStep(s => s - 1);
     }
   };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleInstantLaunchWithThisData = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const finalBizName = (business.name?.trim() || 'SAS AND SONS');
+    const finalBizType = (business.type && business.type !== 'Select Type' ? business.type : 'Wholesale');
+    const finalCountry = (business.country && business.country !== 'Select Country' ? business.country : 'India');
+    const finalCity = (business.city && business.city !== 'Select a country first' && business.city !== 'Select a city' ? business.city : 'Main Branch');
+
+    setBusiness(prev => ({
+      ...prev,
+      name: finalBizName,
+      type: finalBizType,
+      country: finalCountry,
+      city: finalCity
+    }));
+
+    await handleSubmit({ preventDefault: () => {} }, {
+      name: finalBizName,
+      type: finalBizType,
+      country: finalCountry,
+      city: finalCity
+    });
+  };
+
+  const handleSubmit = async (e, overrideBusiness = null) => {
+    if (e && e.preventDefault) e.preventDefault();
     setIsSubmitting(true);
     setSubmitState('Saving business profile...');
     setError('');
 
     try {
+      const activeBiz = overrideBusiness ? { ...business, ...overrideBusiness } : business;
       const user = auth.currentUser || currentUser || {
         uid: 'user-' + Date.now(),
         email: personal.email || ((personal.phone ? personal.phone.replace(/[^0-9]/g, '') : 'owner') + '@karobaar.local'),
@@ -1266,7 +1296,7 @@ const BusinessSetup = () => {
         : (personal.phone || '').trim();
 
       const ownerName = personal.fullName?.trim() || user.displayName || 'Business Owner';
-      const cleanBizName = (business.name || 'My Business').trim();
+      const cleanBizName = (activeBiz.name || 'SAS AND SONS').trim();
 
       // Build complete module mapping
       const moduleMap = {};
@@ -1278,10 +1308,10 @@ const BusinessSetup = () => {
       const businessPayload = {
         name: cleanBizName,
         businessName: cleanBizName,
-        type: business.type || business.category || 'General',
-        category: business.category || business.type || 'General',
-        country: business.country || '',
-        city: business.city || '',
+        type: activeBiz.type || activeBiz.category || 'Wholesale',
+        category: activeBiz.type || activeBiz.category || 'Wholesale',
+        country: activeBiz.country || 'India',
+        city: activeBiz.city || 'Main Branch',
         address: business.address || '',
         state: business.state || '',
         taxNumber: (business.taxNumber || '').trim(),
@@ -1298,13 +1328,13 @@ const BusinessSetup = () => {
         modules: moduleMap,
         settings: {
           businessName: cleanBizName,
-          category: business.category || business.type || 'General',
-          type: business.type || business.category || 'General',
+          category: activeBiz.type || activeBiz.category || 'Wholesale',
+          type: activeBiz.type || activeBiz.category || 'Wholesale',
           taxNumber: (business.taxNumber || '').trim(),
           gstNumber: (business.taxNumber || '').trim(),
           address: business.address || '',
-          city: business.city || '',
-          country: business.country || '',
+          city: activeBiz.city || 'Main Branch',
+          country: activeBiz.country || 'India',
           state: business.state || '',
           phone: fullPhone,
           email: finalEmail,
@@ -1336,7 +1366,7 @@ const BusinessSetup = () => {
 
       // Seed ready-to-sell inventory products for the new business
       try {
-        const typeLower = (business.type || business.category || 'Wholesale').toLowerCase();
+        const typeLower = (activeBiz.type || activeBiz.category || 'Wholesale').toLowerCase();
         let initialProducts = [];
         if (typeLower.includes('whole')) {
           initialProducts = [
@@ -1379,8 +1409,8 @@ const BusinessSetup = () => {
         phone: fullPhone,
         emailVerified: isEmailVerified,
         phoneVerified: isPhoneVerified,
-        country: business.country || '',
-        city: business.city || '',
+        country: activeBiz.country || 'India',
+        city: activeBiz.city || 'Main Branch',
         language: personal.language || 'English',
         role: 'Owner',
         activeBusinessId: newBusiness.id,
@@ -2362,6 +2392,33 @@ const BusinessSetup = () => {
                   />
                 </div>
 
+                <div className="setup-form-group full-width">
+                  <div className="country-quick-chips">
+                    <span className="quick-chips-label">Quick select country:</span>
+                    {[
+                      { name: 'India', flag: '🇮🇳', city: 'Mumbai' },
+                      { name: 'United Arab Emirates', flag: '🇦🇪', city: 'Dubai' },
+                      { name: 'United States', flag: '🇺🇸', city: 'New York' },
+                      { name: 'Pakistan', flag: '🇵🇰', city: 'Karachi' },
+                      { name: 'Saudi Arabia', flag: '🇸🇦', city: 'Riyadh' },
+                      { name: 'United Kingdom', flag: '🇬🇧', city: 'London' }
+                    ].map(item => (
+                      <button
+                        key={item.name}
+                        type="button"
+                        className={`country-chip ${business.country === item.name ? 'active' : ''}`}
+                        onClick={() => {
+                          setBusiness({ ...business, country: item.name, city: item.city });
+                          setFieldErrors(prev => ({ ...prev, country: '', city: '' }));
+                        }}
+                      >
+                        <span>{item.flag} {item.name}</span>
+                        {business.country === item.name && <span className="chip-tick">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className={`setup-form-group ${fieldErrors.country ? 'has-error' : ''}`}>
                   <label>Country <span className="req-star">*</span></label>
                   <CustomSelect 
@@ -2424,6 +2481,29 @@ const BusinessSetup = () => {
                   {fieldErrors.city && (
                     <span className="field-error-msg"><AlertCircle size={13} /> {fieldErrors.city}</span>
                   )}
+                </div>
+
+                <div className="setup-form-group full-width">
+                  <div className="setup-instant-launch-card">
+                    <div className="instant-launch-header">
+                      <span className="instant-launch-tag">⚡ 1-Click Fast Track</span>
+                      <h4 className="instant-launch-title">
+                        Ready to open dashboard with <strong>{business.name || 'SAS AND SONS'}</strong>?
+                      </h4>
+                      <p className="instant-launch-desc">
+                        One-click setup: Automatically configure starter wholesale inventory (rice, oil, flour, sugar), POS cash register, and launch your live operational dashboard now.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="instant-launch-btn"
+                      onClick={handleInstantLaunchWithThisData}
+                      disabled={isSubmitting}
+                    >
+                      <Rocket size={15} />
+                      <span>Launch Dashboard Now with {business.name || 'SAS AND SONS'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -2585,6 +2665,19 @@ const BusinessSetup = () => {
                 <span>{step === 1 ? 'Back to Selection' : 'Previous'}</span>
               </button>
               
+              {step >= 3 && (
+                <button 
+                  type="button" 
+                  className="setup-btn setup-btn-instant" 
+                  onClick={handleInstantLaunchWithThisData}
+                  disabled={isSubmitting}
+                  title="Configure app data and launch dashboard immediately"
+                >
+                  <Sparkles size={16} />
+                  <span>⚡ Use This & Open Dashboard</span>
+                </button>
+              )}
+
               <button type="submit" className="setup-btn setup-btn-primary" disabled={isSubmitting}>
                 {submitState || (isSubmitting ? 'Saving...' : step === 6 ? 'Finish Setup' : 'Continue')}
               </button>

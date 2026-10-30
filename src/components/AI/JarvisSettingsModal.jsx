@@ -25,6 +25,91 @@ import './JarvisSettingsModal.css';
  * Name, Voice rate/pitch/volume/system voice, Silence Wait Time (full command listening),
  * Spoken language, Listening modes, Visual Avatar, Persona, and Anti-Repetition.
  */
+
+export const JARVIS_LANGUAGES = [
+  { id: 'hinglish', label: 'Hinglish', sub: 'Hindi + English', tag: 'IN' },
+  { id: 'en', label: 'English', sub: 'US / Global', tag: 'US' },
+  { id: 'en-in', label: 'English', sub: 'India', tag: 'IN' },
+  { id: 'en-gb', label: 'English', sub: 'UK', tag: 'UK' },
+  { id: 'hi', label: 'हिंदी', sub: 'Hindi', tag: 'IN' },
+  { id: 'ur', label: 'اردو', sub: 'Urdu', tag: 'PK' },
+  { id: 'bn', label: 'বাংলা', sub: 'Bengali', tag: 'IN' },
+  { id: 'ta', label: 'தமிழ்', sub: 'Tamil', tag: 'IN' },
+  { id: 'te', label: 'తెలుగు', sub: 'Telugu', tag: 'IN' },
+  { id: 'mr', label: 'मराठी', sub: 'Marathi', tag: 'IN' },
+  { id: 'gu', label: 'ગુજરાતી', sub: 'Gujarati', tag: 'IN' },
+  { id: 'ar', label: 'العربية', sub: 'Arabic', tag: 'SA' },
+  { id: 'es', label: 'Español', sub: 'Spanish', tag: 'ES' }
+];
+
+export const JARVIS_SPEECH_SAMPLES = {
+  en: {
+    native: "Hello! I am {name}. Your voice settings are configured and ready.",
+    phonetic: "Hello! I am {name}. Your voice settings are configured and ready.",
+    lang: "en-US"
+  },
+  'en-in': {
+    native: "Hello! I am {name}. Your voice settings are configured and ready.",
+    phonetic: "Hello! I am {name}. Your voice settings are configured and ready.",
+    lang: "en-IN"
+  },
+  'en-gb': {
+    native: "Hello! I am {name}. Your voice settings are configured and ready.",
+    phonetic: "Hello! I am {name}. Your voice settings are configured and ready.",
+    lang: "en-GB"
+  },
+  hinglish: {
+    native: "जी सर, मैं {name} हूँ! आपकी वॉयس सेटिंग्स बिल्कुल सही काम कर रही हैं।",
+    phonetic: "Ji sir! Main {name} hoon. Aapki voice settings bilkul sahi kaam kar rahi hain.",
+    lang: "hi-IN"
+  },
+  hi: {
+    native: "नमस्ते! मैं {name} हूँ। आपकी आवाज़ की सेटिंग्स बिल्कुल तैयार हैं।",
+    phonetic: "Namaste! Main {name} hoon. Aapki aawaaz ki settings bilkul tayyar hain.",
+    lang: "hi-IN"
+  },
+  ur: {
+    native: "سلام! میں {name} ہوں۔ آپ کی آواز کی ترتیبات مکمل طور پر تیار ہیں۔",
+    phonetic: "Salam! Main {name} hoon. Aap ki aawaaz ki setting mukammal tayyar hai.",
+    lang: "ur-PK"
+  },
+  bn: {
+    native: "নমস্কার! আমি {name}। আপনার ভয়েস সেটিংস সম্পূর্ণ প্রস্তুত।",
+    phonetic: "Nomoshkar! Aami {name}. Aponar voice settings ekdom toiri.",
+    lang: "bn-IN"
+  },
+  ta: {
+    native: "வணக்கம்! நான் {name}. உங்கள் குரல் அமைப்புகள் தயாராக உள்ளன.",
+    phonetic: "Vanakkam! Naan {name}. Ungal kural amaippugal thayaaraaga ullana.",
+    lang: "ta-IN"
+  },
+  te: {
+    native: "నమస్కారం! నేను {name}. మీ వాయిస్ సెట్టింగ్‌లు సిద్ధంగా ఉన్నాయి.",
+    phonetic: "Namaskaram! Nenu {name}. Mee voice settings poorthiga sidhamgaa unnaayi.",
+    lang: "te-IN"
+  },
+  mr: {
+    native: "नमस्कार! मी {name} आहे. तुमचे व्हॉइस सेटिंग्ज पूर्णपणे तयार आहेत.",
+    phonetic: "Namaskar! Mee {name} aahe. Tumchi aawajachi settings purna tayar aahe.",
+    lang: "mr-IN"
+  },
+  gu: {
+    native: "નમસ્તે! હું {name} છું. તમારો વોઈસ સેટિંગ્સ તૈયાર છે.",
+    phonetic: "Namaste! Hoon {name} chhoon. Tamaari voice settings taiyaar chhe.",
+    lang: "gu-IN"
+  },
+  ar: {
+    native: "مرحباً! أنا {name}. تم إعداد الصوت بنجاح.",
+    phonetic: "Marhaban! Ana {name}. Tam iadaad as-sawt binajah.",
+    lang: "ar-SA"
+  },
+  es: {
+    native: "¡Hola! Soy {name}. La configuración de voz está lista.",
+    phonetic: "Hola! Soy {name}. La configuracion de voz esta lista.",
+    lang: "es-ES"
+  }
+};
+
 export const JarvisSettingsModal = ({
   isOpen = false,
   onClose = () => {},
@@ -101,47 +186,77 @@ export const JarvisSettingsModal = ({
     }, 400);
   }
 
+  const davidVoice = systemVoices.find(v => v.name.includes('David'));
+  const ziraVoice = systemVoices.find(v => v.name.includes('Zira'));
+
   if (!isOpen) return null;
 
   // Test Voice function using selected voice and parameters
-  const handleTestVoice = () => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
+  const handleTestVoice = (overrideLang, overrideVoiceName) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+    } catch (e) {}
 
-    let sampleText = `Hello! I am ${settings.assistantName}. Your voice settings are configured and ready.`;
-    if (settings.aiLanguage === 'hi') {
-      sampleText = `नमस्ते! मैं ${settings.assistantName} हूँ। आपकी आवाज़ की सेटिंग्स बिल्कुल तैयार हैं।`;
-    } else if (settings.aiLanguage === 'hinglish') {
-      sampleText = `जी सर, मैं ${settings.assistantName} हूँ! आपकी वॉयस सेटिंग्स बिल्कुल सही काम कर रही हैं।`;
-    } else if (settings.aiLanguage === 'ur') {
-      sampleText = `سلام! میں ${settings.assistantName} ہوں۔ آپ کی آواز کی ترتیبات مکمل طور پر تیار ہیں۔`;
-    } else if (settings.aiLanguage === 'es') {
-      sampleText = `¡Hola! Soy ${settings.assistantName}. La configuración de voz está lista.`;
-    } else if (settings.aiLanguage === 'ar') {
-      sampleText = `مرحباً! أنا ${settings.assistantName}. تم إعداد الصوت بنجاح.`;
+    const activeLang = overrideLang || settings.aiLanguage || 'hinglish';
+    const activeVoiceName = overrideVoiceName !== undefined ? overrideVoiceName : (settings.selectedVoiceName || 'auto');
+    const assistantName = settings.assistantName || 'Jarvis';
+
+    const sampleConfig = JARVIS_SPEECH_SAMPLES[activeLang] || JARVIS_SPEECH_SAMPLES.en;
+    const voices = (systemVoices && systemVoices.length > 0) ? systemVoices : window.speechSynthesis.getVoices();
+    let selectedVoice = null;
+
+    if (activeVoiceName && activeVoiceName !== 'auto') {
+      selectedVoice = voices.find(v => v.name === activeVoiceName || v.voiceURI === activeVoiceName) || null;
     }
 
-    const utterance = new SpeechSynthesisUtterance(sampleText);
+    // Determine if selected voice or system has native support for this language
+    let isNativeVoice = false;
+    const targetPrefix = (sampleConfig.lang || 'en').toLowerCase().split('-')[0];
+
+    if (selectedVoice) {
+      const vLang = (selectedVoice.lang || '').toLowerCase();
+      if (vLang.startsWith(targetPrefix)) {
+        isNativeVoice = true;
+      }
+    } else {
+      // Auto mode: try to find a native voice for target language
+      const nativeCandidate = voices.find(v => (v.lang || '').toLowerCase().startsWith(targetPrefix));
+      if (nativeCandidate) {
+        selectedVoice = nativeCandidate;
+        isNativeVoice = true;
+      } else {
+        // Fallback to David / Zira or default host voice
+        const david = voices.find(v => v.name.includes('David'));
+        const zira = voices.find(v => v.name.includes('Zira'));
+        selectedVoice = david || zira || voices[0] || null;
+      }
+    }
+
+    // Choose native script only if voice natively supports it; otherwise smooth Roman phonetic transliteration!
+    const textToSpeak = (isNativeVoice ? sampleConfig.native : sampleConfig.phonetic).replace(/\{name\}/g, assistantName);
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.rate = Number(settings.speechRate) || 1.05;
     utterance.pitch = Number(settings.speechPitch) || 1.0;
     utterance.volume = Number(settings.speechVolume) || 1.0;
 
-    const voices = systemVoices.length > 0 ? systemVoices : window.speechSynthesis.getVoices();
-
-    if (settings.selectedVoiceName && settings.selectedVoiceName !== 'auto') {
-      const match = voices.find(v => v.name === settings.selectedVoiceName || v.voiceURI === settings.selectedVoiceName);
-      if (match) utterance.voice = match;
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      utterance.lang = isNativeVoice ? (sampleConfig.lang || selectedVoice.lang) : (selectedVoice.lang || 'en-US');
     } else {
-      if (settings.aiLanguage === 'hi' || settings.aiLanguage === 'hinglish') {
-        const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'));
-        if (hiVoice) utterance.voice = hiVoice;
-        utterance.lang = 'hi-IN';
-      } else {
-        const inVoice = voices.find(v => v.lang === 'en-IN' || v.name.toLowerCase().includes('india'));
-        if (inVoice) utterance.voice = inVoice;
-        utterance.lang = 'en-IN';
-      }
+      utterance.lang = isNativeVoice ? (sampleConfig.lang || 'en-US') : 'en-US';
     }
+
+    // Prevent garbage collection from cancelling audio prematurely on Chromium/Windows
+    window._jarvisSettingsUtterance = utterance;
+    utterance.onend = () => { window._jarvisSettingsUtterance = null; };
+    utterance.onerror = () => { window._jarvisSettingsUtterance = null; };
+
+    try {
+      window.speechSynthesis.resume();
+    } catch (_) {}
 
     window.speechSynthesis.speak(utterance);
   };
@@ -242,12 +357,71 @@ export const JarvisSettingsModal = ({
 
               {/* System Voice Selection */}
               <div className="setting-input-block">
-                <label className="setting-label">Selected System Voice</label>
-                <p className="setting-desc">Choose from any available voice installed on your device</p>
-                <div className="voice-select-with-test">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="setting-label">Selected System Voice</label>
+                  <span className="setting-badge-pill">
+                    {settings.selectedVoiceName === 'auto' ? '✨ Auto-detected' : (settings.selectedVoiceName || 'Default')}
+                  </span>
+                </div>
+                <p className="setting-desc">Choose from high-clarity host voices with instant sample playback</p>
+
+                {/* Quick Voice Chips */}
+                <div className="voice-quick-chips">
+                  <button 
+                    type="button" 
+                    className={`voice-chip ${(!settings.selectedVoiceName || settings.selectedVoiceName === 'auto') ? 'active' : ''}`}
+                    onClick={() => {
+                      handleChange('selectedVoiceName', 'auto');
+                      handleTestVoice(settings.aiLanguage, 'auto');
+                    }}
+                  >
+                    <span>✨ Auto Match</span>
+                    {(!settings.selectedVoiceName || settings.selectedVoiceName === 'auto') && (
+                      <span className="chip-tick-pill">✓ Selected</span>
+                    )}
+                  </button>
+
+                  {davidVoice && (
+                    <button 
+                      type="button" 
+                      className={`voice-chip ${settings.selectedVoiceName === davidVoice.name ? 'active' : ''}`}
+                      onClick={() => {
+                        handleChange('selectedVoiceName', davidVoice.name);
+                        handleTestVoice(settings.aiLanguage, davidVoice.name);
+                      }}
+                    >
+                      <span>👨 Male (David)</span>
+                      {settings.selectedVoiceName === davidVoice.name && (
+                        <span className="chip-tick-pill">✓ Selected</span>
+                      )}
+                    </button>
+                  )}
+
+                  {ziraVoice && (
+                    <button 
+                      type="button" 
+                      className={`voice-chip ${settings.selectedVoiceName === ziraVoice.name ? 'active' : ''}`}
+                      onClick={() => {
+                        handleChange('selectedVoiceName', ziraVoice.name);
+                        handleTestVoice(settings.aiLanguage, ziraVoice.name);
+                      }}
+                    >
+                      <span>👩 Female (Zira)</span>
+                      {settings.selectedVoiceName === ziraVoice.name && (
+                        <span className="chip-tick-pill">✓ Selected</span>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                <div className="voice-select-with-test" style={{ marginTop: '10px' }}>
                   <select 
                     value={settings.selectedVoiceName || 'auto'}
-                    onChange={(e) => handleChange('selectedVoiceName', e.target.value)}
+                    onChange={(e) => {
+                      const newVoice = e.target.value;
+                      handleChange('selectedVoiceName', newVoice);
+                      handleTestVoice(settings.aiLanguage, newVoice);
+                    }}
                     className="setting-select-field"
                   >
                     <option value="auto">✨ Auto / Best Match for Language</option>
@@ -259,39 +433,54 @@ export const JarvisSettingsModal = ({
                   </select>
                   <button 
                     type="button" 
-                    onClick={handleTestVoice} 
+                    onClick={() => handleTestVoice(settings.aiLanguage, settings.selectedVoiceName)} 
                     className="test-voice-btn"
-                    title="Play voice sample"
+                    title="Play voice sample in active language"
                   >
                     <Play size={12} />
-                    <span>Test</span>
+                    <span>Test Voice</span>
                   </button>
                 </div>
               </div>
 
-              {/* Language Selector */}
+              {/* Spoken & Understood Language */}
               <div className="setting-input-block">
-                <label className="setting-label">Spoken & Understood Language</label>
-                <div className="setting-pill-options">
-                  {[
-                    { id: 'hinglish', label: 'Hinglish (Hindi + English)' },
-                    { id: 'en-in', label: 'English (India)' },
-                    { id: 'en', label: 'English (US / Global)' },
-                    { id: 'en-gb', label: 'English (UK)' },
-                    { id: 'hi', label: 'हिंदी (Hindi)' },
-                    { id: 'ur', label: 'اردو (Urdu)' },
-                    { id: 'ar', label: 'العربية (Arabic)' },
-                    { id: 'es', label: 'Español (Spanish)' }
-                  ].map(lang => (
-                    <button 
-                      key={lang.id}
-                      type="button" 
-                      onClick={() => handleChange('aiLanguage', lang.id)}
-                      className={`setting-choice-btn ${settings.aiLanguage === lang.id ? 'selected' : ''}`}
-                    >
-                      {lang.label}
-                    </button>
-                  ))}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="setting-label">Spoken & Understood Language</label>
+                  <span className="setting-badge-pill" style={{ color: '#10b981' }}>
+                    13 Languages Supported
+                  </span>
+                </div>
+                <p className="setting-desc">Click any language to hear instant live pronunciation in your chosen voice</p>
+                
+                <div className="setting-language-grid">
+                  {JARVIS_LANGUAGES.map(lang => {
+                    const isSelected = settings.aiLanguage === lang.id;
+                    return (
+                      <button 
+                        key={lang.id}
+                        type="button" 
+                        onClick={() => {
+                          handleChange('aiLanguage', lang.id);
+                          handleTestVoice(lang.id, settings.selectedVoiceName);
+                        }}
+                        className={`setting-language-card ${isSelected ? 'selected' : ''}`}
+                      >
+                        <div className="lang-tag-row">
+                          <span className="lang-country-badge">{lang.tag}</span>
+                          {isSelected ? (
+                            <span className="lang-selected-pill">✓ Selected</span>
+                          ) : (
+                            <span className="lang-select-action">Select</span>
+                          )}
+                        </div>
+                        <div className="lang-title-row">
+                          <span className="lang-native-name">{lang.label}</span>
+                          <span className="lang-sub-name">{lang.sub}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
