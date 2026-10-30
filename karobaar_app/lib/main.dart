@@ -93,7 +93,6 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
       _windowsController = ww.WebviewController();
       try {
         await _windowsController!.initialize();
-        await _windowsController!.setPopupWindowPolicy(ww.WebviewPopupWindowPolicy.sameWindow);
         _windowsController!.url.listen((url) {
           if (mounted) {
             setState(() {
