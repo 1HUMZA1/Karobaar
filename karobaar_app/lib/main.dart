@@ -93,6 +93,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
       _windowsController = ww.WebviewController();
       try {
         await _windowsController!.initialize();
+        await _windowsController!.setPopupWindowPolicy(ww.WebviewPopupWindowPolicy.sameWindow);
         _windowsController!.url.listen((url) {
           if (mounted) {
             setState(() {
@@ -125,7 +126,7 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
       ..setJavaScriptMode(wf.JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
       ..setUserAgent(
-        'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 KarobaarApp/2.0.0',
+        'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
       )
       ..setNavigationDelegate(
         wf.NavigationDelegate(

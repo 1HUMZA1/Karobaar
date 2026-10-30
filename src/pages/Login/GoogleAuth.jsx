@@ -123,7 +123,7 @@ const GoogleAuth = () => {
       return;
     }
 
-    // 2. Check if returning from a redirect
+    // 2. Check if returning from a redirect or start Google OAuth immediately
     const checkRedirect = async () => {
       try {
         const result = await getRedirectResult(auth);
@@ -138,9 +138,17 @@ const GoogleAuth = () => {
             memberships: []
           };
           await notifyApp(payload);
+          return;
         }
       } catch (e) {
         console.warn('[GoogleAuth Redirect Note]', e);
+      }
+
+      // Directly open Google accounts selection
+      try {
+        await signInWithRedirect(auth, googleProvider);
+      } catch (e) {
+        console.warn('[GoogleAuth Direct Launch]', e);
       }
     };
 

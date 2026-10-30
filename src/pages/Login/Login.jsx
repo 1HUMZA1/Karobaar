@@ -43,10 +43,6 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('karobaar_remember_me') === 'true');
 
-  // External Browser Google Auth State
-  const [waitingForBrowserAuth, setWaitingForBrowserAuth] = useState(false);
-  const authPollTimerRef = useRef(null);
-
   // Forgot Password Fields
   const [resetEmail, setResetEmail] = useState('');
   const [resetNewPassword, setResetNewPassword] = useState('');
@@ -80,7 +76,10 @@ const Login = () => {
   useEffect(() => {
     const handleRedirect = async () => {
       try {
-        await getRedirectResult(auth);
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          await handleAuthenticatedGoogleUser(result.user);
+        }
       } catch (err) {
         if (err.code === 'auth/network-request-failed') {
           setGeneralError('Network error. Please check your internet connection.');
@@ -260,77 +259,19 @@ const Login = () => {
 
 
 
-  // --- Google Sign-In & External Browser Workflow ---
+  // --- Standard Google Sign-In Workflow ---
   const handleGoogleLogin = async () => {
     setIsAuthenticating(true);
     setGeneralError('');
 
-    // Detect if running inside Flutter Desktop WebView or local server
-    const isDesktopApp = !!(
-      window.chrome?.webview || 
-      navigator.userAgent.includes('KarobaarApp') ||
-      window.location.search.includes('platform=desktop') ||
-      window.location.search.includes('desktop=true')
-    );
-    const port = window.location.port;
-
-    if (isDesktopApp && port) {
-      setWaitingForBrowserAuth(true);
-      const authUrl = `http://localhost:${port}/#/google-auth?port=${port}`;
-      try {
-        await fetch(`/api/launch-browser?url=${encodeURIComponent(authUrl)}`);
-      } catch (_) {
-        window.open(authUrl, '_blank');
-      }
-
-      // Start rapid polling local server for Google auth callback
-      if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
-      authPollTimerRef.current = setInterval(async () => {
-        // 1. Check local storage directly
-        try {
-          const cached = localStorage.getItem('karobaar_google_auth_payload');
-          if (cached) {
-            const data = JSON.parse(cached);
-            if (data?.user) {
-              localStorage.removeItem('karobaar_google_auth_payload');
-              clearInterval(authPollTimerRef.current);
-              setWaitingForBrowserAuth(false);
-              await handleAuthenticatedGoogleUser(data.user);
-              return;
-            }
-          }
-        } catch (_) {}
-
-        // 2. Poll LocalServer API
-        try {
-          let res = null;
-          try {
-            res = await fetch(`/api/auth-status?t=${Date.now()}`);
-          } catch (_) {
-            if (port) res = await fetch(`http://localhost:${port}/api/auth-status?t=${Date.now()}`);
-          }
-          if (res && res.ok) {
-            const data = await res.json();
-            if (data?.authenticated && data?.user) {
-              if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
-              setWaitingForBrowserAuth(false);
-              await handleAuthenticatedGoogleUser(data.user);
-              return;
-            }
-          }
-        } catch (_) {}
-      }, 500);
-      return;
-    }
-
-    // Standard web browser flow (Chrome, Edge, Firefox, Safari)
     try {
       let result = null;
       try {
         result = await signInWithPopup(auth, googleProvider);
       } catch (popupErr) {
-        console.warn("Popup blocked or closed:", popupErr);
-        if (popupErr.code === 'auth/popup-blocked') {
+        console.warn("[Google Auth] Popup response:", popupErr?.code || popupErr);
+        if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
+          // If popup is blocked by the environment, navigate directly to Google account chooser
           await signInWithRedirect(auth, googleProvider);
           return;
         }
@@ -346,7 +287,11 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Google sign-in error:", err);
-      setGeneralError(err.message || 'Google authentication failed.');
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+        setGeneralError(`Domain "${window.location.hostname}" is not authorized by Firebase. Please use localhost.`);
+      } else {
+        setGeneralError(err.message || 'Google authentication failed.');
+      }
     } finally {
       setIsAuthenticating(false);
     }
@@ -828,104 +773,6 @@ const Login = () => {
           </div>
         </div>
       </div>
-
-      {/* External Browser Authentication Modal */}
-      {waitingForBrowserAuth && (
-        <div className="browser-auth-overlay">
-          <div className="browser-auth-card">
-            <div className="browser-auth-icon-spin">
-              <Loader2 className="animate-spin" size={32} color="#ffffff" />
-            </div>
-            <h3 className="browser-auth-title">Opening Google in your Browser...</h3>
-            <p className="browser-auth-desc">
-              Please complete your Google sign-in in the opened browser window. Karobaar will detect your account and continue automatically.
-            </p>
-            <div className="browser-auth-actions" style={{ marginBottom: '12px' }}>
-              <button
-                type="button"
-                className="browser-auth-btn-cancel"
-                onClick={() => {
-                  if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
-                  setWaitingForBrowserAuth(false);
-                  setIsAuthenticating(false);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="browser-auth-btn-reopen"
-                onClick={() => {
-                  const port = window.location.port;
-                  const authUrl = port ? `http://localhost:${port}/#/google-auth?port=${port}` : '#/google-auth';
-                  if (port) {
-                    fetch(`/api/launch-browser?url=${encodeURIComponent(authUrl)}`).catch(() => {
-                      window.open(authUrl, '_blank');
-                    });
-                  } else {
-                    window.open(authUrl, '_blank');
-                  }
-                }}
-              >
-                <ExternalLink size={14} /> Open Browser
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={async () => {
-                setIsAuthenticating(true);
-                // 1. Try local server auth status
-                try {
-                  const port = window.location.port;
-                  let res = null;
-                  try {
-                    res = await fetch('/api/auth-status?manual=true');
-                  } catch (_) {
-                    if (port) res = await fetch(`http://localhost:${port}/api/auth-status?manual=true`);
-                  }
-                  if (res && res.ok) {
-                    const data = await res.json();
-                    if (data?.user) {
-                      setWaitingForBrowserAuth(false);
-                      await handleAuthenticatedGoogleUser(data.user);
-                      return;
-                    }
-                  }
-                } catch (_) {}
-
-                // 2. Try storage
-                try {
-                  const cached = localStorage.getItem('karobaar_session_user') || localStorage.getItem('karobaar_google_auth_payload');
-                  if (cached) {
-                    const data = JSON.parse(cached);
-                    const userObj = data.user || data;
-                    if (userObj?.email) {
-                      setWaitingForBrowserAuth(false);
-                      await handleAuthenticatedGoogleUser(userObj);
-                      return;
-                    }
-                  }
-                } catch (_) {}
-                setIsAuthenticating(false);
-              }}
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                borderRadius: '10px',
-                background: '#ffffff',
-                color: '#09090b',
-                fontWeight: 600,
-                fontSize: '0.86rem',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              ✓ Completed Sign-In? Click to Enter
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
