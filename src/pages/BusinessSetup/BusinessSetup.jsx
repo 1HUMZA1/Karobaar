@@ -455,6 +455,7 @@ const BusinessSetup = () => {
         country: business.country,
         city: business.city,
         ownerId: user.uid,
+        ownerEmail: user.email ? user.email.toLowerCase() : '',
         modules: modules.reduce((acc, mod) => ({ ...acc, [mod]: true }), {}),
         settings: {
           currency: preferences.currency,
@@ -499,6 +500,9 @@ const BusinessSetup = () => {
 
       // Refresh global state from local cache instantly
       await refreshUserProfile();
+      if (newBusiness?.id) {
+        db.startRealtimeSync(newBusiness.id);
+      }
       
       setSubmitState('Opening your dashboard...');
 

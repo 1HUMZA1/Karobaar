@@ -75,8 +75,26 @@ const POS = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('karobaar_pos_view_mode') || 'table');
 
-  // Cart & Order State
-  const [cart, setCart] = useState([]);
+  // Cart & Order State with accidental close auto-recovery
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem('karobaar_pos_cart_draft');
+      return saved ? JSON.parse(saved) : [];
+    } catch (_) {
+      return [];
+    }
+  });
+
+  // Auto-sync cart draft every change so nothing is lost if app is closed by mistake
+  useEffect(() => {
+    try {
+      if (cart && cart.length > 0) {
+        localStorage.setItem('karobaar_pos_cart_draft', JSON.stringify(cart));
+      } else {
+        localStorage.removeItem('karobaar_pos_cart_draft');
+      }
+    } catch (_) {}
+  }, [cart]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Cash');
@@ -300,6 +318,7 @@ const POS = () => {
   };
 
   const clearCart = () => {
+    localStorage.removeItem('karobaar_pos_cart_draft');
     if (cart.length === 0) return;
     if (window.confirm('Clear all items from the current cart?')) {
       setCart([]);

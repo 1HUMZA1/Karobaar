@@ -108,76 +108,71 @@ const Login = () => {
         karobaarUser = await db.getUserByFirebaseUid(uid);
       } catch (_) {}
 
-      if (karobaarUser && karobaarUser.memberships && karobaarUser.memberships.length > 0) {
-        // User already has an established business
-        const bizPromises = karobaarUser.memberships.map(id => db.getById('businesses', id));
-        const businessesData = (await Promise.all(bizPromises)).filter(Boolean);
-        const activeBiz = businessesData[0];
-        
-        const sessionUser = {
-          ...karobaarUser,
-          email: user.email,
-          name: user.name || user.displayName || karobaarUser.name,
-          activeBusinessId: activeBiz?.id || karobaarUser.memberships[0]
-        };
-        localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
-        if (activeBiz) {
-          localStorage.setItem('karobaar_session_business', JSON.stringify(activeBiz));
-          localStorage.setItem('karobaar_session_businesses', JSON.stringify(businessesData));
-        }
-        if (setCurrentUser) setCurrentUser(sessionUser);
-        if (setCurrentBusiness && activeBiz) setCurrentBusiness(activeBiz);
-        if (setUserBusinesses && businessesData.length) setUserBusinesses(businessesData);
-        if (setAuthStatus) setAuthStatus('authenticated');
-        navigate('/dashboard', { replace: true });
-      } else {
-        // New Google user: Automatically set up an instant personal workspace
-        const userName = user.name || user.displayName || user.email?.split('@')[0] || 'Store Owner';
-        const businessName = `${userName}'s Business`;
-        const newBizId = `biz-${uid.substring(0, 8)}`;
-        
-        const newBusiness = {
-          id: newBizId,
-          name: businessName,
-          category: 'Retail & Services',
-          currency: 'INR',
-          currencySymbol: '₹',
-          ownerId: uid,
-          ownerEmail: user.email,
-          createdAt: new Date().toISOString(),
-          modules: {
-            sales: true, pos: true, inventory: true, purchases: true,
-            customers: true, suppliers: true, employees: true, payroll: true,
-            expenses: true, reports: true, tasks: true
-          }
-        };
+      // Discover real businesses across cloud & local storage
+      const existingBusinesses = await db.getBusinessesForUser(uid, user.email);
 
+      if (existingBusinesses && existingBusinesses.length > 0) {
+        // RETURNING / OLD USER -> Show real saved data!
+        const lastActiveId = localStorage.getItem('karobaar-active-business');
+        const activeBiz = existingBusinesses.find(b => b.id === lastActiveId) || existingBusinesses[0];
+        
         const sessionUser = {
+          ...(karobaarUser || {}),
           id: uid,
-          name: userName,
           email: user.email,
-          role: 'Owner',
-          activeBusinessId: newBizId,
-          memberships: [newBizId],
+          name: user.name || user.displayName || karobaarUser?.name || 'Business Owner',
+          role: karobaarUser?.role || 'Owner',
+          activeBusinessId: activeBiz.id,
+          memberships: existingBusinesses.map(b => b.id),
           onboardingCompleted: true
         };
 
-        try {
-          localDb.save('businesses', newBizId, newBusiness);
-          localDb.save('users', uid, sessionUser);
-        } catch (_) {}
+        localDb.save('businesses', activeBiz.id, activeBiz);
+        localDb.save('users', uid, sessionUser);
 
         localStorage.setItem('karobaar_session_user', JSON.stringify(sessionUser));
-        localStorage.setItem('karobaar_session_business', JSON.stringify(newBusiness));
-        localStorage.setItem('karobaar_session_businesses', JSON.stringify([newBusiness]));
+        localStorage.setItem('karobaar_session_business', JSON.stringify(activeBiz));
+        localStorage.setItem('karobaar_session_businesses', JSON.stringify(existingBusinesses));
+        localStorage.setItem('karobaar-active-business', activeBiz.id);
         localStorage.setItem(`karobaar_onboarding_completed_${user.email.toLowerCase()}`, 'true');
 
         if (setCurrentUser) setCurrentUser(sessionUser);
-        if (setCurrentBusiness) setCurrentBusiness(newBusiness);
-        if (setUserBusinesses) setUserBusinesses([newBusiness]);
+        if (setCurrentBusiness) setCurrentBusiness(activeBiz);
+        if (setUserBusinesses) setUserBusinesses(existingBusinesses);
         if (setAuthStatus) setAuthStatus('authenticated');
-        
-        navigate('/dashboard', { replace: true });
+
+        // Start 1-second auto-sync and real-time listeners
+        db.startRealtimeSync(activeBiz.id);
+
+        const lastRoute = localStorage.getItem('karobaar_last_active_route');
+        if (lastRoute && lastRoute.startsWith('#/') && !lastRoute.includes('/login') && !lastRoute.includes('/home')) {
+          window.location.hash = lastRoute;
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      } else {
+        // NEW USER -> Route directly to setup page!
+        const pendingUser = {
+          id: uid,
+          name: user.name || user.displayName || user.email?.split('@')[0] || 'Business Owner',
+          email: user.email,
+          role: 'Owner',
+          memberships: [],
+          onboardingCompleted: false
+        };
+
+        localStorage.setItem('karobaar_session_user', JSON.stringify(pendingUser));
+        localStorage.removeItem('karobaar_session_business');
+        localStorage.removeItem('karobaar_session_businesses');
+        localStorage.removeItem('karobaar-active-business');
+        localStorage.removeItem(`karobaar_onboarding_completed_${user.email.toLowerCase()}`);
+
+        if (setCurrentUser) setCurrentUser(pendingUser);
+        if (setCurrentBusiness) setCurrentBusiness(null);
+        if (setUserBusinesses) setUserBusinesses([]);
+        if (setAuthStatus) setAuthStatus('pending_onboarding');
+
+        navigate('/setup?new=true', { replace: true });
       }
     } catch (e) {
       console.error('[Google sign in complete error]', e);
@@ -388,8 +383,24 @@ const Login = () => {
     setIsAuthenticating(true);
     try {
       if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email.trim(), password);
-        sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
+        const res = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const uid = res?.user?.uid || 'user-' + Date.now();
+        const pendingUser = {
+          id: uid,
+          name: email.trim().split('@')[0],
+          email: email.trim(),
+          role: 'Owner',
+          memberships: [],
+          onboardingCompleted: false
+        };
+        localStorage.setItem('karobaar_session_user', JSON.stringify(pendingUser));
+        localStorage.removeItem('karobaar_session_business');
+        localStorage.removeItem('karobaar_session_businesses');
+        localStorage.removeItem('karobaar-active-business');
+        if (setCurrentUser) setCurrentUser(pendingUser);
+        if (setAuthStatus) setAuthStatus('pending_onboarding');
+        navigate('/setup?new=true', { replace: true });
+        return;
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
         const userEmail = email.trim().toLowerCase();

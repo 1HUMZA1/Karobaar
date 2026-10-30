@@ -225,6 +225,14 @@ export const AppProvider = ({ children }) => {
     setAuthStatus('authenticated');
   };
 
+  
+  // Automatically activate 1-second real-time multi-device sync whenever business changes
+  useEffect(() => {
+    if (currentBusiness?.id && !String(currentBusiness.id).startsWith('demo-')) {
+      db.startRealtimeSync(currentBusiness.id);
+    }
+  }, [currentBusiness?.id]);
+
   // Firebase Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -233,36 +241,63 @@ export const AppProvider = ({ children }) => {
         console.log(`[AUTH] Authenticated UID: ${firebaseUser.uid}`);
         try {
           const karobaarUser = await db.getUserByFirebaseUid(firebaseUser.uid);
-          if (karobaarUser && karobaarUser.memberships && karobaarUser.memberships.length > 0) {
-            const bizPromises = karobaarUser.memberships.map(id => db.getById('businesses', id));
-            const businessesData = (await Promise.all(bizPromises)).filter(Boolean);
+          
+          // Check all businesses for this user across cloud and local storage
+          const businessesData = await db.getBusinessesForUser(firebaseUser.uid, firebaseUser.email);
+
+          if (businessesData && businessesData.length > 0) {
+            // RETURNING USER: Load their real data saved from last time!
             setUserBusinesses(businessesData);
             
-            let activeId = localStorage.getItem('karobaar-active-business') || karobaarUser.memberships[0];
+            let activeId = localStorage.getItem('karobaar-active-business') || karobaarUser?.activeBusinessId || businessesData[0].id;
             const activeBusinessData = businessesData.find(b => b.id === activeId) || businessesData[0];
             if (activeBusinessData) {
               setCurrentBusiness(activeBusinessData);
-              const userObj = { ...karobaarUser, activeBusinessId: activeBusinessData.id };
+              const userObj = {
+                ...(karobaarUser || {}),
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || karobaarUser?.name || 'Business Owner',
+                email: firebaseUser.email,
+                role: karobaarUser?.role || 'Owner',
+                activeBusinessId: activeBusinessData.id,
+                memberships: businessesData.map(b => b.id),
+                onboardingCompleted: true
+              };
               setCurrentUser(userObj);
               try {
                 localStorage.setItem('karobaar_session_user', JSON.stringify(userObj));
                 localStorage.setItem('karobaar_session_business', JSON.stringify(activeBusinessData));
                 localStorage.setItem('karobaar_session_businesses', JSON.stringify(businessesData));
+                localStorage.setItem('karobaar-active-business', activeBusinessData.id);
+                localStorage.setItem(`karobaar_onboarding_completed_${firebaseUser.email.toLowerCase()}`, 'true');
               } catch (e) {}
+
+              // Start 1-second real-time sync with cloud (Mobile <-> Tablet <-> PC)
+              db.startRealtimeSync(activeBusinessData.id);
               setAuthStatus('authenticated');
             } else {
               setAuthStatus('pending_onboarding');
             }
           } else {
-            // Newly authenticated user without existing business membership -> route to onboarding
+            // NEW USER: route to setup page!
             const pendingUser = {
               id: firebaseUser.uid,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Owner',
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Business Owner',
               email: firebaseUser.email,
               role: 'Owner',
-              memberships: []
+              memberships: [],
+              onboardingCompleted: false
             };
             setCurrentUser(pendingUser);
+            setCurrentBusiness(null);
+            setUserBusinesses([]);
+            try {
+              localStorage.setItem('karobaar_session_user', JSON.stringify(pendingUser));
+              localStorage.removeItem('karobaar_session_business');
+              localStorage.removeItem('karobaar_session_businesses');
+              localStorage.removeItem('karobaar-active-business');
+              localStorage.removeItem(`karobaar_onboarding_completed_${firebaseUser.email.toLowerCase()}`);
+            } catch (e) {}
             setAuthStatus('pending_onboarding');
           }
         } catch (error) {

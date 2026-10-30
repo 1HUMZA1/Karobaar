@@ -391,6 +391,22 @@ const Dashboard = ({ onSwitchMode }) => {
     }
   }, [currentUser?.activeBusinessId, currentBusiness?.id, loadDashboardData]);
 
+  // Real-time multi-device sync listener (Mobile <-> Tablet <-> Laptop)
+  useEffect(() => {
+    const handleSync = (e) => {
+      const bizId = currentUser?.activeBusinessId || currentBusiness?.id;
+      if (bizId && (!e?.detail?.businessId || e.detail.businessId === bizId)) {
+        loadDashboardData(bizId);
+      }
+    };
+    window.addEventListener('karobaar_data_synced', handleSync);
+    window.addEventListener('karobaar_sync_update', handleSync);
+    return () => {
+      window.removeEventListener('karobaar_data_synced', handleSync);
+      window.removeEventListener('karobaar_sync_update', handleSync);
+    };
+  }, [currentUser?.activeBusinessId, currentBusiness?.id, loadDashboardData]);
+
   const handleResetDemo = async () => {
     setIsResettingDemo(true);
     try {

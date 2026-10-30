@@ -360,6 +360,16 @@ const AppContent = () => {
     );
   }
 
+  // Auto-resume to last active screen if closed accidentally
+const RootResumeRedirect = () => {
+  const lastRoute = localStorage.getItem('karobaar_last_active_route');
+  if (lastRoute && lastRoute.startsWith('#/') && !lastRoute.includes('/login') && !lastRoute.includes('/home') && !lastRoute.includes('/about') && !lastRoute.includes('/setup')) {
+    const cleanPath = lastRoute.replace('#', '');
+    return <Navigate to={cleanPath} replace />;
+  }
+  return <Navigate to="/dashboard" replace />;
+};
+
   return (
     <HashRouter>
       <SignOutModal />
@@ -377,7 +387,7 @@ const AppContent = () => {
             <Layout />
           </ProtectedRoute>
         }>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<RootResumeRedirect />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="ai" element={<Navigate to="/dashboard" replace />} />
           <Route path="sales" element={<Navigate to="/pos" replace />} />

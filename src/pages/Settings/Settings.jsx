@@ -652,18 +652,6 @@ const Settings = () => {
     return () => { isMounted = false; };
   }, [activeBizId, currentUser?.id]);
 
-  // Global keyboard shortcut: Ctrl+S / Cmd+S to save all workspace settings
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave]);
-
   const toggleModule = (modId) => {
     setEnabledModules(prev => ({
       ...prev,
@@ -850,6 +838,18 @@ const Settings = () => {
       setSaving(false);
     }
   };
+
+  // Global keyboard shortcut: Ctrl+S / Cmd+S to save all workspace settings
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave]);
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();

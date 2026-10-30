@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { dbFirestore } from './firebase.js';
 import { localDb } from './localDb.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,27 +11,117 @@ class DatabaseService {
 
   constructor() {
     this.syncInProgress = false;
+    this._realtimeUnsubs = [];
+    this._activeRealtimeBiz = null;
     this._startSyncLoop();
   }
 
-  // --- Core Sync Logic ---
+  // --- Core Sync Logic (1-second auto-sync + multi-device real-time sync) ---
   
   async _startSyncLoop() {
+    // 1-second auto-sync for any pending local mutations
     setInterval(() => {
       if (typeof navigator !== 'undefined' && navigator.onLine) {
         this.syncPendingQueue();
-        const activeBizId = localStorage.getItem('karobaar-active-business') || 'demo-business-1';
-        this.syncAllFromCloud(activeBizId);
       }
-    }, 12000); // Check every 12 seconds
+    }, 1000);
+
+    // Periodic cloud poll safety-net
+    setInterval(() => {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        const activeBizId = typeof localStorage !== 'undefined' ? (localStorage.getItem('karobaar-active-business') || '') : '';
+        if (activeBizId && !activeBizId.startsWith('demo-')) {
+          this.syncAllFromCloud(activeBizId);
+        }
+      }
+    }, 8000);
     
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => {
         this.syncPendingQueue();
-        const activeBizId = localStorage.getItem('karobaar-active-business') || 'demo-business-1';
-        this.syncAllFromCloud(activeBizId);
+        const activeBizId = localStorage.getItem('karobaar-active-business') || '';
+        if (activeBizId && !activeBizId.startsWith('demo-')) {
+          this.syncAllFromCloud(activeBizId);
+        }
       });
     }
+  }
+
+  // Start real-time Firestore collection listeners for immediate cross-device sync (Mobile <-> PC <-> Tablet)
+  startRealtimeSync(businessId) {
+    if (!businessId || String(businessId).startsWith('demo-') || typeof window === 'undefined') return;
+    if (this._activeRealtimeBiz === businessId && this._realtimeUnsubs?.length > 0) return;
+    this._activeRealtimeBiz = businessId;
+
+    if (this._realtimeUnsubs) {
+      this._realtimeUnsubs.forEach(unsub => {
+        try { unsub(); } catch (_) {}
+      });
+    }
+    this._realtimeUnsubs = [];
+
+    const syncCollections = ['products', 'sales', 'customers', 'expenses', 'invoices', 'inventory', 'tasks'];
+    syncCollections.forEach(col => {
+      try {
+        const colRef = collection(dbFirestore, `businesses/${businessId}/${col}`);
+        const unsub = onSnapshot(colRef, (snapshot) => {
+          if (snapshot && !snapshot.empty) {
+            const records = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            localDb.bulkSave(col, records, businessId);
+            window.dispatchEvent(new CustomEvent('karobaar_data_synced', { detail: { businessId, collection: col } }));
+            window.dispatchEvent(new CustomEvent('karobaar_sync_update'));
+          }
+        }, () => {});
+        this._realtimeUnsubs.push(unsub);
+      } catch (e) {
+        console.warn(`[Snapshot attach note for ${col}]:`, e.message);
+      }
+    });
+  }
+
+  // Find all businesses owned by or associated with a user across devices
+  async getBusinessesForUser(userId, userEmail = null) {
+    const allLocal = localDb.getAll('businesses') || [];
+    let matches = allLocal.filter(b => 
+      b && 
+      !String(b.id).startsWith('demo-') && 
+      !String(b.id).includes('demo') && 
+      (b.ownerId === userId || (userEmail && b.ownerEmail && b.ownerEmail.toLowerCase() === userEmail.toLowerCase()))
+    );
+
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        // Query 1: by ownerId
+        if (userId) {
+          const q1 = query(collection(dbFirestore, 'businesses'), where('ownerId', '==', userId));
+          const snap1 = await this._withTimeout(getDocs(q1), 4000).catch(() => null);
+          if (snap1 && !snap1.empty) {
+            snap1.docs.forEach(docSnap => {
+              const data = { id: docSnap.id, ...docSnap.data() };
+              localDb.save('businesses', docSnap.id, data);
+              if (!matches.some(m => m.id === docSnap.id)) matches.push(data);
+            });
+          }
+        }
+
+        // Query 2: by ownerEmail
+        if (userEmail) {
+          const cleanEmail = userEmail.toLowerCase().trim();
+          const q2 = query(collection(dbFirestore, 'businesses'), where('ownerEmail', '==', cleanEmail));
+          const snap2 = await this._withTimeout(getDocs(q2), 4000).catch(() => null);
+          if (snap2 && !snap2.empty) {
+            snap2.docs.forEach(docSnap => {
+              const data = { id: docSnap.id, ...docSnap.data() };
+              localDb.save('businesses', docSnap.id, data);
+              if (!matches.some(m => m.id === docSnap.id)) matches.push(data);
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[getBusinessesForUser Cloud Note]', e);
+      }
+    }
+    return matches;
   }
 
   // Two-way synchronization: Pull latest records from Firestore so Laptop & Mobile stay in sync
