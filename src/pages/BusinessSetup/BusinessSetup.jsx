@@ -191,8 +191,9 @@ const BusinessSetup = () => {
   const newParam = searchParams.get('new') === 'true';
 
   const [setupMode, setSetupMode] = useState(() => {
-    if (joinParam) return 'join';
-    if (newParam) return 'create';
+    if (joinParam && (joinParam.toUpperCase().includes('KB-INV-') || joinParam.length >= 6)) {
+      return 'join';
+    }
     return 'choose';
   }); // 'choose' | 'create' | 'join'
   const [joinCodeInput, setJoinCodeInput] = useState(joinParam);
@@ -464,7 +465,13 @@ const BusinessSetup = () => {
     setStep(s => s + 1);
   };
 
-  const handleBack = () => setStep(s => s - 1);
+  const handleBack = () => {
+    if (step === 1) {
+      setSetupMode('choose');
+    } else {
+      setStep(s => s - 1);
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -643,7 +650,7 @@ const BusinessSetup = () => {
 
       {/* Right Panel - Form content */}
       <div className="setup-container">
-        <div className="setup-card">
+        <div className={`setup-card ${setupMode === 'choose' ? 'choice-mode' : ''}`}>
           {/* Quick AI Concierge Switcher Banner */}
           <div style={{
             display: 'flex',
@@ -688,6 +695,21 @@ const BusinessSetup = () => {
 
           {setupMode === 'choose' ? (
             <div className="setup-choice-screen">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                <button
+                  type="button"
+                  className="setup-nav-back-btn"
+                  onClick={handleLogout}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '8px', fontSize: '0.86rem' }}
+                >
+                  <ArrowLeft size={16} />
+                  <span>Back to Sign In</span>
+                </button>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  Role Selection
+                </span>
+              </div>
+
               <div className="setup-header" style={{ marginBottom: '1.25rem' }}>
                 <h2>Get Started with Karobaar</h2>
                 <p>Choose an option below to set up your workspace according to your role.</p>
@@ -712,28 +734,28 @@ const BusinessSetup = () => {
                   </div>
 
                   <div className="setup-choice-content">
-                    <h3>1. Create a New Business</h3>
+                    <h3>1. Create a Business</h3>
                     <p>
-                      Are you starting or managing your own business? Build a fresh workspace for your shop, retail store, wholesale agency, or enterprise from scratch.
+                      Starting or managing your own business? Build a fresh workspace for your shop, retail store, wholesale agency, or company from scratch.
                     </p>
                     <ul className="setup-choice-perks">
                       <li>
                         <CheckCircle2 size={16} />
-                        <span>Full administrative ownership, company profile & store branding</span>
+                        <span>Full administrative ownership & store branding</span>
                       </li>
                       <li>
                         <CheckCircle2 size={16} />
-                        <span>Pre-configured POS, Inventory, Invoices, Expenses & Tax</span>
+                        <span>Pre-configured POS, Inventory, Invoices & Tax</span>
                       </li>
                       <li>
                         <CheckCircle2 size={16} />
-                        <span>Generate secure team invite codes for cashiers, managers & accountants</span>
+                        <span>Generate secure team invite codes for staff</span>
                       </li>
                     </ul>
                   </div>
 
                   <div className="setup-choice-action">
-                    <span>Set Up New Business Workspace</span>
+                    <span>Create Business Workspace</span>
                     <ArrowRight size={18} />
                   </div>
                 </div>
@@ -755,28 +777,28 @@ const BusinessSetup = () => {
                   </div>
 
                   <div className="setup-choice-content">
-                    <h3>2. Join an Existing Business</h3>
+                    <h3>2. Join a Business</h3>
                     <p>
-                      Were you invited by your store owner or manager? Enter your invitation code (e.g., KB-INV-XXXXX) to instantly connect to your team's live workspace.
+                      Invited by your store owner or manager? Enter your invitation code (KB-INV-XXXXX) to instantly connect to your team's live workspace.
                     </p>
                     <ul className="setup-choice-perks">
                       <li>
                         <CheckCircle2 size={16} />
-                        <span>Instant access — zero business configuration required</span>
+                        <span>Instant access — zero business configuration needed</span>
                       </li>
                       <li>
                         <CheckCircle2 size={16} />
-                        <span>Pre-assigned role permissions (Manager, Cashier, Accountant, etc.)</span>
+                        <span>Pre-assigned role permissions (Manager, Cashier, etc.)</span>
                       </li>
                       <li>
                         <CheckCircle2 size={16} />
-                        <span>Live multi-user sync with real-time stock and checkout</span>
+                        <span>Live multi-user sync with real-time stock & sales</span>
                       </li>
                     </ul>
                   </div>
 
                   <div className="setup-choice-action">
-                    <span>Enter Workspace Invitation Code</span>
+                    <span>Join with Invite Code</span>
                     <ArrowRight size={18} />
                   </div>
                 </div>
@@ -784,26 +806,19 @@ const BusinessSetup = () => {
             </div>
           ) : (
             <>
-              {/* Top Navigation Bar: Back & Switch */}
+              {/* Top Navigation Bar: Back & Step Indicator */}
               <div className="setup-top-nav">
                 <button
                   type="button"
                   className="setup-nav-back-btn"
                   onClick={() => setSetupMode('choose')}
+                  style={{ fontWeight: 700 }}
                 >
                   <ArrowLeft size={16} />
-                  <span>Back to Selection</span>
+                  <span>← Back to Selection</span>
                 </button>
-                <div className="setup-nav-switch">
-                  {setupMode === 'create' ? (
-                    <button type="button" onClick={() => setSetupMode('join')} className="setup-nav-link-btn">
-                      Have an invite code? <strong>Join existing workspace →</strong>
-                    </button>
-                  ) : (
-                    <button type="button" onClick={() => { setSetupMode('create'); setStep(1); }} className="setup-nav-link-btn">
-                      Want to start fresh? <strong>Create a new business →</strong>
-                    </button>
-                  )}
+                <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
+                  {setupMode === 'create' ? `Step ${step} of 6: New Business Onboarding` : 'Redeem Business Invitation'}
                 </div>
               </div>
 
@@ -951,24 +966,25 @@ const BusinessSetup = () => {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={isJoining || !joinCodeInput.trim()}
-                  style={{
-                    padding: '14px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--text-main)',
-                    color: 'var(--bg-body)',
-                    border: 'none',
-                    fontWeight: 700,
-                    fontSize: '1rem',
-                    cursor: (!joinCodeInput.trim() || isJoining) ? 'not-allowed' : 'pointer',
-                    opacity: (!joinCodeInput.trim() || isJoining) ? 0.6 : 1,
-                    marginTop: '8px'
-                  }}
-                >
-                  {isJoining ? 'Joining Workspace...' : 'Accept Invitation & Enter Dashboard'}
-                </button>
+                <div className="setup-footer" style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '1rem' }}>
+                  <button
+                    type="button"
+                    className="setup-btn setup-btn-secondary"
+                    onClick={() => setSetupMode('choose')}
+                    disabled={isJoining}
+                  >
+                    <ArrowLeft size={16} />
+                    <span>Back to Selection</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isJoining || !joinCodeInput.trim()}
+                    className="setup-btn setup-btn-primary"
+                  >
+                    {isJoining ? 'Joining Workspace...' : 'Accept Invitation & Enter Dashboard'}
+                  </button>
+                </div>
               </form>
             </div>
           ) : (
@@ -1323,10 +1339,10 @@ const BusinessSetup = () => {
                 type="button" 
                 className="setup-btn setup-btn-secondary" 
                 onClick={handleBack} 
-                disabled={isSubmitting || step === 1}
-                style={{ visibility: step === 1 ? 'hidden' : 'visible' }}
+                disabled={isSubmitting}
               >
-                Previous
+                <ArrowLeft size={16} />
+                <span>{step === 1 ? 'Back to Selection' : 'Previous'}</span>
               </button>
               
               <button type="submit" className="setup-btn setup-btn-primary" disabled={isSubmitting}>
