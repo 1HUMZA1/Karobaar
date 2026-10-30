@@ -73,23 +73,351 @@ const countryPhoneOptions = ALL_COUNTRIES.map(c => {
   };
 });
 
-const topPhoneCodes = ['+1', '+44', '+91', '+92', '+971'].map(code => 
+const topPhoneCodes = ['+971', '+1', '+91', '+92', '+44', '+966', '+974', '+965', '+973', '+968'].map(code => 
   countryPhoneOptions.find(c => c.value === code)
 ).filter(Boolean);
 
 const finalCountryPhoneOptions = [...topPhoneCodes, { value: '', label: '--- All Countries ---' }, ...countryPhoneOptions];
 
-const PHONE_LENGTHS = {
-  '+1': 10,
-  '+44': 10,
-  '+91': 10,
-  '+92': 10,
-  '+971': 9,
-  '+61': 9,
-  '+86': 11,
-  '+49': 11,
-  '+33': 9,
-  '+81': 10,
+export const COUNTRY_PHONE_CONFIG = {
+  '+971': {
+    name: 'UAE',
+    length: 9,
+    placeholder: '50 123 4567',
+    format: (digits) => {
+      // 2 - 3 - 4 (e.g. 50 299 1270)
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+    }
+  },
+  '+1': {
+    name: 'USA / Canada',
+    length: 10,
+    placeholder: '555 123 4567',
+    format: (digits) => {
+      // 3 - 3 - 4
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+  },
+  '+91': {
+    name: 'India',
+    length: 10,
+    placeholder: '98765 43210',
+    format: (digits) => {
+      // 5 - 5
+      if (digits.length <= 5) return digits;
+      return `${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
+    }
+  },
+  '+92': {
+    name: 'Pakistan',
+    length: 10,
+    placeholder: '300 123 4567',
+    format: (digits) => {
+      // 3 - 3 - 4
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+  },
+  '+44': {
+    name: 'United Kingdom',
+    length: 10,
+    placeholder: '7911 123456',
+    format: (digits) => {
+      // 4 - 6
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 10)}`;
+    }
+  },
+  '+966': {
+    name: 'Saudi Arabia',
+    length: 9,
+    placeholder: '50 123 4567',
+    format: (digits) => {
+      // 2 - 3 - 4
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+    }
+  },
+  '+974': {
+    name: 'Qatar',
+    length: 8,
+    placeholder: '5512 3456',
+    format: (digits) => {
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
+    }
+  },
+  '+965': {
+    name: 'Kuwait',
+    length: 8,
+    placeholder: '5512 3456',
+    format: (digits) => {
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
+    }
+  },
+  '+973': {
+    name: 'Bahrain',
+    length: 8,
+    placeholder: '3912 3456',
+    format: (digits) => {
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
+    }
+  },
+  '+968': {
+    name: 'Oman',
+    length: 8,
+    placeholder: '9123 4567',
+    format: (digits) => {
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
+    }
+  },
+  '+61': {
+    name: 'Australia',
+    length: 9,
+    placeholder: '412 345 678',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
+    }
+  },
+  '+86': {
+    name: 'China',
+    length: 11,
+    placeholder: '138 0013 8000',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 11)}`;
+    }
+  },
+  '+49': {
+    name: 'Germany',
+    length: 11,
+    placeholder: '151 2345 6789',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 11)}`;
+    }
+  },
+  '+33': {
+    name: 'France',
+    length: 9,
+    placeholder: '6 12 34 56 78',
+    format: (digits) => {
+      if (digits.length <= 1) return digits;
+      if (digits.length <= 3) return `${digits.slice(0, 1)} ${digits.slice(1)}`;
+      if (digits.length <= 5) return `${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3)}`;
+      if (digits.length <= 7) return `${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3, 5)} ${digits.slice(5)}`;
+      return `${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 7)} ${digits.slice(7, 9)}`;
+    }
+  },
+  '+39': {
+    name: 'Italy',
+    length: 10,
+    placeholder: '312 345 6789',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+  },
+  '+34': {
+    name: 'Spain',
+    length: 9,
+    placeholder: '612 345 678',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
+    }
+  },
+  '+90': {
+    name: 'Turkey',
+    length: 10,
+    placeholder: '532 123 45 67',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      if (digits.length <= 8) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`;
+    }
+  },
+  '+7': {
+    name: 'Russia / Kazakhstan',
+    length: 10,
+    placeholder: '912 345 67 89',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      if (digits.length <= 8) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`;
+    }
+  },
+  '+81': {
+    name: 'Japan',
+    length: 10,
+    placeholder: '90 1234 5678',
+    format: (digits) => {
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6, 10)}`;
+    }
+  },
+  '+82': {
+    name: 'South Korea',
+    length: 10,
+    placeholder: '10 1234 5678',
+    format: (digits) => {
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6, 10)}`;
+    }
+  },
+  '+65': {
+    name: 'Singapore',
+    length: 8,
+    placeholder: '8123 4567',
+    format: (digits) => {
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
+    }
+  },
+  '+60': {
+    name: 'Malaysia',
+    length: 10,
+    placeholder: '12 3456 7890',
+    format: (digits) => {
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6, 10)}`;
+    }
+  },
+  '+62': {
+    name: 'Indonesia',
+    length: 11,
+    placeholder: '812 3456 7890',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 11)}`;
+    }
+  },
+  '+63': {
+    name: 'Philippines',
+    length: 10,
+    placeholder: '917 123 4567',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+  },
+  '+880': {
+    name: 'Bangladesh',
+    length: 10,
+    placeholder: '1712 345678',
+    format: (digits) => {
+      if (digits.length <= 4) return digits;
+      return `${digits.slice(0, 4)} ${digits.slice(4, 10)}`;
+    }
+  },
+  '+20': {
+    name: 'Egypt',
+    length: 10,
+    placeholder: '100 123 4567',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+  },
+  '+27': {
+    name: 'South Africa',
+    length: 9,
+    placeholder: '82 123 4567',
+    format: (digits) => {
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+    }
+  },
+  '+234': {
+    name: 'Nigeria',
+    length: 10,
+    placeholder: '802 123 4567',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+  },
+  '+254': {
+    name: 'Kenya',
+    length: 9,
+    placeholder: '712 345 678',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
+    }
+  },
+  '+55': {
+    name: 'Brazil',
+    length: 11,
+    placeholder: '11 98765 4321',
+    format: (digits) => {
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+      return `${digits.slice(0, 2)} ${digits.slice(2, 7)} ${digits.slice(7, 11)}`;
+    }
+  },
+  '+52': {
+    name: 'Mexico',
+    length: 10,
+    placeholder: '551 234 5678',
+    format: (digits) => {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+  }
+};
+
+export const getCountryPhoneConfig = (countryCode) => {
+  if (COUNTRY_PHONE_CONFIG[countryCode]) {
+    return COUNTRY_PHONE_CONFIG[countryCode];
+  }
+  return {
+    name: 'International',
+    length: 10,
+    placeholder: '123 456 7890',
+    format: (digits) => {
+      if (digits.length <= 8) {
+        if (digits.length <= 4) return digits;
+        return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+      }
+      if (digits.length === 9) {
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+        return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+      }
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      if (digits.length <= 10) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 11)} ${digits.slice(11, 15)}`;
+    }
+  };
 };
 
 const CustomSelect = ({ value, onChange, options, placeholder }) => {
@@ -294,11 +622,29 @@ const BusinessSetup = () => {
   };
 
   // Step 1: Personal Profile
-  const [personal, setPersonal] = useState({
-    fullName: (currentUser?.name && !currentUser.name.toLowerCase().includes('sas') && !currentUser.name.toLowerCase().includes('cafeteria')) ? currentUser.name : '',
-    countryCode: '+1',
-    phone: auth.currentUser?.phoneNumber || '',
-    language: 'English'
+  const [personal, setPersonal] = useState(() => {
+    let rawAuthPhone = auth.currentUser?.phoneNumber || '';
+    let initialCode = '+971';
+    let initialPhone = '';
+
+    if (rawAuthPhone.startsWith('+')) {
+      for (const prefix of ['+971', '+966', '+974', '+965', '+973', '+968', '+92', '+91', '+44', '+1']) {
+        if (rawAuthPhone.startsWith(prefix)) {
+          initialCode = prefix;
+          const digits = rawAuthPhone.substring(prefix.length).replace(/[^0-9]/g, '');
+          const cfg = getCountryPhoneConfig(prefix);
+          initialPhone = cfg.format(digits.slice(0, cfg.length));
+          break;
+        }
+      }
+    }
+
+    return {
+      fullName: (currentUser?.name && !currentUser.name.toLowerCase().includes('sas') && !currentUser.name.toLowerCase().includes('cafeteria')) ? currentUser.name : '',
+      countryCode: initialCode,
+      phone: initialPhone,
+      language: 'English'
+    };
   });
 
   const [isPhoneVerified, setIsPhoneVerified] = useState(!!auth.currentUser?.phoneNumber);
@@ -329,11 +675,15 @@ const BusinessSetup = () => {
       return setVerificationMessage({ type: 'error', text: 'Please enter a phone number' });
     }
     
-    let formattedPhone = personal.phone.replace(/[^0-9]/g, '');
-    if (formattedPhone.length < 6) {
-      return setVerificationMessage({ type: 'error', text: 'Phone number is too short. Please enter a valid number.' });
+    let rawDigits = personal.phone.replace(/[^0-9]/g, '');
+    const config = getCountryPhoneConfig(personal.countryCode);
+    if (rawDigits.length !== config.length) {
+      return setVerificationMessage({ 
+        type: 'error', 
+        text: `Please enter a complete ${config.length}-digit phone number for ${config.name} (${rawDigits.length}/${config.length} digits entered).` 
+      });
     }
-    let fullPhone = personal.countryCode + formattedPhone;
+    let fullPhone = personal.countryCode + rawDigits;
 
     try {
       setIsSendingCode(true);
@@ -1017,49 +1367,82 @@ const BusinessSetup = () => {
                 </div>
                 <div className="setup-form-group full-width">
                   <label>Phone Number</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <div style={{ width: '130px', flexShrink: 0 }}>
-                      {codeSent || isPhoneVerified ? (
-                        <div className="setup-input" style={{ background: '#f5f5f5', color: '#666', border: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center' }}>
-                          {personal.countryCode}
+                  {(() => {
+                    const currentPhoneConfig = getCountryPhoneConfig(personal.countryCode);
+                    const currentDigits = personal.phone.replace(/[^0-9]/g, '');
+                    const isComplete = currentDigits.length === currentPhoneConfig.length;
+
+                    return (
+                      <>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <div style={{ width: '130px', flexShrink: 0 }}>
+                            {codeSent || isPhoneVerified ? (
+                              <div className="setup-input" style={{ background: '#f5f5f5', color: '#666', border: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', fontWeight: 700 }}>
+                                {personal.countryCode}
+                              </div>
+                            ) : (
+                              <CustomSelect 
+                                options={finalCountryPhoneOptions} 
+                                value={personal.countryCode} 
+                                onChange={(e) => {
+                                  const newCode = e.target.value;
+                                  const newCfg = getCountryPhoneConfig(newCode);
+                                  const raw = personal.phone.replace(/[^0-9]/g, '').slice(0, newCfg.length);
+                                  const reformatted = newCfg.format(raw);
+                                  setPersonal({
+                                    ...personal,
+                                    countryCode: newCode,
+                                    phone: reformatted
+                                  });
+                                  if (isPhoneVerified) setIsPhoneVerified(false);
+                                }}
+                              />
+                            )}
+                          </div>
+                          <input 
+                            type="tel" 
+                            className="setup-input" 
+                            value={personal.phone} 
+                            onChange={e => {
+                              const rawDigits = e.target.value.replace(/[^0-9]/g, '');
+                              const maxLen = currentPhoneConfig.length;
+                              const truncatedDigits = rawDigits.slice(0, maxLen);
+                              const formattedPhone = currentPhoneConfig.format(truncatedDigits);
+                              setPersonal({...personal, phone: formattedPhone});
+                              if (isPhoneVerified) setIsPhoneVerified(false);
+                            }} 
+                            disabled={isPhoneVerified || codeSent}
+                            placeholder={currentPhoneConfig.placeholder}
+                            style={{ flex: 1, letterSpacing: '0.04em', fontWeight: 600 }}
+                          />
+                          {!isPhoneVerified && !codeSent && (
+                            <Button type="button" onClick={sendVerificationCode} disabled={isSendingCode || !personal.phone}>
+                              {isSendingCode ? 'Sending...' : 'Verify'}
+                            </Button>
+                          )}
+                          {isPhoneVerified && (
+                            <div style={{ display: 'flex', alignItems: 'center', color: '#16a34a', padding: '0 0.5rem' }}>
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <CustomSelect 
-                          options={finalCountryPhoneOptions} 
-                          value={personal.countryCode} 
-                          onChange={(e) => setPersonal({...personal, countryCode: e.target.value})}
-                        />
-                      )}
-                    </div>
-                    <input 
-                      type="tel" 
-                      className="setup-input" 
-                      value={personal.phone} 
-                      onChange={e => {
-                        const onlyNums = e.target.value.replace(/[^0-9\s-]/g, '');
-                        const digitCount = onlyNums.replace(/[^0-9]/g, '').length;
-                        const maxLen = PHONE_LENGTHS[personal.countryCode] || 15;
-                        
-                        if (digitCount <= maxLen) {
-                          setPersonal({...personal, phone: onlyNums});
-                          if (isPhoneVerified) setIsPhoneVerified(false);
-                        }
-                      }} 
-                      disabled={isPhoneVerified || codeSent}
-                      placeholder="555 000 0000"
-                      style={{ flex: 1 }}
-                    />
-                    {!isPhoneVerified && !codeSent && (
-                      <Button type="button" onClick={sendVerificationCode} disabled={isSendingCode || !personal.phone}>
-                        {isSendingCode ? 'Sending...' : 'Verify'}
-                      </Button>
-                    )}
-                    {isPhoneVerified && (
-                      <div style={{ display: 'flex', alignItems: 'center', color: '#16a34a', padding: '0 0.5rem' }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                      </div>
-                    )}
-                  </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', padding: '0 2px' }}>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                            {currentPhoneConfig.name}: {currentPhoneConfig.length} digits ({currentPhoneConfig.placeholder})
+                          </span>
+                          <span style={{ 
+                            fontSize: '0.78rem', 
+                            fontWeight: 700, 
+                            color: isComplete ? '#16a34a' : (currentDigits.length > 0 ? '#b45309' : 'var(--text-secondary)') 
+                          }}>
+                            {currentDigits.length} / {currentPhoneConfig.length} digits {isComplete ? '✓' : ''}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                  
                   
                   {codeSent && !isPhoneVerified && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
