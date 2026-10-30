@@ -287,8 +287,9 @@ export const TeamManagement = () => {
       <div style={{
         background: 'var(--bg-card, #ffffff)',
         border: '1px solid var(--border-color, #e2e8f0)',
-        borderRadius: '16px',
-        padding: '24px',
+        borderRadius: '20px',
+        padding: '28px 32px',
+        boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.05)',
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
@@ -323,8 +324,8 @@ export const TeamManagement = () => {
             type="button"
             onClick={loadData}
             style={{
-              padding: '10px 14px',
-              borderRadius: '10px',
+              padding: '10px 16px',
+              borderRadius: '12px',
               border: '1px solid var(--border-color)',
               background: 'transparent',
               color: 'var(--text-main)',
@@ -346,8 +347,8 @@ export const TeamManagement = () => {
               type="button"
               onClick={handleOpenInvite}
               style={{
-                padding: '10px 18px',
-                borderRadius: '10px',
+                padding: '10px 20px',
+                borderRadius: '12px',
                 backgroundColor: 'var(--text-main, #09090b)',
                 color: 'var(--bg-body, #ffffff)',
                 border: 'none',
@@ -370,7 +371,8 @@ export const TeamManagement = () => {
       <div style={{
         display: 'flex',
         borderBottom: '1px solid var(--border-color, #e2e8f0)',
-        gap: '8px'
+        gap: '12px',
+        margin: '8px 0 4px 0'
       }}>
         <button
           type="button"
@@ -489,7 +491,8 @@ export const TeamManagement = () => {
             <div style={{
               background: 'var(--bg-card, #ffffff)',
               border: '1px solid var(--border-color, #e2e8f0)',
-              borderRadius: '16px',
+              borderRadius: '20px',
+              boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.05)',
               overflow: 'hidden'
             }}>
               <div style={{ overflowX: 'auto' }}>
@@ -749,7 +752,8 @@ export const TeamManagement = () => {
             <div style={{
               background: 'var(--bg-card, #ffffff)',
               border: '1px solid var(--border-color, #e2e8f0)',
-              borderRadius: '16px',
+              borderRadius: '20px',
+              boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.05)',
               overflow: 'hidden'
             }}>
               <div style={{ overflowX: 'auto' }}>

@@ -5,9 +5,10 @@
 
 .jarvis-conv-bubble-panel {
   position: fixed;
-  bottom: 82px;
-  left: 20px;
-  width: 380px;
+  bottom: 84px;
+  right: 28px;
+  left: auto;
+  width: 390px;
   max-width: calc(100vw - 40px);
   max-height: 490px;
   z-index: 1060;

@@ -342,3 +342,62 @@ a:hover {
   flex-direction: column;
   gap: 1rem;
 }
+
+/* ==========================================================================
+   Smooth & Spacious Universal UI Architecture
+   Clean Boxes, Soft Ambient Shadows, Anti-Congestion Spacing
+   ========================================================================== */
+.clean-feature-box,
+.stat-card,
+.dashboard-card,
+.dashboard-premium-card,
+.feature-box,
+.k-card,
+.card-box {
+  border-radius: 18px !important;
+  border: 1px solid var(--border-color, #e2e8f0) !important;
+  background-color: var(--bg-card, #ffffff);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-theme="dark"] .clean-feature-box,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .dashboard-card,
+[data-theme="dark"] .dashboard-premium-card,
+[data-theme="dark"] .feature-box,
+[data-theme="dark"] .k-card,
+[data-theme="dark"] .card-box {
+  background-color: var(--bg-card, #141416);
+  border-color: var(--border-color, #27272a) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45), 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+.clean-feature-box:hover,
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Fluid spacing and generous breathing room */
+.page-container,
+.module-container,
+.pos-container,
+.inventory-container,
+.dashboard-container {
+  padding: 0.5rem 0 2rem;
+  gap: 1.75rem;
+}
+
+/* Smooth Table Styling with Rounded Hover Rows */
+table tr {
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+table tr:hover td {
+  background-color: var(--bg-hover, #f8fafc);
+}
+
+[data-theme="dark"] table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.04);
+}

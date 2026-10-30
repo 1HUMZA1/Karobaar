@@ -6,15 +6,15 @@
 .jarvis-mini-character-dock {
   position: fixed;
   bottom: 24px;
-  left: 275px;
-  z-index: 45;
+  right: 28px;
+  z-index: 99;
   display: flex;
   align-items: center;
   gap: 10px;
   pointer-events: auto;
   user-select: none;
   animation: miniCharFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  transition: left 0.3s ease, bottom 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
+  transition: right 0.3s ease, bottom 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
 }
 
 /* Smoothly hide floating dock whenever any modal, dialog or sheet is active */
@@ -31,7 +31,7 @@ body:has([role="dialog"]) .jarvis-mini-character-dock {
 
 @media (max-width: 900px) {
   .jarvis-mini-character-dock {
-    left: 20px;
+    right: 16px;
     bottom: 85px;
   }
 }
