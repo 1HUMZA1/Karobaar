@@ -303,43 +303,43 @@ export const TeamManagement = () => {
         background: 'var(--bg-card, #ffffff)',
         border: '1px solid var(--border-color, #e2e8f0)',
         borderRadius: '20px',
-        padding: '28px 32px',
+        padding: '30px 34px',
         boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.05)',
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '16px'
+        gap: '20px'
       }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
               backgroundColor: 'var(--text-main, #09090b)',
               color: 'var(--bg-body, #ffffff)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Users size={20} />
+              <Users size={22} />
             </div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
+            <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
               Team & Role Permissions
             </h2>
           </div>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: 0, fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
             Enterprise multi-user architecture with role isolation. Turn work into growth together.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <button
             type="button"
             onClick={loadData}
             style={{
-              padding: '10px 16px',
+              padding: '11px 18px',
               borderRadius: '12px',
               border: '1px solid var(--border-color)',
               background: 'transparent',
@@ -347,9 +347,9 @@ export const TeamManagement = () => {
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '8px',
               fontWeight: 600,
-              fontSize: '0.85rem'
+              fontSize: '0.88rem'
             }}
             title="Refresh Members"
           >
@@ -362,7 +362,7 @@ export const TeamManagement = () => {
               type="button"
               onClick={handleOpenInvite}
               style={{
-                padding: '10px 20px',
+                padding: '11px 22px',
                 borderRadius: '12px',
                 backgroundColor: 'var(--text-main, #09090b)',
                 color: 'var(--bg-body, #ffffff)',
@@ -370,9 +370,9 @@ export const TeamManagement = () => {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '10px',
                 fontWeight: 700,
-                fontSize: '0.88rem'
+                fontSize: '0.9rem'
               }}
             >
               <UserPlus size={16} />
@@ -386,33 +386,35 @@ export const TeamManagement = () => {
       <div style={{
         display: 'flex',
         borderBottom: '1px solid var(--border-color, #e2e8f0)',
-        gap: '12px',
-        margin: '8px 0 4px 0'
+        gap: '24px',
+        margin: '18px 0 16px 0',
+        paddingBottom: '2px'
       }}>
         <button
           type="button"
           onClick={() => setActiveSubTab('members')}
           style={{
-            padding: '10px 18px',
+            padding: '12px 20px',
             background: 'none',
             border: 'none',
             borderBottom: activeSubTab === 'members' ? '2.5px solid var(--text-main)' : '2.5px solid transparent',
             color: activeSubTab === 'members' ? 'var(--text-main)' : 'var(--text-secondary)',
             fontWeight: 700,
-            fontSize: '0.92rem',
+            fontSize: '0.95rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '10px'
           }}
         >
           <span>Active Members</span>
           <span style={{
-            fontSize: '0.75rem',
-            padding: '2px 8px',
+            fontSize: '0.78rem',
+            padding: '3px 10px',
             borderRadius: '9999px',
             backgroundColor: 'var(--border-color)',
-            color: 'var(--text-main)'
+            color: 'var(--text-main)',
+            fontWeight: 700
           }}>
             {members.length}
           </span>
@@ -422,26 +424,27 @@ export const TeamManagement = () => {
           type="button"
           onClick={() => setActiveSubTab('invitations')}
           style={{
-            padding: '10px 18px',
+            padding: '12px 20px',
             background: 'none',
             border: 'none',
             borderBottom: activeSubTab === 'invitations' ? '2.5px solid var(--text-main)' : '2.5px solid transparent',
             color: activeSubTab === 'invitations' ? 'var(--text-main)' : 'var(--text-secondary)',
             fontWeight: 700,
-            fontSize: '0.92rem',
+            fontSize: '0.95rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '10px'
           }}
         >
           <span>Invitations</span>
           <span style={{
-            fontSize: '0.75rem',
-            padding: '2px 8px',
+            fontSize: '0.78rem',
+            padding: '3px 10px',
             borderRadius: '9999px',
             backgroundColor: 'var(--border-color)',
-            color: 'var(--text-main)'
+            color: 'var(--text-main)',
+            fontWeight: 700
           }}>
             {invitations.filter(i => i.status === 'pending').length}
           </span>
@@ -511,23 +514,23 @@ export const TeamManagement = () => {
               overflow: 'hidden'
             }}>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                <table style={{ width: '100%', minWidth: '960px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left', fontSize: '0.9rem' }}>
                   <thead>
                     <tr style={{
                       borderBottom: '1px solid var(--border-color, #e2e8f0)',
                       backgroundColor: 'rgba(0,0,0,0.02)',
                       color: 'var(--text-secondary)',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      fontSize: '0.75rem',
-                      fontWeight: 700
+                      letterSpacing: '0.05em',
+                      fontSize: '0.74rem',
+                      fontWeight: 800
                     }}>
-                      <th style={{ padding: '14px 20px' }}>Team Member</th>
-                      <th style={{ padding: '14px 16px' }}>Role</th>
-                      <th style={{ padding: '14px 16px' }}>Status</th>
-                      <th style={{ padding: '14px 16px' }}>Contact Verification</th>
-                      <th style={{ padding: '14px 16px' }}>Joined Date</th>
-                      <th style={{ padding: '14px 20px', textAlign: 'right' }}>Actions</th>
+                      <th style={{ padding: '18px 24px', minWidth: '260px' }}>Team Member</th>
+                      <th style={{ padding: '18px 20px', minWidth: '130px' }}>Role</th>
+                      <th style={{ padding: '18px 20px', minWidth: '130px' }}>Status</th>
+                      <th style={{ padding: '18px 20px', minWidth: '200px' }}>Contact Verification</th>
+                      <th style={{ padding: '18px 20px', minWidth: '140px' }}>Joined Date</th>
+                      <th style={{ padding: '18px 24px', minWidth: '220px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -542,11 +545,11 @@ export const TeamManagement = () => {
                           transition: 'background 0.15s ease'
                         }}>
                           {/* Member Identity */}
-                          <td style={{ padding: '16px 20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <td style={{ padding: '18px 24px', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                               <div style={{
-                                width: '38px',
-                                height: '38px',
+                                width: '42px',
+                                height: '42px',
                                 borderRadius: '50%',
                                 backgroundColor: isMemberOwner ? 'var(--text-main)' : 'var(--border-color)',
                                 color: isMemberOwner ? 'var(--bg-body)' : 'var(--text-main)',
@@ -554,20 +557,21 @@ export const TeamManagement = () => {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontWeight: 800,
-                                fontSize: '0.9rem'
+                                fontSize: '0.95rem',
+                                flexShrink: 0
                               }}>
                                 {(member.name || member.email || 'U')[0].toUpperCase()}
                               </div>
                               <div>
-                                <div style={{ fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span>{member.name || 'Team Member'}</span>
+                                <div style={{ fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                  <span style={{ fontSize: '0.92rem' }}>{member.name || 'Team Member'}</span>
                                   {isCurrentUser && (
-                                    <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                                    <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: 600 }}>
                                       You
                                     </span>
                                   )}
                                 </div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                                   {member.email || member.phone || 'No contact email'}
                                 </div>
                               </div>
@@ -575,17 +579,18 @@ export const TeamManagement = () => {
                           </td>
 
                           {/* Role */}
-                          <td style={{ padding: '16px 16px' }}>
+                          <td style={{ padding: '18px 20px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{
-                                fontSize: '0.75rem',
+                                fontSize: '0.78rem',
                                 fontWeight: 700,
-                                letterSpacing: '0.02em',
-                                padding: '3px 10px',
+                                letterSpacing: '0.03em',
+                                padding: '4px 12px',
                                 borderRadius: '6px',
                                 border: '1px solid var(--border-color)',
                                 backgroundColor: isMemberOwner ? 'var(--text-main)' : 'transparent',
-                                color: isMemberOwner ? 'var(--bg-body)' : 'var(--text-main)'
+                                color: isMemberOwner ? 'var(--bg-body)' : 'var(--text-main)',
+                                display: 'inline-block'
                               }}>
                                 {member.role || 'Cashier'}
                               </span>
@@ -593,64 +598,66 @@ export const TeamManagement = () => {
                           </td>
 
                           {/* Status */}
-                          <td style={{ padding: '16px 16px' }}>
+                          <td style={{ padding: '18px 20px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                             <span style={{
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              padding: '2px 8px',
+                              fontSize: '0.74rem',
+                              fontWeight: 800,
+                              letterSpacing: '0.04em',
+                              padding: '4px 12px',
                               borderRadius: '9999px',
                               backgroundColor: member.status === 'suspended' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
                               color: member.status === 'suspended' ? '#ef4444' : '#10b981',
-                              border: `1px solid ${member.status === 'suspended' ? '#ef4444' : '#10b981'}`
+                              border: `1px solid ${member.status === 'suspended' ? '#ef4444' : '#10b981'}`,
+                              display: 'inline-block'
                             }}>
                               {member.status === 'suspended' ? 'SUSPENDED' : 'ACTIVE'}
                             </span>
                           </td>
 
                           {/* Verified Indicators */}
-                          <td style={{ padding: '16px 16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <td style={{ padding: '18px 20px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               {member.isEmailVerified ? (
-                                <span title="Verified Email" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#10b981', fontWeight: 600 }}>
-                                  <CheckCircle2 size={14} /> Email
+                                <span title="Verified Email" style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem', color: '#10b981', fontWeight: 600 }}>
+                                  <CheckCircle2 size={15} /> Email
                                 </span>
                               ) : (
-                                <span title="Email unverified" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                <span title="Email unverified" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                                   Email (unverified)
                                 </span>
                               )}
                               {member.isPhoneVerified && (
-                                <span title="Verified Phone" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#10b981', fontWeight: 600 }}>
-                                  <CheckCircle2 size={14} /> Phone
+                                <span title="Verified Phone" style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem', color: '#10b981', fontWeight: 600 }}>
+                                  <CheckCircle2 size={15} /> Phone
                                 </span>
                               )}
                             </div>
                           </td>
 
                           {/* Joined At */}
-                          <td style={{ padding: '16px 16px', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                          <td style={{ padding: '18px 20px', verticalAlign: 'middle', color: 'var(--text-secondary)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                             {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : 'Active Member'}
                           </td>
 
                           {/* Actions */}
-                          <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                          <td style={{ padding: '18px 24px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap' }}>
                             {canManageTeam && !isMemberOwner && (
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditMember(member)}
                                   style={{
-                                    padding: '6px 12px',
-                                    borderRadius: '6px',
+                                    padding: '7px 14px',
+                                    borderRadius: '8px',
                                     border: '1px solid var(--border-color)',
                                     background: 'transparent',
                                     color: 'var(--text-main)',
                                     cursor: 'pointer',
-                                    fontSize: '0.8rem',
+                                    fontSize: '0.82rem',
                                     fontWeight: 600,
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '4px'
+                                    gap: '6px'
                                   }}
                                   title="Edit role and permissions"
                                 >
@@ -662,13 +669,13 @@ export const TeamManagement = () => {
                                   type="button"
                                   onClick={() => handleToggleMemberStatus(member)}
                                   style={{
-                                    padding: '6px 10px',
-                                    borderRadius: '6px',
+                                    padding: '7px 12px',
+                                    borderRadius: '8px',
                                     border: '1px solid var(--border-color)',
                                     background: 'transparent',
                                     color: member.status === 'suspended' ? '#10b981' : 'var(--text-secondary)',
                                     cursor: 'pointer',
-                                    fontSize: '0.8rem',
+                                    fontSize: '0.82rem',
                                     fontWeight: 600
                                   }}
                                   title={member.status === 'suspended' ? 'Reactivate access' : 'Suspend account'}
@@ -680,8 +687,8 @@ export const TeamManagement = () => {
                                   type="button"
                                   onClick={() => handleRemoveMember(member)}
                                   style={{
-                                    padding: '6px 8px',
-                                    borderRadius: '6px',
+                                    padding: '7px 10px',
+                                    borderRadius: '8px',
                                     border: '1px solid var(--border-color)',
                                     background: 'transparent',
                                     color: '#ef4444',
@@ -704,12 +711,12 @@ export const TeamManagement = () => {
                                   setShowTransferModal(true);
                                 }}
                                 style={{
-                                  padding: '6px 12px',
-                                  borderRadius: '6px',
+                                  padding: '7px 14px',
+                                  borderRadius: '8px',
                                   border: '1px solid var(--border-color)',
                                   background: 'transparent',
                                   color: 'var(--text-main)',
-                                  fontSize: '0.78rem',
+                                  fontSize: '0.82rem',
                                   fontWeight: 600,
                                   cursor: 'pointer'
                                 }}
@@ -772,23 +779,23 @@ export const TeamManagement = () => {
               overflow: 'hidden'
             }}>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                <table style={{ width: '100%', minWidth: '980px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left', fontSize: '0.9rem' }}>
                   <thead>
                     <tr style={{
                       borderBottom: '1px solid var(--border-color, #e2e8f0)',
                       backgroundColor: 'rgba(0,0,0,0.02)',
                       color: 'var(--text-secondary)',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      fontSize: '0.75rem',
-                      fontWeight: 700
+                      letterSpacing: '0.05em',
+                      fontSize: '0.74rem',
+                      fontWeight: 800
                     }}>
-                      <th style={{ padding: '14px 20px' }}>Invited Recipient</th>
-                      <th style={{ padding: '14px 16px' }}>Role</th>
-                      <th style={{ padding: '14px 16px' }}>Invite Code</th>
-                      <th style={{ padding: '14px 16px' }}>Status</th>
-                      <th style={{ padding: '14px 16px' }}>Expiration</th>
-                      <th style={{ padding: '14px 20px', textAlign: 'right' }}>Actions</th>
+                      <th style={{ padding: '18px 24px', minWidth: '260px' }}>Invited Recipient</th>
+                      <th style={{ padding: '18px 20px', minWidth: '130px' }}>Role</th>
+                      <th style={{ padding: '18px 24px', minWidth: '190px' }}>Invite Code</th>
+                      <th style={{ padding: '18px 20px', minWidth: '130px' }}>Status</th>
+                      <th style={{ padding: '18px 20px', minWidth: '140px' }}>Expiration</th>
+                      <th style={{ padding: '18px 24px', minWidth: '260px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -797,36 +804,44 @@ export const TeamManagement = () => {
 
                       return (
                         <tr key={inv.id} style={{ borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
-                          <td style={{ padding: '16px 20px' }}>
-                            <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                          <td style={{ padding: '18px 24px', verticalAlign: 'middle' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.94rem', marginBottom: '6px' }}>
                               {inv.email || inv.phone || 'Open Invitation'}
                             </div>
-                            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                              Invited by {inv.invitedByName || 'Owner'}
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>Invited by</span>
+                              <strong style={{ color: 'var(--text-main)' }}>{inv.invitedByName || 'Owner'}</strong>
                             </div>
                           </td>
 
-                          <td style={{ padding: '16px 16px' }}>
+                          <td style={{ padding: '18px 20px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                             <span style={{
-                              fontSize: '0.75rem',
+                              fontSize: '0.78rem',
                               fontWeight: 700,
-                              padding: '2px 8px',
+                              letterSpacing: '0.03em',
+                              padding: '4px 12px',
                               borderRadius: '6px',
-                              border: '1px solid var(--border-color)'
+                              border: '1px solid var(--border-color)',
+                              backgroundColor: 'var(--bg-body, #ffffff)',
+                              color: 'var(--text-main)',
+                              display: 'inline-block'
                             }}>
                               {inv.role}
                             </span>
                           </td>
 
-                          <td style={{ padding: '16px 16px' }}>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          <td style={{ padding: '18px 24px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
                               <code style={{
-                                padding: '4px 8px',
-                                borderRadius: '4px',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
                                 backgroundColor: 'var(--border-color)',
                                 fontWeight: 700,
-                                fontSize: '0.82rem',
-                                letterSpacing: '0.05em'
+                                fontSize: '0.86rem',
+                                letterSpacing: '0.08em',
+                                fontFamily: 'monospace',
+                                whiteSpace: 'nowrap',
+                                display: 'inline-block'
                               }}>
                                 {inv.code}
                               </code>
@@ -840,57 +855,62 @@ export const TeamManagement = () => {
                                     color: copiedCode === inv.code ? '#10b981' : 'var(--text-secondary)',
                                     cursor: 'pointer',
                                     display: 'flex',
-                                    alignItems: 'center'
+                                    alignItems: 'center',
+                                    padding: '6px',
+                                    borderRadius: '6px'
                                   }}
                                   title="Copy invite link"
                                 >
-                                  {copiedCode === inv.code ? <Check size={15} /> : <Copy size={15} />}
+                                  {copiedCode === inv.code ? <Check size={16} /> : <Copy size={16} />}
                                 </button>
                               )}
                             </div>
                           </td>
 
-                          <td style={{ padding: '16px 16px' }}>
+                          <td style={{ padding: '18px 20px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                             <span style={{
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              padding: '2px 8px',
+                              fontSize: '0.74rem',
+                              fontWeight: 800,
+                              letterSpacing: '0.04em',
+                              padding: '4px 12px',
                               borderRadius: '9999px',
                               backgroundColor: inv.status === 'accepted' 
-                                ? 'rgba(16, 185, 129, 0.1)' 
+                                ? 'rgba(16, 185, 129, 0.12)' 
                                 : inv.status === 'pending' 
-                                ? 'rgba(59, 130, 246, 0.1)' 
-                                : 'rgba(239, 68, 68, 0.1)',
+                                ? 'rgba(59, 130, 246, 0.12)' 
+                                : 'rgba(239, 68, 68, 0.12)',
                               color: inv.status === 'accepted' 
                                 ? '#10b981' 
                                 : inv.status === 'pending' 
                                 ? 'var(--text-main)' 
                                 : '#ef4444',
-                              border: '1px solid var(--border-color)'
+                              border: '1px solid var(--border-color)',
+                              display: 'inline-block'
                             }}>
                               {inv.status.toUpperCase()}
                             </span>
                           </td>
 
-                          <td style={{ padding: '16px 16px', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                          <td style={{ padding: '18px 20px', verticalAlign: 'middle', color: 'var(--text-secondary)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                             {inv.expiresAt ? new Date(inv.expiresAt).toLocaleDateString() : '7 days'}
                           </td>
 
-                          <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                          <td style={{ padding: '18px 24px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap' }}>
                             {isPending && canManageTeam && (
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyRawCode(inv.code)}
                                   style={{
-                                    padding: '6px 10px',
-                                    borderRadius: '6px',
+                                    padding: '7px 12px',
+                                    borderRadius: '8px',
                                     border: '1px solid var(--border-color)',
                                     background: 'transparent',
                                     color: 'var(--text-main)',
-                                    fontSize: '0.8rem',
+                                    fontSize: '0.82rem',
                                     fontWeight: 600,
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
                                   }}
                                   title="Copy clean code (e.g. KB-INV-XXXXX)"
                                 >
@@ -900,14 +920,15 @@ export const TeamManagement = () => {
                                   type="button"
                                   onClick={() => handleCopyInviteCode(inv.code)}
                                   style={{
-                                    padding: '6px 12px',
-                                    borderRadius: '6px',
+                                    padding: '7px 14px',
+                                    borderRadius: '8px',
                                     border: '1px solid var(--border-color)',
                                     background: 'transparent',
                                     color: 'var(--text-main)',
-                                    fontSize: '0.8rem',
+                                    fontSize: '0.82rem',
                                     fontWeight: 600,
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
                                   }}
                                 >
                                   {copiedCode === inv.code ? 'Copied Link!' : 'Copy Link'}
@@ -916,14 +937,15 @@ export const TeamManagement = () => {
                                   type="button"
                                   onClick={() => handleRevokeInvite(inv.id)}
                                   style={{
-                                    padding: '6px 10px',
-                                    borderRadius: '6px',
-                                    border: '1px solid var(--border-color)',
-                                    background: 'transparent',
+                                    padding: '7px 12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                    background: 'rgba(239, 68, 68, 0.05)',
                                     color: '#ef4444',
-                                    fontSize: '0.8rem',
+                                    fontSize: '0.82rem',
                                     fontWeight: 600,
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
                                   }}
                                 >
                                   Revoke
@@ -931,7 +953,7 @@ export const TeamManagement = () => {
                               </div>
                             )}
                             {inv.status === 'accepted' && (
-                              <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 600 }}>
+                              <span style={{ fontSize: '0.82rem', color: '#10b981', fontWeight: 700 }}>
                                 Claimed by {inv.acceptedByName || 'member'}
                               </span>
                             )}
@@ -949,38 +971,43 @@ export const TeamManagement = () => {
 
       {/* --- TAB 3: ROLE PERMISSIONS MATRIX --- */}
       {activeSubTab === 'roles' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{
             background: 'var(--bg-card, #ffffff)',
             border: '1px solid var(--border-color, #e2e8f0)',
-            borderRadius: '16px',
-            padding: '24px'
+            borderRadius: '20px',
+            padding: '28px 32px',
+            boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.05)'
           }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
               Standard Pre-Defined Role Matrix
             </h3>
+            <p style={{ margin: '0 0 24px 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Granular permission boundaries configured for staff security and audit isolation.
+            </p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '20px' }}>
               {Object.entries(ROLE_METADATA).map(([roleKey, meta]) => {
                 const perms = ROLE_PERMISSIONS_MAP[roleKey] || [];
                 return (
                   <div key={roleKey} style={{
                     border: '1px solid var(--border-color)',
-                    borderRadius: '12px',
-                    padding: '18px',
+                    borderRadius: '16px',
+                    padding: '22px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px'
+                    gap: '14px',
+                    backgroundColor: 'var(--bg-body, #ffffff)'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <h4 style={{ margin: 0, fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)' }}>
+                      <h4 style={{ margin: 0, fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-main)' }}>
                         {meta.label}
                       </h4>
                       <span style={{
-                        fontSize: '0.7rem',
+                        fontSize: '0.74rem',
                         fontWeight: 800,
-                        padding: '2px 8px',
-                        borderRadius: '4px',
+                        padding: '3px 10px',
+                        borderRadius: '6px',
                         border: '1px solid var(--border-color)',
                         color: 'var(--text-secondary)'
                       }}>
@@ -988,28 +1015,29 @@ export const TeamManagement = () => {
                       </span>
                     </div>
 
-                    <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
                       {meta.description}
                     </p>
 
-                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px' }}>
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>
                         Default Entitlements ({perms.length === ALL_PERMISSIONS.length ? '100% Full' : `${perms.length} Permissions`})
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                         {perms.slice(0, 6).map(p => (
                           <span key={p} style={{
-                            fontSize: '0.68rem',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
+                            fontSize: '0.72rem',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
                             backgroundColor: 'var(--border-color)',
-                            color: 'var(--text-main)'
+                            color: 'var(--text-main)',
+                            fontWeight: 600
                           }}>
                             {p.split('.')[1]}
                           </span>
                         ))}
                         {perms.length > 6 && (
-                          <span style={{ fontSize: '0.68rem', padding: '2px 6px', color: 'var(--text-secondary)' }}>
+                          <span style={{ fontSize: '0.72rem', padding: '3px 8px', color: 'var(--text-secondary)', fontWeight: 600 }}>
                             +{perms.length - 6} more
                           </span>
                         )}
