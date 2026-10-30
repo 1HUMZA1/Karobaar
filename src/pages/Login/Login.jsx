@@ -288,7 +288,7 @@ const Login = () => {
       let attempts = 0;
       authPollTimerRef.current = setInterval(async () => {
         attempts++;
-        if (attempts > 120) { // 60s timeout
+        if (attempts > 150) { // 45s timeout
           clearInterval(authPollTimerRef.current);
           setIsAuthenticating(false);
           return;
@@ -322,7 +322,7 @@ const Login = () => {
             }
           }
         } catch (_) {}
-      }, 500);
+      }, 300);
       return;
     }
 
@@ -712,6 +712,22 @@ const Login = () => {
                   )}
                   <span>{isAuthenticating ? 'Connecting to Google...' : 'Continue with Google'}</span>
                 </button>
+
+                {isAuthenticating && (
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#71717a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <span>Opening Google in browser...</span>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        if (authPollTimerRef.current) clearInterval(authPollTimerRef.current);
+                        setIsAuthenticating(false);
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', textDecoration: 'underline', padding: 0, font: 'inherit', fontWeight: 600 }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
 
                 <div className="login-divider-row">
                   <span className="login-divider-line"></span>

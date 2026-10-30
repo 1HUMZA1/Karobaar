@@ -93,6 +93,11 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
       _windowsController = ww.WebviewController();
       try {
         await _windowsController!.initialize();
+        try {
+          await _windowsController!.setUserAgent(
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+          );
+        } catch (_) {}
         _windowsController!.url.listen((url) {
           if (mounted) {
             setState(() {

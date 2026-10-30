@@ -258,53 +258,26 @@ class LocalServer {
       );
     }
 
-    // 3. API: Launch small Chrome sign-in window (like other professional desktop apps)
+    // 3. API: Launch browser directly for Google Sign-In
     if (path == 'api/launch-browser') {
       final targetUrl = request.url.queryParameters['url'];
       if (targetUrl != null && targetUrl.isNotEmpty) {
-        bool launched = false;
         if (Platform.isWindows) {
-          final chromeCandidates = [
-            r'C:\Program Files\Google\Chrome\Application\chrome.exe',
-            r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
-            '${Platform.environment['LOCALAPPDATA']}\\Google\\Chrome\\Application\\chrome.exe',
-            '${Platform.environment['PROGRAMFILES']}\\Google\\Chrome\\Application\\chrome.exe',
-            '${Platform.environment['PROGRAMFILES(X86)']}\\Google\\Chrome\\Application\\chrome.exe',
-          ];
-          for (final cPath in chromeCandidates) {
-            if (File(cPath).existsSync()) {
-              try {
-                // Open Chrome as a small, clean popup app window (500x680)
-                Process.run(cPath, [
-                  '--app=$targetUrl',
-                  '--window-size=500,680',
-                  '--window-position=450,160',
-                ]);
-                launched = true;
-                debugPrint('[LocalServer] Launched small Chrome sign-in popup via: $cPath');
-                break;
-              } catch (e) {
-                debugPrint('[LocalServer Chrome launch error] $e');
-              }
+          try {
+            // 'cmd /c start "" "$targetUrl"' opens the default browser in the foreground immediately
+            Process.run('cmd', ['/c', 'start', '', targetUrl]);
+            debugPrint('[LocalServer] Launched browser via start: $targetUrl');
+          } catch (e) {
+            debugPrint('[LocalServer launch error] $e');
+            final uri = Uri.tryParse(targetUrl);
+            if (uri != null) {
+              launchUrl(uri, mode: LaunchMode.externalApplication);
             }
           }
-          if (!launched) {
-            try {
-              Process.run('cmd', ['/c', 'start', 'chrome', '--app=$targetUrl', '--window-size=500,680']);
-              launched = true;
-            } catch (_) {}
-          }
-        }
-        if (!launched) {
+        } else {
           final uri = Uri.tryParse(targetUrl);
           if (uri != null) {
-            try {
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-            } catch (_) {
-              if (Platform.isWindows) {
-                Process.run('cmd', ['/c', 'start', '', targetUrl]);
-              }
-            }
+            launchUrl(uri, mode: LaunchMode.externalApplication);
           }
         }
       }

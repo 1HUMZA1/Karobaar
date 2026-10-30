@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Karobaar — Google Sign-In</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     * {
       box-sizing: border-box;
@@ -26,11 +27,11 @@
     .auth-card {
       background: #18181b;
       border: 1px solid #27272a;
-      border-radius: 16px;
-      padding: 36px 32px;
-      max-width: 420px;
+      border-radius: 20px;
+      padding: 40px 32px;
+      max-width: 440px;
       width: 100%;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -43,30 +44,30 @@
     .brand-badge {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       margin-bottom: 24px;
     }
     .brand-logo {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       background: #ffffff;
       color: #09090b;
       font-weight: 800;
-      font-size: 20px;
-      border-radius: 8px;
+      font-size: 22px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .brand-name {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
       letter-spacing: -0.02em;
       color: #fafafa;
     }
     .spinner {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border: 3.5px solid rgba(255, 255, 255, 0.12);
       border-top-color: #38bdf8;
       border-radius: 50%;
@@ -77,8 +78,8 @@
       to { transform: rotate(360deg); }
     }
     .success-icon {
-      width: 52px;
-      height: 52px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       background: rgba(34, 197, 94, 0.15);
       border: 1.5px solid rgba(34, 197, 94, 0.4);
@@ -86,24 +87,38 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 26px;
-      margin-bottom: 18px;
+      font-size: 28px;
+      margin-bottom: 20px;
     }
     .title {
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 700;
       color: #ffffff;
       margin-bottom: 8px;
       line-height: 1.3;
     }
     .subtitle {
-      font-size: 13.5px;
+      font-size: 14px;
       color: #a1a1aa;
       line-height: 1.5;
       margin-bottom: 24px;
-      max-width: 340px;
+      max-width: 360px;
     }
-    .google-btn {
+    .button-group {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    #gis-btn-container {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      min-height: 44px;
+    }
+    .custom-google-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -112,20 +127,21 @@
       color: #0f172a;
       border: none;
       padding: 12px 24px;
-      font-size: 14.5px;
+      font-size: 15px;
       font-weight: 600;
       border-radius: 10px;
       cursor: pointer;
       width: 100%;
+      max-width: 340px;
       transition: all 0.15s ease;
       box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
     }
-    .google-btn:hover {
+    .custom-google-btn:hover {
       background: #f1f5f9;
       transform: translateY(-1px);
       box-shadow: 0 6px 20px rgba(255, 255, 255, 0.22);
     }
-    .google-btn:active {
+    .custom-google-btn:active {
       transform: translateY(0);
     }
     .google-icon {
@@ -134,8 +150,8 @@
       flex-shrink: 0;
     }
     .footer-note {
-      margin-top: 18px;
-      font-size: 12px;
+      margin-top: 24px;
+      font-size: 12.5px;
       color: #71717a;
     }
   </style>
@@ -149,17 +165,31 @@
 
     <div id="status-container">
       <div class="spinner"></div>
-      <div class="title">Opening Google Accounts...</div>
-      <div class="subtitle">Select your account in the Google chooser to continue.</div>
+      <div class="title">Choose Your Google Account</div>
+      <div class="subtitle">Select your account below to complete verification and enter your workspace.</div>
+      
+      <div class="button-group">
+        <div id="gis-btn-container"></div>
+        <button id="custom-signin-btn" class="custom-google-btn" type="button">
+          <svg class="google-icon" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Continue with Google
+        </button>
+      </div>
     </div>
 
-    <div class="footer-note">Secure Google OAuth 2.0 Verification</div>
+    <div class="footer-note">Official Google OAuth 2.0 • 256-bit Secure</div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+    const CLIENT_ID = "1011721689898-i03nhn0nqtb311895ulrq1o7nif4kk2j.apps.googleusercontent.com";
     const firebaseConfig = {
       apiKey: "AIzaSyDVy8pjz-L9C6vm3Z9v-mBCa6isM2hKh_M",
       authDomain: "karobaaaar.firebaseapp.com",
@@ -177,25 +207,7 @@
     const searchParams = new URLSearchParams(window.location.search);
     const port = searchParams.get('port') || (window.location.port ? window.location.port : null);
     const container = document.getElementById('status-container');
-
-    function renderPrompt(title, desc) {
-      container.innerHTML = `
-        <div class="title">${title || 'Select Google Account'}</div>
-        <div class="subtitle">${desc || 'Choose your Google account to complete sign-in and open your workspace.'}</div>
-        <button id="signin-action-btn" class="google-btn" type="button">
-          <svg class="google-icon" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-          </svg>
-          Continue with Google
-        </button>
-      `;
-      document.getElementById('signin-action-btn').addEventListener('click', () => {
-        executeSignIn(true);
-      });
-    }
+    let isFinished = false;
 
     function renderSuccess(userName) {
       container.innerHTML = `
@@ -205,36 +217,22 @@
       `;
     }
 
-    function renderLoading(title, desc) {
-      container.innerHTML = `
-        <div class="spinner"></div>
-        <div class="title">${title || 'Verifying Google Account...'}</div>
-        <div class="subtitle">${desc || 'Connecting your workspace session.'}</div>
-      `;
-    }
+    async function handleAuthSuccess(userPayload) {
+      if (isFinished) return;
+      isFinished = true;
 
-    async function handleAuthSuccess(user) {
-      const payload = {
-        uid: user.uid,
-        id: user.uid,
-        email: user.email,
-        name: user.displayName || user.email.split('@')[0],
-        photoURL: user.photoURL || '',
-        role: 'Owner'
-      };
-
-      renderSuccess(payload.name);
+      renderSuccess(userPayload.name);
 
       // 1. Broadcast to localStorage across all tabs/windows
       try {
-        localStorage.setItem('karobaar_google_auth_payload', JSON.stringify({ user: payload }));
-        localStorage.setItem('karobaar_session_user', JSON.stringify(payload));
+        localStorage.setItem('karobaar_google_auth_payload', JSON.stringify({ user: userPayload }));
+        localStorage.setItem('karobaar_session_user', JSON.stringify(userPayload));
       } catch (_) {}
 
       // 2. BroadcastChannel
       try {
         const bc = new BroadcastChannel('karobaar_google_auth');
-        bc.postMessage({ type: 'KAROBAAR_GOOGLE_AUTH_SUCCESS', payload });
+        bc.postMessage({ type: 'KAROBAAR_GOOGLE_AUTH_SUCCESS', payload: userPayload });
       } catch (_) {}
 
       // 3. Post to Local Server callback
@@ -243,57 +241,119 @@
           await fetch(`http://localhost:${port}/api/auth-callback`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(userPayload)
           });
         } catch (_) {}
 
         try {
           const img = new Image();
-          img.src = `http://localhost:${port}/api/auth-callback?data=${encodeURIComponent(JSON.stringify(payload))}`;
+          img.src = `http://localhost:${port}/api/auth-callback?data=${encodeURIComponent(JSON.stringify(userPayload))}`;
         } catch (_) {}
       }
 
       // 4. Try posting to window.opener
       try {
         if (window.opener) {
-          window.opener.postMessage({ type: 'KAROBAAR_GOOGLE_AUTH_SUCCESS', payload }, '*');
+          window.opener.postMessage({ type: 'KAROBAAR_GOOGLE_AUTH_SUCCESS', payload: userPayload }, '*');
         }
       } catch (_) {}
 
-      // 5. Automatically close popup window
+      // 5. Automatically close popup window after brief visual feedback
       setTimeout(() => {
         try {
           window.close();
         } catch (_) {}
-      }, 700);
+      }, 750);
     }
 
-    async function executeSignIn(fromUserClick = false) {
-      try {
-        renderLoading('Opening Google Accounts...', 'Choose your Google account in the popup window.');
-        const result = await signInWithPopup(auth, provider);
-        if (result && result.user) {
-          await handleAuthSuccess(result.user);
-        } else {
-          renderPrompt('Select Google Account', 'Click below to pick your Google account.');
-        }
-      } catch (err) {
-        console.warn("[Google Auth Result]:", err?.code, err?.message);
-        if (err.code === 'auth/popup-blocked') {
-          // Automatic popup was blocked by browser -> show button so user click opens it smoothly
-          renderPrompt('Click to Choose Account', 'Your browser requires a click to open Google Accounts.');
-        } else if (err.code === 'auth/popup-closed-by-user') {
-          renderPrompt('Sign-In Cancelled', 'Click below whenever you wish to sign in with Google.');
-        } else if (err.code === 'auth/cancelled-popup-request') {
-          renderPrompt('Choose Google Account', 'Click below to open the Google accounts chooser.');
-        } else {
-          renderPrompt('Google Sign-In', err.message || 'Please click below to try again.');
+    // --- Path A: Google Identity Services (GIS) One-Tap & Button ---
+    function initGIS() {
+      if (typeof window.google !== 'undefined' && window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: CLIENT_ID,
+            callback: async (res) => {
+              if (!res?.credential) return;
+              try {
+                // Decode Google JWT directly
+                const base64Url = res.credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                const decoded = JSON.parse(jsonPayload);
+
+                const user = {
+                  uid: decoded.sub,
+                  id: decoded.sub,
+                  email: decoded.email,
+                  name: decoded.name || decoded.email.split('@')[0],
+                  photoURL: decoded.picture || '',
+                  role: 'Owner'
+                };
+
+                // Firebase client sync
+                try {
+                  const cred = GoogleAuthProvider.credential(res.credential);
+                  await signInWithCredential(auth, cred);
+                } catch (_) {}
+
+                await handleAuthSuccess(user);
+              } catch (e) {
+                console.error('[GIS Error]:', e);
+              }
+            },
+            auto_select: false,
+            context: 'signin'
+          });
+
+          // Render official Google button
+          const btnTarget = document.getElementById('gis-btn-container');
+          if (btnTarget) {
+            window.google.accounts.id.renderButton(btnTarget, {
+              theme: 'outline',
+              size: 'large',
+              width: 340,
+              shape: 'rectangular',
+              text: 'continue_with'
+            });
+          }
+
+          // Trigger One-Tap prompt immediately
+          window.google.accounts.id.prompt();
+        } catch (e) {
+          console.warn('[GIS Init Notice]:', e);
         }
       }
     }
 
-    // Attempt automatic popup launch on window open
-    executeSignIn(false);
+    // Try initializing GIS immediately or on script load
+    if (document.readyState === 'complete') {
+      initGIS();
+    } else {
+      window.addEventListener('load', initGIS);
+    }
+
+    // --- Path B: Direct Firebase Popup Button ---
+    const customBtn = document.getElementById('custom-signin-btn');
+    if (customBtn) {
+      customBtn.addEventListener('click', async () => {
+        try {
+          const result = await signInWithPopup(auth, provider);
+          if (result?.user) {
+            const u = result.user;
+            await handleAuthSuccess({
+              uid: u.uid,
+              id: u.uid,
+              email: u.email,
+              name: u.displayName || u.email.split('@')[0],
+              photoURL: u.photoURL || '',
+              role: 'Owner'
+            });
+          }
+        } catch (err) {
+          console.warn('[Popup Sign-In Notice]:', err?.code, err?.message);
+        }
+      });
+    }
   </script>
 </body>
 </html>
