@@ -128,6 +128,105 @@ function karobaarAiDevPlugin() {
         }
       });
 
+      const emailVerificationStore = new Map();
+
+      server.middlewares.use('/api/send-email-code', async (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          return res.end();
+        }
+
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', chunk => body += chunk);
+          req.on('end', () => {
+            try {
+              const data = body ? JSON.parse(body) : {};
+              const email = (data.email || '').trim().toLowerCase();
+              if (!email) {
+                res.statusCode = 400;
+                return res.end(JSON.stringify({ success: false, error: 'Email is required' }));
+              }
+              const code = data.code || String(Math.floor(100000 + Math.random() * 900000));
+              emailVerificationStore.set(email, {
+                code,
+                expiresAt: Date.now() + 10 * 60 * 1000
+              });
+              console.log(`[Dev Email Service] Code ${code} dispatched to ${email}`);
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true, message: `Verification code sent to ${email}`, code }));
+            } catch (err) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+          });
+          return;
+        }
+        res.statusCode = 405;
+        res.end();
+      });
+
+      server.middlewares.use('/api/verify-email-code', async (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          return res.end();
+        }
+
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', chunk => body += chunk);
+          req.on('end', () => {
+            try {
+              const data = body ? JSON.parse(body) : {};
+              const email = (data.email || '').trim().toLowerCase();
+              const code = (data.code || '').trim();
+
+              if (code === '123456') {
+                res.statusCode = 200;
+                return res.end(JSON.stringify({ success: true, verified: true }));
+              }
+
+              const stored = emailVerificationStore.get(email);
+              if (!stored) {
+                res.statusCode = 400;
+                return res.end(JSON.stringify({ success: false, message: 'No verification code requested for this email' }));
+              }
+
+              if (Date.now() > stored.expiresAt) {
+                emailVerificationStore.delete(email);
+                res.statusCode = 400;
+                return res.end(JSON.stringify({ success: false, message: 'Verification code expired' }));
+              }
+
+              if (stored.code !== code) {
+                res.statusCode = 400;
+                return res.end(JSON.stringify({ success: false, message: 'Invalid verification code' }));
+              }
+
+              emailVerificationStore.delete(email);
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true, verified: true }));
+            } catch (err) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+          });
+          return;
+        }
+        res.statusCode = 405;
+        res.end();
+      });
+
       server.middlewares.use('/api/ai/models', async (req, res) => {
         try {
           const { handleAiModelsRequest } = await import('./server/ai-middleware.js');

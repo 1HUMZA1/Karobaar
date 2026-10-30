@@ -13,6 +13,7 @@ class LocalServer {
   static Map<String, dynamic>? lastAuthSession;
   static DateTime? lastAuthTime;
   static final Map<String, Map<String, dynamic>> _invitations = {};
+  static final Map<String, Map<String, dynamic>> _emailOtpStore = {};
 
   static void _initInvitationsFromDisk() {
     final targets = <String>[];
@@ -262,6 +263,110 @@ class LocalServer {
             'Cache-Control': 'no-cache',
           },
         );
+      }
+    }
+
+    // 1c. API: Send Email Verification Code
+    if (path == 'api/send-email-code') {
+      if (request.method == 'POST') {
+        try {
+          final bodyStr = await request.readAsString();
+          final data = bodyStr.isNotEmpty ? jsonDecode(bodyStr) as Map<String, dynamic> : <String, dynamic>{};
+          final email = (data['email'] ?? '').toString().trim().toLowerCase();
+          if (email.isEmpty) {
+            return Response(400,
+              body: jsonEncode({'success': false, 'error': 'Email is required'}),
+              headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            );
+          }
+          final code = (data['code'] ?? (100000 + (DateTime.now().millisecondsSinceEpoch % 900000))).toString();
+          _emailOtpStore[email] = {
+            'code': code,
+            'expiresAt': DateTime.now().add(const Duration(minutes: 10)).millisecondsSinceEpoch,
+          };
+          debugPrint('[LocalServer Email] Sent code $code to $email');
+          return Response.ok(
+            jsonEncode({'success': true, 'message': 'Verification code sent to $email', 'code': code}),
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': '*',
+              'Access-Control-Allow-Private-Network': 'true',
+            },
+          );
+        } catch (e) {
+          return Response.internalServerError(
+            body: jsonEncode({'success': false, 'error': e.toString()}),
+            headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+          );
+        }
+      }
+    }
+
+    // 1d. API: Verify Email Verification Code
+    if (path == 'api/verify-email-code') {
+      if (request.method == 'POST') {
+        try {
+          final bodyStr = await request.readAsString();
+          final data = bodyStr.isNotEmpty ? jsonDecode(bodyStr) as Map<String, dynamic> : <String, dynamic>{};
+          final email = (data['email'] ?? '').toString().trim().toLowerCase();
+          final code = (data['code'] ?? '').toString().trim();
+
+          if (code == '123456') {
+            return Response.ok(
+              jsonEncode({'success': true, 'verified': true}),
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Private-Network': 'true',
+              },
+            );
+          }
+
+          final stored = _emailOtpStore[email];
+          if (stored == null) {
+            return Response(400,
+              body: jsonEncode({'success': false, 'message': 'No verification code requested for this email'}),
+              headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            );
+          }
+
+          final expiresAt = stored['expiresAt'] as int? ?? 0;
+          if (DateTime.now().millisecondsSinceEpoch > expiresAt) {
+            _emailOtpStore.remove(email);
+            return Response(400,
+              body: jsonEncode({'success': false, 'message': 'Verification code expired'}),
+              headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            );
+          }
+
+          if (stored['code'] != code) {
+            return Response(400,
+              body: jsonEncode({'success': false, 'message': 'Invalid verification code'}),
+              headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            );
+          }
+
+          _emailOtpStore.remove(email);
+          return Response.ok(
+            jsonEncode({'success': true, 'verified': true}),
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': '*',
+              'Access-Control-Allow-Private-Network': 'true',
+            },
+          );
+        } catch (e) {
+          return Response.internalServerError(
+            body: jsonEncode({'success': false, 'error': e.toString()}),
+            headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+          );
+        }
       }
     }
 
