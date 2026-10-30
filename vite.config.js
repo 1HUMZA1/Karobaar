@@ -1,13 +1,65 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
+
+const CACHE_TARGETS = [
+  path.resolve(process.cwd(), '.invitations_cache.json'),
+  path.join(os.tmpdir(), 'karobaar_invitations_cache.json')
+];
+
+function loadDiskInvitations() {
+  const map = new Map();
+  for (const f of CACHE_TARGETS) {
+    try {
+      if (fs.existsSync(f)) {
+        const raw = fs.readFileSync(f, 'utf-8');
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          for (const inv of list) {
+            if (inv && inv.code) {
+              const code = String(inv.code).trim().toUpperCase();
+              map.set(code, inv);
+              const noHyphens = code.replace(/[^A-Z0-9]/g, '');
+              if (noHyphens) map.set(noHyphens, inv);
+              const suffix = code.replace(/^(KB-INV-|KB-)/, '').replace(/[^A-Z0-9]/g, '');
+              if (suffix) map.set(suffix, inv);
+              if (inv.id) map.set(inv.id, inv);
+            }
+          }
+        }
+      }
+    } catch (_) {}
+  }
+  return map;
+}
+
+function persistInvitationToDisk(inv) {
+  for (const f of CACHE_TARGETS) {
+    try {
+      let list = [];
+      if (fs.existsSync(f)) {
+        try {
+          const raw = fs.readFileSync(f, 'utf-8');
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) list = parsed;
+        } catch (_) {}
+      }
+      list = list.filter(i => i.code !== inv.code && (!inv.id || i.id !== inv.id));
+      list.push(inv);
+      fs.writeFileSync(f, JSON.stringify(list, null, 2), 'utf-8');
+    } catch (_) {}
+  }
+}
 
 // Karobaar AI Dev Server Proxy Plugin (Server-side tool execution & LLM Gateway)
 function karobaarAiDevPlugin() {
   return {
     name: 'karobaar-ai-dev-backend',
     configureServer(server) {
-      const devInvitations = new Map();
+      const devInvitations = loadDiskInvitations();
 
       server.middlewares.use('/api/invitations', async (req, res) => {
         res.setHeader('Content-Type', 'application/json');
@@ -33,6 +85,9 @@ function karobaarAiDevPlugin() {
                 if (id) devInvitations.set(id, inv);
                 const noHyphens = code.replace(/[^A-Z0-9]/g, '');
                 if (noHyphens) devInvitations.set(noHyphens, inv);
+                const suffix = code.replace(/^(KB-INV-|KB-)/, '').replace(/[^A-Z0-9]/g, '');
+                if (suffix) devInvitations.set(suffix, inv);
+                persistInvitationToDisk(inv);
               }
               res.statusCode = 200;
               res.end(JSON.stringify({ success: true }));
@@ -52,6 +107,14 @@ function karobaarAiDevPlugin() {
             if (!matched) {
               const noHyphens = queryCode.replace(/[^A-Z0-9]/g, '');
               matched = devInvitations.get(noHyphens);
+            }
+            if (!matched) {
+              const suffix = queryCode.replace(/^(KB-INV-|KB-)/, '').replace(/[^A-Z0-9]/g, '');
+              if (suffix) matched = devInvitations.get(suffix);
+            }
+            if (!matched) {
+              const diskMap = loadDiskInvitations();
+              matched = diskMap.get(queryCode) || diskMap.get(queryCode.replace(/[^A-Z0-9]/g, ''));
             }
             if (matched) {
               res.statusCode = 200;

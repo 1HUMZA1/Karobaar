@@ -2,39 +2,86 @@
 .setup-wrapper {
   display: flex;
   min-height: 100vh;
+  height: 100vh;
   width: 100%;
   background-color: var(--bg-body);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Left side: Progress / Visuals */
 .setup-visuals {
-  flex: 0 0 35%;
+  flex: 0 0 340px;
+  max-width: 360px;
   background-color: var(--bg-card);
   border-right: 1px solid var(--border-color);
-  padding: 3rem;
+  padding: 2.25rem 1.75rem 1.75rem 1.75rem;
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 100vh;
+  box-sizing: border-box;
 }
 
 .setup-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1.25rem;
   letter-spacing: -0.5px;
-  margin-bottom: 4rem;
+  margin-bottom: 1.25rem;
   color: var(--text-main);
+}
+
+/* Sidebar Role Badge */
+.setup-sidebar-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 1.75rem;
+  width: fit-content;
+}
+
+.setup-sidebar-role.owner {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.setup-sidebar-role.member {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+
+.setup-sidebar-role.choose {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .setup-progress {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.15rem;
   z-index: 2;
+  flex: 1;
+}
+
+.setup-visuals-footer {
+  margin-top: auto;
+  padding-top: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-top: 1px solid var(--border-color, #e2e8f0);
 }
 
 .progress-step {
@@ -50,7 +97,7 @@
   top: 32px;
   left: 15px;
   width: 2px;
-  height: calc(100% + 2rem - 32px);
+  height: calc(100% + 1.15rem - 32px);
   background-color: var(--border-color);
   z-index: -1;
 }
@@ -109,17 +156,25 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start; /* Natural top-down flow so overflow scroll works smoothly */
   align-items: center;
-  padding: 3rem;
+  padding: 2.25rem 2.5rem 6.5rem 2.5rem; /* Generous bottom padding guarantees buttons never cut off */
   position: relative;
   overflow-y: auto;
+  overflow-x: hidden;
+  height: 100vh;
+  max-height: 100vh;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
 }
 
 .setup-card {
   width: 100%;
-  max-width: 580px;
-  animation: fadeSlideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  max-width: 620px;
+  margin: 0 auto;
+  padding-bottom: 2.5rem;
+  box-sizing: border-box;
+  animation: fadeSlideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   transition: max-width 0.25s ease;
 }
 
@@ -128,15 +183,21 @@
 }
 
 .setup-header {
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .setup-header h2 {
-  font-size: 2.25rem;
+  font-size: 1.85rem;
   font-weight: 800;
   color: var(--text-main);
-  margin-bottom: 0.5rem;
-  letter-spacing: -1px;
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.5px;
+}
+
+.setup-header p {
+  color: var(--text-secondary);
+  font-size: 0.96rem;
+  line-height: 1.45;
 }
 
 .setup-header p {
@@ -400,11 +461,34 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--border-color, #e2e8f0);
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.setup-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.setup-role-pill.owner {
+  background-color: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.setup-role-pill.member {
+  background-color: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  border: 1px solid rgba(37, 99, 235, 0.25);
 }
 
 .setup-nav-back-btn {
@@ -413,10 +497,10 @@
   gap: 6px;
   background: transparent;
   border: 1px solid var(--border-color, #e2e8f0);
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 8px;
   font-size: 0.84rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary, #64748b);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -451,14 +535,18 @@
 .setup-footer {
   display: flex;
   gap: 1rem;
-  margin-top: 3rem;
-  padding-top: 2rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  padding-bottom: 0.75rem;
   border-top: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .setup-btn {
-  padding: 1rem 2rem;
-  font-size: 1.05rem;
+  padding: 0.85rem 1.75rem;
+  min-height: 48px;
+  font-size: 0.98rem;
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
@@ -467,6 +555,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-sizing: border-box;
 }
 
 .setup-btn-primary {

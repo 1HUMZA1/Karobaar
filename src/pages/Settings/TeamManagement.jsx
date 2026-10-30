@@ -50,6 +50,7 @@ export const TeamManagement = () => {
 
   // Modal States
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [newlyCreatedInvite, setNewlyCreatedInvite] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
@@ -148,7 +149,8 @@ export const TeamManagement = () => {
       }, currentUser);
 
       setShowInviteModal(false);
-      showToast('success', `Invitation created! Share invite code: ${newInvite.code}`);
+      setNewlyCreatedInvite(newInvite);
+      showToast('success', `Invitation created! Code: ${newInvite.code}`);
       loadData();
     } catch (err) {
       showToast('error', err.message || 'Failed to create invitation.');
@@ -1513,6 +1515,147 @@ export const TeamManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL: INVITATION CREATED SUCCESS */}
+      {/* ============================================================== */}
+      {newlyCreatedInvite && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100000,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: 'var(--bg-card, #ffffff)',
+            border: '1px solid var(--border-color, #e2e8f0)',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '520px',
+            padding: '28px',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              color: '#10b981',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto'
+            }}>
+              <CheckCircle2 size={32} />
+            </div>
+
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              Invitation Created!
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              Share this code with <strong>{newlyCreatedInvite.email || newlyCreatedInvite.phone || 'your team member'}</strong> to give them <strong>{newlyCreatedInvite.role}</strong> access.
+            </p>
+
+            <div style={{
+              background: 'var(--bg-body, #f8fafc)',
+              border: '2px dashed var(--border-color, #cbd5e1)',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '20px'
+            }}>
+              <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Invitation Code
+              </div>
+              <div style={{
+                fontSize: '1.6rem',
+                fontWeight: 900,
+                fontFamily: 'monospace',
+                letterSpacing: '0.1em',
+                color: 'var(--text-main)'
+              }}>
+                {newlyCreatedInvite.code}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+              <button
+                type="button"
+                onClick={() => handleCopyRawCode(newlyCreatedInvite.code)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '10px',
+                  backgroundColor: 'var(--text-main)',
+                  color: 'var(--bg-body)',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <Copy size={16} />
+                <span>{copiedCode === `raw_${newlyCreatedInvite.code}` ? 'Copied Code!' : 'Copy Code'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleCopyInviteCode(newlyCreatedInvite.code)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '10px',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-main)',
+                  border: '1.5px solid var(--border-color)',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <Send size={16} />
+                <span>{copiedCode === newlyCreatedInvite.code ? 'Copied Link!' : 'Copy Invite Link'}</span>
+              </button>
+            </div>
+
+            <p style={{ margin: '0 0 16px 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              How to join: Open Karobaar → Select <strong>"Join a Business (Team Member)"</strong> → Paste this code.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setNewlyCreatedInvite(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                padding: '6px 12px'
+              }}
+            >
+              Done & Close
+            </button>
           </div>
         </div>
       )}

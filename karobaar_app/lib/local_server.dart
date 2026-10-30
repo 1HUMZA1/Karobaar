@@ -14,7 +14,110 @@ class LocalServer {
   static DateTime? lastAuthTime;
   static final Map<String, Map<String, dynamic>> _invitations = {};
 
+  static void _initInvitationsFromDisk() {
+    final targets = <String>[];
+    final tempDir = Platform.environment['TEMP'] ?? Platform.environment['TMP'];
+    if (tempDir != null) {
+      targets.add('$tempDir\\karobaar_invitations_cache.json');
+    }
+    targets.add('.invitations_cache.json');
+    targets.add('..\\.invitations_cache.json');
+
+    for (final p in targets) {
+      try {
+        final f = File(p);
+        if (f.existsSync()) {
+          final content = f.readAsStringSync();
+          final list = jsonDecode(content);
+          if (list is List) {
+            for (final item in list) {
+              if (item is Map) {
+                final inv = Map<String, dynamic>.from(item);
+                final code = (inv['code'] ?? '').toString().trim().toUpperCase();
+                final id = (inv['id'] ?? '').toString().trim();
+                if (code.isNotEmpty) _invitations[code] = inv;
+                if (id.isNotEmpty) _invitations[id] = inv;
+                final noHyphens = code.replaceAll(RegExp(r'[^A-Z0-9]'), '');
+                if (noHyphens.isNotEmpty) _invitations[noHyphens] = inv;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  static void _saveInvitationToDisk(Map<String, dynamic> inv) {
+    final targets = <String>[];
+    final tempDir = Platform.environment['TEMP'] ?? Platform.environment['TMP'];
+    if (tempDir != null) {
+      targets.add('$tempDir\\karobaar_invitations_cache.json');
+    }
+    targets.add('.invitations_cache.json');
+    targets.add('..\\.invitations_cache.json');
+
+    for (final p in targets) {
+      try {
+        final f = File(p);
+        List<dynamic> list = [];
+        if (f.existsSync()) {
+          try {
+            final content = f.readAsStringSync();
+            final parsed = jsonDecode(content);
+            if (parsed is List) list = parsed;
+          } catch (_) {}
+        }
+        final code = (inv['code'] ?? '').toString();
+        final id = (inv['id'] ?? '').toString();
+        list.removeWhere((item) => item is Map && (item['code'] == code || (id.isNotEmpty && item['id'] == id)));
+        list.add(inv);
+        f.writeAsStringSync(jsonEncode(list));
+      } catch (_) {}
+    }
+  }
+
+  static Map<String, dynamic>? _findInvitationOnDisk(String queryCode) {
+    final clean = queryCode.trim().toUpperCase();
+    final noHyphens = clean.replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    final suffix = clean.replaceAll(RegExp(r'^(KB-INV-|KB-)'), '').replaceAll(RegExp(r'[^A-Z0-9]'), '');
+
+    final targets = <String>[];
+    final tempDir = Platform.environment['TEMP'] ?? Platform.environment['TMP'];
+    if (tempDir != null) {
+      targets.add('$tempDir\\karobaar_invitations_cache.json');
+    }
+    targets.add('.invitations_cache.json');
+    targets.add('..\\.invitations_cache.json');
+
+    for (final p in targets) {
+      try {
+        final f = File(p);
+        if (f.existsSync()) {
+          final content = f.readAsStringSync();
+          final list = jsonDecode(content);
+          if (list is List) {
+            for (final item in list) {
+              if (item is Map) {
+                final inv = Map<String, dynamic>.from(item);
+                final code = (inv['code'] ?? '').toString().toUpperCase();
+                final id = (inv['id'] ?? '').toString();
+                final itemNoHyphens = code.replaceAll(RegExp(r'[^A-Z0-9]'), '');
+                final itemSuffix = code.replaceAll(RegExp(r'^(KB-INV-|KB-)'), '').replaceAll(RegExp(r'[^A-Z0-9]'), '');
+
+                if (code == clean || id == clean || itemNoHyphens == noHyphens || (suffix.isNotEmpty && itemSuffix == suffix) || (noHyphens.length >= 4 && itemNoHyphens.endsWith(noHyphens))) {
+                  return inv;
+                }
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
   Future<int> start() async {
+    _initInvitationsFromDisk();
     final handler = const Pipeline().addHandler(_handleRequest);
     _server = await io.serve(handler, InternetAddress.loopbackIPv4, 0);
     port = _server!.port;
@@ -83,7 +186,10 @@ class LocalServer {
             // Also store without hyphens
             final noHyphens = code.replaceAll(RegExp(r'[^A-Z0-9]'), '');
             if (noHyphens.isNotEmpty) _invitations[noHyphens] = inv;
-            debugPrint('[LocalServer Invitations] Stored invite: $code');
+            final suffix = code.replaceAll(RegExp(r'^(KB-INV-|KB-)'), '').replaceAll(RegExp(r'[^A-Z0-9]'), '');
+            if (suffix.isNotEmpty) _invitations[suffix] = inv;
+            _saveInvitationToDisk(inv);
+            debugPrint('[LocalServer Invitations] Stored & synced invite: $code');
           }
         } catch (e) {
           debugPrint('[LocalServer Invitations Error] $e');
@@ -107,6 +213,17 @@ class LocalServer {
           if (matched == null) {
             final noHyphens = queryCode.replaceAll(RegExp(r'[^A-Z0-9]'), '');
             matched = _invitations[noHyphens];
+          }
+          if (matched == null) {
+            final suffix = queryCode.replaceAll(RegExp(r'^(KB-INV-|KB-)'), '').replaceAll(RegExp(r'[^A-Z0-9]'), '');
+            if (suffix.isNotEmpty) matched = _invitations[suffix];
+          }
+          if (matched == null) {
+            matched = _findInvitationOnDisk(queryCode);
+            if (matched != null) {
+              final c = (matched['code'] ?? '').toString().toUpperCase();
+              if (c.isNotEmpty) _invitations[c] = matched;
+            }
           }
           if (matched != null) {
             return Response.ok(

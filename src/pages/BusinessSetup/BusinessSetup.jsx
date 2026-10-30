@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { auth } from '../../services/firebase';
 import { signOut, RecaptchaVerifier, linkWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { Country, City } from 'country-state-city';
-import { Building2, Link, Users, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Store, Sparkles } from 'lucide-react';
+import { Building2, Link, Users, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Store, Sparkles, LogOut } from 'lucide-react';
 import './BusinessSetup.css';
 
 const MODULES_LIST = [
@@ -592,8 +592,24 @@ const BusinessSetup = () => {
       <div className="setup-visuals">
         <div className="setup-brand">
           <div className="logo-icon-box">K</div>
-          Karobaar OS
+          <span>Karobaar OS</span>
         </div>
+
+        {setupMode === 'create' && (
+          <div className="setup-sidebar-role owner">
+            <span>👑 Owner Workspace</span>
+          </div>
+        )}
+        {setupMode === 'join' && (
+          <div className="setup-sidebar-role member">
+            <span>👥 Team Member Portal</span>
+          </div>
+        )}
+        {setupMode === 'choose' && (
+          <div className="setup-sidebar-role choose">
+            <span>⚡ Role Selection</span>
+          </div>
+        )}
         
         <div className="setup-progress">
           {stepsList.map((s) => (
@@ -616,34 +632,29 @@ const BusinessSetup = () => {
           ))}
         </div>
         
-        <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
+        <div className="setup-visuals-footer">
           <button 
             type="button"
             onClick={handleLogout}
             style={{
               background: 'transparent',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
+              border: '1px solid var(--border-color, #e2e8f0)',
               color: 'var(--text-secondary)',
-              padding: '0.75rem 1.25rem',
+              padding: '0.65rem 1rem',
               borderRadius: '0.5rem',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: '0.9rem',
+              fontSize: '0.86rem',
               transition: 'all 0.2s',
               width: '100%',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              fontWeight: 600
             }}
-            onMouseOver={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; }}
-            onMouseOut={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            Sign out
+            <LogOut size={15} />
+            <span>Sign out</span>
           </button>
         </div>
       </div>
@@ -651,47 +662,49 @@ const BusinessSetup = () => {
       {/* Right Panel - Form content */}
       <div className="setup-container">
         <div className={`setup-card ${setupMode === 'choose' ? 'choice-mode' : ''}`}>
-          {/* Quick AI Concierge Switcher Banner */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 14px',
-            borderRadius: '10px',
-            backgroundColor: 'var(--bg-body, #f4f4f5)',
-            border: '1px solid var(--border-color, #e2e8f0)',
-            marginBottom: '20px',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--text-main, #09090b)', color: '#fff' }}>
-                NEW
-              </span>
-              <span style={{ fontSize: '0.86rem', color: 'var(--text-main, #09090b)', fontWeight: 600 }}>
-                Want the 30-second conversational voice setup instead?
-              </span>
+          {/* Quick AI Concierge Switcher Banner (shown only on selection screen to avoid cluttering forms) */}
+          {setupMode === 'choose' && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderRadius: '10px',
+              backgroundColor: 'var(--bg-body, #f4f4f5)',
+              border: '1px solid var(--border-color, #e2e8f0)',
+              marginBottom: '20px',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--text-main, #09090b)', color: '#fff' }}>
+                  NEW
+                </span>
+                <span style={{ fontSize: '0.86rem', color: 'var(--text-main, #09090b)', fontWeight: 600 }}>
+                  Want the 30-second conversational voice setup instead?
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
+                  navigate('/dashboard');
+                }}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--text-main, #09090b)',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-main, #09090b)',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Open AI Concierge ⚡
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                sessionStorage.setItem('karobaar_trigger_ai_onboarding', 'true');
-                navigate('/dashboard');
-              }}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                border: '1px solid var(--text-main, #09090b)',
-                backgroundColor: 'transparent',
-                color: 'var(--text-main, #09090b)',
-                fontSize: '0.82rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Open AI Concierge ⚡
-            </button>
-          </div>
+          )}
 
           {setupMode === 'choose' ? (
             <div className="setup-choice-screen">
@@ -804,96 +817,76 @@ const BusinessSetup = () => {
                 </div>
               </div>
             </div>
-          ) : (
-            <>
-              {/* Top Navigation Bar: Back & Step Indicator */}
+          ) : setupMode === 'join' ? (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Dedicated Top Nav for Team Member Portal */}
               <div className="setup-top-nav">
                 <button
                   type="button"
                   className="setup-nav-back-btn"
                   onClick={() => setSetupMode('choose')}
-                  style={{ fontWeight: 700 }}
                 >
                   <ArrowLeft size={16} />
-                  <span>← Back to Selection</span>
+                  <span>← Change Role</span>
                 </button>
-                <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-                  {setupMode === 'create' ? `Step ${step} of 6: New Business Onboarding` : 'Redeem Business Invitation'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="setup-role-pill member">👥 Team Member Portal</span>
+                  <span style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    Redeem Invitation
+                  </span>
                 </div>
               </div>
 
-              {/* Mode Switcher: Create vs Join */}
-              <div style={{
-                display: 'flex',
-                borderBottom: '1px solid var(--border-color, #e2e8f0)',
-                marginBottom: '24px',
-                gap: '8px'
-              }}>
-                <button
-                  type="button"
-                  onClick={() => { setSetupMode('create'); setStep(1); }}
-                  style={{
-                    padding: '10px 16px',
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: setupMode === 'create' ? '2.5px solid var(--text-main, #09090b)' : '2.5px solid transparent',
-                    color: setupMode === 'create' ? 'var(--text-main, #09090b)' : 'var(--text-secondary, #64748b)',
-                    fontWeight: 700,
-                    fontSize: '0.92rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <Building2 size={16} />
-                  <span>Create New Business</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSetupMode('join')}
-                  style={{
-                    padding: '10px 16px',
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: setupMode === 'join' ? '2.5px solid var(--text-main, #09090b)' : '2.5px solid transparent',
-                    color: setupMode === 'join' ? 'var(--text-main, #09090b)' : 'var(--text-secondary, #64748b)',
-                    fontWeight: 700,
-                    fontSize: '0.92rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <Link size={16} />
-                  <span>Join with Invite Code</span>
-                </button>
-              </div>
-
-              {setupMode === 'join' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="setup-header" style={{ marginBottom: '12px' }}>
+              <div className="setup-header" style={{ marginBottom: '1.25rem' }}>
                 <h2>Join an Existing Workspace</h2>
-                <p>Enter the invitation code provided by your business owner.</p>
+                <p>Enter the invitation code provided by your business owner or store manager.</p>
               </div>
 
               {inviteError && (
-                <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600 }}>
-                  {inviteError}
+                <div style={{
+                  padding: '14px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  color: '#ef4444',
+                  fontSize: '0.86rem',
+                  lineHeight: 1.5,
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{ fontWeight: 700, marginBottom: '4px' }}>{inviteError}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    Tip: The invitation code looks like <code>KB-INV-XXXXX</code> or <code>KB-XXXXX</code>. Ask your business owner for their invite code from <strong>Settings → Team & Permissions → Invitations</strong>.
+                  </div>
+                  <div style={{ marginTop: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setSetupMode('create'); setStep(1); }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        color: '#2563eb',
+                        fontWeight: 700,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      Are you the business owner? Build a new business instead →
+                    </button>
+                  </div>
                 </div>
               )}
 
               {joinSuccess && (
-                <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>
+                <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1rem' }}>
                   {joinSuccess} Redirecting to your dashboard...
                 </div>
               )}
 
               <form onSubmit={handleJoinInviteSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div className="setup-form-group full-width">
-                  <label>Invitation Code</label>
+                  <label style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '6px' }}>Invitation Code</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="text"
@@ -903,12 +896,12 @@ const BusinessSetup = () => {
                         const val = e.target.value.toUpperCase();
                         setJoinCodeInput(val);
                         setInviteError('');
-                        if (val.length >= 11 || val.includes('JOIN=') || val.includes('DATA=')) {
+                        if (val.length >= 5 || val.includes('JOIN=') || val.includes('DATA=')) {
                           verifyInviteCode(val);
                         }
                       }}
-                      placeholder="KB-INV-XXXXX"
-                      style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '0.05em' }}
+                      placeholder="e.g. KB-INV-9X7P or KB-XXXXX"
+                      style={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '0.05em', fontFamily: 'monospace' }}
                       required
                     />
                     <button
@@ -916,12 +909,12 @@ const BusinessSetup = () => {
                       onClick={() => verifyInviteCode()}
                       disabled={isVerifyingInvite}
                       style={{
-                        padding: '0 16px',
+                        padding: '0 18px',
                         borderRadius: '8px',
                         border: '1px solid var(--border-color)',
                         background: 'transparent',
                         color: 'var(--text-main)',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         cursor: 'pointer',
                         whiteSpace: 'nowrap'
                       }}
@@ -943,14 +936,14 @@ const BusinessSetup = () => {
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-                        Invitation Verified
+                        ✓ Invitation Verified
                       </span>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', backgroundColor: 'var(--text-main)', color: 'var(--bg-body)' }}>
                         {invitePreview.role}
                       </span>
                     </div>
 
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
                       {invitePreview.businessName || 'Business Workspace'}
                     </div>
 
@@ -966,7 +959,7 @@ const BusinessSetup = () => {
                   </div>
                 )}
 
-                <div className="setup-footer" style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '1rem' }}>
+                <div className="setup-footer">
                   <button
                     type="button"
                     className="setup-btn setup-btn-secondary"
@@ -974,7 +967,7 @@ const BusinessSetup = () => {
                     disabled={isJoining}
                   >
                     <ArrowLeft size={16} />
-                    <span>Back to Selection</span>
+                    <span>Change Role</span>
                   </button>
 
                   <button
@@ -989,6 +982,23 @@ const BusinessSetup = () => {
             </div>
           ) : (
             <>
+              {/* Dedicated Top Nav for Owner Workspace Builder */}
+              <div className="setup-top-nav">
+                <button
+                  type="button"
+                  className="setup-nav-back-btn"
+                  onClick={() => setSetupMode('choose')}
+                >
+                  <ArrowLeft size={16} />
+                  <span>← Change Role</span>
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="setup-role-pill owner">👑 Owner Workspace Builder</span>
+                  <span style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    Step {step} of 6
+                  </span>
+                </div>
+              </div>
           <div className="setup-header">
             <h2>{stepsList[step - 1]?.title || 'Business Setup'}</h2>
             <p>{stepsList[step - 1]?.desc || 'Configure your business parameters'}</p>
@@ -1351,8 +1361,6 @@ const BusinessSetup = () => {
             </div>
           </form>
           </>
-          )}
-        </>
         )}
         </div>
       </div>

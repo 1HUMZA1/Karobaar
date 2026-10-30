@@ -677,8 +677,12 @@ class DatabaseService {
     if (typeof window !== 'undefined') {
       try {
         const curPort = window.location.port;
+        const candidatePorts = [curPort, '5173', '5174', '5000', '8080'].filter(Boolean);
+        const uniquePorts = Array.from(new Set(candidatePorts));
         const targets = ['/api/invitations'];
-        if (curPort) targets.push(`http://localhost:${curPort}/api/invitations`);
+        uniquePorts.forEach(p => {
+          targets.push(`http://localhost:${p}/api/invitations`);
+        });
         targets.forEach(url => {
           fetch(url, {
             method: 'POST',
@@ -740,7 +744,7 @@ class DatabaseService {
   async getInvitationByCode(rawCode) {
     if (!rawCode) return null;
     
-    // Normalize and clean raw code (handles URL paste e.g. https://.../#/setup?join=KB-INV-MKQSM)
+    // Normalize and clean raw code (handles URL paste e.g. https://.../#/setup?join=KB-INV-XXXXX)
     let cleanCode = String(rawCode).trim().toUpperCase();
     if (cleanCode.includes('JOIN=')) {
       cleanCode = cleanCode.split('JOIN=')[1].split('&')[0];
@@ -748,8 +752,26 @@ class DatabaseService {
     if (cleanCode.includes('#/SETUP?JOIN=')) {
       cleanCode = cleanCode.split('#/SETUP?JOIN=')[1].split('&')[0];
     }
-    cleanCode = cleanCode.trim();
+    cleanCode = decodeURIComponent(cleanCode).trim();
     if (!cleanCode) return null;
+
+    const noHyphens = cleanCode.replace(/[^A-Z0-9]/g, '');
+    const coreSuffix = cleanCode.replace(/^(KB-INV-|KB-)/, '').replace(/[^A-Z0-9]/g, '');
+
+    const isMatch = (cand) => {
+      if (!cand) return false;
+      const c = String(cand.code || cand.id || '').toUpperCase();
+      if (!c) return false;
+      const candNoHyphens = c.replace(/[^A-Z0-9]/g, '');
+      const candSuffix = c.replace(/^(KB-INV-|KB-)/, '').replace(/[^A-Z0-9]/g, '');
+      return (
+        c === cleanCode ||
+        cand.id === cleanCode ||
+        candNoHyphens === noHyphens ||
+        (coreSuffix && candSuffix === coreSuffix) ||
+        (coreSuffix.length >= 4 && candSuffix.endsWith(coreSuffix))
+      );
+    };
 
     // 1. Direct browser localStorage checks (covers multi-window & multi-tab)
     if (typeof localStorage !== 'undefined') {
@@ -757,40 +779,48 @@ class DatabaseService {
         const rawDirect = localStorage.getItem(`karobaar_invite_${cleanCode}`);
         if (rawDirect) {
           const parsed = JSON.parse(rawDirect);
-          if (parsed && (parsed.code === cleanCode || parsed.id === cleanCode)) return parsed;
+          if (parsed && isMatch(parsed)) return parsed;
         }
 
         const allMap = JSON.parse(localStorage.getItem('karobaar_all_invitations') || '{}');
-        if (allMap[cleanCode]) return allMap[cleanCode];
+        if (allMap[cleanCode] && isMatch(allMap[cleanCode])) return allMap[cleanCode];
 
-        // Also check with hyphens stripped
-        const cleanNoHyphens = cleanCode.replace(/[^A-Z0-9]/g, '');
         for (const k of Object.keys(allMap)) {
-          if (k.replace(/[^A-Z0-9]/g, '') === cleanNoHyphens) {
+          if (isMatch(allMap[k])) {
             return allMap[k];
           }
         }
       } catch (_) {}
     }
 
-    // 1b. Fast LocalServer & Dev Relay Lookup (bridges separate browser profiles, WebView2, and incognito)
+    // 1b. Fast LocalServer & Dev Relay Lookup (bridges separate browser profiles, WebView2, ports & processes)
     if (typeof window !== 'undefined') {
       try {
         const curPort = window.location.port;
-        const lookupTargets = [
-          `/api/invitations?code=${encodeURIComponent(cleanCode)}`
-        ];
-        if (curPort) {
-          lookupTargets.push(`http://localhost:${curPort}/api/invitations?code=${encodeURIComponent(cleanCode)}`);
+        const candidatePorts = [curPort, '5173', '5174', '5000', '8080'].filter(Boolean);
+        const uniquePorts = Array.from(new Set(candidatePorts));
+        const lookupTargets = [];
+        
+        lookupTargets.push(`/api/invitations?code=${encodeURIComponent(cleanCode)}`);
+        if (coreSuffix && coreSuffix !== cleanCode) {
+          lookupTargets.push(`/api/invitations?code=${encodeURIComponent(coreSuffix)}`);
         }
+        uniquePorts.forEach(p => {
+          lookupTargets.push(`http://localhost:${p}/api/invitations?code=${encodeURIComponent(cleanCode)}`);
+          if (coreSuffix && coreSuffix !== cleanCode) {
+            lookupTargets.push(`http://localhost:${p}/api/invitations?code=${encodeURIComponent(coreSuffix)}`);
+          }
+        });
+
         for (const url of lookupTargets) {
           try {
-            const res = await this._withTimeout(fetch(url), 1500).catch(() => null);
+            const res = await this._withTimeout(fetch(url), 1200).catch(() => null);
             if (res && res.ok) {
               const data = await res.json().catch(() => null);
               if (data && data.success && data.invitation) {
                 const found = data.invitation;
                 localDb.save('invitation_codes', cleanCode, found, false);
+                localDb.save('invitation_codes', found.code, found, false);
                 if (found.businessId) {
                   localDb.save('invitations', found.id || cleanCode, found, false, found.businessId);
                 }
@@ -826,23 +856,29 @@ class DatabaseService {
 
     // 3. Fast lookup from local memory index
     const indexed = localDb.get('invitation_codes', cleanCode);
-    if (indexed) return indexed;
+    if (indexed && isMatch(indexed)) return indexed;
 
     // 4. Search all local invitations
     const allInvitations = localDb.getAll('invitations');
-    const matched = allInvitations.find(inv => 
-      (inv.code && inv.code.toUpperCase() === cleanCode) || 
-      inv.id === cleanCode ||
-      (inv.code && inv.code.replace(/[^A-Z0-9]/g, '') === cleanCode.replace(/[^A-Z0-9]/g, ''))
-    );
+    const matched = allInvitations.find(inv => isMatch(inv));
     if (matched) return matched;
+
+    // 4b. Check all businesses in localDb
+    const allBusinesses = localDb.getAll('businesses') || [];
+    for (const b of allBusinesses) {
+      if (b && b.id) {
+        const bizInvs = localDb.getAll('invitations', b.id) || [];
+        const foundBizInv = bizInvs.find(inv => isMatch(inv));
+        if (foundBizInv) return foundBizInv;
+      }
+    }
 
     // 5. Cloud Firestore Direct Document Fetch: invitations/${cleanCode} (Instant O(1) cross-device)
     if (typeof navigator !== 'undefined' && navigator.onLine) {
       try {
         // Direct document ID lookup
         const docRef = doc(dbFirestore, 'invitations', cleanCode);
-        const docSnap = await this._withTimeout(getDoc(docRef), 4000).catch(() => null);
+        const docSnap = await this._withTimeout(getDoc(docRef), 3500).catch(() => null);
         if (docSnap && docSnap.exists()) {
           const found = { id: docSnap.id, ...docSnap.data() };
           localDb.save('invitation_codes', cleanCode, found, false);
@@ -852,9 +888,20 @@ class DatabaseService {
           return found;
         }
 
+        // Try with KB-INV- prefix if missing
+        if (!cleanCode.startsWith('KB-INV-') && coreSuffix) {
+          const altDocRef = doc(dbFirestore, 'invitations', `KB-INV-${coreSuffix}`);
+          const altSnap = await this._withTimeout(getDoc(altDocRef), 2500).catch(() => null);
+          if (altSnap && altSnap.exists()) {
+            const found = { id: altSnap.id, ...altSnap.data() };
+            localDb.save('invitation_codes', cleanCode, found, false);
+            return found;
+          }
+        }
+
         // Top-level query by 'code' field
         const q1 = query(collection(dbFirestore, 'invitations'), where('code', '==', cleanCode));
-        const snap1 = await this._withTimeout(getDocs(q1), 4000).catch(() => null);
+        const snap1 = await this._withTimeout(getDocs(q1), 3500).catch(() => null);
         if (snap1 && !snap1.empty) {
           const found = { id: snap1.docs[0].id, ...snap1.docs[0].data() };
           localDb.save('invitation_codes', cleanCode, found, false);
@@ -866,7 +913,7 @@ class DatabaseService {
 
         // CollectionGroup across all tenant subcollections
         const q2 = query(collectionGroup(dbFirestore, 'invitations'), where('code', '==', cleanCode));
-        const snap2 = await this._withTimeout(getDocs(q2), 4000).catch(() => null);
+        const snap2 = await this._withTimeout(getDocs(q2), 3500).catch(() => null);
         if (snap2 && !snap2.empty) {
           const found = { id: snap2.docs[0].id, ...snap2.docs[0].data() };
           localDb.save('invitation_codes', cleanCode, found, false);

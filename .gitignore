@@ -54,3 +54,4 @@ jobs.json
 
 scratch/
 .env.*.local
+.invitations_cache.json
