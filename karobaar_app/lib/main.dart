@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart' as wf;
 import 'package:webview_windows/webview_windows.dart' as ww;
 import 'local_server.dart';
@@ -95,10 +96,24 @@ class _KarobaarWebViewState extends State<KarobaarWebView> {
         await _windowsController!.initialize();
         try {
           await _windowsController!.setUserAgent(
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 KarobaarApp/2.0',
           );
         } catch (_) {}
         _windowsController!.url.listen((url) {
+          // Prevent embedded WebView from loading accounts.google.com which displays blank
+          if (url.contains('accounts.google.com') || url.contains('accounts.youtube.com')) {
+            try {
+              if (Platform.isWindows) {
+                Process.run('cmd', ['/c', 'start', '', url]);
+              }
+              final uri = Uri.tryParse(url);
+              if (uri != null) {
+                launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+              _windowsController!.loadUrl(_currentUrl);
+            } catch (_) {}
+            return;
+          }
           if (mounted) {
             setState(() {
               _isLoading = false;

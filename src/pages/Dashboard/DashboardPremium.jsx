@@ -572,18 +572,18 @@ const Dashboard = ({ onSwitchMode }) => {
       )}
 
       {/* 1. Header Area - Greeting + Executive Health Dock */}
-      <div className="dashboard-header mb-4">
+      <div className="dashboard-header mb-3">
         <div className="dashboard-header-text">
-          <p className="text-text-muted font-bold tracking-wide text-xs mb-2 text-left">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
-          <h1 className="text-3xl font-extrabold tracking-tight mb-1 text-text-main flex items-center text-left">
-            {greetingTyped}
+          <p className="text-text-muted font-bold tracking-wide text-[11px] mb-1 text-left">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
+          <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight mb-1 text-text-main flex items-center flex-wrap text-left">
+            <span>{greetingTyped}</span>
             {greetingTyped.length === fullGreetingText.length ? (
-              <span className="ml-2">👋</span>
+              <span className="ml-1.5 inline-block">👋</span>
             ) : (
               <span className="ml-1 animate-pulse border-r-4 border-text-main h-[0.8em] inline-block align-baseline"></span>
             )}
           </h1>
-          <p className="text-text-secondary text-sm font-semibold text-left">Here's your live operational performance and financial status.</p>
+          <p className="text-text-secondary text-xs font-semibold text-left">Here's your live operational performance and financial status.</p>
         </div>
         
         <div className="dashboard-header-actions">
@@ -631,7 +631,7 @@ const Dashboard = ({ onSwitchMode }) => {
       </div>
 
       {/* Date-Range Filter Pill Selector Bar */}
-      <div className="flex flex-col gap-2 p-3 mb-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm">
+      <div className="flex flex-col gap-1.5 p-2 px-3 mb-3 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 overflow-x-auto">
             <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5 px-2">
@@ -700,7 +700,7 @@ const Dashboard = ({ onSwitchMode }) => {
       <GettingStartedGuide />
 
       {/* Operations Quick Command Dock */}
-      <div className="operations-command-dock flex flex-wrap items-center justify-between gap-3 p-3.5 mb-6 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm">
+      <div className="operations-command-dock flex flex-wrap items-center justify-between gap-2.5 p-2 px-3 mb-3.5 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)] text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-[var(--text-main)] animate-pulse"></span>

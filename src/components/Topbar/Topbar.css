@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
+  padding: 0 1.25rem;
   z-index: 999;
   position: sticky;
   top: 0;
@@ -660,7 +660,7 @@
 }
 
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .topbar { display: none !important; }
 }
 

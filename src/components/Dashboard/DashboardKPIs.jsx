@@ -83,13 +83,13 @@ export const DashboardKPIs = ({
   };
 
   return (
-    <div className="space-y-4 mb-6">
+    <div className="space-y-3 mb-3.5">
       {/* 4 Core Clickable KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* 1. Revenue */}
         <div 
           onClick={() => navigate('/orders')}
-          className="kpi-card bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] cursor-pointer group"
+          className="kpi-card bg-[var(--bg-card)] rounded-xl p-3.5 sm:p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] cursor-pointer group"
           title="Click to view all Orders & Sales"
         >
           <div className="flex justify-between items-start mb-3">
@@ -102,10 +102,10 @@ export const DashboardKPIs = ({
             <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1">{dateRangeLabel} Sales</p>
             <span className="text-[10px] text-text-muted font-bold group-hover:text-text-main transition-colors">View Orders →</span>
           </div>
-          <h3 className="text-3xl font-extrabold tracking-tight mb-4 text-text-main" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          <h3 className="text-2xl font-extrabold tracking-tight mb-2 text-text-main" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {isRevenueMasked ? '******' : `${currencySymbol}${(revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </h3>
-          <div className="flex items-center justify-between pt-3 border-t border-[var(--border-light)] text-xs">
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--border-light)] text-xs">
             <div className="flex items-center gap-1 font-bold">
               {formatTrendBadge(trends.revTrend)}
               <span className="text-text-muted text-[11px] font-medium hidden sm:inline">vs prev.</span>
@@ -119,7 +119,7 @@ export const DashboardKPIs = ({
         {/* 2. Orders */}
         <div 
           onClick={() => navigate('/orders')}
-          className="kpi-card bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] cursor-pointer group"
+          className="kpi-card bg-[var(--bg-card)] rounded-xl p-3.5 sm:p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] cursor-pointer group"
           title="Click to view Order History"
         >
           <div className="flex justify-between items-start mb-3">
@@ -132,10 +132,10 @@ export const DashboardKPIs = ({
             <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1">{dateRangeLabel} Orders</p>
             <span className="text-[10px] text-text-muted font-bold group-hover:text-text-main transition-colors">Details →</span>
           </div>
-          <h3 className="text-3xl font-extrabold tracking-tight mb-4 text-text-main" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          <h3 className="text-2xl font-extrabold tracking-tight mb-2 text-text-main" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {orders || 0}
           </h3>
-          <div className="flex items-center justify-between pt-3 border-t border-[var(--border-light)] text-xs">
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--border-light)] text-xs">
             <div className="flex items-center gap-1 font-bold">
               {formatTrendBadge(trends.ordTrend)}
               <span className="text-text-muted text-[11px] font-medium hidden sm:inline">vs prev.</span>
@@ -149,7 +149,7 @@ export const DashboardKPIs = ({
         {/* 3. Gross & Net Profit */}
         <div 
           onClick={() => !isProfitMasked && navigate('/reports')}
-          className={`kpi-card bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] group ${isProfitMasked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'}`}
+          className={`kpi-card bg-[var(--bg-card)] rounded-xl p-3.5 sm:p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] group ${isProfitMasked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'}`}
           title={isProfitMasked ? "Restricted: Financial reports are restricted for this role" : "Click to view Profit & Loss Reports"}
         >
           <div className="flex justify-between items-start mb-3">
@@ -189,7 +189,7 @@ export const DashboardKPIs = ({
         {/* 4. Operating Expenses */}
         <div 
           onClick={() => !isExpensesMasked && navigate('/expenses')}
-          className={`kpi-card bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] group ${isExpensesMasked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'}`}
+          className={`kpi-card bg-[var(--bg-card)] rounded-xl p-3.5 sm:p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-[var(--border-color)] group ${isExpensesMasked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'}`}
           title={isExpensesMasked ? "Restricted: Operating expenses are restricted for this role" : "Click to view Operating Expenses & Ledger"}
         >
           <div className="flex justify-between items-start mb-3">
@@ -204,10 +204,10 @@ export const DashboardKPIs = ({
               {isExpensesMasked ? 'Restricted' : 'Ledger →'}
             </span>
           </div>
-          <h3 className="text-3xl font-extrabold tracking-tight mb-4 text-text-main" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          <h3 className="text-2xl font-extrabold tracking-tight mb-2 text-text-main" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {isExpensesMasked ? '******' : `${currencySymbol}${(expenses || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </h3>
-          <div className="flex items-center justify-between pt-3 border-t border-[var(--border-light)] text-xs">
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--border-light)] text-xs">
             <div className="flex items-center gap-1 font-bold">
               {!isExpensesMasked && formatTrendBadge(trends.expTrend)}
               <span className="text-text-muted text-[11px] font-medium hidden sm:inline">vs prev.</span>
@@ -220,9 +220,9 @@ export const DashboardKPIs = ({
       </div>
 
       {/* Secondary Operational Strip: Payment Summary + Receivables & Low Stock Shortcuts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Payment Methods Breakdown - Clickable Tender Pills */}
-        <div className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-between">
+        <div className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
               <Wallet size={13} /> Payment Tender Breakdown
@@ -256,7 +256,7 @@ export const DashboardKPIs = ({
         <div 
           data-test="udhaar-card"
           onClick={() => setShowUdhaarModal(true)}
-          className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-[var(--text-main)] hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-between group"
+          className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-[var(--text-main)] hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-between group"
           title="Click to view all customer Khata balances"
         >
           <div className="flex items-center gap-3">
@@ -276,7 +276,7 @@ export const DashboardKPIs = ({
         <div 
           data-test="stock-card"
           onClick={() => setShowStockModal(true)}
-          className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-[var(--text-main)] hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-between group"
+          className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:border-[var(--text-main)] hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-between group"
           title="Click to audit low-stock items and reorder recommendations"
         >
           <div className="flex items-center gap-3">

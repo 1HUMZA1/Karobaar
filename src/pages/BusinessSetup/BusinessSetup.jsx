@@ -723,6 +723,46 @@ const BusinessSetup = () => {
   const [isVerifyingEmailCode, setIsVerifyingEmailCode] = useState(false);
   const [emailVerificationMessage, setEmailVerificationMessage] = useState({ type: '', text: '' });
   const [fallbackEmailOtp, setFallbackEmailOtp] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [voiceNarratorActive, setVoiceNarratorActive] = useState(true);
+
+  // Real-time voice guidance synthesizer for Newbie mode & step instructions
+  const speakSetupGuidance = (text) => {
+    if (!voiceNarratorActive || typeof window === 'undefined' || !window.speechSynthesis) return;
+    try {
+      if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+        try { window.speechSynthesis.cancel(); } catch (_) {}
+      }
+      if (window.speechSynthesis.paused) {
+        try { window.speechSynthesis.resume(); } catch (_) {}
+      }
+
+      const clean = (text || '').replace(/[*#_`]/g, '').trim();
+      if (!clean) return;
+
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      const voices = window.speechSynthesis.getVoices() || [];
+      const v = voices.find(voice => voice.lang.startsWith('en') && (voice.name.includes('David') || voice.name.includes('Zira') || voice.name.includes('Google'))) || voices[0];
+      if (v) utterance.voice = v;
+
+      window._setupUtterance = utterance;
+      utterance.onend = () => { window._setupUtterance = null; };
+      utterance.onerror = () => { window._setupUtterance = null; };
+
+      setTimeout(() => {
+        try {
+          if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+          window.speechSynthesis.speak(utterance);
+        } catch (_) {}
+      }, 40);
+    } catch (e) {
+      console.warn('[Setup Speech error]', e);
+    }
+  };
+
+
 
   const setupRecaptcha = () => {
     try {
@@ -953,6 +993,23 @@ const BusinessSetup = () => {
   // Step 2: App Experience
   const [appKnowledge, setAppKnowledge] = useState('Newbie'); // 'Newbie', 'Rookie', 'Pro'
 
+  // Automatically speak step instructions when Newbie mode is active
+  useEffect(() => {
+    if (setupMode === 'create' && appKnowledge === 'Newbie') {
+      const stepGuidance = {
+        1: "Step 1: Personal Profile. Please enter your full name and phone number to verify your owner account.",
+        2: "Step 2: App Experience. Newbie mode is enabled! I will guide you through every step of setting up and operating your store.",
+        3: "Step 3: Business Details. Please enter your official business name, choose your business type, and select your country and city.",
+        4: "Step 4: Business Size. Select your store employee count and monthly sales volume so we can optimize your dashboard.",
+        5: "Step 5: Select Modules. Pick the features you need, such as Point of Sale, Inventory Management, and Invoices.",
+        6: "Step 6: Preferences. Choose your billing currency and tax preferences to finalize your store."
+      };
+      if (stepGuidance[step]) {
+        speakSetupGuidance(stepGuidance[step]);
+      }
+    }
+  }, [step, setupMode, appKnowledge]);
+
   // Step 3: Business Info
   const [business, setBusiness] = useState({
     name: '',
@@ -1099,19 +1156,24 @@ const BusinessSetup = () => {
 
   const handleNext = () => {
     setError('');
+    const newFieldErrors = {};
+
     if (step === 1) {
-      if (!personal.fullName.trim()) return setError('Full name is required.');
+      if (!personal.fullName?.trim()) {
+        newFieldErrors.fullName = 'Full Name is required.';
+      }
+      if (!personal.phone?.trim()) {
+        newFieldErrors.phone = 'Phone Number is required.';
+      } else {
+        const phoneDigits = personal.phone.replace(/[^0-9]/g, '');
+        const config = getCountryPhoneConfig(personal.countryCode);
+        if (phoneDigits.length < (config.length || 6)) {
+          newFieldErrors.phone = `Complete ${config.length}-digit phone number required (${phoneDigits.length}/${config.length} digits entered).`;
+        }
+      }
       if (personal.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personal.email.trim())) {
-        return setError('Please enter a valid email address.');
+        newFieldErrors.email = 'Please enter a valid email address.';
       }
-      if (!personal.phone.trim()) return setError('Phone number is required.');
-      
-      const phoneDigits = personal.phone.replace(/[^0-9]/g, '');
-      if (phoneDigits.length < 6) {
-        return setError('Please enter a valid phone number (at least 6 digits).');
-      }
-      
-      // Auto-accept if user skipped or didn't receive SMS
       if (!isPhoneVerified) {
         setIsPhoneVerified(true);
       }
@@ -1119,9 +1181,60 @@ const BusinessSetup = () => {
         setIsEmailVerified(true);
       }
     }
-    if (step === 3 && !business.name.trim()) return setError('Business name is required.');
-    
-    // Proactively persist after step validation
+
+    if (step === 2) {
+      if (!appKnowledge) {
+        newFieldErrors.appKnowledge = 'Please select your app experience level.';
+      }
+    }
+
+    if (step === 3) {
+      if (!business.name?.trim()) {
+        newFieldErrors.businessName = 'Business Name is required.';
+      }
+      if (!business.type?.trim() || business.type === 'Select Type') {
+        newFieldErrors.businessType = 'Please select a Business Type.';
+      }
+      if (!business.country?.trim() || business.country === 'Select Country') {
+        newFieldErrors.country = 'Please select your Country.';
+      }
+      if (!business.city?.trim() || business.city === 'Select a country first' || business.city === 'Select a city') {
+        newFieldErrors.city = 'Please select or enter your City.';
+      }
+    }
+
+    if (step === 4) {
+      if (!size.employees?.trim() || size.employees === 'Select employees count') {
+        newFieldErrors.employees = 'Please select employee count.';
+      }
+      if (!size.monthlySales?.trim() || size.monthlySales === 'Select sales range') {
+        newFieldErrors.monthlySales = 'Please select monthly sales range.';
+      }
+    }
+
+    if (step === 5) {
+      if (!modules || modules.length === 0) {
+        newFieldErrors.modules = 'Please select at least one module.';
+      }
+    }
+
+    if (step === 6) {
+      if (!preferences.currency) {
+        newFieldErrors.currency = 'Please select a currency.';
+      }
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      const firstError = Object.values(newFieldErrors)[0];
+      setError(firstError || 'Please fill in all required fields marked below before proceeding.');
+      if (appKnowledge === 'Newbie') {
+        speakSetupGuidance(firstError || 'Please fill in all required fields marked below before proceeding.');
+      }
+      return;
+    }
+
+    setFieldErrors({});
     persistProgressiveDraft();
     setStep(s => s + 1);
   };
@@ -1220,6 +1333,40 @@ const BusinessSetup = () => {
         role: 'OWNER',
         addedAt: new Date().toISOString()
       }, newBusiness.id, user.uid);
+
+      // Seed ready-to-sell inventory products for the new business
+      try {
+        const typeLower = (business.type || business.category || 'Wholesale').toLowerCase();
+        let initialProducts = [];
+        if (typeLower.includes('whole')) {
+          initialProducts = [
+            { id: 'prod_ws_1_' + Date.now(), name: 'Premium Basmati Rice (50kg Bag)', category: 'Grains & Bulk', purchasePrice: 2800, sellingPrice: 3400, stockQuantity: 120, minimumStock: 25, unit: 'bag', barcode: '8901111001' },
+            { id: 'prod_ws_2_' + Date.now(), name: 'Refined Sunflower Oil (15L Tin)', category: 'Edible Oils', purchasePrice: 1650, sellingPrice: 1950, stockQuantity: 80, minimumStock: 15, unit: 'tin', barcode: '8901111002' },
+            { id: 'prod_ws_3_' + Date.now(), name: 'Pure White Sugar (50kg Sacks)', category: 'Pantry Bulk', purchasePrice: 1850, sellingPrice: 2150, stockQuantity: 95, minimumStock: 20, unit: 'bag', barcode: '8901111003' },
+            { id: 'prod_ws_4_' + Date.now(), name: 'Whole Wheat Flour Atta (40kg)', category: 'Flour & Grains', purchasePrice: 1250, sellingPrice: 1480, stockQuantity: 110, minimumStock: 30, unit: 'bag', barcode: '8901111004' },
+            { id: 'prod_ws_5_' + Date.now(), name: 'Cardamom & Tea Master Pack (10kg)', category: 'Beverages', purchasePrice: 3200, sellingPrice: 3900, stockQuantity: 40, minimumStock: 10, unit: 'box', barcode: '8901111005' },
+            { id: 'prod_ws_6_' + Date.now(), name: 'Iodized Crystal Salt (25kg Bag)', category: 'Pantry Bulk', purchasePrice: 350, sellingPrice: 480, stockQuantity: 150, minimumStock: 40, unit: 'bag', barcode: '8901111006' }
+          ];
+        } else if (typeLower.includes('cafe') || typeLower.includes('restaurant')) {
+          initialProducts = [
+            { id: 'prod_cf_1_' + Date.now(), name: 'Classic Burger', category: 'Food', purchasePrice: 45, sellingPrice: 80, stockQuantity: 50, minimumStock: 10, unit: 'pcs', barcode: '8901001001' },
+            { id: 'prod_cf_2_' + Date.now(), name: 'French Fries', category: 'Food', purchasePrice: 25, sellingPrice: 50, stockQuantity: 60, minimumStock: 15, unit: 'plate', barcode: '8901001002' },
+            { id: 'prod_cf_3_' + Date.now(), name: 'Cold Coffee', category: 'Drinks', purchasePrice: 35, sellingPrice: 70, stockQuantity: 40, minimumStock: 8, unit: 'glass', barcode: '8901001003' },
+            { id: 'prod_cf_4_' + Date.now(), name: 'Masala Chai', category: 'Drinks', purchasePrice: 8, sellingPrice: 20, stockQuantity: 100, minimumStock: 20, unit: 'cup', barcode: '8901001004' }
+          ];
+        } else {
+          initialProducts = [
+            { id: 'prod_rt_1_' + Date.now(), name: 'Cotton T-Shirt (Regular Fit)', category: 'Apparel', purchasePrice: 220, sellingPrice: 399, stockQuantity: 40, minimumStock: 8, unit: 'pcs', barcode: '8903001001' },
+            { id: 'prod_rt_2_' + Date.now(), name: 'Denim Jeans (Slim Fit)', category: 'Apparel', purchasePrice: 580, sellingPrice: 999, stockQuantity: 30, minimumStock: 6, unit: 'pcs', barcode: '8903001002' },
+            { id: 'prod_rt_3_' + Date.now(), name: 'Casual Cotton Shirt', category: 'Apparel', purchasePrice: 380, sellingPrice: 699, stockQuantity: 35, minimumStock: 7, unit: 'pcs', barcode: '8903001003' },
+            { id: 'prod_rt_4_' + Date.now(), name: 'Fast Charger Type-C Cable', category: 'Accessories', purchasePrice: 85, sellingPrice: 199, stockQuantity: 60, minimumStock: 12, unit: 'pcs', barcode: '8904001002' }
+          ];
+        }
+        await db.saveCollection('products', initialProducts, newBusiness.id);
+        localDb.saveCollection('products', initialProducts, newBusiness.id);
+      } catch (seedErr) {
+        console.warn('[Setup seed products note]', seedErr);
+      }
 
       // 3. Mark Onboarding Complete in users collection
       const userProfile = {
@@ -1702,7 +1849,26 @@ const BusinessSetup = () => {
                   )}
                 </div>
 
-                <div className="setup-footer">
+                {error && (
+              <div className="setup-error-banner" style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                border: '1.5px solid rgba(239, 68, 68, 0.4)',
+                color: '#ef4444',
+                fontSize: '12px',
+                fontWeight: '600',
+                margin: '12px 0'
+              }}>
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="setup-footer">
                   <button
                     type="button"
                     className="setup-btn setup-btn-secondary"
@@ -1736,6 +1902,20 @@ const BusinessSetup = () => {
                   <span>← Change Role</span>
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {appKnowledge === 'Newbie' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !voiceNarratorActive;
+                        setVoiceNarratorActive(next);
+                        if (next) speakSetupGuidance("Voice guide enabled.");
+                      }}
+                      className={`setup-voice-narrator-pill ${voiceNarratorActive ? 'active' : 'muted'}`}
+                      title="Toggle spoken audio guidance for Newbie mode"
+                    >
+                      {voiceNarratorActive ? '🔊 Voice Guide: ON' : '🔇 Voice Guide: Muted'}
+                    </button>
+                  )}
                   <span className="setup-role-pill owner">👑 Owner Workspace Builder</span>
                   <span style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                     Step {step} of 6
@@ -1754,9 +1934,22 @@ const BusinessSetup = () => {
             {step === 1 && (
               <div className="step-content setup-form-grid">
                 <div id="recaptcha-container"></div>
-                <div className="setup-form-group full-width">
-                  <label>Full Name</label>
-                  <input type="text" className="setup-input" value={personal.fullName} onChange={e => setPersonal({...personal, fullName: e.target.value})} required placeholder="Enter your full name"/>
+                <div className={`setup-form-group full-width ${fieldErrors.fullName ? 'has-error' : ''}`}>
+                  <label>Full Name <span className="req-star">*</span></label>
+                  <input 
+                    type="text" 
+                    className="setup-input" 
+                    value={personal.fullName} 
+                    onChange={e => {
+                      setPersonal({...personal, fullName: e.target.value});
+                      setFieldErrors(prev => ({ ...prev, fullName: '' }));
+                    }} 
+                    required 
+                    placeholder="Enter your full name"
+                  />
+                  {fieldErrors.fullName && (
+                    <span className="field-error-msg"><AlertCircle size={13} /> {fieldErrors.fullName}</span>
+                  )}
                 </div>
 
                 <div className="setup-form-group full-width">
@@ -1852,9 +2045,9 @@ const BusinessSetup = () => {
                   )}
                 </div>
 
-                <div className="setup-form-group full-width">
+                <div className={`setup-form-group full-width ${fieldErrors.phone ? 'has-error' : ''}`}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                    <label style={{ margin: 0 }}>Phone Number</label>
+                    <label style={{ margin: 0 }}>Phone Number <span className="req-star">*</span></label>
                     {isPhoneVerified && (
                       <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <CheckCircle2 size={14} /> Verified ✓
@@ -1958,6 +2151,11 @@ const BusinessSetup = () => {
                       </Button>
                     </div>
                   )}
+                  {fieldErrors.phone && (
+                    <div className="field-error-msg" style={{ marginTop: '0.4rem' }}>
+                      <AlertCircle size={13} /> {fieldErrors.phone}
+                    </div>
+                  )}
                   {verificationMessage.text && (
                     <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: verificationMessage.type === 'error' ? 'var(--text-danger, #dc2626)' : 'var(--text-success, #16a34a)' }}>
                       {verificationMessage.text}
@@ -1994,50 +2192,116 @@ const BusinessSetup = () => {
                 <p className="setup-step-desc">
                   How familiar are you with business management applications? This helps us tailor your experience.
                 </p>
+                {fieldErrors.appKnowledge && (
+                  <div className="field-error-msg" style={{ marginBottom: '1rem' }}>
+                    <AlertCircle size={13} /> {fieldErrors.appKnowledge}
+                  </div>
+                )}
                 <div className="experience-cards-list">
                   <div 
                     className={`module-card experience-card ${appKnowledge === 'Newbie' ? 'selected' : ''}`}
-                    onClick={() => setAppKnowledge('Newbie')}
+                    onClick={() => {
+                      setAppKnowledge('Newbie');
+                      setFieldErrors(prev => ({ ...prev, appKnowledge: '' }));
+                      speakSetupGuidance("Newbie mode activated! I will provide step-by-step voice guidance for every screen and help you manage your business with ease.");
+                    }}
                   >
                     <div className="experience-card-head">
                       <div className="module-checkbox">
                         {appKnowledge === 'Newbie' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                       </div>
                       <span className="experience-card-title">Newbie</span>
+                      <span className="experience-card-tag">🔊 Auto Voice Guide</span>
                     </div>
                     <span className="experience-card-sub">
                       I'm new to business management apps and need step-by-step guidance.
                     </span>
+                    <div className="experience-true-bases">
+                      <div className="true-base-item">
+                        <span className="true-base-icon">🔊</span>
+                        <span><strong>Continuous Audio:</strong> AI reads instructions aloud for every screen and field.</span>
+                      </div>
+                      <div className="true-base-item">
+                        <span className="true-base-icon">⚡</span>
+                        <span><strong>Simplified POS:</strong> 1-click cash billing, auto barcode focus, and large touch targets.</span>
+                      </div>
+                      <div className="true-base-item">
+                        <span className="true-base-icon">🛡️</span>
+                        <span><strong>Guided Guardrails:</strong> Confirmation prompts before any delete, void, or edit.</span>
+                      </div>
+                      <div className="true-base-item">
+                        <span className="true-base-icon">📋</span>
+                        <span><strong>Interactive Checklist:</strong> Step-by-step onboarding for first product, customer, and sale.</span>
+                      </div>
+                    </div>
                   </div>
 
                   <div 
                     className={`module-card experience-card ${appKnowledge === 'Rookie' ? 'selected' : ''}`}
-                    onClick={() => setAppKnowledge('Rookie')}
+                    onClick={() => {
+                      setAppKnowledge('Rookie');
+                      setFieldErrors(prev => ({ ...prev, appKnowledge: '' }));
+                      speakSetupGuidance("Rookie mode selected. Standard operational controls with smart tooltips enabled.");
+                    }}
                   >
                     <div className="experience-card-head">
                       <div className="module-checkbox">
                         {appKnowledge === 'Rookie' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                       </div>
                       <span className="experience-card-title">Rookie</span>
+                      <span className="experience-card-tag">💡 Smart Hints</span>
                     </div>
                     <span className="experience-card-sub">
                       I have some experience with these tools, but might need occasional help.
                     </span>
+                    <div className="experience-true-bases">
+                      <div className="true-base-item">
+                        <span className="true-base-icon">💡</span>
+                        <span><strong>Smart Tooltips:</strong> Inline keyboard hints, shortcut guides, and tax tips.</span>
+                      </div>
+                      <div className="true-base-item">
+                        <span className="true-base-icon">📊</span>
+                        <span><strong>Standard POS:</strong> Custom item discounts, held order registers, and customer tabs.</span>
+                      </div>
+                      <div className="true-base-item">
+                        <span className="true-base-icon">🔔</span>
+                        <span><strong>Intelligent Alerts:</strong> Proactive reorder warnings and customer Udhaar khata reminders.</span>
+                      </div>
+                    </div>
                   </div>
 
                   <div 
                     className={`module-card experience-card ${appKnowledge === 'Pro' ? 'selected' : ''}`}
-                    onClick={() => setAppKnowledge('Pro')}
+                    onClick={() => {
+                      setAppKnowledge('Pro');
+                      setFieldErrors(prev => ({ ...prev, appKnowledge: '' }));
+                      speakSetupGuidance("Pro mode selected. High-speed keyboard shortcuts and advanced ledger activated.");
+                    }}
                   >
                     <div className="experience-card-head">
                       <div className="module-checkbox">
                         {appKnowledge === 'Pro' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                       </div>
                       <span className="experience-card-title">Pro</span>
+                      <span className="experience-card-tag">⚡ Fast Hotkeys</span>
                     </div>
                     <span className="experience-card-sub">
                       I'm an experienced user and know exactly what I'm doing. No instructions needed.
                     </span>
+                    <div className="experience-true-bases">
+                      <div className="true-base-item">
+                        <span className="true-base-icon">⚡</span>
+                        <span><strong>High-Speed Keys:</strong> F2 POS, Tab barcode scanning, Enter tender payment.</span>
+                      </div>
+                      <div className="true-base-item">
+                        <span className="true-base-icon">📈</span>
+                        <span><strong>Power Accounting:</strong> Double-entry journal, multi-currency, and bulk CSV sync.</span>
+                      </div>
+                      <div className="true-base-item">
+                        <span className="true-base-icon">🔇</span>
+                        <span><strong>Direct Mode:</strong> Zero voice prompts and maximum desktop workspace speed.</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2045,15 +2309,32 @@ const BusinessSetup = () => {
 
             {step === 3 && (
               <div className="step-content setup-form-grid">
-                <div className="setup-form-group full-width">
-                  <label>Business Name</label>
-                  <input type="text" className="setup-input" value={business.name} onChange={e => setBusiness({...business, name: e.target.value})} required placeholder="Acme Corporation"/>
+                <div className={`setup-form-group full-width ${fieldErrors.businessName ? 'has-error' : ''}`}>
+                  <label>Business Name <span className="req-star">*</span></label>
+                  <input 
+                    type="text" 
+                    className="setup-input" 
+                    value={business.name} 
+                    onChange={e => {
+                      setBusiness({...business, name: e.target.value});
+                      setFieldErrors(prev => ({ ...prev, businessName: '' }));
+                    }} 
+                    required 
+                    placeholder="e.g. SAS AND SONS"
+                  />
+                  {fieldErrors.businessName && (
+                    <span className="field-error-msg"><AlertCircle size={13} /> {fieldErrors.businessName}</span>
+                  )}
                 </div>
-                <div className="setup-form-group">
-                  <label>Business Type</label>
+
+                <div className={`setup-form-group ${fieldErrors.businessType ? 'has-error' : ''}`}>
+                  <label>Business Type <span className="req-star">*</span></label>
                   <CustomSelect 
                     value={business.type} 
-                    onChange={e => setBusiness({...business, type: e.target.value})}
+                    onChange={e => {
+                      setBusiness({...business, type: e.target.value});
+                      setFieldErrors(prev => ({ ...prev, businessType: '' }));
+                    }}
                     placeholder="Select Type"
                     options={[
                       {value: 'Retail', label: 'Retail'},
@@ -2065,29 +2346,50 @@ const BusinessSetup = () => {
                       {value: 'Other', label: 'Other'}
                     ]}
                   />
+                  {fieldErrors.businessType && (
+                    <span className="field-error-msg"><AlertCircle size={13} /> {fieldErrors.businessType}</span>
+                  )}
                 </div>
+
                 <div className="setup-form-group">
                   <label>Tax/GST Number (Optional)</label>
-                  <input type="text" className="setup-input" value={business.gst} onChange={e => setBusiness({...business, gst: e.target.value})} placeholder="e.g. 22AAAAA0000A1Z5"/>
+                  <input 
+                    type="text" 
+                    className="setup-input" 
+                    value={business.gst} 
+                    onChange={e => setBusiness({...business, gst: e.target.value})} 
+                    placeholder="e.g. 22AAAAA0000A1Z5"
+                  />
                 </div>
-                <div className="setup-form-group">
-                  <label>Country</label>
+
+                <div className={`setup-form-group ${fieldErrors.country ? 'has-error' : ''}`}>
+                  <label>Country <span className="req-star">*</span></label>
                   <CustomSelect 
                     value={business.country} 
-                    onChange={e => setBusiness({...business, country: e.target.value, city: ''})}
+                    onChange={e => {
+                      setBusiness({...business, country: e.target.value, city: ''});
+                      setFieldErrors(prev => ({ ...prev, country: '', city: '' }));
+                    }}
                     placeholder="Select Country"
                     options={[
                       ...ALL_COUNTRIES.map(c => ({value: c.name, label: c.name})),
                       {value: 'Other', label: 'Other'}
                     ]}
                   />
+                  {fieldErrors.country && (
+                    <span className="field-error-msg"><AlertCircle size={13} /> {fieldErrors.country}</span>
+                  )}
                 </div>
-                <div className="setup-form-group">
-                  <label>City</label>
+
+                <div className={`setup-form-group ${fieldErrors.city ? 'has-error' : ''}`}>
+                  <label>City <span className="req-star">*</span></label>
                   {business.country && getCitiesForCountry(business.country).length > 0 ? (
                     <CustomSelect 
                       value={business.city} 
-                      onChange={e => setBusiness({...business, city: e.target.value})}
+                      onChange={e => {
+                        setBusiness({...business, city: e.target.value});
+                        setFieldErrors(prev => ({ ...prev, city: '' }));
+                      }}
                       placeholder="Select a city"
                       options={[
                         ...getCitiesForCountry(business.country).map(city => ({value: city, label: city})),
@@ -2095,10 +2397,32 @@ const BusinessSetup = () => {
                       ]}
                     />
                   ) : (
-                    <input type="text" className="setup-input" value={business.city} onChange={e => setBusiness({...business, city: e.target.value})} placeholder={business.country ? "Type your city" : "Select a country first"} />
+                    <input 
+                      type="text" 
+                      className="setup-input" 
+                      value={business.city} 
+                      onChange={e => {
+                        setBusiness({...business, city: e.target.value});
+                        setFieldErrors(prev => ({ ...prev, city: '' }));
+                      }} 
+                      placeholder={business.country ? "Type your city" : "Select a country first"} 
+                    />
                   )}
                   {business.city === 'Other' && (
-                     <input type="text" className="setup-input" style={{marginTop: '0.5rem'}} onChange={e => setBusiness({...business, city: e.target.value})} placeholder="Enter your city name" autoFocus />
+                     <input 
+                       type="text" 
+                       className="setup-input" 
+                       style={{marginTop: '0.5rem'}} 
+                       onChange={e => {
+                         setBusiness({...business, city: e.target.value});
+                         setFieldErrors(prev => ({ ...prev, city: '' }));
+                       }} 
+                       placeholder="Enter your city name" 
+                       autoFocus 
+                     />
+                  )}
+                  {fieldErrors.city && (
+                    <span className="field-error-msg"><AlertCircle size={13} /> {fieldErrors.city}</span>
                   )}
                 </div>
               </div>
@@ -2106,11 +2430,14 @@ const BusinessSetup = () => {
 
             {step === 4 && (
               <div className="step-content setup-form-grid">
-                <div className="setup-form-group full-width">
-                  <label>Number of Employees</label>
+                <div className={`setup-form-group full-width ${fieldErrors.employees ? 'has-error' : ''}`}>
+                  <label>Number of Employees <span className="req-star">*</span></label>
                   <CustomSelect 
                     value={size.employees} 
-                    onChange={e => setSize({...size, employees: e.target.value})}
+                    onChange={e => {
+                      setSize({...size, employees: e.target.value});
+                      setFieldErrors(prev => ({ ...prev, employees: '' }));
+                    }}
                     placeholder="Select employees count"
                     options={[
                       {value: 'Just me (1)', label: 'Just me (1)'},
@@ -2121,12 +2448,18 @@ const BusinessSetup = () => {
                       {value: '100+', label: '100+'}
                     ]}
                   />
+                  {fieldErrors.employees && (
+                    <span className="field-error-msg"><AlertCircle size={13} /> {fieldErrors.employees}</span>
+                  )}
                 </div>
-                <div className="setup-form-group full-width">
-                  <label>Monthly Sales Range</label>
+                <div className={`setup-form-group full-width ${fieldErrors.monthlySales ? 'has-error' : ''}`}>
+                  <label>Monthly Sales Range <span className="req-star">*</span></label>
                   <CustomSelect 
                     value={size.monthlySales} 
-                    onChange={e => setSize({...size, monthlySales: e.target.value})}
+                    onChange={e => {
+                      setSize({...size, monthlySales: e.target.value});
+                      setFieldErrors(prev => ({ ...prev, monthlySales: '' }));
+                    }}
                     placeholder="Select sales range"
                     options={[
                       {value: 'Under ₹50,000', label: 'Under ₹50,000'},
@@ -2136,6 +2469,9 @@ const BusinessSetup = () => {
                       {value: '₹50 lakh+', label: '₹50 lakh+'}
                     ]}
                   />
+                  {fieldErrors.monthlySales && (
+                    <span className="field-error-msg"><AlertCircle size={13} /> {fieldErrors.monthlySales}</span>
+                  )}
                 </div>
               </div>
             )}
@@ -2218,6 +2554,25 @@ const BusinessSetup = () => {
               </div>
             )}
             </div>
+
+            {error && (
+              <div className="setup-error-banner" style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                border: '1.5px solid rgba(239, 68, 68, 0.4)',
+                color: '#ef4444',
+                fontSize: '12px',
+                fontWeight: '600',
+                margin: '12px 0'
+              }}>
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                <span>{error}</span>
+              </div>
+            )}
 
             <div className="setup-footer">
               <button 

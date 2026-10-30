@@ -69,6 +69,160 @@ export const TEST_PHRASES = {
   es: '¡Hola! Soy Karobaar Asistente IA. Te ayudaré a configurar y gestionar tu negocio con éxito.'
 };
 
+export const LANGUAGE_SPEECH_DATA = {
+  hinglish: {
+    speechLang: 'hi-IN',
+    nativeText: 'Namaste! Main Karobaar Customize AI hoon. Main aapki dukaan ka setup aur billing asaan banaunga.',
+    phoneticText: 'Namaste! Main Karobaar Customize AI hoon. Main aapki dukaan ka setup aur billing asaan banaunga.',
+    selectedLabel: 'Selected',
+    confirmVoice: (g) => g === 'male' ? 'Namaste! Male voice select ho gayi hai.' : 'Namaste! Female voice select ho gayi hai.'
+  },
+  en: {
+    speechLang: 'en-US',
+    nativeText: 'Hello! I am Karobaar Customize AI. I will help you set up and manage your business smoothly.',
+    phoneticText: 'Hello! I am Karobaar Customize AI. I will help you set up and manage your business smoothly.',
+    selectedLabel: 'Selected',
+    confirmVoice: (g) => `Voice set to ${g}. I am ready to guide you.`
+  },
+  hi: {
+    speechLang: 'hi-IN',
+    nativeText: 'नमस्ते! मैं करोबार कस्टमाइज़ AI हूँ। मैं आपकी दुकान का सेटअप और बिलिंग आसान बनाऊँगा।',
+    phoneticText: 'Namaste! Main Karobaar Customize AI hoon. Main aapki dukaan ka setup aur billing asaan banaoonga.',
+    selectedLabel: 'चयनित (Selected)',
+    confirmVoice: (g) => g === 'male' ? 'नमस्ते! पुरुष आवाज़ चुन ली गई है।' : 'नमस्ते! महिला आवाज़ चुन ली गई है।'
+  },
+  ur: {
+    speechLang: 'ur-PK',
+    nativeText: 'السلام علیکم! میں کاروبار کسٹمائز AI ہوں۔ میں آپ کی دکان کا سیٹ اپ آسان بناؤں گا۔',
+    phoneticText: 'Assalam-o-Alaikum! Main Karobaar Customize AI hoon. Main aapki dukaan ka setup aasan banaunga.',
+    selectedLabel: 'منتخب (Selected)',
+    confirmVoice: (g) => g === 'male' ? 'السلام علیکم! مردانہ آواز منتخب ہو گئی ہے۔' : 'السلام علیکم! زنانہ آواز منتخب ہو گئی ہے۔'
+  },
+  bn: {
+    speechLang: 'bn-IN',
+    nativeText: 'নমস্কার! আমি কারবার কাস্টমাইজ এআই। আপনার দোকানের সেটআপ ও হিসাব সহজ করে দেব।',
+    phoneticText: 'Nomoshkar! Aami Karobaar Customize AI. Aaponar dokaner setup shohaj kore debo.',
+    selectedLabel: 'নির্বাচিত (Selected)',
+    confirmVoice: (g) => `Nomoshkar! ${g === 'male' ? 'Purush' : 'Mohila'} voice select kora hoyeche.`
+  },
+  ta: {
+    speechLang: 'ta-IN',
+    nativeText: 'வணக்கம்! நான் காரோபார் AI உதவியாளர். உங்கள் கடை அமைப்பை எளிதாக்குவேன்.',
+    phoneticText: 'Vanakkam! Naan Karobaar AI udhaviyaalar. Ungal kadai amaippai elidhaakkuvaen.',
+    selectedLabel: 'தேர்ந்தெடுக்கப்பட்டது (Selected)',
+    confirmVoice: (g) => `Vanakkam! ${g} voice select seyyappattadhu.`
+  },
+  te: {
+    speechLang: 'te-IN',
+    nativeText: 'నమస్కారం! నేను కారోబార్ AI అసిస్టెంట్‌ని. మీ దుకాణం సెటప్‌ను సులభతరం చేస్తాను.',
+    phoneticText: 'Namaskaram! Nenu Karobaar AI assistant ni. Mee dukaanaanni set up chesthaanu.',
+    selectedLabel: 'ఎంచుకోబడింది (Selected)',
+    confirmVoice: (g) => `Namaskaram! ${g} voice select cheyabadindhi.`
+  },
+  mr: {
+    speechLang: 'mr-IN',
+    nativeText: 'नमस्कार! मी कारोबार कस्टमाईझ AI आहे. तुमच्या दुकानाचे व्यवस्थापन सोपे करूया.',
+    phoneticText: 'Namaskar! Mee Karobaar Customize AI aahe. Tumchya dukaanaache setup sope karuya.',
+    selectedLabel: 'निवडलेले (Selected)',
+    confirmVoice: (g) => `Namaskar! ${g} aawaj select zhaali aahe.`
+  },
+  gu: {
+    speechLang: 'gu-IN',
+    nativeText: 'નમસ્તે! હું કારોબાર કસ્ટમાઇઝ AI છું. તમારી દુકાનનું સેટઅપ સરળ બનાવીશ.',
+    phoneticText: 'Namaste! Hoon Karobaar Customize AI chhu. Tamaari dukaan nu setup saral banaavish.',
+    selectedLabel: 'પસંદ કરેલ (Selected)',
+    confirmVoice: (g) => `Namaste! ${g} aawaj pasand thai gayee chhe.`
+  },
+  ar: {
+    speechLang: 'ar-SA',
+    nativeText: 'مرحباً! أنا مساعد كاروبار الذکی. سأساعدك في تهيئة وإدارة متجرك بكل سهولة.',
+    phoneticText: "Marhaban! Ana musa'id Karobaar al-dhaki. Sa-usa'iduka fi idarat matjarik bi-kulli suhoola.",
+    selectedLabel: 'محدد (Selected)',
+    confirmVoice: (g) => `Marhaban! Tam dabt al-sawt ila ${g}.`
+  },
+  es: {
+    speechLang: 'es-ES',
+    nativeText: '¡Hola! Soy Karobaar Asistente IA. Te ayudaré a configurar y gestionar tu negocio con éxito.',
+    phoneticText: '¡Hola! Soy Karobaar Asistente IA. Te ayudaré a configurar y gestionar tu negocio con éxito.',
+    selectedLabel: 'Seleccionado (Selected)',
+    confirmVoice: (g) => `Voz establecida en ${g}. Estoy listo para ayudarte.`
+  }
+};
+
+
+
+export const AI_STEP_PROMPTS_PHONETIC = {
+  step1: {
+    hinglish: 'Namaste! Karobaar me aapka swagat hai. Main Customize AI hoon. Chaliye aapki dukaan ka pura setup step-by-step karte hain. Kripya apna naam aur phone number batayein ya type karein.',
+    en: 'Welcome to Karobaar! I am Customize AI, your business assistant. Let us set up your store step-by-step. What is your full name and contact number?',
+    hi: 'Namaste! Karobaar mein aapka swaagat hai. Main Customize AI hoon. Chaliye aapki dukaan ka poora setup step-by-step karte hain. Kripya apna naam aur phone number darj karein.',
+    ur: 'Khush-aamdeed! Main aapka Customize AI assistant hoon. Chaliye aapki dukaan ka mukammal setup karte hain. Baraah-e-karam apna naam aur phone number darj karein.',
+    bn: 'Karobaar e shagotom! Aami aaponar Customize AI. Aashun dhaape dhaape aaponar dokan setup kori. Doya kore aaponar naam o phone number likhun.',
+    ta: 'Karobaarukku varaverkirom! Naan ungal AI udhaviyaalar. Ungal kadaiyai amaippom. Ungal peyar matrum tholaipesi ennai ullidavum.',
+    te: 'Karobaar ku swagatham! Nenu mee AI assistant ni. Mee dukaanaanni setup cheddaam. Dayachesi mee peru mariyu phone number nu namodu cheyandi.',
+    mr: 'Karobaar madhye aaple swagat aahe! Mee tumcha AI sahayyak aahe. Chala tumchya dukaanaache setup karuya. Kripya tumche naav va phone number taaka.',
+    gu: 'Karobaar ma aapnu swagat chhe! Hoon tamaaro AI sahayak chhu. Chaalo tamaari dukaan nu setup kariye. Kripa karine tamaaru naam ane phone number daakhal karo.',
+    ar: 'Marhaban bik fi Karobaar! Ana musaiduk al-dhaki. Dana naqum bi-tahiat matjarik khattwa bi-khattwa. Yurja idkhaalu ismik wa raqm hatifik.',
+    es: '¡Bienvenido a Karobaar! Soy tu asistente de IA. Configuremos tu tienda paso a paso. Ingresa tu nombre y número de teléfono.'
+  },
+  step2: (name, lang) => {
+    const n = name || '';
+    switch (lang) {
+      case 'hi': return 'Bahut khoob, ' + n + '! Ab apni dukaan ya business ka naam darj karein:';
+      case 'ur': return 'Bahut khoob, ' + n + '! Ab apni dukaan ya business ka naam darj karein:';
+      case 'bn': return 'Chomothkar, ' + n + '! Ebaar aaponar dokaan ba business er naam likhun:';
+      case 'ta': return 'Sirappu, ' + n + '! Ippodhu ungal kadai alladhu vanigatthin peyarai ullidavum:';
+      case 'te': return 'Chaala baagundi, ' + n + '! Ippudu mee dukaanaam leda vyaapaaram peru namodu cheyandi:';
+      case 'mr': return 'Uttam, ' + n + '! Aata aaplya dukaanaache kinva vyavsaayache naav taaka:';
+      case 'gu': return 'Saras, ' + n + '! Have tamaari dukaan athva vyavsay nu naam daakhal karo:';
+      case 'ar': return 'Raa\'e, ' + n + '! Al-aan ma huwa ism matjarik aw sharikatik?';
+      case 'es': return '¡Excelente, ' + n + '! ¿Cuál es el nombre de tu tienda o negocio?';
+      case 'en': return 'Awesome, ' + (n || 'there') + '! What is the name of your shop or enterprise?';
+      case 'hinglish':
+      default: return 'Bahut badhiya, ' + (n || 'ji') + '! Ab apni dukaan ya business ka naam batayein:';
+    }
+  },
+  step3: {
+    hinglish: 'Aapka business kis type ka hai? Jaise Cafeteria, Kirana store, ya Kapde ki dukaan? Select karte hi main ready-to-sell inventory apne aap load kar dunga.',
+    en: 'What type of business do you run? Select your category, and I will preload ready-to-sell products with prices for you.',
+    hi: 'Aapki dukaan kis tarah ki hai? Jaise Cafeteria, Kirana store, ya Kapde ki dukaan? Main aapke liye ready-to-sell maal turant load kar doonga.',
+    ur: 'Aap ka karobaar kis qism ka hai? Jaise Cafe, Karyana store, ya Garments? Main aapke liye zaroori saamaan khud shaamil kar doonga.',
+    bn: 'Aaponar business kon dhoroner? Jemon Cafe, Mudikhana ba Kapoder dokan? Aami ready-to-sell stock load kore debo.',
+    ta: 'Ungal vanigam ethagaiyadhu? Cafe, Maligai alladhu Thunikkadaya? Naan thayaaraana sarakkugalai yetruven.',
+    te: 'Mee vyaapaaram ye rakamainadi? Cafe, Kirana leda Dustula dukaanaama? Nenu siddhamgaa unna vasthuvulanu load chesthaanu.',
+    mr: 'Tumcha vyavsay konthya prakaarcha aahe? Cafe, Kirana kinva Kapdyaanche dukaan? Mee tayaar inventory load karen.',
+    gu: 'Tamaaro vyavsay keva prakaarno chhe? Cafe, Kariyaanu ke Kapdaan? Hoon taiyaar maal aapmele umedi aapeesh.',
+    ar: 'Ma huwa naw nashatik al-tijari? Mithla maqha, baqala, aw malabis? Sa-aqum bi-tahmil al-muntajat tilqaiyan.',
+    es: '¿Qué tipo de negocio tienes? Cafetería, supermercado o tienda de ropa. Cargaré los productos por ti.'
+  },
+  step4: {
+    hinglish: 'QR code se customer payments lene ke liye apni UPI ID enter karein (jaise naam@okaxis), aur apni billing currency chunein:',
+    en: 'Enter your UPI ID or payment handle for QR customer payments, and choose your preferred currency:',
+    hi: 'QR code se payments lene ke liye apni UPI ID daalein, jaise naam @ okaxis, aur apni currency chunein:',
+    ur: 'Adaigi aur QR code ke liye apni UPI ya shanakhti tafseel darj karein aur currency muntakhib karein:',
+    bn: 'Payment paowar jonyo UPI ID din ebong currency select korun:',
+    ta: 'QR kattanangalai yerka ungal UPI mugavariyai ullittu currency thervu seyyavum:',
+    te: 'Customer chellimpula kosam mee UPI ID ni namodu chesi currency ni yenchukondi:',
+    mr: 'Payment sweekaranyasaathi tumchi UPI ID taaka aani currency nivda:',
+    gu: 'Grahak payment sweekarva maate tamaari UPI ID daakhal karo ane currency pasand karo:',
+    ar: 'Adkhil marif al-daf al-raqami al-khas bik wakhtar al-umla al-mufaddala ladayk:',
+    es: 'Ingresa tu identificador de pagos y selecciona tu moneda preferida:'
+  },
+  step5: {
+    hinglish: 'Apni pasand ki Black and White monochrome theme aur dashboard desk select karein:',
+    en: 'Choose your high-contrast monochrome theme and dashboard operating layout:',
+    hi: 'Apni pasand ki black and white theme aur dashboard style chunein:',
+    ur: 'Apni pasand ka black and white theme aur dashboard design muntakhib karein:',
+    bn: 'Aaponar pochonder monochrome theme o dashboard mode select korun:',
+    ta: 'Ungalukku viruppamaana karuppu vellai theme matrum dashboard paaniyai thervu seyyavum:',
+    te: 'Meeku ishtamaina monochrome theme mariyu dashboard shailini yenchukondi:',
+    mr: 'Aapli aavadti monochrome theme aani dashboard style nivda:',
+    gu: 'Tamaari pasandni monochrome theme ane dashboard style pasand karo:',
+    ar: 'Ikhtar al-namat al-ahadi aali al-tabayun wa wajihat lawhat al-tahakkum:',
+    es: 'Selecciona tu tema monocromático y la vista de panel que prefieras:'
+  }
+};
+
 export const AI_STEP_PROMPTS = {
   step1: {
     hinglish: 'Namaste! Karobaar me aapka swagat hai. Main Customize AI hoon. Chaliye aapki dukaan ka pura setup step-by-step karte hain. Kripya apna naam aur phone number batayein ya type karein.',
@@ -359,67 +513,152 @@ export const AIOnboardingConcierge = () => {
     }
   }, [languagePreference, step]);
 
-    // Voice selector helper: matches by explicit URI, language, and gender persona
-  const getSelectedVoice = (targetLang) => {
-    if (!availableVoices.length) return null;
+  // Voice selector helper: matches by language prefix, gender persona, with Indian/English fallback
+  const getSelectedVoice = (targetLang, targetGender) => {
+    const voices = (availableVoices && availableVoices.length > 0)
+      ? availableVoices
+      : ((typeof window !== 'undefined' && window.speechSynthesis) ? (window.speechSynthesis.getVoices() || []) : []);
 
+    if (!voices.length) return null;
+
+    const gender = targetGender || selectedVoiceGender || 'female';
+    const langCode = targetLang || languagePreference || 'en';
+    const langObj = AI_LANGUAGES.find(l => l.code === langCode) || AI_LANGUAGES[0];
+    const prefix = (langObj.speechLang || 'en').toLowerCase().split('-')[0];
+
+    // Check if user explicitly chose a custom system voice that matches the language
     if (selectedVoiceURI) {
-      const exact = availableVoices.find(v => v.voiceURI === selectedVoiceURI || v.name === selectedVoiceURI);
+      const exact = voices.find(v => (v.voiceURI === selectedVoiceURI || v.name === selectedVoiceURI) && v.lang.toLowerCase().startsWith(prefix));
       if (exact) return exact;
     }
 
-    const langObj = AI_LANGUAGES.find(l => l.code === (targetLang || languagePreference)) || AI_LANGUAGES[0];
-    const speechCode = langObj.speechLang.toLowerCase().split('-')[0];
+    // 1. Filter voices for the target language
+    let matching = voices.filter(v => v.lang.toLowerCase().startsWith(prefix));
 
-    let matching = availableVoices.filter(v => v.lang.toLowerCase().startsWith(speechCode));
+    // 2. Fallbacks for languages often missing on Windows
     if (!matching.length) {
-      matching = availableVoices.filter(v => v.lang.toLowerCase().includes('in') || v.lang.toLowerCase().startsWith('en'));
+      if (langCode === 'ur' || langCode === 'hinglish') {
+        matching = voices.filter(v => v.lang.toLowerCase().startsWith('hi') || v.lang.toLowerCase().includes('in'));
+      } else if (['bn', 'ta', 'te', 'mr', 'gu'].includes(langCode)) {
+        matching = voices.filter(v => v.lang.toLowerCase().startsWith('hi') || v.lang.toLowerCase().includes('in'));
+      } else if (langCode === 'ar') {
+        matching = voices.filter(v => v.lang.toLowerCase().startsWith('ar'));
+      }
     }
-    if (!matching.length) matching = availableVoices;
 
-    if (selectedVoiceGender === 'female' || selectedVoiceGender === 'friendly') {
+    // 3. Global fallback to English or any voice
+    if (!matching.length) {
+      matching = voices.filter(v => v.lang.toLowerCase().startsWith('en'));
+    }
+    if (!matching.length) {
+      matching = voices;
+    }
+
+    // 4. Match gender persona within candidate voices
+    if (gender === 'female' || gender === 'friendly') {
       const female = matching.find(v => {
         const n = v.name.toLowerCase();
-        return n.includes('female') || n.includes('zira') || n.includes('samantha') || n.includes('karen') || n.includes('victoria') || n.includes('swara') || n.includes('veena') || n.includes('neerja');
+        return n.includes('female') || n.includes('zira') || n.includes('samantha') || n.includes('karen') || 
+               n.includes('victoria') || n.includes('swara') || n.includes('veena') || n.includes('neerja') || 
+               n.includes('kalpana') || n.includes('hoda') || n.includes('sabina') || n.includes('helena') || 
+               n.includes('catherine') || n.includes('susan');
       });
       if (female) return female;
-    } else if (selectedVoiceGender === 'male') {
+    } else if (gender === 'male') {
       const male = matching.find(v => {
         const n = v.name.toLowerCase();
-        return n.includes('male') || n.includes('david') || n.includes('mark') || n.includes('george') || n.includes('rishi') || n.includes('madhur') || n.includes('prabhat');
+        return n.includes('male') || n.includes('david') || n.includes('mark') || n.includes('george') || 
+               n.includes('rishi') || n.includes('madhur') || n.includes('prabhat') || n.includes('hemant') || 
+               n.includes('naayf') || n.includes('pablo') || n.includes('richard') || n.includes('james');
       });
       if (male) return male;
     }
 
-    return matching[0] || availableVoices[0] || null;
+    return matching[0] || voices[0] || null;
   };
 
-  // AI Speech output helper with full pitch, rate, persona and voice support
+  // AI Speech output helper with full pitch, rate, persona, language script detection, and phonetic fallback
   const speakAI = (text, options = {}) => {
     if (!voiceEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
     try {
-      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+        try { window.speechSynthesis.cancel(); } catch (_) {}
+      }
+      if (window.speechSynthesis.paused) {
+        try { window.speechSynthesis.resume(); } catch (_) {}
+      }
 
-      const clean = text.replace(/[*#_`]/g, '').replace(/₹/g, 'Rupees ').trim();
-      const utterance = new SpeechSynthesisUtterance(clean);
-
-      const targetLang = options.lang || languagePreference;
+      const targetLang = options.lang || languagePreference || 'en';
+      const targetGender = options.gender || selectedVoiceGender || 'female';
       const langObj = AI_LANGUAGES.find(l => l.code === targetLang) || AI_LANGUAGES[0];
-      utterance.lang = langObj.speechLang;
+      const speechData = LANGUAGE_SPEECH_DATA[targetLang] || LANGUAGE_SPEECH_DATA.en;
 
-      const voice = options.voice || getSelectedVoice(targetLang);
+      const voice = options.voice || getSelectedVoice(targetLang, targetGender);
+
+      // Determine if voice supports the native non-latin characters
+      const voiceLangPrefix = voice ? voice.lang.toLowerCase().split('-')[0] : '';
+      const targetPrefix = (langObj.speechLang || 'en').toLowerCase().split('-')[0];
+      const supportsNativeScript = (voiceLangPrefix === targetPrefix) || 
+                                   (targetPrefix === 'ur' && (voiceLangPrefix === 'ur' || voiceLangPrefix === 'ar')) ||
+                                   (targetPrefix === 'mr' && voiceLangPrefix === 'hi');
+
+      // If voice does NOT support the native alphabet (e.g. English voice Microsoft David/Zira for Hindi/Urdu/Bengali/Arabic/Tamil),
+      // use phonetic transliteration so audio ALWAYS plays cleanly without staying silent!
+      let textToSpeak = text;
+      let speechLang = supportsNativeScript ? langObj.speechLang : (voice?.lang || 'en-US');
+
+      if (!supportsNativeScript) {
+        if (options.phoneticText) {
+          textToSpeak = options.phoneticText;
+        } else if (speechData.phoneticText) {
+          textToSpeak = speechData.phoneticText;
+        }
+      }
+
+      const clean = (textToSpeak || '').replace(/[*#_]/g, '').replace(/₹/g, 'Rupees ').trim();
+      if (!clean) return;
+
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.lang = speechLang;
       if (voice) {
         utterance.voice = voice;
       }
 
-      utterance.rate = options.rate !== undefined ? options.rate : voiceRate;
-      utterance.pitch = options.pitch !== undefined ? options.pitch : voicePitch;
+      // Gender Pitch & Rate calibration
+      let pitch = options.pitch !== undefined ? options.pitch : voicePitch;
+      let rate = options.rate !== undefined ? options.rate : voiceRate;
+      if (targetGender === 'male') {
+        pitch = Math.min(pitch, 0.88);
+      } else if (targetGender === 'female' || targetGender === 'friendly') {
+        pitch = Math.max(pitch, 1.12);
+      }
+      utterance.pitch = pitch;
+      utterance.rate = rate;
 
-      if (options.onStart) utterance.onstart = options.onStart;
-      if (options.onEnd) utterance.onend = options.onEnd;
-      if (options.onError) utterance.onerror = options.onError;
+      // Keep utterance in a global reference so V8 GC doesn't delete it
+      window._activeConciergeUtterance = utterance;
 
-      window.speechSynthesis.speak(utterance);
+      utterance.onstart = (ev) => {
+        if (options.onStart) options.onStart(ev);
+      };
+      utterance.onend = (ev) => {
+        window._activeConciergeUtterance = null;
+        if (options.onEnd) options.onEnd(ev);
+      };
+      utterance.onerror = (ev) => {
+        window._activeConciergeUtterance = null;
+        if (options.onError) options.onError(ev);
+      };
+
+      // 40ms dispatch ensures browser audio queue is ready
+      setTimeout(() => {
+        try {
+          if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+          window.speechSynthesis.speak(utterance);
+        } catch (err) {
+          console.warn('[speakAI execution error]', err);
+        }
+      }, 40);
     } catch (e) {
       console.warn('[AI Speech error]', e);
     }
@@ -434,8 +673,12 @@ export const AIOnboardingConcierge = () => {
     }
 
     const samplePhrase = TEST_PHRASES[languagePreference] || TEST_PHRASES.en;
+    const spData = LANGUAGE_SPEECH_DATA[languagePreference] || LANGUAGE_SPEECH_DATA.en;
     setIsSpeakingTest(true);
     speakAI(samplePhrase, {
+      lang: languagePreference,
+      phoneticText: spData.phoneticText,
+      gender: selectedVoiceGender,
       onEnd: () => setIsSpeakingTest(false),
       onError: () => setIsSpeakingTest(false)
     });
@@ -448,47 +691,36 @@ export const AIOnboardingConcierge = () => {
     navigate('/setup?new=true');
   };
 
-  // Speak AI prompt whenever step changes
+  // Speak AI prompt whenever step changes across ALL 11 languages with phonetic fallback
   useEffect(() => {
     if (!isOpen) return;
 
+    const lang = languagePreference || 'hinglish';
+    let promptNative = '';
+    let promptPhonetic = '';
+
     if (step === 1) {
-      const greeting = languagePreference === 'hinglish'
-        ? "Namaste! Karobaar me aapka swagat hai. Main Customize AI hoon. Chaliye aapki dukaan ka pura setup step-by-step karte hain. Kripya apna naam aur phone number batayein ya type karein."
-        : languagePreference === 'hi'
-        ? "नमस्ते! करोबार में आपका स्वागत है। मैं कस्टमाइज़ AI हूँ। चलिए आपकी दुकान का पूरा सेटअप स्टेप-बाय-स्टेप करते हैं। कृपया अपना नाम और फ़ोन नंबर बताएँ।"
-        : "Welcome to Karobaar! I am Customize AI, your business assistant. Let's set up your store step-by-step. What is your full name and contact number?";
-      speakAI(greeting);
+      promptNative = AI_STEP_PROMPTS.step1[lang] || AI_STEP_PROMPTS.step1.en;
+      promptPhonetic = AI_STEP_PROMPTS_PHONETIC.step1[lang] || AI_STEP_PROMPTS_PHONETIC.step1.en;
     } else if (step === 2) {
-      const prompt = languagePreference === 'hinglish'
-        ? `Bahut badhiya, ${ownerName}! Ab apni dukaan ya business ka naam batayein ya neeche se select karein:`
-        : languagePreference === 'hi'
-        ? "बहुत बढ़िया! अब अपनी दुकान या बिज़नेस का नाम बताएँ या नीचे से सेलेक्ट करें।"
-        : "Great! What is the name of your shop or business?";
-      speakAI(prompt);
+      promptNative = AI_STEP_PROMPTS.step2(ownerName, lang);
+      promptPhonetic = AI_STEP_PROMPTS_PHONETIC.step2(ownerName, lang);
     } else if (step === 3) {
-      const prompt = languagePreference === 'hinglish'
-        ? "Aapka business kis type ka hai? Jaise Cafeteria, Kirana store, ya Kapde ki dukaan? Select karte hi main ready-to-sell inventory apne aap load kar dunga."
-        : languagePreference === 'hi'
-        ? "आपकी दुकान किस तरह की है? जैसे कैफेटेरिया, किराना स्टोर, या कपड़े की दुकान? मैं आपके लिए रेडी-टू-सेल माल तुरंत लोड कर दूँगा।"
-        : "What type of business do you run? Select your category, and I will preload ready-to-sell products with prices for you.";
-      speakAI(prompt);
+      promptNative = AI_STEP_PROMPTS.step3[lang] || AI_STEP_PROMPTS.step3.en;
+      promptPhonetic = AI_STEP_PROMPTS_PHONETIC.step3[lang] || AI_STEP_PROMPTS_PHONETIC.step3.en;
     } else if (step === 4) {
-      const prompt = languagePreference === 'hinglish'
-        ? "QR code se customer payments lene ke liye apni UPI ID enter karein (jaise naam@okaxis), aur apni billing currency chunein:"
-        : languagePreference === 'hi'
-        ? "QR कोड से पेमेंट्स लेने के लिए अपनी UPI ID डालें, जैसे नाम @ ओकेएक्सिस, और अपनी करंसी चुनें।"
-        : "Enter your UPI ID for QR code payments, and choose your business currency.";
-      speakAI(prompt);
+      promptNative = AI_STEP_PROMPTS.step4[lang] || AI_STEP_PROMPTS.step4.en;
+      promptPhonetic = AI_STEP_PROMPTS_PHONETIC.step4[lang] || AI_STEP_PROMPTS_PHONETIC.step4.en;
     } else if (step === 5) {
-      const prompt = languagePreference === 'hinglish'
-        ? "Apni pasand ki Black and White monochrome theme aur dashboard desk select karein:"
-        : languagePreference === 'hi'
-        ? "अपनी पसंद की ब्लैक एंड व्हाइट थीम और डैशबोर्ड स्टाइल चुनें।"
-        : "Choose your monochrome theme and dashboard operating style.";
-      speakAI(prompt);
+      promptNative = AI_STEP_PROMPTS.step5[lang] || AI_STEP_PROMPTS.step5.en;
+      promptPhonetic = AI_STEP_PROMPTS_PHONETIC.step5[lang] || AI_STEP_PROMPTS_PHONETIC.step5.en;
     }
-  }, [step, isOpen, languagePreference]);
+
+    if (promptNative) {
+      speakAI(promptNative, { lang, phoneticText: promptPhonetic, gender: selectedVoiceGender });
+    }
+  }, [step, isOpen, languagePreference, selectedVoiceGender]);
+
 
   // Voice Input Handler for the active step
   const applyVoiceInputToCurrentStep = (spokenText) => {
@@ -713,26 +945,53 @@ export const AIOnboardingConcierge = () => {
                     <button type="button" onClick={() => setShowLangMenu(false)} className="ai-popover-close"><X size={13} /></button>
                   </div>
                   <div className="ai-lang-grid">
-                    {AI_LANGUAGES.map(lang => (
-                      <button
-                        key={lang.code}
-                        type="button"
-                        className={`ai-lang-option ${languagePreference === lang.code ? 'active' : ''}`}
-                        onClick={() => {
-                          setLanguagePreference(lang.code);
-                          localStorage.setItem('karobaar_ai_language', lang.code);
-                          setShowLangMenu(false);
-                          speakAI(TEST_PHRASES[lang.code] || TEST_PHRASES.en, { lang: lang.code });
-                        }}
-                      >
-                        <span className="lang-flag">{lang.flag}</span>
-                        <div className="lang-text">
-                          <strong className="lang-name">{lang.label}</strong>
-                          <span className="lang-native">{lang.native}</span>
-                        </div>
-                        {languagePreference === lang.code && <Check size={14} className="lang-active-check" />}
-                      </button>
-                    ))}
+                    {AI_LANGUAGES.map(lang => {
+                      const isSelected = languagePreference === lang.code;
+                      const spData = LANGUAGE_SPEECH_DATA[lang.code] || LANGUAGE_SPEECH_DATA.en;
+                      return (
+                        <button
+                          key={lang.code}
+                          type="button"
+                          className={`ai-lang-option ${isSelected ? 'active' : ''}`}
+                          onClick={() => {
+                            setLanguagePreference(lang.code);
+                            localStorage.setItem('karobaar_ai_language', lang.code);
+                            const spData = LANGUAGE_SPEECH_DATA[lang.code] || LANGUAGE_SPEECH_DATA.en;
+                            const phraseNative = TEST_PHRASES[lang.code] || TEST_PHRASES.en;
+                            speakAI(phraseNative, { 
+                              lang: lang.code, 
+                              phoneticText: spData.phoneticText,
+                              gender: selectedVoiceGender 
+                            });
+                          }}
+                        >
+                          <span className="lang-flag">{lang.flag}</span>
+                          <div className="lang-text">
+                            <strong className="lang-name">{lang.label}</strong>
+                            <span className="lang-native">{lang.native}</span>
+                          </div>
+                          {isSelected ? (
+                            <span className="ai-lang-selected-pill">
+                              <Check size={11} strokeWidth={3} /> Selected
+                            </span>
+                          ) : (
+                            <span className="ai-lang-select-action">Select</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="ai-lang-footer">
+                    <div className="ai-lang-footer-info">
+                      <span>Active: <strong>{AI_LANGUAGES.find(l => l.code === languagePreference)?.label}</strong> ({selectedVoiceGender === 'male' ? 'Male Voice' : 'Female Voice'})</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      className="ai-lang-apply-btn"
+                      onClick={() => setShowLangMenu(false)}
+                    >
+                      Done / Apply
+                    </button>
                   </div>
                 </div>
               )}
@@ -781,24 +1040,43 @@ export const AIOnboardingConcierge = () => {
                           type="button"
                           className={`ai-voice-chip ${selectedVoiceGender === p.id ? 'active' : ''}`}
                           onClick={() => {
-                            setSelectedVoiceGender(p.id);
-                            localStorage.setItem('karobaar_ai_voice_gender', p.id);
-                            if (p.id === 'friendly') {
-                              setVoicePitch(1.1);
-                              setVoiceRate(1.05);
-                            } else if (p.id === 'female') {
-                              setVoicePitch(1.05);
-                              setVoiceRate(1.0);
-                            } else if (p.id === 'male') {
-                              setVoicePitch(0.92);
-                              setVoiceRate(0.98);
+                            const newGender = p.id;
+                            let newPitch = 1.0;
+                            let newRate = 1.0;
+                            if (newGender === 'friendly') {
+                              newPitch = 1.1;
+                              newRate = 1.05;
+                            } else if (newGender === 'female') {
+                              newPitch = 1.08;
+                              newRate = 1.0;
+                            } else if (newGender === 'male') {
+                              newPitch = 0.90;
+                              newRate = 0.98;
                             } else {
-                              setVoicePitch(1.0);
-                              setVoiceRate(1.0);
+                              newPitch = 1.0;
+                              newRate = 1.0;
                             }
+                            setVoicePitch(newPitch);
+                            setVoiceRate(newRate);
+                            setSelectedVoiceGender(newGender);
+                            localStorage.setItem('karobaar_ai_voice_gender', newGender);
+
+                            // Speak confirmation in current language using new voice persona!
+                            const spData = LANGUAGE_SPEECH_DATA[languagePreference] || LANGUAGE_SPEECH_DATA.en;
+                            const confirmText = spData.confirmVoice ? spData.confirmVoice(newGender) : `Voice set to ${p.label}`;
+                            speakAI(confirmText, { gender: newGender, pitch: newPitch, rate: newRate });
                           }}
                         >
-                          <strong>{p.label}</strong>
+                          <div className="ai-voice-chip-top">
+                            <strong>{p.label}</strong>
+                            {selectedVoiceGender === p.id ? (
+                              <span className="ai-voice-selected-pill">
+                                <Check size={10} strokeWidth={3} /> Selected
+                              </span>
+                            ) : (
+                              <span className="ai-voice-select-hint">Select</span>
+                            )}
+                          </div>
                           <small>{p.desc}</small>
                         </button>
                       ))}

@@ -270,7 +270,9 @@ const Login = () => {
       window.chrome?.webview || 
       navigator.userAgent.includes('KarobaarApp') ||
       window.location.search.includes('platform=desktop') ||
-      window.location.search.includes('desktop=true')
+      window.location.search.includes('desktop=true') ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
     );
     const port = window.location.port;
 
@@ -334,7 +336,16 @@ const Login = () => {
       } catch (popupErr) {
         console.warn("[Google Auth] Popup response:", popupErr?.code || popupErr);
         if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
-          await signInWithRedirect(auth, googleProvider);
+          if (!isDesktopApp) {
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          }
+          const authUrl = port ? `http://localhost:${port}/google-auth.html?port=${port}` : '/google-auth.html';
+          try {
+            await fetch(`/api/launch-browser?url=${encodeURIComponent(authUrl)}`);
+          } catch (_) {
+            window.open(authUrl, '_blank');
+          }
           return;
         }
         if (popupErr.code === 'auth/popup-closed-by-user') {

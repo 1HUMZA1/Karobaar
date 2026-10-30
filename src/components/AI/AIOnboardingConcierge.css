@@ -972,6 +972,73 @@
   margin-left: auto;
 }
 
+.ai-lang-selected-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background-color: #22c55e;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+  margin-left: auto;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(34, 197, 94, 0.4);
+}
+
+.ai-lang-select-action {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-secondary, #71717a);
+  margin-left: auto;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.ai-lang-option:hover .ai-lang-select-action {
+  opacity: 1;
+}
+
+.ai-lang-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color, #e4e4e7);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-lang-footer-info {
+  font-size: 10px;
+  color: var(--text-secondary, #71717a);
+  line-height: 1.2;
+}
+
+.ai-lang-footer-info strong {
+  color: var(--text-main, #09090b);
+}
+
+.ai-lang-apply-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--text-main, #09090b);
+  background-color: var(--text-main, #09090b);
+  color: var(--bg-card, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.ai-lang-apply-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
 /* Voice Studio Popover */
 .ai-voice-popover {
   width: 340px;
@@ -1161,4 +1228,41 @@
   background-color: var(--bg-body, #f4f4f5);
   border-color: var(--text-main, #09090b);
   border-style: solid;
+}
+
+.ai-voice-chip-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.ai-voice-selected-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background-color: #22c55e;
+  color: #ffffff;
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+.ai-voice-select-hint {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--text-secondary, #71717a);
+  opacity: 0.7;
+}
+
+.ai-lang-footer-selected-tag {
+  background-color: #22c55e;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: 9999px;
+  margin-left: 4px;
 }

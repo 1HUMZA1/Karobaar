@@ -207,17 +207,17 @@
 }
 
 .setup-header h2 {
-  font-size: 1.75rem;
+  font-size: 1.45rem;
   font-weight: 800;
   color: var(--text-main);
   margin-bottom: 0.25rem;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
 .setup-header p {
   color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.45;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .setup-error {
@@ -240,11 +240,11 @@
 .setup-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .setup-form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .setup-form-group.full-width {
@@ -253,19 +253,19 @@
 
 .setup-form-group label {
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-main);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .setup-input {
   width: 100%;
-  padding: 0.875rem 1rem;
+  padding: 0.65rem 0.85rem;
   background-color: transparent;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.88rem;
   color: var(--text-main);
   transition: all 0.2s;
 }
@@ -398,14 +398,14 @@
   position: relative;
   background: var(--bg-card, #ffffff);
   border: 1.5px solid var(--border-color, #e2e8f0);
-  border-radius: 16px;
-  padding: 1.75rem;
+  border-radius: 14px;
+  padding: 1.35rem 1.45rem;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 1.25rem;
+  gap: 0.95rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   text-align: left;
 }
@@ -468,18 +468,18 @@
 }
 
 .setup-choice-content h3 {
-  font-size: 1.25rem;
+  font-size: 1.08rem;
   font-weight: 750;
   color: var(--text-main, #09090b);
-  margin: 0 0 0.4rem 0;
-  letter-spacing: -0.3px;
+  margin: 0 0 0.35rem 0;
+  letter-spacing: -0.2px;
 }
 
 .setup-choice-content p {
-  font-size: 0.92rem;
+  font-size: 0.82rem;
   color: var(--text-secondary, #64748b);
-  line-height: 1.5;
-  margin: 0 0 0.85rem 0;
+  line-height: 1.4;
+  margin: 0 0 0.65rem 0;
 }
 
 .setup-choice-perks {
@@ -488,15 +488,15 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .setup-choice-perks li {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--text-main, #09090b);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .setup-choice-perks li svg {
@@ -943,4 +943,97 @@
   .setup-container {
     padding: 1.5rem 1rem;
   }
+}
+
+/* Required Asterisk */
+.req-star {
+  color: #ef4444;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+/* Field Validation Error Styling */
+.has-error .setup-input,
+.has-error .custom-select-trigger {
+  border-color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.04) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12) !important;
+}
+
+.field-error-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #ef4444;
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* Top Nav Voice Narrator Pill */
+.setup-voice-narrator-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #09090b);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.setup-voice-narrator-pill.active {
+  background: #09090b;
+  color: #ffffff;
+  border-color: #09090b;
+}
+
+.setup-voice-narrator-pill.muted {
+  opacity: 0.6;
+}
+
+/* Step 2: Experience True Bases & Tags */
+.experience-card-tag {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.experience-true-bases {
+  margin-top: 0.5rem;
+  margin-left: 1.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: calc(100% - 1.85rem);
+  padding-top: 0.45rem;
+  border-top: 1px dashed var(--border-color);
+}
+
+.true-base-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.true-base-icon {
+  font-size: 0.82rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.true-base-item strong {
+  color: var(--text-main);
 }

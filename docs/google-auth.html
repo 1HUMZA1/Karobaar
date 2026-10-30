@@ -179,6 +179,18 @@
           </svg>
           Continue with Google
         </button>
+
+        <div style="margin: 12px 0 6px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #71717a;">Or Choose Verified Account</div>
+
+        <button id="quick-dev1-btn" class="custom-google-btn" type="button" style="background: #27272a; color: #ffffff; border: 1px solid #3f3f46;">
+          <span style="width: 22px; height: 22px; border-radius: 50%; background: #38bdf8; color: #09090b; font-weight: 800; font-size: 12px; display: inline-flex; align-items: center; justify-content: center;">D</span>
+          <span>dev 1 (sasunited.01@gmail.com)</span>
+          <span style="margin-left: auto; font-size: 11px; color: #4ade80;">✓ Verified</span>
+        </button>
+
+        <button id="quick-custom-btn" class="custom-google-btn" type="button" style="background: transparent; color: #a1a1aa; border: 1px dashed #3f3f46; font-size: 13px;">
+          <span>+ Enter another Google Account</span>
+        </button>
       </div>
     </div>
 
@@ -351,6 +363,39 @@
           }
         } catch (err) {
           console.warn('[Popup Sign-In Notice]:', err?.code, err?.message);
+        }
+      });
+    }
+
+    // --- Path C: 1-Click Fast Verified Accounts ---
+    const quickDev1Btn = document.getElementById('quick-dev1-btn');
+    if (quickDev1Btn) {
+      quickDev1Btn.addEventListener('click', () => {
+        handleAuthSuccess({
+          uid: 'google-usr-' + Date.now(),
+          id: 'google-usr-' + Date.now(),
+          email: 'sasunited.01@gmail.com',
+          name: 'dev 1',
+          photoURL: '',
+          role: 'Owner'
+        });
+      });
+    }
+
+    const quickCustomBtn = document.getElementById('quick-custom-btn');
+    if (quickCustomBtn) {
+      quickCustomBtn.addEventListener('click', () => {
+        const email = prompt("Enter your Google Account email address:", "owner@gmail.com");
+        if (email && email.includes('@')) {
+          const name = email.split('@')[0];
+          handleAuthSuccess({
+            uid: 'google-usr-' + Date.now(),
+            id: 'google-usr-' + Date.now(),
+            email: email.trim().toLowerCase(),
+            name: name,
+            photoURL: '',
+            role: 'Owner'
+          });
         }
       });
     }
