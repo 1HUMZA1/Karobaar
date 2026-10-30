@@ -520,6 +520,28 @@ class LocalServer {
     String assetKey = 'web/$filePath';
     String contentType = _getContentType(filePath);
 
+    // Try reading directly from disk first (guarantees freshest build on desktop)
+    final diskCandidates = [
+      File('web/$filePath'),
+      File('../docs/$filePath'),
+      File('../dist/$filePath'),
+    ];
+    for (final diskFile in diskCandidates) {
+      if (diskFile.existsSync()) {
+        try {
+          final bytes = diskFile.readAsBytesSync();
+          return Response.ok(
+            bytes,
+            headers: {
+              'Content-Type': contentType,
+              'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'no-cache',
+            },
+          );
+        } catch (_) {}
+      }
+    }
+
     try {
       final bytes = await rootBundle.load(assetKey);
       return Response.ok(
@@ -534,6 +556,25 @@ class LocalServer {
       // SPA Fallback: ONLY serve index.html for navigation routes (not static files with extensions)
       final hasExtension = filePath.split('/').last.contains('.');
       if (!hasExtension) {
+        final diskIndexCandidates = [
+          File('web/index.html'),
+          File('../docs/index.html'),
+          File('../dist/index.html'),
+        ];
+        for (final indexFile in diskIndexCandidates) {
+          if (indexFile.existsSync()) {
+            try {
+              final bytes = indexFile.readAsBytesSync();
+              return Response.ok(
+                bytes,
+                headers: {
+                  'Content-Type': 'text/html; charset=utf-8',
+                  'Access-Control-Allow-Origin': '*',
+                },
+              );
+            } catch (_) {}
+          }
+        }
         try {
           final indexBytes = await rootBundle.load('web/index.html');
           return Response.ok(

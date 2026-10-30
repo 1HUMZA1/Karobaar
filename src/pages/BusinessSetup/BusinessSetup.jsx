@@ -1472,6 +1472,29 @@ const BusinessSetup = () => {
     }
   };
 
+
+  const handleQuickCreateWorkspace = async (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitState('Setting up SAS AND SONS workspace...');
+    try {
+      const bizName = (business.name || 'SAS AND SONS').trim();
+      const bizType = business.type || 'Wholesale';
+      await handleSubmit({ preventDefault: () => {} }, {
+        name: bizName,
+        type: bizType,
+        category: bizType,
+        country: business.country || 'India',
+        city: business.city || 'Main Branch'
+      });
+    } catch (err) {
+      console.error('[Quick Create Error]', err);
+      setError(err.message || 'Failed to setup workspace');
+      setIsSubmitting(false);
+    }
+  };
+
   const stepsList = setupMode === 'choose' ? [
     { id: 1, title: 'Choose Path', desc: 'Create or join a business' },
     { id: 2, title: 'Configure Workspace', desc: 'Details & initial preferences' },
@@ -1586,18 +1609,18 @@ const BusinessSetup = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '10px 14px',
-              borderRadius: '10px',
+              padding: '7px 12px',
+              borderRadius: '8px',
               backgroundColor: 'var(--bg-body, #f4f4f5)',
               border: '1px solid var(--border-color, #e2e8f0)',
-              marginBottom: '20px',
-              gap: '12px'
+              marginBottom: '14px',
+              gap: '10px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--text-main, #09090b)', color: '#fff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1.5px 5px', borderRadius: '4px', backgroundColor: 'var(--text-main, #09090b)', color: '#fff' }}>
                   NEW
                 </span>
-                <span style={{ fontSize: '0.86rem', color: 'var(--text-main, #09090b)', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-main, #09090b)', fontWeight: 600 }}>
                   Want the 30-second conversational voice setup instead?
                 </span>
               </div>
@@ -1608,13 +1631,13 @@ const BusinessSetup = () => {
                   navigate('/dashboard');
                 }}
                 style={{
-                  padding: '6px 12px',
+                  padding: '4px 10px',
                   borderRadius: '6px',
                   border: '1px solid var(--text-main, #09090b)',
                   backgroundColor: 'transparent',
                   color: 'var(--text-main, #09090b)',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
+                  fontSize: '0.72rem',
+                  fontWeight: 650,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap'
                 }}
@@ -1626,22 +1649,22 @@ const BusinessSetup = () => {
 
           {setupMode === 'choose' ? (
             <div className="setup-choice-screen">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <button
                   type="button"
                   className="setup-nav-back-btn"
                   onClick={handleLogout}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '8px', fontSize: '0.86rem' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '6px', fontSize: '0.76rem' }}
                 >
-                  <ArrowLeft size={16} />
+                  <ArrowLeft size={14} />
                   <span>Back to Sign In</span>
                 </button>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                   Role Selection
                 </span>
               </div>
 
-              <div className="setup-header" style={{ marginBottom: '1.25rem' }}>
+              <div className="setup-header" style={{ marginBottom: '1rem' }}>
                 <h2>Get Started with Karobaar</h2>
                 <p>Choose an option below to set up your workspace according to your role.</p>
               </div>
@@ -1649,15 +1672,13 @@ const BusinessSetup = () => {
               <div className="setup-choice-container">
                 {/* Question 1: Create a Business */}
                 <div 
-                  className="setup-choice-card"
-                  onClick={() => {
-                    setSetupMode('create');
-                    setStep(1);
-                  }}
+                  className={`setup-choice-card ${isSubmitting ? 'submitting' : ''}`}
+                  onClick={handleQuickCreateWorkspace}
+                  title="Click to build and launch your business workspace"
                 >
                   <div className="setup-choice-top">
                     <div className="setup-choice-icon-wrap">
-                      <Building2 size={24} />
+                      <Building2 size={18} />
                     </div>
                     <span className="setup-choice-badge badge-owner">
                       Owner / Founder
@@ -1671,23 +1692,27 @@ const BusinessSetup = () => {
                     </p>
                     <ul className="setup-choice-perks">
                       <li>
-                        <CheckCircle2 size={16} />
+                        <CheckCircle2 size={13} />
                         <span>Full administrative ownership & store branding</span>
                       </li>
                       <li>
-                        <CheckCircle2 size={16} />
+                        <CheckCircle2 size={13} />
                         <span>Pre-configured POS, Inventory, Invoices & Tax</span>
                       </li>
                       <li>
-                        <CheckCircle2 size={16} />
+                        <CheckCircle2 size={13} />
                         <span>Generate secure team invite codes for staff</span>
                       </li>
                     </ul>
                   </div>
 
                   <div className="setup-choice-action">
-                    <span>Create Business Workspace</span>
-                    <ArrowRight size={18} />
+                    <span>{isSubmitting ? (submitState || 'Setting up workspace...') : 'Create Business Workspace'}</span>
+                    {isSubmitting ? (
+                      <Loader2 size={14} className="spinner" />
+                    ) : (
+                      <ArrowRight size={14} />
+                    )}
                   </div>
                 </div>
 
@@ -1697,10 +1722,11 @@ const BusinessSetup = () => {
                   onClick={() => {
                     setSetupMode('join');
                   }}
+                  title="Join your team using an invitation code"
                 >
                   <div className="setup-choice-top">
                     <div className="setup-choice-icon-wrap">
-                      <Users size={24} />
+                      <Users size={18} />
                     </div>
                     <span className="setup-choice-badge badge-staff">
                       Staff / Cashier / Manager
@@ -1714,15 +1740,15 @@ const BusinessSetup = () => {
                     </p>
                     <ul className="setup-choice-perks">
                       <li>
-                        <CheckCircle2 size={16} />
+                        <CheckCircle2 size={13} />
                         <span>Instant access — zero business configuration needed</span>
                       </li>
                       <li>
-                        <CheckCircle2 size={16} />
+                        <CheckCircle2 size={13} />
                         <span>Pre-assigned role permissions (Manager, Cashier, etc.)</span>
                       </li>
                       <li>
-                        <CheckCircle2 size={16} />
+                        <CheckCircle2 size={13} />
                         <span>Live multi-user sync with real-time stock & sales</span>
                       </li>
                     </ul>
@@ -1730,7 +1756,7 @@ const BusinessSetup = () => {
 
                   <div className="setup-choice-action">
                     <span>Join with Invite Code</span>
-                    <ArrowRight size={18} />
+                    <ArrowRight size={14} />
                   </div>
                 </div>
               </div>
