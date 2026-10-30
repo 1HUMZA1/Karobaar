@@ -80,20 +80,20 @@ export const JarvisSettingsModal = ({
     }
   }, [currentSettings, isOpen]);
 
-  if (!isOpen) return null;
-
   const handleChange = (key, val) => {
     setSettings(prev => ({ ...prev, [key]: val }));
   };
 
-  const handleSave = () => {
+  function handleSave() {
     onSaveSettings(settings);
     setSavedNotice(true);
     setTimeout(() => {
       setSavedNotice(false);
       onClose();
     }, 400);
-  };
+  }
+
+  if (!isOpen) return null;
 
   // Test Voice function using selected voice and parameters
   const handleTestVoice = () => {

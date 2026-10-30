@@ -171,11 +171,8 @@ class DatabaseService {
           docRef = doc(dbFirestore, `businesses/${item.businessId}/${item.collectionName}`, item.id);
         }
 
-        const cleanData = { ...item.data };
-        delete cleanData._businessId;
-        delete cleanData._syncStatus;
-        delete cleanData._localUpdatedAt;
-        delete cleanData.id;
+        // Recursively clean undefined, internal sync fields, and id
+        const cleanData = this._cleanDataForFirestore(item.data) || {};
 
         // Truncate or omit huge base64 images that exceed Firestore 1MB document boundary
         if (cleanData.imageUrl && typeof cleanData.imageUrl === 'string' && cleanData.imageUrl.length > 700000) {

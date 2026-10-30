@@ -675,8 +675,8 @@ const Settings = () => {
     setEnabledModules(allDisabled);
   };
 
-  // Robust Save Handler supporting section-specific or global saves
-  const handleSave = async (targetSection = null) => {
+  // Robust Save Handler supporting section-specific or global saves (hoisted function)
+  async function handleSave(targetSection = null) {
     const bizId = currentBusiness?.id || currentUser?.activeBusinessId || localStorage.getItem('karobaar-active-business') || 'demo-business-1';
     
     // 1. Validation
