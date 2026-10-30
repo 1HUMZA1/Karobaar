@@ -158,10 +158,25 @@ export const TeamManagement = () => {
   };
 
   const handleCopyInviteCode = (code) => {
-    const inviteUrl = `${window.location.origin}/#/setup?join=${code}`;
+    const baseUrl = window.location.href.split('#')[0].replace(/\/+$/, '');
+    const inv = invitations.find(i => i.code === code) || {};
+    const payload = encodeURIComponent(JSON.stringify({
+      b: activeBizId,
+      n: currentBusiness?.name || 'Workspace',
+      r: inv.role || 'Cashier',
+      p: inv.permissions || []
+    }));
+    const inviteUrl = `${baseUrl}/#/setup?join=${code}&data=${payload}`;
     navigator.clipboard.writeText(inviteUrl);
     setCopiedCode(code);
-    showToast('success', `Copied link for code ${code} to clipboard!`);
+    showToast('success', `Copied invite link for ${code} to clipboard!`);
+    setTimeout(() => setCopiedCode(null), 3000);
+  };
+
+  const handleCopyRawCode = (code) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(`raw_${code}`);
+    showToast('success', `Copied short code ${code} to clipboard!`);
     setTimeout(() => setCopiedCode(null), 3000);
   };
 
@@ -866,6 +881,23 @@ export const TeamManagement = () => {
                               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                                 <button
                                   type="button"
+                                  onClick={() => handleCopyRawCode(inv.code)}
+                                  style={{
+                                    padding: '6px 10px',
+                                    borderRadius: '6px',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'transparent',
+                                    color: 'var(--text-main)',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer'
+                                  }}
+                                  title="Copy clean code (e.g. KB-INV-XXXXX)"
+                                >
+                                  {copiedCode === `raw_${inv.code}` ? 'Copied Code!' : 'Copy Code'}
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => handleCopyInviteCode(inv.code)}
                                   style={{
                                     padding: '6px 12px',
@@ -878,7 +910,7 @@ export const TeamManagement = () => {
                                     cursor: 'pointer'
                                   }}
                                 >
-                                  Copy Link
+                                  {copiedCode === inv.code ? 'Copied Link!' : 'Copy Link'}
                                 </button>
                                 <button
                                   type="button"

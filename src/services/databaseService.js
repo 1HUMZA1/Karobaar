@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { collection, collectionGroup, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { dbFirestore } from './firebase.js';
 import { localDb } from './localDb.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -88,6 +88,29 @@ class DatabaseService {
       !String(b.id).includes('demo') && 
       (b.ownerId === userId || (userEmail && b.ownerEmail && b.ownerEmail.toLowerCase() === userEmail.toLowerCase()))
     );
+
+    // Also include businesses from user memberships (for invited team members e.g. Cashiers, Managers)
+    try {
+      const userDoc = (await this.getById('users', userId)) || localDb.get('users', userId) || {};
+      const memberships = Array.isArray(userDoc.memberships) ? [...userDoc.memberships] : [];
+      
+      const activeBizId = typeof localStorage !== 'undefined' ? localStorage.getItem('karobaar-active-business') : null;
+      if (activeBizId && !memberships.includes(activeBizId) && !String(activeBizId).startsWith('demo-')) {
+        memberships.push(activeBizId);
+      }
+
+      for (const bizId of memberships) {
+        if (!matches.some(m => m.id === bizId)) {
+          const biz = (await this.getById('businesses', bizId)) || localDb.get('businesses', bizId);
+          if (biz) {
+            localDb.save('businesses', biz.id, biz);
+            matches.push(biz);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[getBusinessesForUser memberships note]', e);
+    }
 
     if (typeof navigator !== 'undefined' && navigator.onLine) {
       try {
@@ -631,13 +654,52 @@ class DatabaseService {
       expiresAt
     };
 
-    const saved = await this.save('invitations', inviteId, invitation, businessId);
-    
-    // Also save globally indexed by code for instant lookup across branches
+    // 1. Save in local database: indexed by ID, by code, and for business
+    localDb.save('invitations', inviteId, invitation, false, businessId);
     localDb.save('invitation_codes', inviteCode, invitation, false);
 
+    // Multi-key storage for zero-friction cross-window and cross-tab detection
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(`karobaar_invite_${inviteCode}`, JSON.stringify(invitation));
+        localStorage.setItem(`karobaar_invite_${inviteId}`, JSON.stringify(invitation));
+        let allMap = {};
+        try {
+          allMap = JSON.parse(localStorage.getItem('karobaar_all_invitations') || '{}');
+        } catch (_) {}
+        allMap[inviteCode] = invitation;
+        allMap[inviteId] = invitation;
+        localStorage.setItem('karobaar_all_invitations', JSON.stringify(allMap));
+      }
+    } catch (_) {}
+
+    // 2. Save in Cloud Firestore across both top-level and business subcollections
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const clean = this._cleanDataForFirestore(invitation);
+
+        // A. Top-level invitations collection keyed by inviteCode for instant O(1) cross-device lookup
+        const topCodeRef = doc(dbFirestore, 'invitations', inviteCode);
+        await this._withTimeout(setDoc(topCodeRef, clean, { merge: true }), 4000).catch(err => {
+          console.warn('[Cloud Invite Code Note]:', err?.message || err);
+        });
+
+        // B. Top-level invitations collection keyed by inviteId
+        const topIdRef = doc(dbFirestore, 'invitations', inviteId);
+        await this._withTimeout(setDoc(topIdRef, clean, { merge: true }), 4000).catch(() => {});
+
+        // C. Tenant subcollection for owner's team list
+        if (businessId) {
+          const bizRef = doc(dbFirestore, `businesses/${businessId}/invitations`, inviteId);
+          await this._withTimeout(setDoc(bizRef, clean, { merge: true }), 4000).catch(() => {});
+        }
+      } catch (e) {
+        console.warn('[createInvitation Cloud Save Error]:', e);
+      }
+    }
+
     await this.logAudit('INVITATION_SENT', `Invited ${invitation.email || invitation.phone} as '${invitation.role}' (Code: ${inviteCode})`, userContext, businessId);
-    return saved;
+    return invitation;
   }
 
   /**
@@ -657,33 +719,120 @@ class DatabaseService {
   }
 
   /**
-   * Find an invitation by its code or ID
+   * Find an invitation by its code or ID across local memory and cloud
    */
-  async getInvitationByCode(code) {
-    if (!code) return null;
-    const cleanCode = code.trim().toUpperCase();
+  async getInvitationByCode(rawCode) {
+    if (!rawCode) return null;
+    
+    // Normalize and clean raw code (handles URL paste e.g. https://.../#/setup?join=KB-INV-MKQSM)
+    let cleanCode = String(rawCode).trim().toUpperCase();
+    if (cleanCode.includes('JOIN=')) {
+      cleanCode = cleanCode.split('JOIN=')[1].split('&')[0];
+    }
+    if (cleanCode.includes('#/SETUP?JOIN=')) {
+      cleanCode = cleanCode.split('#/SETUP?JOIN=')[1].split('&')[0];
+    }
+    cleanCode = cleanCode.trim();
+    if (!cleanCode) return null;
 
-    // Check fast lookup index
+    // 1. Direct browser localStorage checks (covers multi-window & multi-tab)
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const rawDirect = localStorage.getItem(`karobaar_invite_${cleanCode}`);
+        if (rawDirect) {
+          const parsed = JSON.parse(rawDirect);
+          if (parsed && (parsed.code === cleanCode || parsed.id === cleanCode)) return parsed;
+        }
+
+        const allMap = JSON.parse(localStorage.getItem('karobaar_all_invitations') || '{}');
+        if (allMap[cleanCode]) return allMap[cleanCode];
+
+        // Also check with hyphens stripped
+        const cleanNoHyphens = cleanCode.replace(/[^A-Z0-9]/g, '');
+        for (const k of Object.keys(allMap)) {
+          if (k.replace(/[^A-Z0-9]/g, '') === cleanNoHyphens) {
+            return allMap[k];
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2. Embedded payload fallback from invitation URL
+    try {
+      const rawStr = String(rawCode);
+      if (rawStr.toUpperCase().includes('DATA=')) {
+        const parts = rawStr.split(/DATA=/i)[1].split('&')[0];
+        const decoded = JSON.parse(decodeURIComponent(parts));
+        if (decoded && decoded.b) {
+          return {
+            id: `inv_${cleanCode}`,
+            code: cleanCode,
+            businessId: decoded.b,
+            businessName: decoded.n || 'Business Workspace',
+            role: decoded.r || 'Cashier',
+            permissions: decoded.p || [],
+            status: 'pending',
+            invitedByName: 'Business Owner',
+            createdAt: new Date().toISOString()
+          };
+        }
+      }
+    } catch (_) {}
+
+    // 3. Fast lookup from local memory index
     const indexed = localDb.get('invitation_codes', cleanCode);
     if (indexed) return indexed;
 
-    // Search across all stored invitations
+    // 4. Search all local invitations
     const allInvitations = localDb.getAll('invitations');
-    const matched = allInvitations.find(inv => (inv.code && inv.code.toUpperCase() === cleanCode) || inv.id === code);
+    const matched = allInvitations.find(inv => 
+      (inv.code && inv.code.toUpperCase() === cleanCode) || 
+      inv.id === cleanCode ||
+      (inv.code && inv.code.replace(/[^A-Z0-9]/g, '') === cleanCode.replace(/[^A-Z0-9]/g, ''))
+    );
     if (matched) return matched;
 
-    // Check Cloud Firestore for invitation code match
+    // 5. Cloud Firestore Direct Document Fetch: invitations/${cleanCode} (Instant O(1) cross-device)
     if (typeof navigator !== 'undefined' && navigator.onLine) {
       try {
-        const q = query(collection(dbFirestore, 'invitations'), where('code', '==', cleanCode));
-        const snap = await this._withTimeout(getDocs(q), 4000);
-        if (snap && !snap.empty) {
-          const docData = snap.docs[0].data();
-          const found = { id: snap.docs[0].id, ...docData };
+        // Direct document ID lookup
+        const docRef = doc(dbFirestore, 'invitations', cleanCode);
+        const docSnap = await this._withTimeout(getDoc(docRef), 4000).catch(() => null);
+        if (docSnap && docSnap.exists()) {
+          const found = { id: docSnap.id, ...docSnap.data() };
           localDb.save('invitation_codes', cleanCode, found, false);
+          if (found.businessId) {
+            localDb.save('invitations', found.id || cleanCode, found, false, found.businessId);
+          }
           return found;
         }
-      } catch (e) {}
+
+        // Top-level query by 'code' field
+        const q1 = query(collection(dbFirestore, 'invitations'), where('code', '==', cleanCode));
+        const snap1 = await this._withTimeout(getDocs(q1), 4000).catch(() => null);
+        if (snap1 && !snap1.empty) {
+          const found = { id: snap1.docs[0].id, ...snap1.docs[0].data() };
+          localDb.save('invitation_codes', cleanCode, found, false);
+          if (found.businessId) {
+            localDb.save('invitations', found.id || cleanCode, found, false, found.businessId);
+          }
+          return found;
+        }
+
+        // CollectionGroup across all tenant subcollections
+        const q2 = query(collectionGroup(dbFirestore, 'invitations'), where('code', '==', cleanCode));
+        const snap2 = await this._withTimeout(getDocs(q2), 4000).catch(() => null);
+        if (snap2 && !snap2.empty) {
+          const found = { id: snap2.docs[0].id, ...snap2.docs[0].data() };
+          localDb.save('invitation_codes', cleanCode, found, false);
+          if (found.businessId) {
+            localDb.save('invitations', found.id || cleanCode, found, false, found.businessId);
+          }
+          return found;
+        }
+      } catch (e) {
+        console.warn('[getInvitationByCode Cloud Note]:', e);
+      }
     }
 
     return null;
@@ -692,8 +841,15 @@ class DatabaseService {
   /**
    * Accept an invitation and bind member to business
    */
-  async acceptInvitation(code, user) {
-    const invite = await this.getInvitationByCode(code);
+  async acceptInvitation(rawCode, user) {
+    if (!rawCode) throw new Error("Please enter an invitation code.");
+    let cleanCode = String(rawCode).trim().toUpperCase();
+    if (cleanCode.includes('JOIN=')) {
+      cleanCode = cleanCode.split('JOIN=')[1].split('&')[0];
+    }
+    cleanCode = cleanCode.trim();
+
+    const invite = await this.getInvitationByCode(cleanCode);
     if (!invite) {
       throw new Error("Invitation not found. Please verify the invitation code or link.");
     }
@@ -709,15 +865,16 @@ class DatabaseService {
     }
 
     const businessId = invite.businessId;
-    const targetUserId = user.uid || user.id;
+    const targetUserId = user?.uid || user?.id || `user_${Date.now()}`;
+    const targetName = user?.name || user?.displayName || user?.email?.split('@')[0] || 'Team Member';
 
     // 1. Create or update member in business
     const memberRecord = {
       id: targetUserId,
       userId: targetUserId,
-      name: user.name || user.displayName || user.email?.split('@')[0] || 'Team Member',
-      email: user.email || invite.email,
-      phone: user.phoneNumber || user.phone || invite.phone || '',
+      name: targetName,
+      email: user?.email || invite.email || '',
+      phone: user?.phoneNumber || user?.phone || invite.phone || '',
       role: invite.role,
       permissions: invite.permissions || [],
       status: 'active',
@@ -727,44 +884,94 @@ class DatabaseService {
     };
     await this.save('members', targetUserId, memberRecord, businessId);
 
-    // 2. Mark invitation as accepted
+    // 2. Mark invitation as accepted across all stores
     const updatedInvite = {
       ...invite,
       status: 'accepted',
       acceptedByUid: targetUserId,
-      acceptedByName: memberRecord.name,
+      acceptedByName: targetName,
       acceptedAt: new Date().toISOString()
     };
     await this.save('invitations', invite.id, updatedInvite, businessId);
     localDb.save('invitation_codes', invite.code, updatedInvite, false);
+    localDb.save('invitation_codes', cleanCode, updatedInvite, false);
 
-    // 3. Update User's memberships
     try {
-      const existingUser = await this.getById('users', targetUserId) || {};
-      const currentMemberships = Array.isArray(existingUser.memberships) ? existingUser.memberships : [];
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(`karobaar_invite_${invite.code}`, JSON.stringify(updatedInvite));
+        localStorage.setItem(`karobaar_invite_${cleanCode}`, JSON.stringify(updatedInvite));
+        let allMap = JSON.parse(localStorage.getItem('karobaar_all_invitations') || '{}');
+        allMap[invite.code] = updatedInvite;
+        allMap[cleanCode] = updatedInvite;
+        localStorage.setItem('karobaar_all_invitations', JSON.stringify(allMap));
+      }
+    } catch (_) {}
+
+    // Update in Cloud Firestore top-level
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const cleanData = this._cleanDataForFirestore(updatedInvite);
+        await setDoc(doc(dbFirestore, 'invitations', invite.code), cleanData, { merge: true }).catch(() => {});
+        if (invite.id) {
+          await setDoc(doc(dbFirestore, 'invitations', invite.id), cleanData, { merge: true }).catch(() => {});
+        }
+      } catch (_) {}
+    }
+
+    // 3. Update User's record and memberships
+    try {
+      const existingUser = (await this.getById('users', targetUserId)) || localDb.get('users', targetUserId) || {};
+      const currentMemberships = Array.isArray(existingUser.memberships) ? [...existingUser.memberships] : [];
       if (!currentMemberships.includes(businessId)) {
         currentMemberships.push(businessId);
       }
-      await this.save('users', targetUserId, {
+      const updatedUser = {
         ...existingUser,
         id: targetUserId,
-        email: user.email || existingUser.email,
-        name: user.name || existingUser.name || memberRecord.name,
+        email: user?.email || existingUser.email || invite.email || '',
+        name: targetName,
+        role: invite.role,
+        permissions: invite.permissions || [],
         memberships: currentMemberships,
-        activeBusinessId: businessId
-      });
+        activeBusinessId: businessId,
+        onboardingCompleted: true
+      };
+      await this.save('users', targetUserId, updatedUser);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('karobaar_session_user', JSON.stringify(updatedUser));
+      }
     } catch (e) {
       console.warn("User membership update note:", e);
     }
 
-    // 4. Log Audit Trail
-    await this.logAudit('INVITATION_ACCEPTED', `User '${memberRecord.name}' accepted invite as '${invite.role}'`, user, businessId);
+    // 4. Update the joined business profile in local storage & session
+    try {
+      const biz = (await this.getById('businesses', businessId)) || localDb.get('businesses', businessId);
+      if (biz && typeof localStorage !== 'undefined') {
+        localStorage.setItem('karobaar_session_business', JSON.stringify(biz));
+        localStorage.setItem('karobaar-active-business', businessId);
+        
+        let allBiz = [];
+        try {
+          allBiz = JSON.parse(localStorage.getItem('karobaar_session_businesses') || '[]');
+        } catch (_) {}
+        if (!allBiz.some(b => b.id === businessId)) {
+          allBiz.push(biz);
+          localStorage.setItem('karobaar_session_businesses', JSON.stringify(allBiz));
+        }
+      }
+    } catch (e) {
+      console.warn("Business sync on join note:", e);
+    }
+
+    // 5. Log Audit Trail
+    await this.logAudit('INVITATION_ACCEPTED', `User '${targetName}' accepted invite as '${invite.role}'`, user, businessId);
 
     return {
       success: true,
       businessId,
       role: invite.role,
-      businessName: invite.businessName
+      businessName: invite.businessName || 'Business Workspace'
     };
   }
 

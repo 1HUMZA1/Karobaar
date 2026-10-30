@@ -12,6 +12,19 @@ class LocalDB {
     this.queue = this._loadQueue();
   }
 
+  _ensureFresh() {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (parsed && typeof parsed === 'object') {
+          this.db = parsed;
+        }
+      }
+    } catch (e) {}
+  }
+
   _loadDB() {
     try {
       if (typeof localStorage === 'undefined') return {};
@@ -123,6 +136,7 @@ class LocalDB {
    * Save a document to local storage and optionally queue it for sync
    */
   save(collectionName, id, data, queueForSync = true, businessId = null) {
+    this._ensureFresh();
     if (!this.db[collectionName]) {
       this.db[collectionName] = {};
     }
@@ -161,6 +175,7 @@ class LocalDB {
    * Get a document from local storage
    */
   get(collectionName, id) {
+    this._ensureFresh();
     if (!this.db[collectionName]) return null;
     return this.db[collectionName][id] || null;
   }
@@ -169,6 +184,7 @@ class LocalDB {
    * Get all documents in a collection (optionally filtered by businessId)
    */
   getAll(collectionName, businessId = null) {
+    this._ensureFresh();
     if (!this.db[collectionName]) return [];
     let items = Object.values(this.db[collectionName]);
     if (businessId && collectionName !== 'users' && collectionName !== 'businesses') {
@@ -181,6 +197,7 @@ class LocalDB {
    * Remove a document locally and optionally queue the deletion
    */
   remove(collectionName, id, queueForSync = true, businessId = null) {
+    this._ensureFresh();
     if (this.db[collectionName] && this.db[collectionName][id]) {
       delete this.db[collectionName][id];
       this._saveDB();

@@ -212,12 +212,21 @@ const BusinessSetup = () => {
   }, [joinParam]);
 
   const verifyInviteCode = async (codeToVerify) => {
-    const clean = (codeToVerify || joinCodeInput || '').trim().toUpperCase();
+    const rawInput = (codeToVerify || joinCodeInput || '').trim();
+    let clean = rawInput.toUpperCase();
+    if (clean.includes('JOIN=')) {
+      clean = clean.split('JOIN=')[1].split('&')[0];
+    }
+    if (clean.includes('#/SETUP?JOIN=')) {
+      clean = clean.split('#/SETUP?JOIN=')[1].split('&')[0];
+    }
+    clean = clean.trim();
     if (!clean) return;
+    setJoinCodeInput(clean);
     setIsVerifyingInvite(true);
     setInviteError('');
     try {
-      const found = await db.getInvitationByCode(clean);
+      const found = (await db.getInvitationByCode(rawInput)) || (await db.getInvitationByCode(clean));
       if (!found) {
         setInviteError('Invitation not found. Please verify the code or ask your owner for a new one.');
         setInvitePreview(null);
@@ -242,14 +251,32 @@ const BusinessSetup = () => {
 
   const handleJoinInviteSubmit = async (e) => {
     e.preventDefault();
-    const clean = joinCodeInput.trim().toUpperCase();
+    const rawInput = joinCodeInput.trim();
+    let clean = rawInput.toUpperCase();
+    if (clean.includes('JOIN=')) {
+      clean = clean.split('JOIN=')[1].split('&')[0];
+    }
+    clean = clean.trim();
     if (!clean) return;
     setIsJoining(true);
     setInviteError('');
     try {
-      const res = await db.acceptInvitation(clean, currentUser || { uid: auth.currentUser?.uid, email: auth.currentUser?.email });
-      setJoinSuccess(`Joined ${res.businessName || 'business'} successfully!`);
+      const activeUser = currentUser || { 
+        id: auth.currentUser?.uid || 'user-' + Date.now(), 
+        uid: auth.currentUser?.uid || 'user-' + Date.now(), 
+        email: auth.currentUser?.email || '',
+        name: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Team Member'
+      };
+      // Try accepting with full raw input (handles embedded payload) or clean code
+      let res;
+      try {
+        res = await db.acceptInvitation(rawInput, activeUser);
+      } catch (err) {
+        res = await db.acceptInvitation(clean, activeUser);
+      }
+      setJoinSuccess(`Joined ${res.businessName || 'business'} successfully as ${res.role}!`);
       localStorage.setItem('karobaar-active-business', res.businessId);
+      localStorage.setItem('karobaar_onboarding_completed', 'true');
       setTimeout(() => {
         window.location.hash = '#/dashboard';
         window.location.reload();
@@ -721,7 +748,10 @@ const BusinessSetup = () => {
                       onChange={e => {
                         const val = e.target.value.toUpperCase();
                         setJoinCodeInput(val);
-                        if (val.length >= 6) verifyInviteCode(val);
+                        setInviteError('');
+                        if (val.length >= 11 || val.includes('JOIN=') || val.includes('DATA=')) {
+                          verifyInviteCode(val);
+                        }
                       }}
                       placeholder="KB-INV-XXXXX"
                       style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '0.05em' }}
@@ -784,7 +814,7 @@ const BusinessSetup = () => {
 
                 <button
                   type="submit"
-                  disabled={isJoining || !invitePreview}
+                  disabled={isJoining || !joinCodeInput.trim()}
                   style={{
                     padding: '14px',
                     borderRadius: '8px',
@@ -793,8 +823,8 @@ const BusinessSetup = () => {
                     border: 'none',
                     fontWeight: 700,
                     fontSize: '1rem',
-                    cursor: (!invitePreview || isJoining) ? 'not-allowed' : 'pointer',
-                    opacity: (!invitePreview || isJoining) ? 0.6 : 1,
+                    cursor: (!joinCodeInput.trim() || isJoining) ? 'not-allowed' : 'pointer',
+                    opacity: (!joinCodeInput.trim() || isJoining) ? 0.6 : 1,
                     marginTop: '8px'
                   }}
                 >

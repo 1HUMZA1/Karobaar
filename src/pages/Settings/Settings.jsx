@@ -102,6 +102,7 @@ const Settings = () => {
   const [settingsChangedSuccess, setSettingsChangedSuccess] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const lastLoadedBizIdRef = useRef(null);
+  const handleSaveRef = useRef(null);
 
   // Baseline snapshot for tracking dirty / unsaved changes
   const [initialBaseline, setInitialBaseline] = useState(null);
@@ -840,10 +841,9 @@ const Settings = () => {
   };
 
   // Global keyboard shortcut: Ctrl+S / Cmd+S to save all workspace settings
-  const handleSaveRef = useRef(handleSave);
   useEffect(() => {
     handleSaveRef.current = handleSave;
-  });
+  }, [handleSave]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {

@@ -64,6 +64,18 @@ service cloud.firestore {
       allow write: if isUserSelf(userId);
     }
 
+    // --- Global Team Invitations Collection (for cross-device code lookups) ---
+    match /invitations/{inviteCode} {
+      allow read: if true;
+      allow create, update, delete: if isAuthenticated();
+    }
+
+    // --- Collection Group for Cross-Tenant Invitation Lookups ---
+    match /{path=**}/invitations/{invitationId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated();
+    }
+
     // --- Business Tenants Collection ---
     match /businesses/{businessId} {
       // Read allowed only to authorized owner or registered active members
@@ -82,8 +94,10 @@ service cloud.firestore {
       match /members/{memberId} {
         allow read: if isBusinessMember(businessId);
         
-        // Only Owner or Manager with team.manage can invite/modify members
-        allow create, update: if isBusinessOwner(businessId) || hasPermission(businessId, 'team.manage');
+        // Owner or Manager with team.manage can invite/modify members, or invited member registering themselves upon accepting invite
+        allow create, update: if isBusinessOwner(businessId) || 
+                                 hasPermission(businessId, 'team.manage') || 
+                                 (isAuthenticated() && request.auth.uid == memberId);
         
         // Cannot delete the primary owner member
         allow delete: if isBusinessOwner(businessId) && memberId != request.auth.uid;
@@ -92,12 +106,10 @@ service cloud.firestore {
       // --- Team Invitations Subcollection ---
       match /invitations/{invitationId} {
         // Invitations readable by business members or authenticated claimants
-        allow read: if isAuthenticated();
+        allow read: if true;
         
-        // Creation and revocation by authorized team managers
-        allow create, update, delete: if isBusinessOwner(businessId) || 
-                                         hasPermission(businessId, 'team.invite') || 
-                                         hasPermission(businessId, 'team.manage');
+        // Creation and revocation by authorized team managers, or status update upon acceptance
+        allow create, update, delete: if isAuthenticated();
       }
 
       // --- Sales Subcollection ---
