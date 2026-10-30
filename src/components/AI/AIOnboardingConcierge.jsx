@@ -650,15 +650,20 @@ export const AIOnboardingConcierge = () => {
         if (options.onError) options.onError(ev);
       };
 
-      // 40ms dispatch ensures browser audio queue is ready
-      setTimeout(() => {
+      const playUtterance = () => {
         try {
           if (window.speechSynthesis.paused) window.speechSynthesis.resume();
           window.speechSynthesis.speak(utterance);
         } catch (err) {
           console.warn('[speakAI execution error]', err);
         }
-      }, 40);
+      };
+
+      if (options.immediate) {
+        playUtterance();
+      } else {
+        setTimeout(playUtterance, 30);
+      }
     } catch (e) {
       console.warn('[AI Speech error]', e);
     }
@@ -679,6 +684,7 @@ export const AIOnboardingConcierge = () => {
       lang: languagePreference,
       phoneticText: spData.phoneticText,
       gender: selectedVoiceGender,
+      immediate: true,
       onEnd: () => setIsSpeakingTest(false),
       onError: () => setIsSpeakingTest(false)
     });
@@ -985,13 +991,36 @@ export const AIOnboardingConcierge = () => {
                     <div className="ai-lang-footer-info">
                       <span>Active: <strong>{AI_LANGUAGES.find(l => l.code === languagePreference)?.label}</strong> ({selectedVoiceGender === 'male' ? 'Male Voice' : 'Female Voice'})</span>
                     </div>
-                    <button 
-                      type="button" 
-                      className="ai-lang-apply-btn"
-                      onClick={() => setShowLangMenu(false)}
-                    >
-                      Done / Apply
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <button 
+                        type="button" 
+                        className="ai-lang-test-btn"
+                        onClick={handleTestVoiceSample}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '5px 9px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color, #e4e4e7)',
+                          backgroundColor: 'var(--bg-body, #f4f4f5)',
+                          color: 'var(--text-main, #09090b)',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                        title="Test speech in active language and voice"
+                      >
+                        <Volume2 size={12} /> Test
+                      </button>
+                      <button 
+                        type="button" 
+                        className="ai-lang-apply-btn"
+                        onClick={() => setShowLangMenu(false)}
+                      >
+                        Done / Apply
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
