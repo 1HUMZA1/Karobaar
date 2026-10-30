@@ -1609,18 +1609,18 @@ const BusinessSetup = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '7px 12px',
-              borderRadius: '8px',
+              padding: '10px 16px',
+              borderRadius: '10px',
               backgroundColor: 'var(--bg-body, #f4f4f5)',
               border: '1px solid var(--border-color, #e2e8f0)',
-              marginBottom: '14px',
-              gap: '10px'
+              marginBottom: '18px',
+              gap: '12px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                <span style={{ fontSize: '9px', fontWeight: 800, padding: '1.5px 5px', borderRadius: '4px', backgroundColor: 'var(--text-main, #09090b)', color: '#fff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, padding: '2.5px 7px', borderRadius: '5px', backgroundColor: 'var(--text-main, #09090b)', color: '#fff' }}>
                   NEW
                 </span>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-main, #09090b)', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.92rem', color: 'var(--text-main, #09090b)', fontWeight: 600 }}>
                   Want the 30-second conversational voice setup instead?
                 </span>
               </div>
@@ -1631,12 +1631,12 @@ const BusinessSetup = () => {
                   navigate('/dashboard');
                 }}
                 style={{
-                  padding: '4px 10px',
-                  borderRadius: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '7px',
                   border: '1px solid var(--text-main, #09090b)',
                   backgroundColor: 'transparent',
                   color: 'var(--text-main, #09090b)',
-                  fontSize: '0.72rem',
+                  fontSize: '0.86rem',
                   fontWeight: 650,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap'
@@ -1649,22 +1649,22 @@ const BusinessSetup = () => {
 
           {setupMode === 'choose' ? (
             <div className="setup-choice-screen">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
                 <button
                   type="button"
                   className="setup-nav-back-btn"
                   onClick={handleLogout}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '6px', fontSize: '0.76rem' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '8px', fontSize: '0.86rem' }}
                 >
-                  <ArrowLeft size={14} />
+                  <ArrowLeft size={16} />
                   <span>Back to Sign In</span>
                 </button>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                   Role Selection
                 </span>
               </div>
 
-              <div className="setup-header" style={{ marginBottom: '1rem' }}>
+              <div className="setup-header" style={{ marginBottom: '1.25rem' }}>
                 <h2>Get Started with Karobaar</h2>
                 <p>Choose an option below to set up your workspace according to your role.</p>
               </div>
@@ -1678,7 +1678,7 @@ const BusinessSetup = () => {
                 >
                   <div className="setup-choice-top">
                     <div className="setup-choice-icon-wrap">
-                      <Building2 size={18} />
+                      <Building2 size={22} />
                     </div>
                     <span className="setup-choice-badge badge-owner">
                       Owner / Founder
@@ -1692,15 +1692,15 @@ const BusinessSetup = () => {
                     </p>
                     <ul className="setup-choice-perks">
                       <li>
-                        <CheckCircle2 size={13} />
+                        <CheckCircle2 size={16} />
                         <span>Full administrative ownership & store branding</span>
                       </li>
                       <li>
-                        <CheckCircle2 size={13} />
+                        <CheckCircle2 size={16} />
                         <span>Pre-configured POS, Inventory, Invoices & Tax</span>
                       </li>
                       <li>
-                        <CheckCircle2 size={13} />
+                        <CheckCircle2 size={16} />
                         <span>Generate secure team invite codes for staff</span>
                       </li>
                     </ul>
@@ -1709,9 +1709,9 @@ const BusinessSetup = () => {
                   <div className="setup-choice-action">
                     <span>{isSubmitting ? (submitState || 'Setting up workspace...') : 'Create Business Workspace'}</span>
                     {isSubmitting ? (
-                      <Loader2 size={14} className="spinner" />
+                      <Loader2 size={17} className="spinner" />
                     ) : (
-                      <ArrowRight size={14} />
+                      <ArrowRight size={17} />
                     )}
                   </div>
                 </div>
@@ -1726,7 +1726,7 @@ const BusinessSetup = () => {
                 >
                   <div className="setup-choice-top">
                     <div className="setup-choice-icon-wrap">
-                      <Users size={18} />
+                      <Users size={22} />
                     </div>
                     <span className="setup-choice-badge badge-staff">
                       Staff / Cashier / Manager
@@ -1740,15 +1740,15 @@ const BusinessSetup = () => {
                     </p>
                     <ul className="setup-choice-perks">
                       <li>
-                        <CheckCircle2 size={13} />
+                        <CheckCircle2 size={16} />
                         <span>Instant access — zero business configuration needed</span>
                       </li>
                       <li>
-                        <CheckCircle2 size={13} />
+                        <CheckCircle2 size={16} />
                         <span>Pre-assigned role permissions (Manager, Cashier, etc.)</span>
                       </li>
                       <li>
-                        <CheckCircle2 size={13} />
+                        <CheckCircle2 size={16} />
                         <span>Live multi-user sync with real-time stock & sales</span>
                       </li>
                     </ul>
@@ -1756,7 +1756,7 @@ const BusinessSetup = () => {
 
                   <div className="setup-choice-action">
                     <span>Join with Invite Code</span>
-                    <ArrowRight size={14} />
+                    <ArrowRight size={17} />
                   </div>
                 </div>
               </div>
