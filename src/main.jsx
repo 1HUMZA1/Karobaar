@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './styles/global.css'
+import { DEFAULT_DEBUG_USER, DEFAULT_DEBUG_BUSINESS } from './utils/buildMode'
 
 class RootErrorBoundary extends React.Component {
   constructor(props) {
@@ -28,17 +29,38 @@ class RootErrorBoundary extends React.Component {
     }
   }
 
-  handleReload = () => {
+  handleGoToDashboard = () => {
+    try {
+      localStorage.removeItem('karobaar_last_active_route');
+      localStorage.removeItem('karobaar_explicit_logout');
+      localStorage.removeItem('karobaar_force_release_mode');
+      localStorage.setItem('karobaar_session_user', JSON.stringify(DEFAULT_DEBUG_USER));
+      localStorage.setItem('karobaar_session_business', JSON.stringify(DEFAULT_DEBUG_BUSINESS));
+      localStorage.setItem('karobaar-active-business', DEFAULT_DEBUG_BUSINESS.id);
+      sessionStorage.clear();
+    } catch (_) {}
+    this.setState({ hasError: false, error: null });
+    const targetUrl = window.location.origin + window.location.pathname + '#/dashboard';
+    window.location.href = targetUrl;
     window.location.reload();
+  };
+
+  handleReload = () => {
+    this.handleGoToDashboard();
   };
 
   handleClearAndReset = () => {
     try {
-      localStorage.removeItem('karobaar_session_user');
-      localStorage.removeItem('karobaar_session_business');
+      localStorage.removeItem('karobaar_last_active_route');
+      localStorage.removeItem('karobaar_explicit_logout');
+      localStorage.removeItem('karobaar_force_release_mode');
+      localStorage.setItem('karobaar_session_user', JSON.stringify(DEFAULT_DEBUG_USER));
+      localStorage.setItem('karobaar_session_business', JSON.stringify(DEFAULT_DEBUG_BUSINESS));
+      localStorage.setItem('karobaar-active-business', DEFAULT_DEBUG_BUSINESS.id);
       sessionStorage.clear();
-    } catch (e) {}
-    window.location.hash = '#/dashboard';
+    } catch (_) {}
+    const targetUrl = window.location.origin + window.location.pathname + '#/dashboard';
+    window.location.href = targetUrl;
     window.location.reload();
   };
 
@@ -177,7 +199,8 @@ class RootErrorBoundary extends React.Component {
               width: '100%'
             }}>
               <button
-                onClick={this.handleReload}
+                type="button"
+                onClick={this.handleGoToDashboard}
                 style={{
                   width: '100%',
                   backgroundColor: '#ffffff',
@@ -185,17 +208,18 @@ class RootErrorBoundary extends React.Component {
                   border: 'none',
                   borderRadius: '10px',
                   padding: '13px 20px',
-                  fontSize: '0.92rem',
+                  fontSize: '0.95rem',
                   fontWeight: 700,
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(255,255,255,0.12)',
+                  boxShadow: '0 4px 14px rgba(255,255,255,0.15)',
                   transition: 'transform 0.15s ease, opacity 0.15s ease'
                 }}
               >
-                Reload Workspace
+                Go to Dashboard
               </button>
 
               <button
+                type="button"
                 onClick={this.handleClearAndReset}
                 style={{
                   width: '100%',
@@ -210,7 +234,7 @@ class RootErrorBoundary extends React.Component {
                   transition: 'background 0.15s ease'
                 }}
               >
-                Clear Cache & Reset
+                Reset Session & Open Dashboard
               </button>
             </div>
 
@@ -218,6 +242,7 @@ class RootErrorBoundary extends React.Component {
             {this.state.error && (
               <div style={{ marginTop: '22px', width: '100%', textAlign: 'left' }}>
                 <button
+                  type="button"
                   onClick={() => this.setState(prev => ({ showDetails: !prev.showDetails }))}
                   style={{
                     background: 'none',
@@ -248,7 +273,7 @@ class RootErrorBoundary extends React.Component {
                     wordBreak: 'break-all',
                     fontFamily: 'monospace'
                   }}>
-                    {String(this.state.error?.message || this.state.error || 'Unknown error')}
+                    {String(this.state.error?.stack || this.state.error?.message || this.state.error || 'Unknown error')}
                   </pre>
                 )}
               </div>

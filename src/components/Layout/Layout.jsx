@@ -17,7 +17,7 @@ const Layout = () => {
   useEffect(() => {
     const trackActiveScreen = () => {
       const hash = window.location.hash;
-      if (hash && hash.startsWith('#/') && !hash.includes('/login') && !hash.includes('/home') && !hash.includes('/about')) {
+      if (hash && hash.startsWith('#/') && !hash.includes('/login') && !hash.includes('/home') && !hash.includes('/about') && !hash.includes('/setup')) {
         localStorage.setItem('karobaar_last_active_route', hash);
         localStorage.setItem('karobaar_last_active_timestamp', Date.now().toString());
       }

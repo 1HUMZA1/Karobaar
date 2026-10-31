@@ -557,11 +557,6 @@ const BusinessSetup = () => {
   const joinParam = searchParams.get('join') || '';
   const newParam = searchParams.get('new') === 'true';
 
-  // In debug builds, bypass setup and go straight to dashboard unless specifically joining or forced
-  if (isDebugBuild() && !joinParam && !searchParams.get('force')) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   const [setupMode, setSetupMode] = useState(() => {
     if (joinParam && (joinParam.toUpperCase().includes('KB-INV-') || joinParam.length >= 6)) {
       return 'join';
@@ -1060,7 +1055,7 @@ const BusinessSetup = () => {
   const [submitState, setSubmitState] = useState(''); // '', 'Saving locally...', 'Saved locally', 'Opening your dashboard...'
 
   // Early returns strictly AFTER all hooks are called
-  if (authStatus === 'authenticated' && !joinParam && !newParam && currentUser?.onboardingCompleted) {
+  if ((isDebugBuild() || authStatus === 'authenticated') && !joinParam && !searchParams.get('force') && !newParam) {
     return <Navigate to="/dashboard" replace />;
   }
 

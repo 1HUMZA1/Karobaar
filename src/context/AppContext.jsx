@@ -461,7 +461,14 @@ export const AppProvider = ({ children }) => {
           }
         } catch (error) {
           console.warn("[AUTH] Cloud profile check note:", error);
-          setAuthStatus('pending_onboarding');
+          if (isDebugBuild()) {
+            if (!currentUser) setCurrentUser(DEFAULT_DEBUG_USER);
+            if (!currentBusiness) setCurrentBusiness(DEFAULT_DEBUG_BUSINESS);
+            setUserBusinesses([DEFAULT_DEBUG_BUSINESS]);
+            setAuthStatus('authenticated');
+          } else {
+            setAuthStatus('pending_onboarding');
+          }
         }
       } else {
         if (isDebugBuild()) {
