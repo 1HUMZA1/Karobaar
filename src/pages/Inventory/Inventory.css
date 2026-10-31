@@ -1,7 +1,31 @@
+.inventory-page-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.inventory-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .inventory-header-container {
+    align-items: center;
+  }
+}
+
+.inventory-title-group {
+  text-align: left;
+}
+
 .inventory-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
 }
 
 .stat-icon {

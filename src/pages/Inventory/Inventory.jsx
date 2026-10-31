@@ -25,7 +25,7 @@ const PRODUCT_RECOMMENDATIONS = {
 
 const Inventory = () => {
   const { currentUser, currentBusiness, userRole } = useAppContext();
-  const canManageInventory = ['OWNER', 'MANAGER', 'INVENTORY'].includes(userRole);
+  const canManageInventory = !userRole || ['OWNER', 'MANAGER', 'INVENTORY', 'ADMIN'].includes(String(userRole || '').toUpperCase());
   
   // Navigation tabs: 'levels', 'history', 'reconciliation'
   const [activeTab, setActiveTab] = useState('levels');
@@ -311,24 +311,39 @@ const Inventory = () => {
   };
 
   return (
-    <div className="page-container" style={{ height: '100%', overflowY: 'auto' }}>
+    <div className="page-container inventory-page-container min-h-full pb-36">
       {/* Header */}
-      <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3">
+      <div className="inventory-header-container mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="inventory-title-group text-left">
+          <h1 className="text-2xl font-bold flex items-center gap-3 text-[var(--text-main)]">
             Inventory & Stock Control
           </h1>
-          <p className="text-secondary text-sm">Real-time stock valuation, movements audit ledger, and physical reconciliation</p>
+          <p className="text-secondary text-sm mt-1">Real-time stock valuation, movements audit ledger, and physical reconciliation</p>
         </div>
         {canManageInventory && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" icon={<RefreshCw size={16} className={isRevalidating ? "animate-spin" : ""} />} onClick={() => { refetch(); if (activeTab === 'history') fetchMovements(); }} disabled={isRevalidating} className="bg-[var(--bg-card)]">
+          <div className="inventory-actions-group flex flex-wrap items-center gap-2.5">
+            <Button 
+              variant="outline" 
+              icon={<RefreshCw size={16} className={isRevalidating ? "animate-spin" : ""} />} 
+              onClick={() => { refetch(); if (activeTab === 'history') fetchMovements(); }} 
+              disabled={isRevalidating} 
+              className="bg-[var(--bg-card)] hover:bg-[var(--bg-hover)]"
+            >
               Refresh
             </Button>
-            <Button variant="outline" icon={<Plus size={16} />} onClick={() => setIsAddModalOpen(true)} className="bg-[var(--bg-card)]">
+            <Button 
+              variant="outline" 
+              icon={<Plus size={16} />} 
+              onClick={() => setIsAddModalOpen(true)} 
+              className="bg-[var(--bg-card)] hover:bg-[var(--bg-hover)]"
+            >
               Add Product
             </Button>
-            <Button icon={<PackagePlus size={16} />} onClick={() => setIsReceiveModalOpen(true)}>
+            <Button 
+              icon={<PackagePlus size={16} />} 
+              onClick={() => setIsReceiveModalOpen(true)}
+              className="bg-primary hover:bg-primary-hover text-white font-semibold shadow-sm"
+            >
               Receive Stock
             </Button>
           </div>
@@ -434,13 +449,13 @@ const Inventory = () => {
           <CardHeader className="p-4 border-b border-[var(--border-color)] flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-2 flex-1 max-w-md">
               <div className="relative w-full">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search by product name, SKU, or category..."
                   value={productSearch}
                   onChange={e => setProductSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-zinc-500"
+                  className="w-full pl-10 pr-9 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-zinc-500 text-[var(--text-main)] placeholder:text-zinc-500"
                 />
                 {productSearch && (
                   <button onClick={() => setProductSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-[var(--text-main)]">
@@ -600,13 +615,13 @@ const Inventory = () => {
           <CardHeader className="p-4 border-b border-[var(--border-color)] flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-2 flex-1 max-w-md">
               <div className="relative w-full">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search movement by product, SKU, or ref..."
                   value={movementSearch}
                   onChange={e => setMovementSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-zinc-500"
+                  className="w-full pl-10 pr-9 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-zinc-500 text-[var(--text-main)] placeholder:text-zinc-500"
                 />
                 {movementSearch && (
                   <button onClick={() => setMovementSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-[var(--text-main)]">
@@ -752,14 +767,19 @@ const Inventory = () => {
           <Card className="border border-[var(--border-color)]">
             <CardHeader className="p-4 border-b border-[var(--border-color)] flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="relative w-full max-w-md">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Filter products to count..."
                   value={reconciliationSearch}
                   onChange={e => setReconciliationSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-zinc-500"
+                  className="w-full pl-10 pr-9 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-zinc-500 text-[var(--text-main)] placeholder:text-zinc-500"
                 />
+                {reconciliationSearch && (
+                  <button onClick={() => setReconciliationSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-[var(--text-main)]">
+                    <X size={14} />
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-3">
