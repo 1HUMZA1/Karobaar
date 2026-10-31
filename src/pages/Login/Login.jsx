@@ -1,3 +1,4 @@
+import { isDebugBuild } from '../../utils/buildMode';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
@@ -20,6 +21,10 @@ import { LiquidBackground } from '../../components/LiquidBackground/LiquidBackgr
 import './Login.css';
 
 const Login = () => {
+  // In debug builds, bypass sign-in and take user straight to dashboard
+  if (isDebugBuild()) {
+    return <Navigate to="/dashboard" replace />;
+  }
   const navigate = useNavigate();
   const { 
     authStatus, 

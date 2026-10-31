@@ -1,3 +1,4 @@
+import { isDebugBuild } from './utils/buildMode';
 import React, { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
@@ -23,7 +24,7 @@ import Reports from './pages/Reports/Reports';
 import Notifications from './pages/Notifications/Notifications';
 import Login from './pages/Login/Login';
 import GoogleAuth from './pages/Login/GoogleAuth';
-import BusinessSetup from './pages/BusinessSetup/BusinessSetup';
+const BusinessSetup = React.lazy(() => import('./pages/BusinessSetup/BusinessSetup'));
 import Invoices from './pages/Invoices/Invoices';
 import Payments from './pages/Payments/Payments';
 import Landing from './pages/Landing/Landing';
@@ -39,6 +40,11 @@ import { hasPermission, normalizeRole, PERMISSIONS } from './utils/permissions';
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission, moduleId }) => {
   const { authStatus, userRole, currentUser, currentBusiness, isDemoMode, requireAuthAndSetup } = useAppContext();
   
+  // In debug builds, never block or ask to sign in - go straight to dashboard
+  if (isDebugBuild()) {
+    return children;
+  }
+
   if (authStatus === 'unauthenticated') {
     return <Navigate to="/login" replace />;
   }
@@ -395,9 +401,20 @@ const RootResumeRedirect = () => {
         <Route path="/website" element={<Landing />} />
         <Route path="/landing" element={<Landing />} />
         <Route path="/about" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/google-auth" element={<GoogleAuth />} />
-        <Route path="/setup" element={<BusinessSetup />} />
+        <Route path="/login" element={isDebugBuild() ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/google-auth" element={isDebugBuild() ? <Navigate to="/dashboard" replace /> : <GoogleAuth />} />
+        <Route 
+          path="/setup" 
+          element={
+            isDebugBuild() ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <React.Suspense fallback={<div className="flex h-screen items-center justify-center text-text-muted font-bold text-sm">Loading Store Setup...</div>}>
+                <BusinessSetup />
+              </React.Suspense>
+            )
+          } 
+        />
         
         <Route path="/" element={
           <ProtectedRoute allowedRoles={ROLES.ALL}>

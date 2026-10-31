@@ -257,14 +257,23 @@ const Dashboard = ({ onSwitchMode }) => {
       expTrend: calcTrend(currentTotalExp, prevTotalExp)
     };
 
-    // Health Score
-    const healthScore = Math.min(100, Math.max(0,
-      75 + (trends.revTrend.isPositive ? 10 : -5) + (lowStockList.length === 0 ? 10 : -5) + (netProfit > 0 ? 10 : -10)
-    ));
+    // Health Score (Calibrated accurately for fresh vs operational stores)
+    let healthScore = 75;
     let healthLabel = 'Average';
-    if (healthScore >= 90) healthLabel = 'Excellent';
-    else if (healthScore >= 70) healthLabel = 'Good';
-    else if (healthScore < 50) healthLabel = 'Needs Attention';
+    if (rawSales.length === 0 && rawProducts.length === 0) {
+      healthScore = 50;
+      healthLabel = 'Setup Pending';
+    } else if (rawSales.length === 0) {
+      healthScore = 65;
+      healthLabel = 'Ready for Sales';
+    } else {
+      healthScore = Math.min(100, Math.max(0,
+        70 + (trends.revTrend.isPositive ? 10 : -5) + (lowStockList.length === 0 ? 10 : -5) + (netProfit > 0 ? 10 : -10)
+      ));
+      if (healthScore >= 90) healthLabel = 'Excellent';
+      else if (healthScore >= 70) healthLabel = 'Good';
+      else if (healthScore < 50) healthLabel = 'Needs Attention';
+    }
 
     // Recent Activity Feed
     const recentOrd = [...rawSales].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
@@ -715,10 +724,14 @@ const Dashboard = ({ onSwitchMode }) => {
           </div>
           <div className="hidden sm:flex items-center gap-2 text-xs text-text-secondary">
             <span className="text-text-muted">Shift:</span>
-            <span className="font-bold text-text-main">Morning #1</span>
+            <span className="font-bold text-text-main">
+              {new Date().getHours() < 14 ? 'Morning Shift' : new Date().getHours() < 21 ? 'Evening Shift' : 'Night Shift'}
+            </span>
             <span className="text-text-muted">•</span>
-            <span className="text-text-muted">Counter:</span>
-            <span className="font-semibold text-text-main">Main Counter</span>
+            <span className="text-text-muted">Register:</span>
+            <span className="font-semibold text-text-main">
+              {currentBusiness?.branchName || currentBusiness?.settings?.counterName || 'Main Counter'}
+            </span>
           </div>
         </div>
 
@@ -790,6 +803,8 @@ const Dashboard = ({ onSwitchMode }) => {
           currencySymbol={currencySymbol} 
           stats={maskedStats} 
           trends={computedMetrics.trends} 
+          dateRange={dateRange} 
+          onDateRangeChange={(newRange) => setDateRange(newRange)} 
         />
       ) : (
         <DashboardAnalytics 
@@ -797,6 +812,8 @@ const Dashboard = ({ onSwitchMode }) => {
           currencySymbol={currencySymbol} 
           stats={maskedStats} 
           trends={computedMetrics.trends} 
+          dateRange={dateRange} 
+          onDateRangeChange={(newRange) => setDateRange(newRange)} 
         />
       )}
 

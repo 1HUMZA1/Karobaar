@@ -1,3 +1,4 @@
+import { isDebugBuild, DEFAULT_DEBUG_USER, DEFAULT_DEBUG_BUSINESS } from '../utils/buildMode';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { auth, googleProvider } from '../services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -60,42 +61,41 @@ export const AppProvider = ({ children }) => {
   const [isDemoRestrictedModalOpen, setIsDemoRestrictedModalOpen] = useState(false);
   const [demoRestrictedFeatureName, setDemoRestrictedFeatureName] = useState('');
 
-  // Session State: Respect active session or require clean authentication
+  // Session State: In debug builds, automatically bypass login and go straight to dashboard
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
+      if (isDebugBuild()) {
+        try { localStorage.removeItem('karobaar_explicit_logout'); } catch (_) {}
+      }
+      const wasLoggedOut = !isDebugBuild() && localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return null;
       const u = localStorage.getItem('karobaar_session_user');
       if (u) {
         const parsed = JSON.parse(u);
-        // Automatically purge any stale legacy "SAS Cafeteria" cached user
-        if (parsed?.name === 'SAS Cafeteria Owner' || parsed?.email?.includes('sascafeteria') || parsed?.name?.toLowerCase().includes('cafeteria')) {
-          localStorage.removeItem('karobaar_session_user');
-          localStorage.removeItem('karobaar_session_business');
-          localStorage.removeItem('karobaar_session_businesses');
-          return null;
+        if (parsed?.name !== 'SAS Cafeteria Owner' && !parsed?.email?.includes('sascafeteria')) {
+          return parsed;
         }
-        return parsed;
+      }
+      if (isDebugBuild()) {
+        try { localStorage.setItem('karobaar_session_user', JSON.stringify(DEFAULT_DEBUG_USER)); } catch (_) {}
+        return DEFAULT_DEBUG_USER;
       }
       return null;
-    } catch (e) { return null; }
+    } catch (e) { 
+      return isDebugBuild() ? DEFAULT_DEBUG_USER : null; 
+    }
   });
 
   const [currentBusiness, setCurrentBusiness] = useState(() => {
     try {
-      const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
+      const wasLoggedOut = !isDebugBuild() && localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return null;
       const b = localStorage.getItem('karobaar_session_business');
       if (b) {
         const parsed = JSON.parse(b);
-        if (parsed?.name === 'SAS CAFETERIA' || parsed?.id === 'demo-business-1' || parsed?.name?.toLowerCase().includes('cafeteria')) {
-          if (localStorage.getItem('karobaar_is_demo_mode') === 'true') {
-            return DEMO_SHOWCASE_BUSINESS;
-          }
-          localStorage.removeItem('karobaar_session_business');
-          return null;
+        if (parsed?.name && !parsed.name.toLowerCase().includes('cafeteria')) {
+          return parsed;
         }
-        return parsed;
       }
       // Auto-heal from localDb
       const activeBizId = localStorage.getItem('karobaar-active-business');
@@ -107,19 +107,34 @@ export const AppProvider = ({ children }) => {
           return found;
         }
       }
+      const sasBiz = allLocal.find(x => x && (x.id === 'biz-sas-and-sons' || x.name === 'SAS AND SONS'));
+      if (sasBiz) {
+        localStorage.setItem('karobaar_session_business', JSON.stringify(sasBiz));
+        localStorage.setItem('karobaar-active-business', sasBiz.id);
+        return sasBiz;
+      }
       const realBiz = allLocal.find(x => x && !String(x.id).startsWith('demo-') && !String(x.id).includes('demo') && x.name && x.name !== 'My Business' && x.name !== 'My Store');
       if (realBiz) {
         localStorage.setItem('karobaar_session_business', JSON.stringify(realBiz));
         localStorage.setItem('karobaar-active-business', realBiz.id);
         return realBiz;
       }
+      if (isDebugBuild()) {
+        try {
+          localStorage.setItem('karobaar_session_business', JSON.stringify(DEFAULT_DEBUG_BUSINESS));
+          localStorage.setItem('karobaar-active-business', DEFAULT_DEBUG_BUSINESS.id);
+        } catch (_) {}
+        return DEFAULT_DEBUG_BUSINESS;
+      }
       return null;
-    } catch (e) { return null; }
+    } catch (e) { 
+      return isDebugBuild() ? DEFAULT_DEBUG_BUSINESS : null; 
+    }
   });
 
   const [userBusinesses, setUserBusinesses] = useState(() => {
     try {
-      const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
+      const wasLoggedOut = !isDebugBuild() && localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return [];
       const bs = localStorage.getItem('karobaar_session_businesses');
       if (bs) {
@@ -132,11 +147,20 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem('karobaar_session_businesses', JSON.stringify(real));
         return real;
       }
+      if (isDebugBuild()) {
+        try { localStorage.setItem('karobaar_session_businesses', JSON.stringify([DEFAULT_DEBUG_BUSINESS])); } catch (_) {}
+        return [DEFAULT_DEBUG_BUSINESS];
+      }
       return [];
-    } catch (e) { return []; }
+    } catch (e) { 
+      return isDebugBuild() ? [DEFAULT_DEBUG_BUSINESS] : []; 
+    }
   });
 
   const [authStatus, setAuthStatus] = useState(() => {
+    if (isDebugBuild()) {
+      return 'authenticated';
+    }
     try {
       const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
       if (wasLoggedOut) return 'unauthenticated';
@@ -440,6 +464,14 @@ export const AppProvider = ({ children }) => {
           setAuthStatus('pending_onboarding');
         }
       } else {
+        if (isDebugBuild()) {
+          // Never log out or ask to sign in during debug builds
+          if (!currentUser) setCurrentUser(DEFAULT_DEBUG_USER);
+          if (!currentBusiness) setCurrentBusiness(DEFAULT_DEBUG_BUSINESS);
+          setUserBusinesses([DEFAULT_DEBUG_BUSINESS]);
+          setAuthStatus('authenticated');
+          return;
+        }
         const wasLoggedOut = localStorage.getItem('karobaar_explicit_logout') === 'true';
         if (wasLoggedOut) {
           setCurrentUser(null);

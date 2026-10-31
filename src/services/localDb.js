@@ -91,6 +91,80 @@ class LocalDB {
         };
       }
 
+      // Seed real SAS AND SONS business for direct debug access
+      if (!parsed.businesses['biz-sas-and-sons']) {
+        parsed.businesses['biz-sas-and-sons'] = {
+          id: 'biz-sas-and-sons',
+          name: 'SAS AND SONS',
+          businessName: 'SAS AND SONS',
+          currency: 'INR',
+          currencySymbol: '₹',
+          category: 'Wholesale & Retail',
+          type: 'Wholesale',
+          ownerName: '1_HUMZA_1',
+          ownerEmail: 'owner@sasandsons.com',
+          ownerId: 'user-sas-and-sons',
+          address: 'Main Commercial Market',
+          phone: '+91 98765 43210',
+          settings: {
+            currency: 'INR',
+            dateFormat: 'DD/MM/YYYY',
+            theme: 'light',
+            taxRate: 5,
+            lowStockThreshold: 5,
+            invoicePrefix: 'SAS-',
+            paymentTerms: 'Immediate / Due on Receipt',
+            invoiceFooter: 'Thank you for choosing SAS AND SONS!'
+          },
+          modules: {
+            pos: true,
+            sales: true,
+            inventory: true,
+            orders: true,
+            customers: true,
+            expenses: true,
+            suppliers: true,
+            reports: true,
+            employees: true,
+            invoices: true,
+            purchases: true,
+            attendance: true,
+            payroll: true,
+            tasks: true
+          }
+        };
+      }
+
+      if (!parsed.users['user-sas-and-sons']) {
+        parsed.users['user-sas-and-sons'] = {
+          id: 'user-sas-and-sons',
+          name: '1_HUMZA_1',
+          displayName: '1_HUMZA_1',
+          email: 'owner@sasandsons.com',
+          role: 'Owner',
+          activeBusinessId: 'biz-sas-and-sons',
+          memberships: ['biz-sas-and-sons'],
+          onboardingCompleted: true
+        };
+      }
+
+      // Seed wholesale products for SAS AND SONS if none exist
+      if (!parsed.products) parsed.products = {};
+      const hasSasProducts = Object.values(parsed.products).some(p => p && p.businessId === 'biz-sas-and-sons');
+      if (!hasSasProducts) {
+        const initialProducts = [
+          { id: 'prod_ws_1', businessId: 'biz-sas-and-sons', _businessId: 'biz-sas-and-sons', name: 'Premium Basmati Rice (50kg Bag)', category: 'Grains & Bulk', purchasePrice: 2800, sellingPrice: 3400, stockQuantity: 120, minimumStock: 25, unit: 'bag', barcode: '8901111001' },
+          { id: 'prod_ws_2', businessId: 'biz-sas-and-sons', _businessId: 'biz-sas-and-sons', name: 'Refined Sunflower Oil (15L Tin)', category: 'Edible Oils', purchasePrice: 1650, sellingPrice: 1950, stockQuantity: 80, minimumStock: 15, unit: 'tin', barcode: '8901111002' },
+          { id: 'prod_ws_3', businessId: 'biz-sas-and-sons', _businessId: 'biz-sas-and-sons', name: 'Pure White Sugar (50kg Sacks)', category: 'Pantry Bulk', purchasePrice: 1850, sellingPrice: 2150, stockQuantity: 95, minimumStock: 20, unit: 'bag', barcode: '8901111003' },
+          { id: 'prod_ws_4', businessId: 'biz-sas-and-sons', _businessId: 'biz-sas-and-sons', name: 'Whole Wheat Flour Atta (40kg)', category: 'Flour & Grains', purchasePrice: 1250, sellingPrice: 1480, stockQuantity: 110, minimumStock: 30, unit: 'bag', barcode: '8901111004' },
+          { id: 'prod_ws_5', businessId: 'biz-sas-and-sons', _businessId: 'biz-sas-and-sons', name: 'Cardamom & Tea Master Pack (10kg)', category: 'Beverages', purchasePrice: 3200, sellingPrice: 3900, stockQuantity: 40, minimumStock: 10, unit: 'box', barcode: '8901111005' },
+          { id: 'prod_ws_6', businessId: 'biz-sas-and-sons', _businessId: 'biz-sas-and-sons', name: 'Iodized Crystal Salt (25kg Bag)', category: 'Pantry Bulk', purchasePrice: 350, sellingPrice: 480, stockQuantity: 150, minimumStock: 40, unit: 'bag', barcode: '8901111006' }
+        ];
+        initialProducts.forEach(prod => {
+          parsed.products[prod.id] = prod;
+        });
+      }
+
       return parsed;
     } catch (e) {
       console.error("Failed to load LocalDB", e);

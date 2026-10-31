@@ -289,5 +289,26 @@ export default defineConfig({
       ]
     }
   },
+  build: {
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('country-state-city')) {
+            return 'geo-data';
+          }
+          if (id.includes('node_modules/chart.js') || id.includes('node_modules/react-chartjs-2')) {
+            return 'chartjs';
+          }
+          if (id.includes('node_modules/firebase')) {
+            return 'firebase';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'icons';
+          }
+        }
+      }
+    }
+  },
   base: './'
 })

@@ -1,3 +1,4 @@
+import { isDebugBuild } from '../../utils/buildMode';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
@@ -555,6 +556,11 @@ const BusinessSetup = () => {
   const [searchParams] = useSearchParams();
   const joinParam = searchParams.get('join') || '';
   const newParam = searchParams.get('new') === 'true';
+
+  // In debug builds, bypass setup and go straight to dashboard unless specifically joining or forced
+  if (isDebugBuild() && !joinParam && !searchParams.get('force')) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const [setupMode, setSetupMode] = useState(() => {
     if (joinParam && (joinParam.toUpperCase().includes('KB-INV-') || joinParam.length >= 6)) {
