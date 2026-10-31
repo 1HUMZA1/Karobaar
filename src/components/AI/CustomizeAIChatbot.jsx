@@ -42,6 +42,7 @@ import KarobaarAIOverlay from './KarobaarAIOverlay';
 import JarvisMiniCharacter from './JarvisMiniCharacter';
 import JarvisSettingsModal from './JarvisSettingsModal';
 import JarvisCommandCenter from './JarvisCommandCenter';
+import JarvisLiveVoiceOverlay from './JarvisLiveVoiceOverlay';
 import { jarvisVoiceService } from '../../services/ai/jarvisVoiceService';
 import './CustomizeAIChatbot.css';
 
@@ -117,6 +118,7 @@ export const CustomizeAIChatbot = () => {
   const [isCommandCenterOpen, setIsCommandCenterOpen] = useState(false);
   const [commandCenterInitialQuery, setCommandCenterInitialQuery] = useState('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isLiveVoiceOpen, setIsLiveVoiceOpen] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const [isBarMinimized, setIsBarMinimized] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -988,6 +990,7 @@ export const CustomizeAIChatbot = () => {
         }}
         onSettingsClick={() => setIsSettingsModalOpen(true)}
         onToggleMic={toggleVoiceListening}
+        onLiveTalkClick={() => setIsLiveVoiceOpen(true)}
       />
 
       {/* 2. Flagship Jarvis Copilot Panel with Floating Frosted Glass */}
@@ -999,6 +1002,18 @@ export const CustomizeAIChatbot = () => {
         }}
         assistantName={assistantName}
         initialQuery={commandCenterInitialQuery}
+        onOpenLiveTalk={() => setIsLiveVoiceOpen(true)}
+      />
+
+      {/* 2.5 Full-Screen Live Voice Conversation Mode (ChatGPT Voice Style) */}
+      <JarvisLiveVoiceOverlay 
+        isOpen={isLiveVoiceOpen}
+        onClose={() => setIsLiveVoiceOpen(false)}
+        assistantName={assistantName}
+        onOpenSettings={() => {
+          setIsLiveVoiceOpen(false);
+          setIsSettingsModalOpen(true);
+        }}
       />
 
       {/* 3. Comprehensive Settings Center Modal */}

@@ -1,7 +1,7 @@
 /**
- * JarvisCommandCenter.css
- * Ultra-Modern Translucent Frosted Glass Architecture for Jarvis AI Copilot 2.0
- * Apple / Linear aesthetics: subtle glassmorphism, spring physics, and zero screen-blocking clutter.
+ * JarvisCommandCenter.css 3.0
+ * Ultra-Modern Translucent Dark Glassmorphism for Jarvis AI 3.0
+ * Blue, Purple and Cyan Ambient Lighting with ChatGPT-Inspired Aesthetics.
  */
 
 /* ==============================================================
@@ -31,9 +31,9 @@
 .jarvis-copilot-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: -1;
   animation: copilotBackdropFade 0.25s ease-out;
 }
@@ -45,19 +45,19 @@
 
 /* Main Floating Card */
 .jarvis-copilot-card {
-  width: 440px;
+  width: 460px;
   max-width: calc(100vw - 36px);
-  height: min(650px, calc(100vh - 110px));
-  background: rgba(14, 14, 18, 0.92);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 24px;
+  height: min(680px, calc(100vh - 100px));
+  background: rgba(10, 15, 30, 0.92);
+  backdrop-filter: blur(36px) saturate(190%);
+  -webkit-backdrop-filter: blur(36px) saturate(190%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 26px;
   box-shadow: 
-    0 24px 64px rgba(0, 0, 0, 0.55),
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    0 0 1px 1px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 24px 64px rgba(0, 0, 0, 0.7),
+    0 0 40px rgba(6, 182, 212, 0.12),
+    0 0 1px 1px rgba(168, 85, 247, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -68,10 +68,10 @@
 }
 
 .jarvis-copilot-container.copilot-maximized .jarvis-copilot-card {
-  width: min(880px, calc(100vw - 40px));
-  height: min(840px, calc(100vh - 80px));
+  width: min(920px, calc(100vw - 40px));
+  height: min(860px, calc(100vh - 80px));
   border-radius: 28px;
-  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), 0 0 60px rgba(6, 182, 212, 0.2);
 }
 
 @keyframes copilotSpringIn {
@@ -94,8 +94,8 @@
   justify-content: space-between;
   padding: 14px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(20, 20, 26, 0.7);
-  backdrop-filter: blur(16px);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px);
   gap: 12px;
   flex-shrink: 0;
 }
@@ -103,181 +103,187 @@
 .jarvis-copilot-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.jarvis-header-orb {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #09090b;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+.jarvis-header-orb-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  flex-shrink: 0;
-}
-
-.jarvis-header-orb.state-listening {
-  border-color: #38bdf8;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
-}
-
-.jarvis-header-orb.state-thinking {
-  border-color: #a855f7;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
-}
-
-.jarvis-header-orb.state-speaking {
-  border-color: #f59e0b;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
-}
-
-.jarvis-header-sparkle {
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
-}
-
-.jarvis-header-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: copilotSpin 0.7s linear infinite;
-}
-
-@keyframes copilotSpin {
-  to { transform: rotate(360deg); }
 }
 
 .jarvis-title-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .jarvis-brand-name {
-  font-size: 0.95rem;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: #ffffff;
-  letter-spacing: -0.02em;
 }
 
 .jarvis-brand-pill {
-  font-size: 0.62rem;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: #ffffff;
-  color: #09090b;
-  letter-spacing: 0.04em;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
 }
 
 .jarvis-brand-model {
-  font-size: 0.68rem;
-  color: #a1a1aa;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
 }
 
 .jarvis-status-row {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin-top: 1px;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 .jarvis-state-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #52525b;
-}
-
-.jarvis-state-dot.dot-idle {
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.8);
+  background: #3b82f6;
 }
 
 .jarvis-state-dot.dot-listening {
-  background: #38bdf8;
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
-}
-
-.jarvis-state-dot.dot-thinking {
-  background: #a855f7;
-  box-shadow: 0 0 8px rgba(168, 85, 247, 0.9);
+  background: #06b6d4;
+  box-shadow: 0 0 8px #06b6d4;
+  animation: dotPulse 1.2s infinite;
 }
 
 .jarvis-state-dot.dot-speaking {
+  background: #a855f7;
+  box-shadow: 0 0 8px #a855f7;
+  animation: dotPulse 0.9s infinite;
+}
+
+.jarvis-state-dot.dot-thinking {
   background: #f59e0b;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.9);
+  box-shadow: 0 0 8px #f59e0b;
+  animation: dotPulse 0.7s infinite;
+}
+
+.jarvis-state-dot.dot-success {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.jarvis-state-dot.dot-error {
+  background: #ef4444;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
 }
 
 .jarvis-state-label {
-  font-size: 0.72rem;
-  color: #a1a1aa;
+  font-size: 11px;
   font-weight: 500;
+  color: #94a3b8;
 }
 
-/* Toolbar */
+/* Action Toolbar */
 .jarvis-copilot-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+}
+
+/* Dedicated LIVE TALK trigger button in header */
+.jarvis-live-talk-trigger-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+  white-space: nowrap;
+}
+
+.jarvis-live-talk-trigger-btn:hover {
+  background: linear-gradient(135deg, #06b6d4 0%, #a855f7 100%);
+  color: #ffffff;
+  box-shadow: 0 0 18px rgba(6, 182, 212, 0.6);
+  transform: scale(1.04);
+}
+
+.live-talk-pulse-icon {
+  animation: liveIconPulse 1.4s infinite;
+}
+
+@keyframes liveIconPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 .jarvis-view-tabs {
   display: flex;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   padding: 2px;
-  margin-right: 4px;
 }
 
 .jarvis-view-tab {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
   background: transparent;
   border: none;
-  color: #a1a1aa;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .jarvis-view-tab.active {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
 }
 
 .jarvis-tool-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: #a1a1aa;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .jarvis-tool-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.1);
 }
 
-.jarvis-tool-btn.muted {
-  color: #ef4444;
+.jarvis-tool-btn.active {
+  color: #38bdf8;
+  background: rgba(6, 182, 212, 0.12);
+  border-color: rgba(6, 182, 212, 0.3);
 }
 
 .jarvis-tool-btn.close-btn:hover {
@@ -287,17 +293,16 @@
 }
 
 /* ==============================================================
-   3. QUICK CHIPS BAR
+   3. QUICK ACTION CHIPS
    ============================================================== */
 .jarvis-quick-chips-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 8px;
+  padding: 10px 16px;
   overflow-x: auto;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(14, 14, 18, 0.4);
-  flex-shrink: 0;
+  background: rgba(10, 15, 30, 0.5);
   scrollbar-width: none;
 }
 
@@ -306,501 +311,331 @@
 }
 
 .jarvis-quick-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #d4d4d8;
-  font-size: 0.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  font-size: 11px;
   font-weight: 500;
-  padding: 5px 10px;
-  border-radius: 9999px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.18s ease;
-  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
 .jarvis-quick-chip:hover {
-  background: #ffffff;
-  color: #09090b;
-  border-color: #ffffff;
+  background: rgba(6, 182, 212, 0.12);
+  border-color: rgba(6, 182, 212, 0.35);
+  color: #38bdf8;
   transform: translateY(-1px);
 }
 
 .jarvis-chip-icon {
-  opacity: 0.8;
+  color: #06b6d4;
 }
 
 /* ==============================================================
-   4. CHAT STREAM
+   4. CHAT STREAM & BUBBLES
    ============================================================== */
 .jarvis-chat-stream {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 14px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  scroll-behavior: smooth;
-}
-
-.jarvis-chat-stream::-webkit-scrollbar {
-  width: 5px;
-}
-
-.jarvis-chat-stream::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 9999px;
+  gap: 16px;
 }
 
 .jarvis-message-row {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  animation: messageSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes messageSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  gap: 10px;
+  max-width: 88%;
 }
 
 .jarvis-message-row.user-side {
+  align-self: flex-end;
   justify-content: flex-end;
 }
 
 .jarvis-message-row.bot-side {
+  align-self: flex-start;
   justify-content: flex-start;
 }
 
 .jarvis-bot-avatar {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
   flex-shrink: 0;
-  margin-top: 2px;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
 }
 
 .jarvis-bubble {
-  max-width: 84%;
-  padding: 10px 14px;
-  border-radius: 16px;
-  font-size: 0.85rem;
-  line-height: 1.45;
-  word-break: break-word;
+  padding: 12px 16px;
+  border-radius: 18px;
+  font-size: 13.5px;
+  line-height: 1.55;
   position: relative;
+  word-break: break-word;
 }
 
 .jarvis-bubble.user-bubble {
-  background: #ffffff;
-  color: #09090b;
-  font-weight: 500;
-  border-radius: 18px 18px 4px 18px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.25) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
 }
 
 .jarvis-bubble.bot-bubble {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  color: #f4f4f5;
-  border-radius: 18px 18px 18px 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  border-bottom-left-radius: 4px;
+  backdrop-filter: blur(12px);
 }
 
 .jarvis-bubble.error-bubble {
   border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.08);
-}
-
-.jarvis-bubble-body {
-  margin-bottom: 4px;
-}
-
-.jarvis-msg-line {
-  min-height: 1.25em;
-}
-
-.jarvis-bold {
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.user-bubble .jarvis-bold {
-  color: #000000;
-}
-
-.jarvis-code {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 2px 5px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.8em;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .jarvis-bubble-time {
-  font-size: 0.65rem;
-  opacity: 0.55;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 6px;
   text-align: right;
-  margin-top: 4px;
 }
 
-/* Consequential Action Confirmation Box */
-.jarvis-confirm-box {
-  margin-top: 10px;
-  padding: 10px 12px;
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: 12px;
-}
-
-.jarvis-confirm-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.76rem;
+.jarvis-bold {
+  color: #38bdf8;
   font-weight: 700;
-  color: #f59e0b;
-  margin-bottom: 4px;
 }
 
-.jarvis-confirm-summary {
-  font-size: 0.78rem;
-  color: #e4e4e7;
-  margin: 0 0 8px 0;
+.jarvis-code {
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #c084fc;
 }
 
-.jarvis-confirm-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.jarvis-confirm-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  transition: all 0.15s ease;
-}
-
-.jarvis-confirm-btn.approve {
-  background: #22c55e;
-  color: #ffffff;
-}
-
-.jarvis-confirm-btn.approve:hover {
-  background: #16a34a;
-}
-
-.jarvis-confirm-btn.cancel {
-  background: rgba(255, 255, 255, 0.1);
-  color: #a1a1aa;
-}
-
-.jarvis-confirm-btn.cancel:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-}
-
-/* Voice Listening Card */
+/* Voice streaming card while listening */
 .jarvis-voice-stream-card {
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  animation: messageSlideIn 0.2s ease;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .jarvis-voice-stream-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
 }
 
 .jarvis-live-mic-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.74rem;
+  font-size: 11px;
   font-weight: 700;
-  color: #38bdf8;
+  text-transform: uppercase;
+  color: #06b6d4;
 }
 
 .mic-spin {
-  animation: micPulse 1s infinite alternate;
+  animation: micSpin 1.6s infinite ease-in-out;
 }
 
-@keyframes micPulse {
-  0% { opacity: 0.5; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1.1); }
-}
-
-.jarvis-stream-soundbars {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  height: 28px;
-}
-
-.jarvis-stream-soundbars span {
-  width: 3px;
-  background: #38bdf8;
-  border-radius: 9999px;
-  transition: height 0.08s ease;
-  box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+@keyframes micSpin {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 .jarvis-interim-text {
-  font-size: 0.85rem;
-  color: #f0f9ff;
+  font-size: 13.5px;
+  color: #e2e8f0;
   font-style: italic;
 }
 
-/* Typing Indicator (Dancing Dots) */
+/* Dancing Dots Typing */
 .jarvis-typing-bubble {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px;
+  padding: 10px 14px;
 }
 
 .jarvis-dancing-dots {
   display: flex;
-  align-items: center;
   gap: 4px;
 }
 
 .jarvis-dancing-dots .dot {
-  width: 6px;
-  height: 6px;
-  background: #ffffff;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  animation: dancingDotWave 1.3s infinite ease-in-out;
+  background: #38bdf8;
+  animation: dotDance 1.2s infinite ease-in-out;
 }
 
-.jarvis-dancing-dots .dot-2 {
-  animation-delay: 0.2s;
-}
+.jarvis-dancing-dots .dot-2 { animation-delay: 0.2s; }
+.jarvis-dancing-dots .dot-3 { animation-delay: 0.4s; }
 
-.jarvis-dancing-dots .dot-3 {
-  animation-delay: 0.4s;
-}
-
-@keyframes dancingDotWave {
-  0%, 60%, 100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  30% {
-    transform: translateY(-5px);
-    opacity: 1;
-  }
+@keyframes dotDance {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1.1); opacity: 1; }
 }
 
 .jarvis-typing-text {
-  font-size: 0.74rem;
-  color: #a1a1aa;
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 /* ==============================================================
-   5. ACTIVITY LOGS TAB
+   5. INPUT BAR
    ============================================================== */
+.jarvis-copilot-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(20px);
+}
+
+.jarvis-input-mic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.jarvis-input-mic-btn:hover {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: #38bdf8;
+}
+
+.jarvis-input-mic-btn.listening {
+  background: #ef4444;
+  border-color: #f87171;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.5);
+}
+
+.jarvis-input-field {
+  flex: 1;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0 18px;
+  color: #ffffff;
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jarvis-input-field:focus {
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.25);
+}
+
+.jarvis-input-field::placeholder {
+  color: #64748b;
+}
+
+.jarvis-input-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.35);
+}
+
+.jarvis-input-send-btn:hover:not(:disabled) {
+  transform: scale(1.06);
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.55);
+}
+
+.jarvis-input-send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Activity stream logs */
 .jarvis-activity-stream {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.jarvis-activity-empty {
-  text-align: center;
-  padding: 40px 20px;
-  color: #71717a;
-}
-
-.jarvis-empty-icon {
-  margin: 0 auto 10px auto;
-  opacity: 0.5;
-}
-
-.jarvis-activity-empty h4 {
-  color: #d4d4d8;
-  margin: 0 0 6px 0;
-  font-size: 0.92rem;
-}
-
-.jarvis-activity-empty p {
-  font-size: 0.78rem;
-  line-height: 1.45;
-  max-width: 280px;
-  margin: 0 auto;
+  gap: 12px;
 }
 
 .jarvis-activity-card {
+  padding: 12px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 10px 12px;
 }
 
 .jarvis-act-head {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #38bdf8;
   margin-bottom: 6px;
 }
 
-.jarvis-act-name {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #ffffff;
-  font-family: monospace;
-}
-
-.jarvis-act-time {
-  font-size: 0.65rem;
-  color: #71717a;
-}
-
 .jarvis-act-args {
-  background: #09090b;
+  font-size: 11px;
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.3);
   padding: 8px;
   border-radius: 6px;
-  font-size: 0.7rem;
-  color: #a1a1aa;
-  max-height: 90px;
-  overflow-y: auto;
-  margin: 0 0 6px 0;
-  font-family: monospace;
+  color: #cbd5e1;
+  overflow-x: auto;
+  margin: 0;
 }
 
 .jarvis-act-status {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.7rem;
-  color: #22c55e;
-  font-weight: 600;
-}
-
-/* ==============================================================
-   6. INPUT BAR
-   ============================================================== */
-.jarvis-copilot-input-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(18, 18, 24, 0.85);
-  backdrop-filter: blur(20px);
-  flex-shrink: 0;
-}
-
-.jarvis-input-mic-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  flex-shrink: 0;
-}
-
-.jarvis-input-mic-btn:hover {
-  background: #ffffff;
-  color: #09090b;
-  transform: scale(1.05);
-}
-
-.jarvis-input-mic-btn.listening {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
-  animation: micRingPulse 1.2s infinite;
-}
-
-.jarvis-input-field {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
-  padding: 9px 16px;
-  font-size: 0.84rem;
-  color: #ffffff;
-  outline: none;
-  transition: all 0.2s ease;
-}
-
-.jarvis-input-field::placeholder {
-  color: #71717a;
-}
-
-.jarvis-input-field:focus {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
-}
-
-.jarvis-input-send-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: none;
-  color: #09090b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  flex-shrink: 0;
-}
-
-.jarvis-input-send-btn:hover:not(:disabled) {
-  transform: scale(1.08);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
-}
-
-.jarvis-input-send-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .jarvis-copilot-container {
-    right: 12px;
-    bottom: 80px;
-  }
-  .jarvis-copilot-card {
-    width: calc(100vw - 24px);
-    height: min(580px, calc(100vh - 100px));
-  }
+  font-size: 11px;
+  color: #10b981;
+  margin-top: 6px;
 }

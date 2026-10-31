@@ -39,7 +39,9 @@ export const JARVIS_LANGUAGES = [
   { id: 'mr', label: 'मराठी', sub: 'Marathi', tag: 'IN' },
   { id: 'gu', label: 'ગુજરાતી', sub: 'Gujarati', tag: 'IN' },
   { id: 'ar', label: 'العربية', sub: 'Arabic', tag: 'SA' },
-  { id: 'es', label: 'Español', sub: 'Spanish', tag: 'ES' }
+  { id: 'es', label: 'Español', sub: 'Spanish', tag: 'ES' },
+  { id: 'fr', label: 'Français', sub: 'French', tag: 'FR' },
+  { id: 'de', label: 'Deutsch', sub: 'German', tag: 'DE' }
 ];
 
 export const JARVIS_SPEECH_SAMPLES = {
@@ -107,6 +109,16 @@ export const JARVIS_SPEECH_SAMPLES = {
     native: "¡Hola! Soy {name}. La configuración de voz está lista.",
     phonetic: "Hola! Soy {name}. La configuracion de voz esta lista.",
     lang: "es-ES"
+  },
+  fr: {
+    native: "Bonjour! Je suis {name}. La configuration vocale est prête.",
+    phonetic: "Bonjour! Je suis {name}. La configuration vocale est prete.",
+    lang: "fr-FR"
+  },
+  de: {
+    native: "Hallo! Ich bin {name}. Die Spracheinstellungen sind bereit.",
+    phonetic: "Hallo! Ich bin {name}. Die Spracheinstellungen sind bereit.",
+    lang: "de-DE"
   }
 };
 

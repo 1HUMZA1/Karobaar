@@ -10,7 +10,7 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       
       {/* Recent Orders (Left 2/3) */}
-      <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-xl overflow-hidden shadow-md flex flex-col">
+      <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] overflow-hidden shadow-sm flex flex-col">
         <div className="p-6 flex justify-between items-center">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
             <ShoppingCart size={18} className="text-primary"/> Recent Orders
@@ -82,7 +82,7 @@ export const DashboardOperations = ({ recentOrders = [], lowStockProducts = [], 
       </div>
 
       {/* Inventory Health (Right 1/3) */}
-      <div className="bg-[var(--bg-card)] rounded-xl overflow-hidden shadow-md flex flex-col">
+      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] overflow-hidden shadow-sm flex flex-col">
         <div className="p-6 flex justify-between items-center">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
             <AlertCircle size={18} className="text-warning"/> Reorder Suggestions

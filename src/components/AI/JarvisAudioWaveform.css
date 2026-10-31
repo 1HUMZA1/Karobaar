@@ -1,0 +1,47 @@
+/**
+ * JarvisAudioWaveform.css
+ * Futuristic Audio Waveform Visualizer with Electric Blue, Purple & Cyan Lighting
+ */
+
+.jarvis-audio-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 4px 12px;
+  user-select: none;
+}
+
+.waveform-bar {
+  width: 4px;
+  min-height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+  opacity: 0.75;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.45);
+}
+
+.jarvis-audio-waveform.state-listening .waveform-bar {
+  background: linear-gradient(180deg, #38bdf8 0%, #06b6d4 50%, #3b82f6 100%);
+  opacity: 0.95;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.7);
+}
+
+.jarvis-audio-waveform.state-speaking .waveform-bar {
+  background: linear-gradient(180deg, #c084fc 0%, #a855f7 50%, #06b6d4 100%);
+  opacity: 0.95;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.7);
+}
+
+.jarvis-audio-waveform.state-thinking .waveform-bar {
+  background: linear-gradient(180deg, #a855f7 0%, #6366f1 50%, #3b82f6 100%);
+  opacity: 0.85;
+  box-shadow: 0 0 12px rgba(147, 51, 234, 0.6);
+}
+
+.jarvis-audio-waveform.state-idle .waveform-bar {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.4) 0%, rgba(59, 130, 246, 0.4) 100%);
+  opacity: 0.4;
+  box-shadow: none;
+}

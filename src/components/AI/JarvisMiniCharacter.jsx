@@ -1,12 +1,11 @@
 import React, { useMemo } from 'react';
-import { Mic, MicOff, Settings, Sparkles, MessageSquare, ChevronUp, ChevronDown } from 'lucide-react';
+import { Mic, MicOff, Settings, Sparkles, MessageSquare, ChevronUp, ChevronDown, Radio } from 'lucide-react';
 import './JarvisMiniCharacter.css';
 
 /**
- * JarvisMiniCharacter
- * Redesigned Ultra-Modern Floating AI Capsule Dock (Linear & Apple Intelligence Inspired).
- * Positioned cleanly at bottom-right corner.
- * Features reactive visual feedback, soundwave equalizers, live status indicator, and instant copilot trigger.
+ * JarvisMiniCharacter 3.0
+ * Ultra-Modern Floating AI Capsule Dock with Cyan, Blue & Purple Lighting.
+ * Features live reactive soundwaves, quick Live Talk trigger, and instant copilot activation.
  */
 export const JarvisMiniCharacter = ({
   isListening = false,
@@ -19,7 +18,8 @@ export const JarvisMiniCharacter = ({
   isBubbleOpen = false,
   onCharacterClick = () => {},
   onSettingsClick = () => {},
-  onToggleMic = () => {}
+  onToggleMic = () => {},
+  onLiveTalkClick = () => {}
 }) => {
   // Determine primary state
   const currentState = useMemo(() => {
@@ -29,9 +29,8 @@ export const JarvisMiniCharacter = ({
     return 'idle';
   }, [isSpeaking, isThinking, isListening]);
 
-  // Audio equalizer bars (3 reactive bars for voice feedback)
+  // Audio equalizer bars
   const soundBars = useMemo(() => {
-    const heights = [6, 14, 8];
     if (currentState === 'listening') {
       return [
         Math.max(5, Math.min(22, Math.round(6 + audioLevel * 20))),
@@ -58,7 +57,7 @@ export const JarvisMiniCharacter = ({
     <div 
       className={`jarvis-floating-dock ${currentState} ${isBubbleOpen ? 'panel-open' : ''}`}
       role="region"
-      aria-label={`${assistantName} AI Copilot`}
+      aria-label={`${assistantName} AI 3.0 Copilot`}
     >
       {/* Ambient Pulsing Aura */}
       {(currentState === 'listening' || currentState === 'speaking') && (
@@ -69,7 +68,7 @@ export const JarvisMiniCharacter = ({
       <div 
         className="jarvis-pill-button"
         onClick={onCharacterClick}
-        title={`${assistantName} AI • Click to chat or press Mic to speak`}
+        title={`${assistantName} AI 3.0 • Click to chat or tap Live Talk`}
       >
         {/* Futuristic Glowing AI Orb Indicator */}
         <div className={`jarvis-orb-indicator state-${currentState}`}>
@@ -92,7 +91,7 @@ export const JarvisMiniCharacter = ({
         <div className="jarvis-dock-meta">
           <div className="jarvis-dock-name-row">
             <span className="jarvis-dock-name">{assistantName}</span>
-            <span className="jarvis-dock-tag">AI 2.0</span>
+            <span className="jarvis-dock-tag">AI 3.0</span>
           </div>
           <div className="jarvis-dock-sub">
             <span className={`jarvis-status-dot dot-${currentState}`} />
@@ -110,6 +109,21 @@ export const JarvisMiniCharacter = ({
         </div>
       </div>
 
+      {/* Flagship Direct LIVE TALK Pill Button */}
+      <button
+        type="button"
+        className="jarvis-live-talk-pill-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          onLiveTalkClick();
+        }}
+        title="Start continuous two-way live voice conversation (ChatGPT Voice style)"
+        aria-label="Start Live Talk"
+      >
+        <Radio size={14} className="live-pill-radio-icon" />
+        <span className="live-pill-text">Live Talk</span>
+      </button>
+
       {/* Push-to-Talk Mic Quick Trigger */}
       <button
         type="button"
@@ -121,9 +135,6 @@ export const JarvisMiniCharacter = ({
         title={isListening ? "Stop listening" : "Click to speak to Jarvis"}
         aria-label="Toggle microphone"
       >
-        {isListening ? (
-          <div className="jarvis-mic-pulse-ring" />
-        ) : null}
         <Mic size={15} />
       </button>
 
@@ -136,7 +147,7 @@ export const JarvisMiniCharacter = ({
             e.stopPropagation();
             onSettingsClick();
           }}
-          title="Jarvis AI Settings"
+          title="Jarvis AI 3.0 Settings"
           aria-label="Jarvis Settings"
         >
           <Settings size={14} />

@@ -19,29 +19,32 @@ import {
   ShoppingCart,
   Moon,
   Sun,
-  ShieldCheck,
   Layers,
-  Activity
+  Activity,
+  Radio,
+  Headphones
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { jarvisVoiceService } from '../../services/ai/jarvisVoiceService';
 import { jarvisSpeechService } from '../../services/ai/jarvisSpeechService';
 import { jarvisCommandRouter } from '../../services/ai/jarvisCommandRouter';
-import { aiActionService } from '../../services/ai/aiActionService';
+import { JarvisIntelligenceOrb } from './JarvisIntelligenceOrb';
+import { JarvisAudioWaveform } from './JarvisAudioWaveform';
 import './JarvisCommandCenter.css';
 
 /**
- * JarvisCommandCenter (Redesigned Copilot 2.0)
- * Ultra-Modern Translucent Floating Copilot Panel for Karobaar.
- * Fluid spring animations, soundwave audio feedback, quick action carousel,
- * and direct store database intelligence.
+ * JarvisCommandCenter 3.0
+ * Futuristic ChatGPT-inspired AI Copilot Panel for Karobaar & SAS Cafeteria.
+ * Dark glassmorphism with elegant blue, purple and cyan lighting,
+ * animated intelligence orb, dynamic waveforms, timestamps, and one-click Live Talk.
  */
 export const JarvisCommandCenter = ({
   isOpen = false,
   onClose = () => {},
   assistantName = 'Jarvis',
-  initialQuery = ''
+  initialQuery = '',
+  onOpenLiveTalk = () => {}
 }) => {
   const { 
     currentUser, 
@@ -56,6 +59,7 @@ export const JarvisCommandCenter = ({
   // Avatar & Operational State
   const [orbState, setOrbState] = useState('idle'); // 'idle' | 'listening' | 'thinking' | 'speaking' | 'executing' | 'success' | 'error'
   const [audioLevel, setAudioLevel] = useState(0);
+  const [frequencyData, setFrequencyData] = useState([]);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -74,11 +78,12 @@ export const JarvisCommandCenter = ({
       const saved = localStorage.getItem('karobaar_jarvis_chat_history');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
+    const storeName = currentBusiness?.name || 'SAS CAFETERIA';
     return [
       {
         id: 'msg-welcome',
         sender: 'bot',
-        text: `Hello! I am ${assistantName}, your autonomous business intelligence co-pilot for **${currentBusiness?.name || 'your store'}**. How can I assist your operations today?`,
+        text: `Hello! I am ${assistantName} 3.0, your autonomous business intelligence co-pilot for **${storeName}**. You can chat with me, ask for cafeteria analytics, or tap **Live Talk** for continuous two-way voice conversations.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -91,13 +96,14 @@ export const JarvisCommandCenter = ({
   const inputRef = useRef(null);
   const isExecutingRef = useRef(false);
 
-  // Quick Action Suggestions Chips
+  // Quick Action Suggestions Chips (Focused on Cafeteria & Store Intelligence)
   const quickChips = [
-    { label: "Today's Sales & Profit", icon: TrendingUp, query: "Show today's sales and profit summary" },
-    { label: "Low Stock Items", icon: Package, query: "Check low stock alerts" },
-    { label: "Pending Khata Balances", icon: CreditCard, query: "Show pending customer khata balances" },
-    { label: "Open POS / New Sale", icon: ShoppingCart, query: "Open POS billing" },
-    { label: "Toggle Dark Theme", icon: theme === 'dark' ? Sun : Moon, query: "Toggle theme" }
+    { label: "☕ Cafeteria Daily Sales", icon: TrendingUp, query: "Show today's cafeteria sales and orders summary" },
+    { label: "💰 Today's Profit Margin", icon: CreditCard, query: "How much profit did we make today?" },
+    { label: "⚠️ Low Stock Alert", icon: Package, query: "Check low stock items and inventory reorder list" },
+    { label: "👥 Pending Khata (Udhaar)", icon: CreditCard, query: "Who owes money in customer khata balances?" },
+    { label: "🛒 POS Register", icon: ShoppingCart, query: "Open POS billing register" },
+    { label: "🌓 Toggle Theme", icon: theme === 'dark' ? Sun : Moon, query: "Toggle theme" }
   ];
 
   // Persist Messages
@@ -153,6 +159,10 @@ export const JarvisCommandCenter = ({
       setAudioLevel(level);
     };
 
+    jarvisVoiceService.onFrequencyData = (freqs) => {
+      setFrequencyData(freqs);
+    };
+
     jarvisVoiceService.onStateChange = ({ isListening: listening }) => {
       setIsListening(listening);
       if (listening) {
@@ -176,20 +186,13 @@ export const JarvisCommandCenter = ({
       setAudioLevel(level);
     };
 
-    jarvisVoiceService.onWakeWordDetected = () => {
-      if (jarvisSpeechService.isSpeaking) {
-        jarvisSpeechService.stop();
-      }
-      handleToggleMic();
-    };
-
     return () => {
       jarvisSpeechService.stop();
       jarvisVoiceService.stopListening();
     };
   }, [isOpen]);
 
-  // Toggle Mic
+  // Toggle Mic (standard push/click to talk)
   const handleToggleMic = () => {
     if (isListening) {
       jarvisVoiceService.stopListening();
@@ -199,7 +202,8 @@ export const JarvisCommandCenter = ({
       if (isSpeaking) {
         jarvisSpeechService.stop();
       }
-      const started = jarvisVoiceService.startListening();
+      const lang = localStorage.getItem('karobaar_ai_language') || 'en';
+      const started = jarvisVoiceService.startListening(lang, false);
       if (started) {
         setIsListening(true);
         setOrbState('listening');
@@ -212,7 +216,7 @@ export const JarvisCommandCenter = ({
     const welcome = {
       id: `msg-welcome-${Date.now()}`,
       sender: 'bot',
-      text: `Chat history cleared. How may I assist your business today?`,
+      text: `Chat history cleared. How may I assist your cafeteria and store operations today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setMessages([welcome]);
@@ -281,13 +285,14 @@ export const JarvisCommandCenter = ({
         if (voiceOutput) {
           jarvisSpeechService.speak(response.text);
         }
+        isExecutingRef.current = false;
         return;
       }
 
       // Successful completion
       setOrbState('success');
       setTimeout(() => {
-        if (!isSpeaking) setOrbState('idle');
+        if (!jarvisSpeechService.isSpeaking) setOrbState('idle');
       }, 1500);
 
       const botMsg = {
@@ -298,66 +303,26 @@ export const JarvisCommandCenter = ({
       };
       setMessages(prev => [...prev, botMsg]);
 
+      // Speak response out loud if voice output is enabled
       if (voiceOutput) {
         jarvisSpeechService.speak(response.text);
       }
+
     } catch (err) {
-      console.error('[JarvisCommandCenter] Execution failure:', err);
-      setOrbState('error');
-      setTimeout(() => setOrbState('idle'), 2500);
-
-      const errorMsg = {
-        id: `bot-err-${Date.now()}`,
-        sender: 'bot',
-        text: `I encountered an issue processing that: ${err.message || 'Service busy'}. Please try again.`,
-        isError: true,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
-      isExecutingRef.current = false;
-    }
-  };
-
-  // Confirm Consequential Action
-  const handleConfirmAction = async (actionDetails) => {
-    if (!actionDetails) return;
-    setOrbState('executing');
-    setPendingConfirmation(null);
-
-    try {
-      const result = await aiActionService.executeAction(
-        actionDetails.actionName,
-        { ...actionDetails.parameters, _confirmed: true },
-        { user: currentUser, workspace: currentBusiness }
-      );
-
-      setOrbState('success');
-      setTimeout(() => setOrbState('idle'), 1500);
-
-      const confirmationReply = `✓ Confirmed: ${actionDetails.summary} has been executed successfully.`;
-      const confirmMsg = {
-        id: `bot-conf-${Date.now()}`,
-        sender: 'bot',
-        text: confirmationReply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, confirmMsg]);
-
-      if (voiceOutput) {
-        jarvisSpeechService.speak(confirmationReply);
-      }
-    } catch (err) {
+      console.error('[Jarvis Command Error]:', err);
       setOrbState('error');
       setTimeout(() => setOrbState('idle'), 2000);
+
       const errMsg = {
         id: `bot-err-${Date.now()}`,
         sender: 'bot',
-        text: `Action failed: ${err.message}`,
+        text: `I encountered an issue processing that command: ${err.message || 'Unknown error'}. All systems remain operational.`,
         isError: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, errMsg]);
+    } finally {
+      isExecutingRef.current = false;
     }
   };
 
@@ -366,7 +331,6 @@ export const JarvisCommandCenter = ({
     if (!text) return '';
     const lines = text.split('\n');
     return lines.map((line, lIdx) => {
-      // Split by bold (**text**)
       const parts = line.split(/(\*\*.*?\*\*)/g);
       return (
         <div key={lIdx} className="jarvis-msg-line">
@@ -390,7 +354,7 @@ export const JarvisCommandCenter = ({
     <div 
       className={`jarvis-copilot-container ${isMaximized ? 'copilot-maximized' : ''}`}
       role="dialog"
-      aria-label={`${assistantName} Copilot`}
+      aria-label={`${assistantName} 3.0 Copilot`}
     >
       {/* Optional Backdrop when Maximized */}
       {isMaximized && (
@@ -400,33 +364,36 @@ export const JarvisCommandCenter = ({
         />
       )}
 
-      {/* Main Floating Copilot Card */}
+      {/* Main Floating Copilot Card with Dark Glassmorphism */}
       <div className="jarvis-copilot-card">
         {/* Top Header */}
         <div className="jarvis-copilot-header">
           <div className="jarvis-copilot-brand">
-            <div className={`jarvis-header-orb state-${orbState}`}>
-              {orbState === 'thinking' ? (
-                <div className="jarvis-header-spinner" />
-              ) : (
-                <Sparkles size={14} className="jarvis-header-sparkle" />
-              )}
+            {/* Integrated Glowing 3.0 Orb */}
+            <div className="jarvis-header-orb-wrap">
+              <JarvisIntelligenceOrb 
+                state={orbState}
+                audioLevel={audioLevel}
+                size={40}
+                onClick={handleToggleMic}
+                interactive={true}
+              />
             </div>
             <div>
               <div className="jarvis-title-row">
                 <span className="jarvis-brand-name">{assistantName}</span>
-                <span className="jarvis-brand-pill">AI 2.0</span>
-                <span className="jarvis-brand-model">Gemini 2.5</span>
+                <span className="jarvis-brand-pill">AI 3.0</span>
+                <span className="jarvis-brand-model">Gemini 2.5 Flash</span>
               </div>
               <div className="jarvis-status-row">
                 <span className={`jarvis-state-dot dot-${orbState}`} />
                 <span className="jarvis-state-label">
                   {orbState === 'listening' ? 'Listening to voice...' :
-                   orbState === 'thinking' ? 'Analyzing store records...' :
-                   orbState === 'speaking' ? 'Speaking...' :
-                   orbState === 'executing' ? 'Executing verified action...' :
+                   orbState === 'thinking' ? 'Analyzing cafeteria records...' :
+                   orbState === 'speaking' ? 'Speaking response...' :
+                   orbState === 'success' ? 'Command completed' :
                    orbState === 'error' ? 'Connection retry' :
-                   'Connected • Live Store Database'}
+                   'Live Cafeteria Intelligence'}
                 </span>
               </div>
             </div>
@@ -434,7 +401,21 @@ export const JarvisCommandCenter = ({
 
           {/* Action Toolbar */}
           <div className="jarvis-copilot-toolbar">
-            {/* View Mode Toggle: Chat vs Activity */}
+            {/* Dedicated Flagship LIVE TALK Button */}
+            <button
+              type="button"
+              className="jarvis-live-talk-trigger-btn"
+              onClick={() => {
+                onClose();
+                onOpenLiveTalk();
+              }}
+              title="Launch full-screen ChatGPT-style Live Voice mode"
+            >
+              <Radio size={14} className="live-talk-pulse-icon" />
+              <span>LIVE TALK</span>
+            </button>
+
+            {/* View Mode Toggle: Chat vs Logs */}
             <div className="jarvis-view-tabs">
               <button
                 type="button"
@@ -492,7 +473,7 @@ export const JarvisCommandCenter = ({
               type="button"
               className="jarvis-tool-btn close-btn"
               onClick={onClose}
-              title="Close Jarvis (or press Esc)"
+              title="Close Jarvis"
               aria-label="Close"
             >
               <X size={16} />
@@ -539,46 +520,6 @@ export const JarvisCommandCenter = ({
                     {renderFormatted(msg.text)}
                   </div>
 
-                  {/* Consequential Action Confirmation Box */}
-                  {msg.requiresConfirmation && msg.actionDetails && (
-                    <div className="jarvis-confirm-box">
-                      <div className="jarvis-confirm-header">
-                        <AlertTriangle size={15} className="jarvis-confirm-icon" />
-                        <span>Action Requires Confirmation</span>
-                      </div>
-                      <p className="jarvis-confirm-summary">
-                        {msg.actionDetails.summary}
-                      </p>
-                      <div className="jarvis-confirm-actions">
-                        <button
-                          type="button"
-                          className="jarvis-confirm-btn approve"
-                          onClick={() => handleConfirmAction(msg.actionDetails)}
-                        >
-                          <Check size={14} /> Confirm & Execute
-                        </button>
-                        <button
-                          type="button"
-                          className="jarvis-confirm-btn cancel"
-                          onClick={() => {
-                            setPendingConfirmation(null);
-                            setMessages(prev => [
-                              ...prev,
-                              {
-                                id: `bot-cancel-${Date.now()}`,
-                                sender: 'bot',
-                                text: 'Action cancelled. Your store data remains unchanged.',
-                                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                              }
-                            ]);
-                          }}
-                        >
-                          <X size={14} /> Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="jarvis-bubble-time">
                     {msg.timestamp}
                   </div>
@@ -591,20 +532,20 @@ export const JarvisCommandCenter = ({
               <div className="jarvis-voice-stream-card">
                 <div className="jarvis-voice-stream-head">
                   <div className="jarvis-live-mic-badge">
-                    <Mic size={12} className="mic-spin" />
-                    <span>Listening to you...</span>
+                    <Mic size={13} className="mic-spin" />
+                    <span>Listening to your speech...</span>
                   </div>
-                  {/* Dynamic Soundbars */}
-                  <div className="jarvis-stream-soundbars">
-                    <span style={{ height: `${Math.max(4, audioLevel * 20)}px` }} />
-                    <span style={{ height: `${Math.max(6, audioLevel * 30)}px` }} />
-                    <span style={{ height: `${Math.max(4, audioLevel * 18)}px` }} />
-                    <span style={{ height: `${Math.max(8, audioLevel * 26)}px` }} />
-                    <span style={{ height: `${Math.max(4, audioLevel * 14)}px` }} />
-                  </div>
+                  {/* Dynamic Audio Waveform */}
+                  <JarvisAudioWaveform 
+                    state="listening"
+                    audioLevel={audioLevel}
+                    frequencyData={frequencyData}
+                    barCount={14}
+                    height={28}
+                  />
                 </div>
                 <div className="jarvis-interim-text">
-                  {interimTranscript || 'Speak your request clearly...'}
+                  {interimTranscript || 'Listening to your request... speak freely'}
                 </div>
               </div>
             )}
@@ -621,7 +562,7 @@ export const JarvisCommandCenter = ({
                     <span className="dot dot-2" />
                     <span className="dot dot-3" />
                   </div>
-                  <span className="jarvis-typing-text">Jarvis is analyzing...</span>
+                  <span className="jarvis-typing-text">Jarvis 3.0 is analyzing store records...</span>
                 </div>
               </div>
             )}
@@ -635,7 +576,7 @@ export const JarvisCommandCenter = ({
               <div className="jarvis-activity-empty">
                 <Layers size={32} className="jarvis-empty-icon" />
                 <h4>No actions logged yet</h4>
-                <p>Jarvis tool calls and verified system modifications will appear here in real-time.</p>
+                <p>Jarvis tool calls and cafeteria database operations will appear here in real time.</p>
               </div>
             ) : (
               activityLogs.map((log) => (
@@ -648,7 +589,7 @@ export const JarvisCommandCenter = ({
                     {JSON.stringify(log.args, null, 2)}
                   </pre>
                   <div className="jarvis-act-status">
-                    <Check size={12} /> Verified Execution
+                    <Check size={12} /> Verified Store Execution
                   </div>
                 </div>
               ))
@@ -682,7 +623,7 @@ export const JarvisCommandCenter = ({
             className="jarvis-input-field"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder={isListening ? "Listening... speak now" : `Ask ${assistantName} anything or type command...`}
+            placeholder={isListening ? "Listening... speak now" : `Ask ${assistantName} 3.0 anything or type command...`}
             disabled={isListening}
           />
 

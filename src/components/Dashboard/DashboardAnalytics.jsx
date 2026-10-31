@@ -191,11 +191,11 @@ export const DashboardAnalytics = ({
   const totalCustomersVal = stats.totalCustomers || 0;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-5">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
       
       {/* 1. Revenue Overview Chart (2 Columns) */}
       <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm overflow-hidden flex flex-col justify-between">
-        <div className="p-4 sm:p-5 flex flex-wrap justify-between items-center gap-3 border-b border-[var(--border-light)]">
+        <div className="p-5 sm:p-6 flex flex-wrap justify-between items-center gap-3.5 border-b border-[var(--border-light)]">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center text-text-main">
               <Activity size={16} />
@@ -220,7 +220,7 @@ export const DashboardAnalytics = ({
           </div>
         </div>
         
-        <div className="p-4 sm:p-5 flex-1 relative min-h-[280px]">
+        <div className="p-5 sm:p-6 flex-1 relative min-h-[340px]">
           {chartData.labels && chartData.labels.length > 0 ? (
             <Line data={chartObj} options={chartOptions} />
           ) : (
@@ -233,7 +233,7 @@ export const DashboardAnalytics = ({
       </div>
 
       {/* 2. Quick Actions (1 Column, Balanced Grid) */}
-      <div className="lg:col-span-1 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm flex flex-col justify-between p-4 sm:p-5">
+      <div className="lg:col-span-1 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm flex flex-col justify-between p-5 sm:p-6">
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center text-text-main">
@@ -253,7 +253,7 @@ export const DashboardAnalytics = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 flex-1">
+        <div className="grid grid-cols-2 gap-2.5 flex-1">
           {quickActions.slice(0, 6).map((action) => (
             <button
               key={action.id}
@@ -279,7 +279,7 @@ export const DashboardAnalytics = ({
       </div>
 
       {/* 3. Store Vitality & Health (1 Column, Zero Redundancy) */}
-      <div className="lg:col-span-1 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm flex flex-col justify-between p-4 sm:p-5">
+      <div className="lg:col-span-1 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm flex flex-col justify-between p-5 sm:p-6">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center text-text-main">
             <TrendingUp size={16} />
@@ -290,11 +290,11 @@ export const DashboardAnalytics = ({
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col justify-between gap-2.5">
+        <div className="flex-1 flex flex-col justify-between gap-3.5">
           {/* A. Total Registered Customers */}
           <div 
             onClick={() => navigate('/customers')}
-            className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-[var(--text-main)] transition-all cursor-pointer group"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-[var(--text-main)] transition-all cursor-pointer group"
             title="Click to view all Customers"
           >
             <div>
@@ -310,7 +310,7 @@ export const DashboardAnalytics = ({
           {/* B. Average Order Value (AOV) */}
           <div 
             onClick={() => navigate('/orders')}
-            className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-[var(--text-main)] transition-all cursor-pointer group"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-[var(--text-main)] transition-all cursor-pointer group"
             title="Click to view Orders breakdown"
           >
             <div>
@@ -328,7 +328,7 @@ export const DashboardAnalytics = ({
           {/* C. Gross Profit Margin */}
           <div 
             onClick={() => navigate('/reports')}
-            className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-[var(--text-main)] transition-all cursor-pointer group"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-[var(--text-main)] transition-all cursor-pointer group"
             title="Click to view Profit & Loss Reports"
           >
             <div>

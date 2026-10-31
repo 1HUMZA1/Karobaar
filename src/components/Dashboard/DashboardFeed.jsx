@@ -28,7 +28,7 @@ export const DashboardFeed = ({ alerts = [], transactions = [], currencySymbol }
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
       {/* Action Items (Left 1/3) */}
-      <div className="bg-[var(--bg-card)] rounded-xl shadow-md flex flex-col h-[400px]">
+      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm flex flex-col h-[400px]">
         <div className="p-6 flex justify-between items-center">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
             <Bell size={18} className="text-warning"/> Action Items
@@ -68,7 +68,7 @@ export const DashboardFeed = ({ alerts = [], transactions = [], currencySymbol }
       </div>
 
       {/* Activity Feed (Right 2/3) */}
-      <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-xl shadow-md flex flex-col h-[400px]">
+      <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm flex flex-col h-[400px]">
         <div className="p-6 flex justify-between items-center">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
             <Activity size={18} className="text-primary"/> Activity Feed

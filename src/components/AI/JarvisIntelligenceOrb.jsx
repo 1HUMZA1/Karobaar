@@ -2,27 +2,27 @@ import React, { useRef, useEffect } from 'react';
 import './JarvisIntelligenceOrb.css';
 
 /**
- * JarvisIntelligenceOrb
- * Minimalist, Clean, Luxury Monochrome Soundwave Orb for Karobaar AI
+ * JarvisIntelligenceOrb 3.0
+ * Futuristic ChatGPT-inspired AI Intelligence Orb with Cyan, Blue & Electric Purple Lighting.
+ * Multi-layer radial glow, harmonic energy fields, and real-time audio reactivity.
  *
  * States:
- * - 'idle'       : Calm, rhythmic breathing pulse, smooth concentric halo.
- * - 'listening'  : Clean reactive audio waveform expansion based on live microphone volume.
- * - 'thinking'   : Elegant orbital ring rotation, scanning gradient pulse.
- * - 'speaking'   : Harmonic vocal frequency waves pulsing with speech cadence.
- * - 'executing'  : Focused energy compression with subtle acceleration.
- * - 'success'    : Smooth outward harmonic settling.
- * - 'muted'      : Dimmed, serene, motionless circle.
- * - 'error'      : Subtle red accent pulse, gentle recovery.
+ * - 'idle'       : Celestial breathing pulse, calm ambient blue/purple nebulous core.
+ * - 'listening'  : High-energy neon cyan/blue expansion reacting to microphone RMS levels.
+ * - 'thinking'   : Accelerated dual-orbit quantum particle rings with chromatic violet glow.
+ * - 'speaking'   : Harmonic vocal frequency waves undulating in sync with speech cadence.
+ * - 'success'    : Harmonic emerald-cyan settling bloom.
+ * - 'error'      : Pulsing amber-red alert.
  */
 export const JarvisIntelligenceOrb = ({
-  state = 'idle',            // 'idle' | 'listening' | 'thinking' | 'speaking' | 'executing' | 'success' | 'muted' | 'error'
+  state = 'idle',            // 'idle' | 'listening' | 'thinking' | 'speaking' | 'executing' | 'success' | 'error'
   audioLevel = 0,            // 0.0 to 1.0 (live microphone or speech RMS volume)
-  size = 90,                 // Diameter in pixels
+  size = 140,                // Diameter in pixels
   className = '',
   onClick = null,
   showRings = true,
-  interactive = true
+  interactive = true,
+  statusLabel = ''
 }) => {
   const canvasRef = useRef(null);
   const animFrameIdRef = useRef(null);
@@ -52,7 +52,7 @@ export const JarvisIntelligenceOrb = ({
 
     const cx = size / 2;
     const cy = size / 2;
-    const baseRadius = (size / 2) * 0.45;
+    const baseRadius = (size / 2) * 0.42;
 
     let isVisible = true;
     const handleVisibilityChange = () => {
@@ -69,100 +69,158 @@ export const JarvisIntelligenceOrb = ({
       const currentState = stateRef.current;
       const currentAudio = audioLevelRef.current || 0;
 
-      timeRef.current += 0.025;
+      // Time advance based on activity
+      const timeSpeed = currentState === 'thinking' ? 0.05 : currentState === 'listening' ? 0.035 : currentState === 'speaking' ? 0.04 : 0.02;
+      timeRef.current += timeSpeed;
       const t = timeRef.current;
 
       ctx.clearRect(0, 0, size, size);
 
-      // Determine accent colors based on theme and state
-      const isError = currentState === 'error';
-      const isMuted = currentState === 'muted';
       const isListening = currentState === 'listening';
       const isSpeaking = currentState === 'speaking';
       const isThinking = currentState === 'thinking';
+      const isError = currentState === 'error';
 
-      // 1. Central Core Glowing Circle
-      const corePulse = isMuted ? 0 : isListening 
-        ? Math.sin(t * 4) * 2 + currentAudio * 12 
-        : isSpeaking 
-        ? Math.sin(t * 6) * 3 + currentAudio * 10 
+      // 1. Ambient Outer Halo (Deep Blue & Violet Nebula)
+      const outerGlowRadius = baseRadius * (1.8 + currentAudio * 0.6);
+      const outerGlow = ctx.createRadialGradient(cx, cy, baseRadius * 0.3, cx, cy, outerGlowRadius);
+
+      if (isError) {
+        outerGlow.addColorStop(0, 'rgba(239, 68, 68, 0.45)');
+        outerGlow.addColorStop(0.5, 'rgba(185, 28, 28, 0.18)');
+        outerGlow.addColorStop(1, 'rgba(239, 68, 68, 0)');
+      } else if (isListening) {
+        outerGlow.addColorStop(0, 'rgba(6, 182, 212, 0.55)');   // Cyan
+        outerGlow.addColorStop(0.45, 'rgba(59, 130, 246, 0.28)'); // Blue
+        outerGlow.addColorStop(1, 'rgba(147, 51, 234, 0)');      // Purple fade
+      } else if (isSpeaking) {
+        outerGlow.addColorStop(0, 'rgba(168, 85, 247, 0.52)');  // Purple
+        outerGlow.addColorStop(0.5, 'rgba(6, 182, 212, 0.25)');   // Cyan
+        outerGlow.addColorStop(1, 'rgba(59, 130, 246, 0)');      // Blue fade
+      } else if (isThinking) {
+        outerGlow.addColorStop(0, 'rgba(147, 51, 234, 0.6)');   // Electric Violet
+        outerGlow.addColorStop(0.5, 'rgba(59, 130, 246, 0.3)');   // Blue
+        outerGlow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+      } else {
+        // Idle calm breathing
+        const idlePulse = Math.sin(t * 1.5) * 0.1 + 0.9;
+        outerGlow.addColorStop(0, `rgba(59, 130, 246, ${0.35 * idlePulse})`);  // Blue
+        outerGlow.addColorStop(0.5, `rgba(147, 51, 234, ${0.18 * idlePulse})`); // Purple
+        outerGlow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+      }
+
+      ctx.fillStyle = outerGlow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerGlowRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Dynamic Concentric Harmonic Waves
+      if (showRings) {
+        const ringCount = isListening || isSpeaking ? 4 : 3;
+
+        for (let i = 1; i <= ringCount; i++) {
+          const ringDist = baseRadius * (0.85 + i * 0.32);
+          const wavePhase = isListening 
+            ? Math.sin(t * 3.2 + i * 1.2) * (3 + currentAudio * 16)
+            : isSpeaking
+            ? Math.sin(t * 4.0 + i * 0.9) * (2 + currentAudio * 12)
+            : isThinking
+            ? Math.sin(t * 2.8 + i) * 2.5
+            : Math.sin(t * 1.8 + i) * 1.8;
+
+          const ringRadius = Math.max(8, ringDist + wavePhase);
+          const alpha = isListening
+            ? Math.min(0.9, 0.35 + currentAudio * 0.5 - i * 0.08)
+            : isSpeaking
+            ? Math.min(0.85, 0.3 + currentAudio * 0.45 - i * 0.07)
+            : isThinking
+            ? 0.45 - i * 0.1
+            : 0.28 - i * 0.07;
+
+          ctx.save();
+          if (isThinking) {
+            // Rotating orbital segments in thinking state
+            ctx.translate(cx, cy);
+            ctx.rotate(t * (i % 2 === 0 ? 1.8 : -1.8));
+            ctx.beginPath();
+            ctx.strokeStyle = i % 2 === 0 ? `rgba(6, 182, 212, ${alpha})` : `rgba(168, 85, 247, ${alpha})`;
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([12 + i * 4, 10]);
+            ctx.arc(0, 0, ringRadius, 0, Math.PI * 1.6);
+            ctx.stroke();
+          } else {
+            ctx.beginPath();
+            const ringGrad = ctx.createLinearGradient(cx - ringRadius, cy, cx + ringRadius, cy);
+            ringGrad.addColorStop(0, `rgba(6, 182, 212, ${alpha})`);   // Cyan
+            ringGrad.addColorStop(0.5, `rgba(59, 130, 246, ${alpha})`); // Blue
+            ringGrad.addColorStop(1, `rgba(168, 85, 247, ${alpha})`);  // Purple
+            ctx.strokeStyle = ringGrad;
+            ctx.lineWidth = i === 1 ? 2.0 : 1.2;
+            ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+
+      // 3. Central Pulsing Glass Orb Core
+      const corePulse = isListening
+        ? Math.sin(t * 4) * 2 + currentAudio * 14
+        : isSpeaking
+        ? Math.sin(t * 5) * 3 + currentAudio * 10
         : isThinking
-        ? Math.sin(t * 5) * 2
+        ? Math.sin(t * 6) * 2.5
         : Math.sin(t * 2) * 1.5;
 
-      const coreRadius = Math.max(6, baseRadius * 0.55 + corePulse);
+      const coreRadius = Math.max(10, baseRadius * 0.58 + corePulse);
 
-      // Core Gradient Glow
-      const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius * 1.8);
+      // Core Gradient
+      const coreGrad = ctx.createRadialGradient(
+        cx - coreRadius * 0.2, 
+        cy - coreRadius * 0.2, 
+        coreRadius * 0.1, 
+        cx, 
+        cy, 
+        coreRadius
+      );
+
       if (isError) {
-        coreGrad.addColorStop(0, 'rgba(239, 68, 68, 0.9)');
-        coreGrad.addColorStop(0.5, 'rgba(239, 68, 68, 0.4)');
-        coreGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
-      } else if (isMuted) {
-        coreGrad.addColorStop(0, 'rgba(113, 113, 122, 0.5)');
-        coreGrad.addColorStop(0.6, 'rgba(113, 113, 122, 0.15)');
-        coreGrad.addColorStop(1, 'rgba(113, 113, 122, 0)');
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(0.4, '#ef4444');
+        coreGrad.addColorStop(1, '#7f1d1d');
+      } else if (isListening) {
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(0.3, '#38bdf8'); // Sky
+        coreGrad.addColorStop(0.7, '#06b6d4'); // Cyan
+        coreGrad.addColorStop(1, '#1e3a8a');   // Deep Blue
+      } else if (isSpeaking) {
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(0.35, '#c084fc'); // Lavender
+        coreGrad.addColorStop(0.7, '#8b5cf6');  // Violet
+        coreGrad.addColorStop(1, '#0284c7');    // Ocean Blue
+      } else if (isThinking) {
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(0.4, '#a855f7');
+        coreGrad.addColorStop(0.8, '#3b82f6');
+        coreGrad.addColorStop(1, '#0f172a');
       } else {
-        coreGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-        coreGrad.addColorStop(0.4, 'rgba(240, 240, 245, 0.5)');
-        coreGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        // Idle
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(0.3, '#60a5fa');  // Light Blue
+        coreGrad.addColorStop(0.65, '#3b82f6'); // Royal Blue
+        coreGrad.addColorStop(1, '#6366f1');   // Indigo
       }
 
       ctx.fillStyle = coreGrad;
       ctx.beginPath();
-      ctx.arc(cx, cy, coreRadius * 1.8, 0, Math.PI * 2);
+      ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Solid Inner Core
-      ctx.fillStyle = isError ? '#ef4444' : isMuted ? '#71717a' : '#ffffff';
+      // Specular highlight on glass orb
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       ctx.beginPath();
-      ctx.arc(cx, cy, Math.max(3, coreRadius * 0.6), 0, Math.PI * 2);
+      ctx.arc(cx - coreRadius * 0.28, cy - coreRadius * 0.28, coreRadius * 0.22, 0, Math.PI * 2);
       ctx.fill();
-
-      // 2. Harmonic Wave Rings (Simple, clean, non-chaotic)
-      if (showRings && !isMuted) {
-        const NUM_RINGS = isListening || isSpeaking ? 4 : 3;
-
-        for (let i = 1; i <= NUM_RINGS; i++) {
-          const ringOffset = i * (baseRadius * 0.42);
-          const waveFactor = isListening 
-            ? Math.sin(t * 3 + i) * 3 + currentAudio * (18 + i * 8)
-            : isSpeaking
-            ? Math.sin(t * 4 + i * 1.2) * (2 + i) + currentAudio * (14 + i * 6)
-            : isThinking
-            ? Math.sin(t * 2.5 + i * 0.8) * 2
-            : Math.sin(t * 1.8 + i) * 1.8;
-
-          const ringRadius = Math.max(8, baseRadius + ringOffset + waveFactor);
-          const alpha = isListening 
-            ? Math.max(0.1, 0.85 - i * 0.18 + currentAudio * 0.3)
-            : isSpeaking
-            ? Math.max(0.1, 0.75 - i * 0.16)
-            : isThinking
-            ? Math.max(0.1, 0.55 - i * 0.14)
-            : Math.max(0.08, 0.4 - i * 0.1);
-
-          ctx.strokeStyle = isError 
-            ? `rgba(239, 68, 68, ${alpha})` 
-            : `rgba(255, 255, 255, ${alpha})`;
-          ctx.lineWidth = i === 1 ? 1.5 : 1.0;
-
-          if (isThinking) {
-            // Rotating dashed orbital ring for thinking
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(t * (i % 2 === 0 ? 1 : -1) * 1.5);
-            ctx.beginPath();
-            ctx.arc(0, 0, ringRadius, 0, Math.PI * 1.4);
-            ctx.stroke();
-            ctx.restore();
-          } else {
-            ctx.beginPath();
-            ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-        }
-      }
 
       animFrameIdRef.current = requestAnimationFrame(render);
     };
@@ -179,16 +237,20 @@ export const JarvisIntelligenceOrb = ({
 
   return (
     <div 
-      className={`jarvis-clean-orb-container ${className} ${interactive ? 'interactive' : ''}`}
+      className={`jarvis-3-orb-wrapper ${className} ${interactive ? 'interactive' : ''} state-${state}`}
       onClick={onClick}
       style={{ width: `${size}px`, height: `${size}px` }}
-      role="img"
-      aria-label={`Jarvis AI Animation - State: ${state}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`Jarvis AI 3.0 Orb - Status: ${state}`}
     >
       <canvas 
         ref={canvasRef}
         style={{ width: `${size}px`, height: `${size}px`, display: 'block' }}
       />
+      {statusLabel && (
+        <span className="jarvis-3-orb-status-pill">{statusLabel}</span>
+      )}
     </div>
   );
 };

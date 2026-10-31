@@ -385,7 +385,7 @@ export const processJarvisQuery = async (rawQuery, context) => {
     // ==========================================
     // 3. TODAY'S SALES & REVENUE
     // ==========================================
-    if (/(today.*sale|today.*revenue|aaj ki bikri|aaj kitna sale|orders today|bikri kitni|how much did we sell)/i.test(lower)) {
+    if (/(today.*sale|today.*revenue|cafeteria.*sale|cafeteria.*order|cafeteria.*revenue|cafeteria.*performance|aaj ki bikri|aaj kitna sale|orders today|bikri kitni|how much did we sell)/i.test(lower)) {
       const sales = await db.getCollection('sales', businessId) || [];
       const todayStr = new Date().toISOString().split('T')[0];
       const todaySales = sales.filter(s => {
@@ -441,9 +441,69 @@ export const processJarvisQuery = async (rawQuery, context) => {
     }
 
     // ==========================================
+    // 3b. CAFETERIA MENU & PRODUCT LOOKUP
+    // ==========================================
+    if (/(cafeteria.*menu|menu|chai|tea|samosa|snack|shawarma|beverage|drink|burger|sandwich|kya kya milta hai|items in store)/i.test(lower)) {
+      const products = await db.getCollection('products', businessId) || [];
+      const productList = products.slice(0, 10);
+
+      if (productList.length > 0) {
+        const itemsFormatted = productList.map(p => `• **${p.name}** — ${formatCurrency(p.sellingPrice || p.price)} (Stock: ${p.stockQuantity ?? p.stock ?? 0})`).join('\n');
+        replyText = `☕ **SAS CAFETERIA Menu & Products:**\n\n${itemsFormatted}\n\n*Would you like to bill any of these in POS or check inventory?*`;
+        spokenText = `Here is your cafeteria menu with current pricing and live stock levels.`;
+      } else {
+        replyText = `☕ **SAS CAFETERIA:** No products found in this workspace yet. You can add items in Products or bill them at the POS.`;
+        spokenText = `No products are currently cataloged in this store workspace.`;
+      }
+
+      actionData = {
+        type: 'menu_preview',
+        badge: 'Cafeteria Menu',
+        metrics: [
+          { label: 'Catalog Items', value: `${products.length}` },
+          { label: 'Register', value: 'Ready to bill' }
+        ],
+        cta: { label: 'Open POS Register', path: '/pos' }
+      };
+
+      quickActions = [
+        { label: '🛒 Open POS Register', query: 'Open POS register' },
+        { label: '📊 Today\'s Sales', query: 'Show today cafeteria sales' },
+        { label: '⚠️ Check Low Stock', query: 'Which items are low in stock?' }
+      ];
+
+      return { replyText, spokenText, actionData, quickActions };
+    }
+
+    // ==========================================
+    // 3c. FOLLOW-UP QUESTIONS (YESTERDAY SALES / REVENUE)
+    // ==========================================
+    if (/(yesterday|kal ki bikri|kal ka sale|how about yesterday|what about yesterday)/i.test(lower)) {
+      const sales = await db.getCollection('sales', businessId) || [];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const yesterdaySales = sales.filter(s => (s.date || s.createdAt || '').startsWith(yesterday));
+      const totalRev = yesterdaySales.reduce((acc, s) => acc + (Number(s.totalAmount || s.grandTotal || s.total || 0)), 0);
+
+      replyText = `📊 **Yesterday's Performance:**\n\n• **Revenue:** ${formatCurrency(totalRev)}\n• **Orders:** ${yesterdaySales.length} orders\n\nAll historical records are safely archived in your ledger.`;
+      spokenText = `Yesterday's revenue was ${formatCurrency(totalRev)} across ${yesterdaySales.length} orders.`;
+
+      actionData = {
+        type: 'yesterday_sales',
+        badge: `Yesterday: ${formatCurrency(totalRev)}`,
+        metrics: [
+          { label: 'Yesterday Revenue', value: formatCurrency(totalRev) },
+          { label: 'Orders', value: `${yesterdaySales.length}` }
+        ]
+      };
+
+      return { replyText, spokenText, actionData, quickActions };
+    }
+
+    // ==========================================
     // 4. TODAY'S PROFIT & MARGIN
     // ==========================================
-    if (/(profit|munafa|fayda|margin|kitna kamaya)/i.test(lower)) {
+
+    if (/(profit|munafa|fayda|margin|kitna kamaya|cafeteria.*profit|net profit)/i.test(lower)) {
       const sales = await db.getCollection('sales', businessId) || [];
       const todayStr = new Date().toISOString().split('T')[0];
       const todaySales = sales.filter(s => (s.date || s.createdAt || '').startsWith(todayStr));

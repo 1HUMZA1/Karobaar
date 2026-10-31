@@ -1,23 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Download, TrendingUp, Users, Box, Banknote, Calendar, BarChart2, 
-  Briefcase, FileText, Loader2, ArrowUpRight, ArrowDownRight, PackageX, 
-  Zap, Printer, AlertCircle, ArrowRightLeft, DollarSign, Wallet, ShieldAlert
+  Download, TrendingUp, Users, Box, Banknote, Calendar, BarChart3, 
+  Briefcase, FileText, Loader2, PackageX, Zap, Printer, AlertCircle, 
+  DollarSign, Wallet, CheckCircle2, FileSpreadsheet, Building2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { db } from '../../services/databaseService';
 import { useAppContext } from '../../context/AppContext';
 import { useCollection } from '../../hooks/useCollection';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MobileReports } from './MobileReports';
-import { format, subDays, startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
   LineElement, BarElement, Title, Tooltip, Legend, Filler, ArcElement
 } from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { hasPermission, PERMISSIONS } from '../../utils/permissions';
+import './Reports.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler, ArcElement);
 
@@ -30,8 +29,8 @@ const Reports = () => {
 
   // Date filtering: 'today', 'yesterday', '7d', 'this_month', 'all_time'
   const [dateRange, setDateRange] = useState('this_month');
-  const [activeTab, setActiveTab] = useState(() => canViewProfit ? 'pnl' : 'cash'); // pnl, sales, cash, receivables, payables, inventory, exports
-  const [exporting, setExporting] = useState(null);
+  const [activeTab, setActiveTab] = useState(() => canViewProfit ? 'pnl' : 'cash'); // pnl, cash, receivables, payables, inventory, exports
+  const [, setExporting] = useState(null);
 
   // Collections
   const { data: sales = [] } = useCollection('sales', currentUser?.activeBusinessId);
@@ -80,15 +79,6 @@ const Reports = () => {
       return isWithinInterval(d, { start: filterBounds.start, end: filterBounds.end });
     });
   }, [expenses, filterBounds, dateRange]);
-
-  const periodPurchases = useMemo(() => {
-    return purchases.filter(p => {
-      if (dateRange === 'all_time') return true;
-      if (!p.date) return false;
-      const d = new Date(p.date);
-      return isWithinInterval(d, { start: filterBounds.start, end: filterBounds.end });
-    });
-  }, [purchases, filterBounds, dateRange]);
 
   // Product cost map for COGS calculation
   const productCostMap = useMemo(() => {
@@ -391,20 +381,53 @@ const Reports = () => {
     );
   }
 
+  // Navigation tab definitions
+  const tabs = [
+    ...(canViewProfit ? [{ id: 'pnl', label: 'Profit & Loss Statement', icon: <FileSpreadsheet size={15} /> }] : []),
+    { id: 'cash', label: 'Cash Flow & Tenders', icon: <Wallet size={15} /> },
+    { 
+      id: 'receivables', 
+      label: 'Receivables (Udhaar)', 
+      icon: <Users size={15} />,
+      badge: `${currencySymbol}${receivables.totalReceivable.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      badgeVariant: receivables.totalReceivable > 0 ? 'amber' : 'default'
+    },
+    { 
+      id: 'payables', 
+      label: 'Payables (Suppliers)', 
+      icon: <Building2 size={15} />,
+      badge: `${currencySymbol}${payables.totalPendingPO.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      badgeVariant: payables.totalPendingPO > 0 ? 'rose' : 'default'
+    },
+    { id: 'inventory', label: 'Stock Valuation & Dead Stock', icon: <Box size={15} /> },
+    { id: 'exports', label: 'CSV & Export Center', icon: <Download size={15} /> }
+  ];
+
   return (
-    <div className="page-container" style={{ height: '100%', overflowY: 'auto' }}>
-      {/* Header with Title and Print / Export button */}
-      <div className="page-header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3">
+    <div className="reports-page-wrapper px-4 md:px-8 py-6 pb-40">
+      
+      {/* 1. Header with Left-Aligned Title and Right-Aligned Date Filter & Actions */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-7">
+        <div className="flex flex-col gap-1.5 text-left">
+          <div className="flex items-center gap-2 text-text-muted font-bold text-xs tracking-wider uppercase">
+            <FileText size={14} className="text-primary" />
+            <span>Financial Intelligence</span>
+            <span className="text-zinc-600">•</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase tracking-wider">
+              Audited Engine
+            </span>
+          </div>
+          <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
             Financial & Business Reports
           </h1>
-          <p className="text-secondary text-sm">Audited P&L statements, cash flows, inventory risk, and balance reconciliations</p>
+          <p className="text-xs lg:text-sm text-text-secondary font-medium">
+            Audited P&L statements, cash flows, inventory risk, and balance reconciliations
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Multi-Period Date Selector */}
-          <div className="flex bg-[var(--bg-elevated)] p-1 rounded-xl border border-[var(--border-color)]">
+          {/* Period Filter Buttons */}
+          <div className="flex items-center bg-[var(--bg-card)] p-1 rounded-xl border border-[var(--border-color)] shadow-sm">
             {[
               { id: 'today', label: 'Today' },
               { id: 'yesterday', label: 'Yesterday' },
@@ -414,11 +437,12 @@ const Reports = () => {
             ].map(period => (
               <button
                 key={period.id}
+                type="button"
                 onClick={() => setDateRange(period.id)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                   dateRange === period.id
-                    ? 'bg-zinc-800 text-white shadow-sm font-bold'
-                    : 'text-secondary hover:text-[var(--text-main)]'
+                    ? 'bg-zinc-800 text-white shadow-sm font-extrabold'
+                    : 'text-text-secondary hover:text-white hover:bg-[var(--bg-hover)]'
                 }`}
               >
                 {period.label}
@@ -426,191 +450,255 @@ const Reports = () => {
             ))}
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<Printer size={15} />}
+          {/* Print Button */}
+          <button
+            type="button"
             onClick={() => window.print()}
-            className="h-9 px-3 text-xs bg-[var(--bg-card)] print:hidden"
+            className="flex items-center gap-1.5 h-9 px-3.5 text-xs font-bold rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-white transition-all shadow-sm print-hidden"
           >
-            Print / PDF
-          </Button>
+            <Printer size={14} className="text-text-muted" />
+            <span>Print / PDF</span>
+          </button>
         </div>
       </div>
 
       {/* Incomplete Financial Data Warning Banner */}
       {incompleteCostInfo.hasIncompleteData && (
-        <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-start gap-3">
-          <AlertCircle size={20} className="text-amber-400 mt-0.5 flex-shrink-0" />
+        <div className="mb-6 p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 flex items-start gap-3.5">
+          <AlertCircle size={20} className="text-amber-400 mt-0.5 shrink-0" />
           <div className="text-xs">
             <span className="font-bold text-amber-300">Notice on Financial Cost Accuracy: </span>
-            <span className="text-[var(--text-secondary)]">
+            <span className="text-zinc-300">
               {incompleteCostInfo.missingProductCount} sold items (such as {incompleteCostInfo.missingProductNames.join(', ')}) do not have a defined purchase/cost price in the inventory catalog.
-              Their COGS is tracked as {currencySymbol}0.00. Update purchase prices in <a href="#/inventory" className="underline font-semibold text-[var(--text-main)]">Inventory</a> for 100% exact gross profit calculation.
+              Their COGS is tracked as {currencySymbol}0.00. Update purchase prices in <a href="#/inventory" className="underline font-bold text-white hover:text-amber-300">Inventory</a> for 100% exact gross profit calculation.
             </span>
           </div>
         </div>
       )}
 
-      {/* Executive Financial KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="border border-[var(--border-color)]">
-          <CardContent className="p-4">
-            <span className="text-xs uppercase tracking-wider text-secondary font-semibold">Net Sales Revenue</span>
-            <h3 className="text-2xl font-bold font-mono text-[var(--text-main)] mt-1">
-              {currencySymbol}{pnlData.netRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h3>
-            <span className="text-[11px] text-secondary mt-1 block">
-              {pnlData.ordersCount} transactions ({currencySymbol}{pnlData.averageOrderValue.toFixed(2)} AOV)
+      {/* 2. Executive Financial KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+        {/* Net Sales Revenue */}
+        <div className="reports-kpi-card">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">
+              Net Sales Revenue
             </span>
-          </CardContent>
-        </Card>
+            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <DollarSign size={15} />
+            </div>
+          </div>
+          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-white tracking-tight my-1">
+            {currencySymbol}{pnlData.netRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-xs text-text-secondary font-semibold mt-1 flex items-center gap-1.5">
+            <span>{pnlData.ordersCount} transactions</span>
+            <span className="text-zinc-600">•</span>
+            <span>{currencySymbol}{pnlData.averageOrderValue.toFixed(2)} AOV</span>
+          </div>
+        </div>
 
-        <Card className="border border-[var(--border-color)]">
-          <CardContent className="p-4">
-            <span className="text-xs uppercase tracking-wider text-secondary font-semibold">Cost of Goods (COGS)</span>
-            <h3 className="text-2xl font-bold font-mono text-[var(--text-secondary)] mt-1">
-              {canViewProfit ? `${currencySymbol}${pnlData.totalCOGS.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '••••••'}
-            </h3>
-            <span className="text-[11px] text-secondary mt-1 block">
-              {canViewProfit ? (
-                <>Gross Profit: <strong className="text-emerald-400">{currencySymbol}{pnlData.grossProfit.toFixed(2)}</strong> ({pnlData.grossMargin.toFixed(1)}%)</>
-              ) : (
-                <span className="text-zinc-500">Restricted to Owner/Finance</span>
-              )}
+        {/* Cost of Goods Sold (COGS) */}
+        <div className="reports-kpi-card">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">
+              Cost of Goods (COGS)
             </span>
-          </CardContent>
-        </Card>
+            <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-text-muted">
+              <Box size={15} />
+            </div>
+          </div>
+          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-zinc-300 tracking-tight my-1">
+            {canViewProfit 
+              ? `${currencySymbol}${pnlData.totalCOGS.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+              : '••••••'}
+          </div>
+          <div className="text-xs text-text-secondary font-semibold mt-1">
+            {canViewProfit ? (
+              <span className="flex items-center gap-1.5">
+                <span>Gross Profit:</span>
+                <strong className="text-emerald-400 font-bold">{currencySymbol}{pnlData.grossProfit.toFixed(2)}</strong>
+                <span className="text-zinc-500">({pnlData.grossMargin.toFixed(1)}%)</span>
+              </span>
+            ) : (
+              <span className="text-zinc-500 font-medium">Restricted to Owner / Manager</span>
+            )}
+          </div>
+        </div>
 
-        <Card className="border border-[var(--border-color)]">
-          <CardContent className="p-4">
-            <span className="text-xs uppercase tracking-wider text-secondary font-semibold">Operating Expenses</span>
-            <h3 className="text-2xl font-bold font-mono text-rose-400 mt-1">
-              {currencySymbol}{pnlData.totalOpExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h3>
-            <span className="text-[11px] text-secondary mt-1 block">
-              Across {periodExpenses.length} expense entries
+        {/* Operating Expenses */}
+        <div className="reports-kpi-card">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">
+              Operating Expenses
             </span>
-          </CardContent>
-        </Card>
+            <div className="w-7 h-7 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400">
+              <Banknote size={15} />
+            </div>
+          </div>
+          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-rose-400 tracking-tight my-1">
+            {currencySymbol}{pnlData.totalOpExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-xs text-text-secondary font-semibold mt-1">
+            Across {periodExpenses.length} expense entries
+          </div>
+        </div>
 
-        <Card className="border border-[var(--border-color)]">
-          <CardContent className="p-4">
-            <span className="text-xs uppercase tracking-wider text-secondary font-semibold">Net Business Profit</span>
-            <h3 className={`text-2xl font-bold font-mono mt-1 ${canViewProfit ? (pnlData.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400') : 'text-zinc-400'}`}>
-              {canViewProfit ? `${currencySymbol}${pnlData.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '••••••'}
-            </h3>
-            <span className="text-[11px] text-secondary mt-1 block">
-              {canViewProfit ? (
-                <>Net Margin: <strong>{pnlData.netMargin.toFixed(1)}%</strong></>
-              ) : (
-                <span className="text-zinc-500">Restricted to Owner/Finance</span>
-              )}
+        {/* Net Business Profit */}
+        <div className="reports-kpi-card">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">
+              Net Business Profit
             </span>
-          </CardContent>
-        </Card>
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+              canViewProfit && pnlData.netProfit >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+            }`}>
+              <TrendingUp size={15} />
+            </div>
+          </div>
+          <div className={`text-2xl lg:text-3xl font-extrabold font-mono tracking-tight my-1 ${
+            canViewProfit 
+              ? (pnlData.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400') 
+              : 'text-zinc-400'
+          }`}>
+            {canViewProfit 
+              ? `${currencySymbol}${pnlData.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+              : '••••••'}
+          </div>
+          <div className="text-xs text-text-secondary font-semibold mt-1">
+            {canViewProfit ? (
+              <span className="flex items-center gap-1.5">
+                <span>Net Margin:</span>
+                <strong className={pnlData.netMargin >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                  {pnlData.netMargin.toFixed(1)}%
+                </strong>
+              </span>
+            ) : (
+              <span className="text-zinc-500 font-medium">Restricted to Owner / Manager</span>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Tabs Switcher */}
-      <div className="flex border-b border-[var(--border-color)] mb-6 gap-2 overflow-x-auto">
-        {[
-          ...(canViewProfit ? [{ id: 'pnl', label: 'Profit & Loss Statement' }] : []),
-          { id: 'cash', label: 'Cash Flow & Tenders' },
-          { id: 'receivables', label: `Receivables (Udhaar: ${currencySymbol}${receivables.totalReceivable.toFixed(0)})` },
-          { id: 'payables', label: `Payables (Suppliers: ${currencySymbol}${payables.totalPendingPO.toFixed(0)})` },
-          { id: 'inventory', label: 'Stock Valuation & Dead Stock' },
-          { id: 'exports', label: 'CSV & Export Center' }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 whitespace-nowrap transition-all ${
-              activeTab === tab.id
-                ? 'border-[var(--text-main)] text-[var(--text-main)]'
-                : 'border-transparent text-secondary hover:text-[var(--text-main)]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* 3. Navigation Tab Bar (Clipped Scrollbar & Cut-off text completely eliminated) */}
+      <div className="mb-6">
+        <div className="reports-tabs-bar">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`reports-tab-pill ${activeTab === tab.id ? 'active' : ''}`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                  tab.badgeVariant === 'amber'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : tab.badgeVariant === 'rose'
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                    : 'bg-zinc-700/60 text-zinc-300'
+                }`}>
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* TAB 1: PROFIT & LOSS STATEMENT */}
       {activeTab === 'pnl' && (
-        <Card className="border border-[var(--border-color)]">
-          <CardHeader className="p-5 border-b border-[var(--border-color)] flex flex-row items-center justify-between">
+        <Card className="border border-[var(--border-color)] overflow-hidden shadow-sm">
+          <CardHeader className="p-5 border-b border-[var(--border-color)] flex flex-row items-center justify-between bg-[var(--bg-card)]">
             <div>
-              <h3 className="font-bold text-base text-[var(--text-main)]">Profit & Loss Statement</h3>
-              <p className="text-xs text-secondary mt-0.5">Period: <strong className="text-white">{filterBounds.label}</strong></p>
+              <h3 className="font-bold text-base text-white flex items-center gap-2">
+                <FileSpreadsheet size={17} className="text-primary" />
+                Profit & Loss Statement
+              </h3>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Accounting Period: <strong className="text-white">{filterBounds.label}</strong>
+              </p>
             </div>
             <Button
               variant="outline"
               size="sm"
               icon={<Download size={14} />}
               onClick={() => handleExport('PNL')}
-              className="h-8 px-3 text-xs bg-[var(--bg-card)]"
+              className="h-8 px-3.5 text-xs bg-[var(--bg-hover)] border-[var(--border-color)] text-white hover:bg-zinc-800"
             >
               Export P&L CSV
             </Button>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse font-mono text-sm">
+            <div className="reports-table-container">
+              <table className="reports-statement-table font-mono text-sm">
                 <tbody>
                   {/* Revenue Section */}
-                  <tr className="bg-[var(--bg-hover)] border-b border-[var(--border-color)]">
-                    <td colSpan={2} className="p-3 text-xs uppercase font-bold text-[var(--text-muted)]">1. Operating Revenue</td>
+                  <tr className="bg-[var(--bg-hover)] no-hover border-b border-[var(--border-color)]">
+                    <td colSpan={2} className="py-2.5 px-5 text-xs uppercase font-extrabold text-zinc-400 tracking-wider">
+                      1. Operating Revenue
+                    </td>
                   </tr>
                   <tr className="border-b border-[var(--border-color)]">
-                    <td className="p-3 pl-8 text-secondary">Gross Sales</td>
-                    <td className="p-3 pr-8 text-right font-semibold text-[var(--text-main)]">{currencySymbol}{pnlData.grossRevenue.toFixed(2)}</td>
+                    <td className="py-3 px-8 text-text-secondary font-sans font-medium">Gross Sales</td>
+                    <td className="py-3 px-8 text-right font-bold text-white">{currencySymbol}{pnlData.grossRevenue.toFixed(2)}</td>
                   </tr>
                   <tr className="border-b border-[var(--border-color)]">
-                    <td className="p-3 pl-8 text-secondary">Less: Sales Discounts & Reductions</td>
-                    <td className="p-3 pr-8 text-right text-rose-400 font-semibold">- {currencySymbol}{pnlData.discountsGiven.toFixed(2)}</td>
+                    <td className="py-3 px-8 text-text-secondary font-sans font-medium">Less: Sales Discounts & Reductions</td>
+                    <td className="py-3 px-8 text-right text-rose-400 font-semibold">- {currencySymbol}{pnlData.discountsGiven.toFixed(2)}</td>
                   </tr>
-                  <tr className="bg-[var(--bg-elevated)] font-bold border-b border-[var(--border-color)]">
-                    <td className="p-3 pl-6 text-white">Net Sales Revenue</td>
-                    <td className="p-3 pr-8 text-right text-[var(--text-main)] text-base">{currencySymbol}{pnlData.netRevenue.toFixed(2)}</td>
+                  <tr className="bg-[var(--bg-card)] font-bold border-b border-[var(--border-color)]">
+                    <td className="py-3.5 px-6 text-white font-sans font-bold">Net Sales Revenue</td>
+                    <td className="py-3.5 px-8 text-right text-white text-base font-extrabold">{currencySymbol}{pnlData.netRevenue.toFixed(2)}</td>
                   </tr>
 
                   {/* COGS Section */}
-                  <tr className="bg-[var(--bg-hover)] border-b border-[var(--border-color)]">
-                    <td colSpan={2} className="p-3 text-xs uppercase font-bold text-[var(--text-muted)]">2. Cost of Sales</td>
+                  <tr className="bg-[var(--bg-hover)] no-hover border-b border-[var(--border-color)]">
+                    <td colSpan={2} className="py-2.5 px-5 text-xs uppercase font-extrabold text-zinc-400 tracking-wider">
+                      2. Cost of Sales
+                    </td>
                   </tr>
                   <tr className="border-b border-[var(--border-color)]">
-                    <td className="p-3 pl-8 text-secondary">Cost of Goods Sold (COGS)</td>
-                    <td className="p-3 pr-8 text-right text-rose-400 font-semibold">- {currencySymbol}{pnlData.totalCOGS.toFixed(2)}</td>
+                    <td className="py-3 px-8 text-text-secondary font-sans font-medium">Cost of Goods Sold (COGS)</td>
+                    <td className="py-3 px-8 text-right text-rose-400 font-semibold">- {currencySymbol}{pnlData.totalCOGS.toFixed(2)}</td>
                   </tr>
-                  <tr className="bg-[var(--bg-elevated)] font-bold border-b border-[var(--border-color)]">
-                    <td className="p-3 pl-6 text-emerald-400">Gross Operating Profit</td>
-                    <td className="p-3 pr-8 text-right text-emerald-400 text-base">
+                  <tr className="bg-[var(--bg-card)] font-bold border-b border-[var(--border-color)]">
+                    <td className="py-3.5 px-6 text-emerald-400 font-sans font-bold">Gross Operating Profit</td>
+                    <td className="py-3.5 px-8 text-right text-emerald-400 text-base font-extrabold">
                       {currencySymbol}{pnlData.grossProfit.toFixed(2)}
-                      <span className="text-xs font-normal text-secondary ml-2">({pnlData.grossMargin.toFixed(1)}% margin)</span>
+                      <span className="text-xs font-normal text-text-secondary ml-2 font-sans">({pnlData.grossMargin.toFixed(1)}% margin)</span>
                     </td>
                   </tr>
 
                   {/* Operating Expenses Section */}
-                  <tr className="bg-[var(--bg-hover)] border-b border-[var(--border-color)]">
-                    <td colSpan={2} className="p-3 text-xs uppercase font-bold text-[var(--text-muted)]">3. Operating Expenses</td>
+                  <tr className="bg-[var(--bg-hover)] no-hover border-b border-[var(--border-color)]">
+                    <td colSpan={2} className="py-2.5 px-5 text-xs uppercase font-extrabold text-zinc-400 tracking-wider">
+                      3. Operating Expenses
+                    </td>
                   </tr>
                   {Object.entries(pnlData.expenseBreakdown).map(([cat, amt]) => (
                     <tr key={cat} className="border-b border-[var(--border-color)]">
-                      <td className="p-3 pl-8 text-secondary">{cat}</td>
-                      <td className="p-3 pr-8 text-right text-[var(--text-secondary)]">{currencySymbol}{amt.toFixed(2)}</td>
+                      <td className="py-3 px-8 text-text-secondary font-sans font-medium">{cat}</td>
+                      <td className="py-3 px-8 text-right text-zinc-300 font-semibold">{currencySymbol}{amt.toFixed(2)}</td>
                     </tr>
                   ))}
-                  <tr className="bg-[var(--bg-elevated)] font-bold border-b border-[var(--border-color)]">
-                    <td className="p-3 pl-6 text-white">Total Operating Expenses</td>
-                    <td className="p-3 pr-8 text-right text-rose-400 text-base">- {currencySymbol}{pnlData.totalOpExpenses.toFixed(2)}</td>
+                  <tr className="bg-[var(--bg-card)] font-bold border-b border-[var(--border-color)]">
+                    <td className="py-3.5 px-6 text-white font-sans font-bold">Total Operating Expenses</td>
+                    <td className="py-3.5 px-8 text-right text-rose-400 text-base font-extrabold">- {currencySymbol}{pnlData.totalOpExpenses.toFixed(2)}</td>
                   </tr>
 
                   {/* Net Profit Section */}
-                  <tr className="bg-[var(--bg-elevated)] font-bold border-t-2 border-white">
-                    <td className="p-4 pl-6 text-lg text-[var(--text-main)]">Net Business Profit / (Loss)</td>
-                    <td className={`p-4 pr-8 text-right text-xl ${pnlData.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <tr className="bg-zinc-900/90 font-bold border-t-2 border-zinc-600">
+                    <td className="py-4 px-6 text-base lg:text-lg text-white font-sans font-extrabold">
+                      Net Business Profit / (Loss)
+                    </td>
+                    <td className={`py-4 px-8 text-right text-lg lg:text-xl font-extrabold ${pnlData.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {currencySymbol}{pnlData.netProfit.toFixed(2)}
-                      <div className="text-xs text-secondary font-normal mt-0.5">Net Profit Margin: {pnlData.netMargin.toFixed(1)}%</div>
+                      <div className="text-xs text-text-secondary font-normal font-sans mt-0.5">
+                        Net Profit Margin: <strong className="text-white">{pnlData.netMargin.toFixed(1)}%</strong>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -624,59 +712,53 @@ const Reports = () => {
       {activeTab === 'cash' && (
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border border-[var(--border-color)]">
-              <CardContent className="p-5">
-                <span className="text-xs uppercase tracking-wider text-secondary font-semibold">Total Cash Collected</span>
-                <h3 className="text-2xl font-bold font-mono text-emerald-400 mt-1">
-                  {currencySymbol}{tenderAndCashData.cashSales.toFixed(2)}
-                </h3>
-                <p className="text-xs text-secondary mt-1">Hard cash in POS register drawer</p>
-              </CardContent>
-            </Card>
+            <div className="reports-kpi-card">
+              <span className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">Total Cash Collected</span>
+              <div className="text-2xl lg:text-3xl font-extrabold font-mono text-emerald-400 tracking-tight my-1">
+                {currencySymbol}{tenderAndCashData.cashSales.toFixed(2)}
+              </div>
+              <p className="text-xs text-text-secondary mt-1 font-medium">Hard cash in POS register drawer</p>
+            </div>
 
-            <Card className="border border-[var(--border-color)]">
-              <CardContent className="p-5">
-                <span className="text-xs uppercase tracking-wider text-secondary font-semibold">Cash Paid Out</span>
-                <h3 className="text-2xl font-bold font-mono text-rose-400 mt-1">
-                  - {currencySymbol}{tenderAndCashData.cashExpenses.toFixed(2)}
-                </h3>
-                <p className="text-xs text-secondary mt-1">Direct cash petty expenses & payouts</p>
-              </CardContent>
-            </Card>
+            <div className="reports-kpi-card">
+              <span className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">Cash Paid Out</span>
+              <div className="text-2xl lg:text-3xl font-extrabold font-mono text-rose-400 tracking-tight my-1">
+                - {currencySymbol}{tenderAndCashData.cashExpenses.toFixed(2)}
+              </div>
+              <p className="text-xs text-text-secondary mt-1 font-medium">Direct cash petty expenses & payouts</p>
+            </div>
 
-            <Card className="border border-[var(--border-color)]">
-              <CardContent className="p-5">
-                <span className="text-xs uppercase tracking-wider text-secondary font-semibold">Net Drawer Cash Flow</span>
-                <h3 className={`text-2xl font-bold font-mono mt-1 ${tenderAndCashData.netCashFlow >= 0 ? 'text-white' : 'text-rose-400'}`}>
-                  {currencySymbol}{tenderAndCashData.netCashFlow.toFixed(2)}
-                </h3>
-                <p className="text-xs text-secondary mt-1">Net physical currency generated in period</p>
-              </CardContent>
-            </Card>
+            <div className="reports-kpi-card">
+              <span className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">Net Drawer Cash Flow</span>
+              <div className={`text-2xl lg:text-3xl font-extrabold font-mono tracking-tight my-1 ${tenderAndCashData.netCashFlow >= 0 ? 'text-white' : 'text-rose-400'}`}>
+                {currencySymbol}{tenderAndCashData.netCashFlow.toFixed(2)}
+              </div>
+              <p className="text-xs text-text-secondary mt-1 font-medium">Net physical currency generated in period</p>
+            </div>
           </div>
 
-          <Card className="border border-[var(--border-color)]">
-            <CardHeader className="p-4 border-b border-[var(--border-color)]">
-              <h3 className="font-bold text-base text-[var(--text-main)]">Payment Tender Breakdown</h3>
-              <p className="text-xs text-secondary">Distribution of revenue by payment mode</p>
+          <Card className="border border-[var(--border-color)] overflow-hidden">
+            <CardHeader className="p-5 border-b border-[var(--border-color)]">
+              <h3 className="font-bold text-base text-white">Payment Tender Breakdown</h3>
+              <p className="text-xs text-text-secondary">Distribution of revenue by payment mode</p>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-5">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)]">
-                  <div className="text-xs text-secondary uppercase font-semibold">Cash</div>
-                  <div className="text-xl font-bold text-[var(--text-main)] font-mono mt-1">{currencySymbol}{tenderAndCashData.cashSales.toFixed(2)}</div>
+                <div className="p-4 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)]">
+                  <div className="text-xs text-text-secondary uppercase font-bold">Cash</div>
+                  <div className="text-xl font-extrabold text-white font-mono mt-1">{currencySymbol}{tenderAndCashData.cashSales.toFixed(2)}</div>
                 </div>
-                <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)]">
-                  <div className="text-xs text-secondary uppercase font-semibold">UPI / QR Code</div>
-                  <div className="text-xl font-bold text-[var(--text-main)] font-mono mt-1">{currencySymbol}{tenderAndCashData.upiSales.toFixed(2)}</div>
+                <div className="p-4 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)]">
+                  <div className="text-xs text-text-secondary uppercase font-bold">UPI / QR Code</div>
+                  <div className="text-xl font-extrabold text-white font-mono mt-1">{currencySymbol}{tenderAndCashData.upiSales.toFixed(2)}</div>
                 </div>
-                <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)]">
-                  <div className="text-xs text-secondary uppercase font-semibold">Card / POS</div>
-                  <div className="text-xl font-bold text-[var(--text-main)] font-mono mt-1">{currencySymbol}{tenderAndCashData.cardSales.toFixed(2)}</div>
+                <div className="p-4 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)]">
+                  <div className="text-xs text-text-secondary uppercase font-bold">Card / POS</div>
+                  <div className="text-xl font-extrabold text-white font-mono mt-1">{currencySymbol}{tenderAndCashData.cardSales.toFixed(2)}</div>
                 </div>
-                <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)]">
-                  <div className="text-xs text-secondary uppercase font-semibold">Udhaar / Credit</div>
-                  <div className="text-xl font-bold text-amber-400 font-mono mt-1">{currencySymbol}{tenderAndCashData.udhaarSales.toFixed(2)}</div>
+                <div className="p-4 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)]">
+                  <div className="text-xs text-text-secondary uppercase font-bold">Udhaar / Credit</div>
+                  <div className="text-xl font-extrabold text-amber-400 font-mono mt-1">{currencySymbol}{tenderAndCashData.udhaarSales.toFixed(2)}</div>
                 </div>
               </div>
             </CardContent>
@@ -686,46 +768,51 @@ const Reports = () => {
 
       {/* TAB 3: RECEIVABLES (UDHAAR) */}
       {activeTab === 'receivables' && (
-        <Card className="border border-[var(--border-color)]">
-          <CardHeader className="p-4 border-b border-[var(--border-color)] flex flex-row items-center justify-between">
+        <Card className="border border-[var(--border-color)] overflow-hidden">
+          <CardHeader className="p-5 border-b border-[var(--border-color)] flex flex-row items-center justify-between">
             <div>
-              <h3 className="font-bold text-base text-[var(--text-main)]">Customer Khata (Receivables)</h3>
-              <p className="text-xs text-secondary">Outstanding customer balances awaiting recovery</p>
+              <h3 className="font-bold text-base text-white flex items-center gap-2">
+                <Users size={16} className="text-amber-400" />
+                Customer Khata (Receivables)
+              </h3>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Outstanding customer balances awaiting recovery ({receivables.count} customers with dues)
+              </p>
             </div>
             <Button
               variant="outline"
               size="sm"
               icon={<Download size={14} />}
               onClick={() => handleExport('Receivables')}
-              className="h-8 px-3 text-xs bg-[var(--bg-card)]"
+              className="h-8 px-3.5 text-xs bg-[var(--bg-hover)] border-[var(--border-color)] text-white hover:bg-zinc-800"
             >
               Export CSV
             </Button>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+            <div className="reports-table-container">
+              <table className="reports-statement-table text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--border-color)] text-secondary text-xs uppercase">
-                    <th className="p-3">Customer</th>
-                    <th className="p-3">Contact</th>
-                    <th className="p-3 text-right">Outstanding Due</th>
-                    <th className="p-3 text-right">Action</th>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Contact</th>
+                    <th className="text-right">Outstanding Due</th>
+                    <th className="text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {receivables.list.length > 0 ? (
                     receivables.list.map(c => (
-                      <tr key={c.id} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-hover)]">
-                        <td className="p-3 font-semibold text-[var(--text-main)]">{c.name}</td>
-                        <td className="p-3 font-mono text-xs text-secondary">{c.phone || 'No phone'}</td>
-                        <td className="p-3 text-right font-mono font-bold text-amber-400">
+                      <tr key={c.id}>
+                        <td className="font-bold text-white">{c.name}</td>
+                        <td className="font-mono text-xs text-text-secondary">{c.phone || 'No phone'}</td>
+                        <td className="text-right font-mono font-bold text-amber-400">
                           {currencySymbol}{(Number(c.outstandingBalance) || 0).toFixed(2)}
                         </td>
-                        <td className="p-3 text-right">
+                        <td className="text-right">
                           <a
-                            href={`#/payments`}
-                            className="text-xs px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white font-medium"
+                            href="#/payments"
+                            className="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold transition-colors inline-block"
                           >
                             Collect / Khata
                           </a>
@@ -733,9 +820,12 @@ const Reports = () => {
                       </tr>
                     ))
                   ) : (
-                    <tr>
-                      <td colSpan={4} className="text-center py-10 text-zinc-500">
-                        Zero pending customer Udhaar. All receivables are settled!
+                    <tr className="no-hover">
+                      <td colSpan={4} className="text-center py-12 text-zinc-500">
+                        <div className="flex flex-col items-center gap-2">
+                          <CheckCircle2 size={24} className="text-emerald-400" />
+                          <span className="font-semibold text-zinc-400">Zero pending customer Udhaar. All receivables are settled!</span>
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -748,52 +838,60 @@ const Reports = () => {
 
       {/* TAB 4: PAYABLES (SUPPLIERS) */}
       {activeTab === 'payables' && (
-        <Card className="border border-[var(--border-color)]">
-          <CardHeader className="p-4 border-b border-[var(--border-color)] flex flex-row items-center justify-between">
+        <Card className="border border-[var(--border-color)] overflow-hidden">
+          <CardHeader className="p-5 border-b border-[var(--border-color)] flex flex-row items-center justify-between">
             <div>
-              <h3 className="font-bold text-base text-[var(--text-main)]">Supplier Khata (Payables)</h3>
-              <p className="text-xs text-secondary">Pending supplier purchase orders and dues</p>
+              <h3 className="font-bold text-base text-white flex items-center gap-2">
+                <Building2 size={16} className="text-rose-400" />
+                Supplier Khata (Payables)
+              </h3>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Pending supplier purchase orders and dues ({payables.pendingPurchases.length} open POs)
+              </p>
             </div>
             <a
               href="#/purchases"
-              className="text-xs px-3 py-1.5 rounded-lg border border-[var(--border-color)] text-white hover:bg-[var(--bg-hover)] font-semibold"
+              className="text-xs px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)] text-white hover:bg-zinc-800 font-bold transition-all"
             >
               Open Purchases
             </a>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+            <div className="reports-table-container">
+              <table className="reports-statement-table text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--border-color)] text-secondary text-xs uppercase">
-                    <th className="p-3">PO Number</th>
-                    <th className="p-3">Date</th>
-                    <th className="p-3">Supplier Name</th>
-                    <th className="p-3 text-right">Amount Due</th>
-                    <th className="p-3 text-center">Status</th>
+                  <tr>
+                    <th>PO Number</th>
+                    <th>Date</th>
+                    <th>Supplier Name</th>
+                    <th className="text-right">Amount Due</th>
+                    <th className="text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {payables.pendingPurchases.length > 0 ? (
                     payables.pendingPurchases.map(p => (
-                      <tr key={p.id} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-hover)]">
-                        <td className="p-3 font-mono text-xs font-semibold text-[var(--text-main)]">{p.poNumber || p.id}</td>
-                        <td className="p-3 text-xs text-secondary">{p.date ? format(new Date(p.date), 'MMM dd, yyyy') : '—'}</td>
-                        <td className="p-3 font-medium text-white">{p.supplierName || 'Unknown Supplier'}</td>
-                        <td className="p-3 text-right font-mono font-bold text-rose-400">
+                      <tr key={p.id}>
+                        <td className="font-mono text-xs font-bold text-white">{p.poNumber || p.id}</td>
+                        <td className="text-xs text-text-secondary">{p.date ? format(new Date(p.date), 'MMM dd, yyyy') : '—'}</td>
+                        <td className="font-semibold text-white">{p.supplierName || 'Unknown Supplier'}</td>
+                        <td className="text-right font-mono font-bold text-rose-400">
                           {currencySymbol}{(Number(p.total) || 0).toFixed(2)}
                         </td>
-                        <td className="p-3 text-center">
-                          <span className="text-[11px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        <td className="text-center">
+                          <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold">
                             {p.status || 'Pending'}
                           </span>
                         </td>
                       </tr>
                     ))
                   ) : (
-                    <tr>
-                      <td colSpan={5} className="text-center py-10 text-zinc-500">
-                        No pending supplier purchase orders. All payables are up to date!
+                    <tr className="no-hover">
+                      <td colSpan={5} className="text-center py-12 text-zinc-500">
+                        <div className="flex flex-col items-center gap-2">
+                          <CheckCircle2 size={24} className="text-emerald-400" />
+                          <span className="font-semibold text-zinc-400">No pending supplier purchase orders. All payables are up to date!</span>
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -806,112 +904,159 @@ const Reports = () => {
 
       {/* TAB 5: INVENTORY RISK */}
       {activeTab === 'inventory' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="border border-[var(--border-color)]">
-            <CardHeader className="p-4 border-b border-[var(--border-color)]">
-              <h3 className="font-bold text-base text-[var(--text-main)] flex items-center gap-2">
-                <Zap size={16} className="text-emerald-400" />
-                Top 10 Selling Products
-              </h3>
-              <p className="text-xs text-secondary">Best performing items by volume</p>
-            </CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)] text-secondary text-xs uppercase">
-                    <th className="p-3">Product</th>
-                    <th className="p-3 text-right">Units Sold</th>
-                    <th className="p-3 text-right">Revenue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {productAnalytics.topSellers.map(p => (
-                    <tr key={p.id} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-hover)]">
-                      <td className="p-3 font-medium text-white">{p.name}</td>
-                      <td className="p-3 text-right font-mono font-bold text-[var(--text-main)]">{p.unitsSold}</td>
-                      <td className="p-3 text-right font-mono text-emerald-400">{currencySymbol}{p.revenue.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                  {productAnalytics.topSellers.length === 0 && (
-                    <tr><td colSpan={3} className="text-center py-8 text-zinc-500">No sales recorded yet.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+        <div className="flex flex-col gap-6">
+          {/* Valuation Banner */}
+          <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <Box size={20} />
+              </div>
+              <div>
+                <span className="text-xs text-text-secondary uppercase font-bold tracking-wider">Total Warehouse Inventory Valuation</span>
+                <div className="text-2xl font-extrabold font-mono text-white mt-0.5">
+                  {currencySymbol}{productAnalytics.totalInventoryValuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+            </div>
+            <a
+              href="#/products"
+              className="text-xs px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)] text-white hover:bg-zinc-800 font-bold transition-all"
+            >
+              Manage Products
+            </a>
+          </div>
 
-          <Card className="border border-[var(--border-color)]">
-            <CardHeader className="p-4 border-b border-[var(--border-color)]">
-              <h3 className="font-bold text-base text-[var(--text-main)] flex items-center gap-2">
-                <PackageX size={16} className="text-rose-400" />
-                Dead Stock Risk
-              </h3>
-              <p className="text-xs text-secondary">Products with high stock (&gt;5) but zero sales in this period</p>
-            </CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)] text-secondary text-xs uppercase">
-                    <th className="p-3">Product</th>
-                    <th className="p-3">Category</th>
-                    <th className="p-3 text-right">Unsold Units</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {productAnalytics.deadStock.slice(0, 10).map(p => (
-                    <tr key={p.id} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-hover)]">
-                      <td className="p-3 font-medium text-white">{p.name}</td>
-                      <td className="p-3 text-xs text-secondary">{p.category || '—'}</td>
-                      <td className="p-3 text-right font-mono font-bold text-rose-400">{p.stockQuantity}</td>
-                    </tr>
-                  ))}
-                  {productAnalytics.deadStock.length === 0 && (
-                    <tr><td colSpan={3} className="text-center py-8 text-zinc-500">No dead stock detected. Good turnover!</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border border-[var(--border-color)] overflow-hidden">
+              <CardHeader className="p-5 border-b border-[var(--border-color)]">
+                <h3 className="font-bold text-base text-white flex items-center gap-2">
+                  <Zap size={16} className="text-emerald-400" />
+                  Top 10 Selling Products
+                </h3>
+                <p className="text-xs text-text-secondary">Best performing items by volume</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="reports-table-container">
+                  <table className="reports-statement-table text-sm">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th className="text-right">Units Sold</th>
+                        <th className="text-right">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productAnalytics.topSellers.map(p => (
+                        <tr key={p.id}>
+                          <td className="font-semibold text-white">{p.name}</td>
+                          <td className="text-right font-mono font-bold text-white">{p.unitsSold}</td>
+                          <td className="text-right font-mono font-bold text-emerald-400">{currencySymbol}{p.revenue.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                      {productAnalytics.topSellers.length === 0 && (
+                        <tr className="no-hover"><td colSpan={3} className="text-center py-8 text-zinc-500">No sales recorded yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-[var(--border-color)] overflow-hidden">
+              <CardHeader className="p-5 border-b border-[var(--border-color)]">
+                <h3 className="font-bold text-base text-white flex items-center gap-2">
+                  <PackageX size={16} className="text-rose-400" />
+                  Dead Stock Risk
+                </h3>
+                <p className="text-xs text-text-secondary">Products with high stock (&gt;5) but zero sales in this period</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="reports-table-container">
+                  <table className="reports-statement-table text-sm">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th className="text-right">Unsold Units</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productAnalytics.deadStock.slice(0, 10).map(p => (
+                        <tr key={p.id}>
+                          <td className="font-semibold text-white">{p.name}</td>
+                          <td className="text-xs text-text-secondary">{p.category || '—'}</td>
+                          <td className="text-right font-mono font-bold text-rose-400">{p.stockQuantity}</td>
+                        </tr>
+                      ))}
+                      {productAnalytics.deadStock.length === 0 && (
+                        <tr className="no-hover"><td colSpan={3} className="text-center py-8 text-zinc-500">No dead stock detected. Good turnover!</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
       {/* TAB 6: EXPORTS */}
       {activeTab === 'exports' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border border-[var(--border-color)]">
-            <CardHeader className="p-4"><CardTitle className="text-sm font-bold">P&L Statement</CardTitle></CardHeader>
-            <CardContent className="p-4 pt-0 flex flex-col gap-3">
-              <p className="text-xs text-secondary">Formal statement of income, costs, and net margin.</p>
+          <Card className="border border-[var(--border-color)] hover:border-zinc-700 transition-all">
+            <CardHeader className="p-5 pb-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-3">
+                <FileSpreadsheet size={18} />
+              </div>
+              <CardTitle className="text-sm font-bold text-white">P&L Statement</CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 pt-0 flex flex-col gap-3">
+              <p className="text-xs text-text-secondary min-h-[32px]">Formal statement of income, costs, and net margin.</p>
               <Button size="sm" icon={<Download size={14} />} onClick={() => handleExport('PNL')} className="w-full">
                 Download P&L CSV
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="border border-[var(--border-color)]">
-            <CardHeader className="p-4"><CardTitle className="text-sm font-bold">Sales Register</CardTitle></CardHeader>
-            <CardContent className="p-4 pt-0 flex flex-col gap-3">
-              <p className="text-xs text-secondary">Detailed ledger of invoices, payment methods, and customers.</p>
+          <Card className="border border-[var(--border-color)] hover:border-zinc-700 transition-all">
+            <CardHeader className="p-5 pb-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-3">
+                <BarChart3 size={18} />
+              </div>
+              <CardTitle className="text-sm font-bold text-white">Sales Register</CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 pt-0 flex flex-col gap-3">
+              <p className="text-xs text-text-secondary min-h-[32px]">Detailed ledger of invoices, payment methods, and customers.</p>
               <Button size="sm" icon={<Download size={14} />} onClick={() => handleExport('Sales')} className="w-full">
                 Download Sales CSV
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="border border-[var(--border-color)]">
-            <CardHeader className="p-4"><CardTitle className="text-sm font-bold">Receivables (Udhaar)</CardTitle></CardHeader>
-            <CardContent className="p-4 pt-0 flex flex-col gap-3">
-              <p className="text-xs text-secondary">Customer dues and contact list for recovery tracking.</p>
+          <Card className="border border-[var(--border-color)] hover:border-zinc-700 transition-all">
+            <CardHeader className="p-5 pb-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-3">
+                <Users size={18} />
+              </div>
+              <CardTitle className="text-sm font-bold text-white">Receivables (Udhaar)</CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 pt-0 flex flex-col gap-3">
+              <p className="text-xs text-text-secondary min-h-[32px]">Customer dues and contact list for recovery tracking.</p>
               <Button size="sm" icon={<Download size={14} />} onClick={() => handleExport('Receivables')} className="w-full">
                 Download Udhaar CSV
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="border border-[var(--border-color)]">
-            <CardHeader className="p-4"><CardTitle className="text-sm font-bold">Inventory Valuation</CardTitle></CardHeader>
-            <CardContent className="p-4 pt-0 flex flex-col gap-3">
-              <p className="text-xs text-secondary">Total stock on hand, purchase cost, and asset valuation.</p>
+          <Card className="border border-[var(--border-color)] hover:border-zinc-700 transition-all">
+            <CardHeader className="p-5 pb-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
+                <Box size={18} />
+              </div>
+              <CardTitle className="text-sm font-bold text-white">Inventory Valuation</CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 pt-0 flex flex-col gap-3">
+              <p className="text-xs text-text-secondary min-h-[32px]">Total stock on hand, purchase cost, and asset valuation.</p>
               <Button size="sm" icon={<Download size={14} />} onClick={() => handleExport('Inventory')} className="w-full">
                 Download Stock CSV
               </Button>

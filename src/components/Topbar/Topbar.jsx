@@ -31,7 +31,8 @@ import {
   Link,
   ShieldCheck,
   MoreHorizontal,
-  Globe
+  Globe,
+  Radio
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -641,11 +642,21 @@ const Topbar = () => {
           data-tour="mr-h-btn"
           className="topbar-mr-h-wake-btn"
           onClick={handleWakeAiAssistant}
-          title={`Wake ${assistantName} Voice AI Assistant (Press or say "Hey ${assistantName}")`}
+          title={`Wake ${assistantName} 3.0 Voice AI Assistant (Press or say "Hey ${assistantName}")`}
         >
           <span className="wake-pulse-dot" />
           <Sparkles size={14} />
           <span>Wake {assistantName}</span>
+        </button>
+
+        {/* Dedicated ChatGPT-style Live Talk Button */}
+        <button 
+          className="topbar-live-talk-header-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('karobaar_start_live_talk'))}
+          title="Start Real-Time 2-Way Voice Conversation (ChatGPT Voice Style)"
+        >
+          <Radio size={13} className="topbar-live-radio-icon" />
+          <span>Live Talk</span>
         </button>
 
         {/* Live Feature Spotlight & Outlining Tour */}

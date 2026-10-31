@@ -35,6 +35,7 @@ const Layout = () => {
 
   const { requireAuthAndSetup } = useAppContext();
 
+  // Global Keyboard Shortcuts
   useEffect(() => {
     const handleGlobalShortcuts = (e) => {
       // F2 -> Instant Quick POS / New Sale
@@ -52,6 +53,37 @@ const Layout = () => {
     window.addEventListener('keydown', handleGlobalShortcuts);
     return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, [navigate, requireAuthAndSetup]);
+
+  // Global Trackpad & Mouse Wheel Delegator: guarantees laptop trackpad scrolls smoothly anywhere
+  useEffect(() => {
+    const handleGlobalWheel = (e) => {
+      const main = document.querySelector('.layout-main');
+      if (!main) return;
+
+      // Check if target is an internal scrollable element (modal, dropdown list, etc.)
+      let el = e.target;
+      let isInsideScrollableChild = false;
+      while (el && el !== document.body && el !== main) {
+        try {
+          const style = window.getComputedStyle(el);
+          const canScrollY = (style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
+          if (canScrollY) {
+            isInsideScrollableChild = true;
+            break;
+          }
+        } catch (_) {}
+        el = el.parentElement;
+      }
+
+      // If wheel occurred over a non-scrollable area (margins, headers, cards), delegate directly to layout-main
+      if (!isInsideScrollableChild) {
+        main.scrollTop += e.deltaY;
+      }
+    };
+
+    window.addEventListener('wheel', handleGlobalWheel, { passive: true });
+    return () => window.removeEventListener('wheel', handleGlobalWheel);
+  }, []);
 
   return (
     <div className="layout-wrapper">

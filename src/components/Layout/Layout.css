@@ -10,29 +10,89 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  height: 100vh;
   min-width: 0;
+  overflow: hidden;
   transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Main Scrollable Canvas - Frictionless Laptop Trackpad & Mouse Scrolling */
 .layout-main {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  flex: 1 1 auto;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  /* CRITICAL: scroll-behavior: auto prevents Windows Precision Touchpad micro-delta lockups */
+  scroll-behavior: auto !important;
   background-color: var(--bg-body);
-  padding: 1.25rem 1.75rem 2.5rem;
+  padding: 1.75rem 2.25rem 6.5rem;
   box-sizing: border-box;
-  scroll-behavior: smooth;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1280px) {
   .layout-main {
-    padding: 0.85rem 1.25rem 2rem;
+    padding: 1.25rem 1.75rem 5.5rem;
   }
 }
 
 @media (max-width: 768px) {
   .layout-main {
-    padding: 1rem 1rem 5.5rem;
+    padding: 1rem 1rem 6rem;
   }
+}
+
+/* ==========================================================================
+   Smooth, High-Contrast Visible Scrollbar (Trackpad & Mouse Friendly)
+   ========================================================================== */
+.layout-main::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.layout-main::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 9999px;
+}
+
+[data-theme="dark"] .layout-main::-webkit-scrollbar-track,
+.dark .layout-main::-webkit-scrollbar-track,
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-track,
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.layout-main::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: rgba(140, 140, 155, 0.45);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+[data-theme="dark"] .layout-main::-webkit-scrollbar-thumb,
+.dark .layout-main::-webkit-scrollbar-thumb,
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb,
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.layout-main::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 100, 115, 0.75);
+}
+
+[data-theme="dark"] .layout-main::-webkit-scrollbar-thumb:hover,
+.dark .layout-main::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.45);
 }

@@ -539,7 +539,7 @@ const Dashboard = ({ onSwitchMode }) => {
   }
 
   return (
-    <div className="dashboard-container max-w-[1600px] mx-auto hidden-mobile pb-28">
+    <div className="dashboard-container max-w-[1560px] mx-auto hidden-mobile pb-36">
       
       {/* 0. Demo Mode Interactive Showcase Banner */}
       {isDemoMode && (
@@ -585,7 +585,7 @@ const Dashboard = ({ onSwitchMode }) => {
       )}
 
       {/* 1. Header Area - Greeting + Executive Health Dock */}
-      <div className="dashboard-header mb-3">
+      <div className="dashboard-header mb-5">
         <div className="dashboard-header-text">
           <p className="text-text-muted font-bold tracking-wide text-[11px] mb-1 text-left">{format(new Date(), 'EEEE, MMMM do, yyyy')}</p>
           <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight mb-1 text-text-main flex items-center flex-wrap text-left">
@@ -646,45 +646,93 @@ const Dashboard = ({ onSwitchMode }) => {
         </div>
       </div>
 
-      {/* Date-Range Filter Pill Selector Bar */}
-      <div className="flex flex-col gap-1.5 p-2 px-3 mb-3 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5 px-2">
-              <Calendar size={13} /> Filter Period:
-            </span>
-            <div className="flex items-center gap-1">
-              {[
-                { id: 'today', label: 'Today' },
-                { id: 'yesterday', label: 'Yesterday' },
-                { id: '7d', label: 'Last 7 Days' },
-                { id: 'this_month', label: 'This Month' },
-                { id: 'all_time', label: 'All Time' },
-                { id: 'custom', label: 'Custom Range' }
-              ].map(pill => (
-                <button
-                  key={pill.id}
-                  type="button"
-                  onClick={() => setDateRange(pill.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                    dateRange === pill.id
-                      ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-sm'
-                      : 'text-text-muted hover:text-text-main hover:bg-[var(--bg-hover)]'
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              ))}
+      {/* 2. Unified Master Operations & Date Filter Control Bar */}
+      <div className="p-3.5 sm:p-4 mb-7 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          
+          {/* Left: Register Live Pulse & Quick Action Chips */}
+          <div className="flex items-center gap-2.5 overflow-x-auto py-0.5">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)] text-xs font-bold shrink-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="uppercase tracking-wider">Register Live</span>
+              <span className="text-text-muted font-normal">•</span>
+              <span className="text-text-secondary font-medium">
+                {new Date().getHours() < 14 ? 'Morning Shift' : new Date().getHours() < 21 ? 'Evening Shift' : 'Night Shift'}
+              </span>
             </div>
+
+            <div className="h-5 w-[1px] bg-[var(--border-color)] mx-1 hidden md:block"></div>
+
+            <button 
+              onClick={() => {
+                if (requireAuthAndSetup && requireAuthAndSetup('POS New Sale Register')) return;
+                navigate('/pos');
+              }}
+              className="cmd-primary-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 shrink-0"
+              title="Open POS (F2)"
+            >
+              <Zap size={13} className="fill-current text-text-main" />
+              <span>New Sale</span>
+              <kbd className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold ml-0.5">F2</kbd>
+            </button>
+            
+            <button 
+              onClick={() => {
+                if (requireAuthAndSetup && requireAuthAndSetup('Products & Inventory')) return;
+                navigate('/products');
+              }}
+              className="cmd-ghost-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold hover:-translate-y-0.5 shrink-0"
+            >
+              <Package size={13} className="text-text-secondary" />
+              <span>+ Product</span>
+            </button>
+
+            <button 
+              onClick={() => {
+                if (requireAuthAndSetup && requireAuthAndSetup('Customers Khata')) return;
+                navigate('/customers');
+              }}
+              className="cmd-ghost-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold hover:-translate-y-0.5 shrink-0"
+            >
+              <Users size={13} className="text-text-secondary" />
+              <span>+ Customer</span>
+            </button>
+
+            <button 
+              onClick={() => {
+                if (requireAuthAndSetup && requireAuthAndSetup('Expenses & Cashflow')) return;
+                navigate('/expenses');
+              }}
+              className="cmd-ghost-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold hover:-translate-y-0.5 shrink-0"
+            >
+              <Receipt size={13} className="text-text-secondary" />
+              <span>+ Expense</span>
+            </button>
           </div>
 
-          <div className="text-xs font-semibold text-text-secondary px-2">
-            Showing metrics for: <strong className="text-text-main">
-              {dateRange === 'custom' 
-                ? `${format(new Date(customStartDate), 'MMM dd, yyyy')} – ${format(new Date(customEndDate), 'MMM dd, yyyy')}`
-                : DATE_RANGE_LABELS[dateRange]
-              }
-            </strong>
+          {/* Right: Date-Range Filter Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+            {[
+              { id: 'today', label: 'Today' },
+              { id: 'yesterday', label: 'Yesterday' },
+              { id: '7d', label: '7 Days' },
+              { id: 'this_month', label: 'This Month' },
+              { id: 'all_time', label: 'All Time' },
+              { id: 'custom', label: 'Custom' }
+            ].map(pill => (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setDateRange(pill.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  dateRange === pill.id
+                    ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-sm'
+                    : 'text-text-muted hover:text-text-main hover:bg-[var(--bg-hover)]'
+                }`}
+              >
+                {pill.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -714,76 +762,6 @@ const Dashboard = ({ onSwitchMode }) => {
       </div>
 
       <GettingStartedGuide />
-
-      {/* Operations Quick Command Dock */}
-      <div className="operations-command-dock flex flex-wrap items-center justify-between gap-2.5 p-2 px-3 mb-3.5 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--bg-hover)] text-text-main border border-[var(--border-color)] text-xs font-bold">
-            <span className="w-2 h-2 rounded-full bg-[var(--text-main)] animate-pulse"></span>
-            <span className="uppercase tracking-wider">Register Live</span>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-xs text-text-secondary">
-            <span className="text-text-muted">Shift:</span>
-            <span className="font-bold text-text-main">
-              {new Date().getHours() < 14 ? 'Morning Shift' : new Date().getHours() < 21 ? 'Evening Shift' : 'Night Shift'}
-            </span>
-            <span className="text-text-muted">•</span>
-            <span className="text-text-muted">Register:</span>
-            <span className="font-semibold text-text-main">
-              {currentBusiness?.branchName || currentBusiness?.settings?.counterName || 'Main Counter'}
-            </span>
-          </div>
-        </div>
-
-        {/* 1-Tap Quick Action Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto">
-          <button 
-            onClick={() => {
-              if (requireAuthAndSetup && requireAuthAndSetup('POS New Sale Register')) return;
-              navigate('/pos');
-            }}
-            className="cmd-primary-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
-            title="Open POS (F2)"
-          >
-            <Zap size={14} className="fill-current text-text-main" />
-            <span>New Sale</span>
-            <kbd className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-bold ml-1">F2</kbd>
-          </button>
-          
-          <button 
-            onClick={() => {
-              if (requireAuthAndSetup && requireAuthAndSetup('Products & Inventory')) return;
-              navigate('/products');
-            }}
-            className="cmd-ghost-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <Package size={13} className="text-text-secondary" />
-            <span>+ Product</span>
-          </button>
-
-          <button 
-            onClick={() => {
-              if (requireAuthAndSetup && requireAuthAndSetup('Customers Khata')) return;
-              navigate('/customers');
-            }}
-            className="cmd-ghost-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <Users size={13} className="text-text-secondary" />
-            <span>+ Customer</span>
-          </button>
-
-          <button 
-            onClick={() => {
-              if (requireAuthAndSetup && requireAuthAndSetup('Expenses & Cashflow')) return;
-              navigate('/expenses');
-            }}
-            className="cmd-ghost-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <Receipt size={13} className="text-text-secondary" />
-            <span>+ Expense</span>
-          </button>
-        </div>
-      </div>
 
       {/* 2. Enhanced Clickable KPI Cards */}
       <DashboardKPIs 
