@@ -293,6 +293,9 @@ export default defineConfig({
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]',
         manualChunks(id) {
           if (id.includes('country-state-city')) {
             return 'geo-data';
