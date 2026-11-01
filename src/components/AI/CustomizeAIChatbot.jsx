@@ -395,13 +395,19 @@ export const CustomizeAIChatbot = () => {
     };
 
     if (aiSettings.backgroundWake !== false) {
-      jarvisVoiceService.startWakeWordListening(assistantName.toLowerCase());
+      if (typeof jarvisVoiceService?.startWakeWordListening === 'function') {
+        jarvisVoiceService.startWakeWordListening(assistantName.toLowerCase());
+      }
     } else {
-      jarvisVoiceService.stopWakeWordListening();
+      if (typeof jarvisVoiceService?.stopWakeWordListening === 'function') {
+        jarvisVoiceService.stopWakeWordListening();
+      }
     }
 
     return () => {
-      jarvisVoiceService.stopWakeWordListening();
+      if (typeof jarvisVoiceService?.stopWakeWordListening === 'function') {
+        jarvisVoiceService.stopWakeWordListening();
+      }
     };
   }, [assistantName, aiSettings.backgroundWake]);
 
@@ -573,9 +579,16 @@ export const CustomizeAIChatbot = () => {
       setIsCommandCenterOpen(true);
       setIsConversationBubbleOpen(false);
     };
+    const handleLiveTalkEvent = () => {
+      setIsLiveVoiceOpen(true);
+      setIsCommandCenterOpen(false);
+      setIsConversationBubbleOpen(false);
+    };
+    window.addEventListener('karobaar_start_live_talk', handleLiveTalkEvent);
     window.addEventListener('karobaar_open_ai_assistant', handleWakeEvent);
     window.addEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
     return () => {
+      window.removeEventListener('karobaar_start_live_talk', handleLiveTalkEvent);
       window.removeEventListener('karobaar_open_ai_assistant', handleWakeEvent);
       window.removeEventListener('karobaar_wake_ai_assistant', handleWakeEvent);
     };

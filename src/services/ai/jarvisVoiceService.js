@@ -46,11 +46,16 @@ class JarvisVoiceService {
     // Callbacks
     this.onInterimTranscript = null;
     this.onFinalTranscript = null;
+    this.onWakeWordDetected = null;
     this.onStateChange = null;
     this.onError = null;
     this.onAudioLevel = null;
     this.onFrequencyData = null;
 
+    this.wakeWordRecognition = null;
+    this.isWakeWordActive = false;
+    this._wakeWordStarting = false;
+    this.wakeWord = 'jarvis';
     this.language = 'en-US';
 
     this._initSpeechRecognition();
@@ -144,6 +149,66 @@ class JarvisVoiceService {
         this.isListening = false;
         this._stopAudioMeter();
         if (this.onStateChange) this.onStateChange({ isListening: false, isLiveTalk: false });
+
+        // If wake-word was active before, resume wake-word listening smoothly
+        if (this.isWakeWordActive && !this.isListening && !this.isLiveTalkActive) {
+          setTimeout(() => {
+            if (this.isWakeWordActive && !this.isListening && !this.isLiveTalkActive) {
+              this.startWakeWordListening(this.wakeWord);
+            }
+          }, 300);
+        }
+      };
+
+      // 2. Continuous Background Wake-Word Recognition ("Hey Jarvis")
+      this.wakeWordRecognition = new SpeechRec();
+      this.wakeWordRecognition.continuous = true;
+      this.wakeWordRecognition.interimResults = false;
+      this.wakeWordRecognition.lang = this.language;
+
+      this.wakeWordRecognition.onstart = () => {
+        this._wakeWordStarting = false;
+      };
+
+      this.wakeWordRecognition.onresult = (event) => {
+        const lastIndex = event.results.length - 1;
+        const transcript = (event.results[lastIndex][0].transcript || '').toLowerCase().trim();
+
+        const normalizedWake = (this.wakeWord || 'jarvis').toLowerCase();
+        if (
+          transcript.includes(normalizedWake) || 
+          transcript.includes('hey jarvis') || 
+          transcript.includes('wake jarvis') || 
+          transcript.includes('hello jarvis')
+        ) {
+          console.log('[JarvisVoice 3.0] Wake word detected:', transcript);
+          if (this.onWakeWordDetected) {
+            this.onWakeWordDetected(transcript);
+          }
+        }
+      };
+
+      this.wakeWordRecognition.onerror = (e) => {
+        this._wakeWordStarting = false;
+        if (e.error !== 'no-speech' && e.error !== 'aborted') {
+          console.warn('[JarvisVoice 3.0] Wake-word notice:', e.error);
+        }
+      };
+
+      this.wakeWordRecognition.onend = () => {
+        this._wakeWordStarting = false;
+        if (this.isWakeWordActive && !this.isListening && !this.isLiveTalkActive) {
+          setTimeout(() => {
+            try {
+              if (this.isWakeWordActive && !this.isListening && !this.isLiveTalkActive && !this._wakeWordStarting) {
+                this._wakeWordStarting = true;
+                this.wakeWordRecognition.start();
+              }
+            } catch (e) {
+              this._wakeWordStarting = false;
+            }
+          }, 600);
+        }
       };
     } catch (err) {
       console.warn('[JarvisVoice] Recognition init warning:', err);
@@ -187,6 +252,9 @@ class JarvisVoiceService {
     this.recognition.lang = targetLocale;
 
     if (this.isListening || this._recognitionStarting) return true;
+
+    // Pause background wake-word listener while actively listening
+    this._pauseWakeWord();
 
     try {
       this._recognitionStarting = true;
@@ -242,6 +310,55 @@ class JarvisVoiceService {
     this.isListening = false;
     this._stopAudioMeter();
     if (this.onStateChange) this.onStateChange({ isListening: false, isLiveTalk: false });
+
+    // Smoothly resume wake-word if active
+    if (this.isWakeWordActive) {
+      setTimeout(() => {
+        if (this.isWakeWordActive && !this.isListening && !this.isLiveTalkActive) {
+          this.startWakeWordListening(this.wakeWord);
+        }
+      }, 400);
+    }
+  }
+
+  /**
+   * Start background continuous wake-word listening ("Hey Jarvis")
+   */
+  startWakeWordListening(wakePhrase = 'jarvis') {
+    if (!this.wakeWordRecognition) return;
+    this.wakeWord = wakePhrase || 'jarvis';
+    this.isWakeWordActive = true;
+
+    if (this.isListening || this.isLiveTalkActive || this._wakeWordStarting) return;
+
+    try {
+      this._wakeWordStarting = true;
+      this.wakeWordRecognition.start();
+    } catch (e) {
+      this._wakeWordStarting = false;
+    }
+  }
+
+  /**
+   * Stop wake-word listening
+   */
+  stopWakeWordListening() {
+    this.isWakeWordActive = false;
+    this._wakeWordStarting = false;
+    if (this.wakeWordRecognition) {
+      try {
+        this.wakeWordRecognition.stop();
+      } catch (e) {}
+    }
+  }
+
+  _pauseWakeWord() {
+    this._wakeWordStarting = false;
+    if (this.wakeWordRecognition) {
+      try {
+        this.wakeWordRecognition.stop();
+      } catch (e) {}
+    }
   }
 
   /**

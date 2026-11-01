@@ -97,9 +97,15 @@ const Layout = () => {
         </main>
       </div>
       <BottomNav />
-      <CustomizeAIChatbot />
-      <AIOnboardingConcierge />
-      <LiveFeatureSpotlight />
+      <ErrorBoundary fallback={null}>
+        <CustomizeAIChatbot />
+      </ErrorBoundary>
+      <ErrorBoundary fallback={null}>
+        <AIOnboardingConcierge />
+      </ErrorBoundary>
+      <ErrorBoundary fallback={null}>
+        <LiveFeatureSpotlight />
+      </ErrorBoundary>
     </div>
   );
 };

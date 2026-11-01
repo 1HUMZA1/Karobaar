@@ -7,7 +7,7 @@ import { DEFAULT_DEBUG_USER, DEFAULT_DEBUG_BUSINESS } from './utils/buildMode'
 class RootErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, showDetails: false };
+    this.state = { hasError: false, error: null, showDetails: true };
   }
 
   static getDerivedStateFromError(error) {
