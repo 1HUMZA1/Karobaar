@@ -267,3 +267,30 @@
   color: #ffffff;
   box-shadow: 0 0 18px rgba(239, 68, 68, 0.6);
 }
+
+/* ==============================================================
+   RESPONSIVE ADAPTATION: AVOID COLLISION WITH MOBILE BOTTOM NAV
+   ============================================================== */
+@media (max-width: 768px) {
+  .jarvis-floating-dock {
+    bottom: 74px;
+    right: 14px;
+    gap: 6px;
+  }
+
+  .jarvis-pill-button {
+    padding: 6px 12px 6px 8px;
+    gap: 6px;
+  }
+
+  .jarvis-pill-label {
+    font-size: 11.5px;
+  }
+
+  .jarvis-mic-pill-btn,
+  .jarvis-settings-pill-btn {
+    width: 38px;
+    height: 38px;
+  }
+}
+

@@ -326,26 +326,102 @@ export const JarvisCommandCenter = ({
     }
   };
 
-  // Helper to render markdown formatting (bold, code, links)
+  // Helper to render markdown formatting (tables, code blocks, bold, inline code)
   const renderFormatted = (text) => {
     if (!text) return '';
-    const lines = text.split('\n');
-    return lines.map((line, lIdx) => {
-      const parts = line.split(/(\*\*.*?\*\*)/g);
-      return (
-        <div key={lIdx} className="jarvis-msg-line">
-          {parts.map((part, pIdx) => {
-            if (part.startsWith('**') && part.endsWith('**')) {
-              return <strong key={pIdx} className="jarvis-bold">{part.slice(2, -2)}</strong>;
-            }
-            if (part.startsWith('`') && part.endsWith('`')) {
-              return <code key={pIdx} className="jarvis-code">{part.slice(1, -1)}</code>;
-            }
-            return part;
-          })}
-        </div>
-      );
+
+    if (text.includes('```')) {
+      const codeBlockRegex = /```([a-zA-Z0-9]*)\n?([\s\S]*?)```/g;
+      const elements = [];
+      let lastIndex = 0;
+      let match;
+
+      while ((match = codeBlockRegex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          const preText = text.slice(lastIndex, match.index);
+          elements.push(...renderFormattedLines(preText, `pre-${lastIndex}`));
+        }
+        elements.push(
+          <pre key={`code-${match.index}`} className="jarvis-code-block">
+            <code>{match[2].trim()}</code>
+          </pre>
+        );
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < text.length) {
+        elements.push(...renderFormattedLines(text.slice(lastIndex), `post-${lastIndex}`));
+      }
+      return elements;
+    }
+
+    return renderFormattedLines(text, 'root');
+  };
+
+  const renderFormattedLines = (text, keyPrefix) => {
+    const rawLines = text.split('\n');
+    const result = [];
+    let tableBuffer = [];
+
+    const flushTable = (tIdx) => {
+      if (tableBuffer.length === 0) return;
+      const rows = tableBuffer.map(row => 
+        row.split('|').map(c => c.trim()).filter((c, i, arr) => (i > 0 && i < arr.length - 1) || arr.length === 1)
+      ).filter(row => row.length > 0 && !row.every(c => /^[-:]+$/.test(c)));
+
+      if (rows.length > 0) {
+        const header = rows[0];
+        const body = rows.slice(1);
+        result.push(
+          <div key={`${keyPrefix}-table-${tIdx}`} className="jarvis-table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  {header.map((col, cIdx) => <th key={cIdx}>{col}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {body.map((r, rIdx) => (
+                  <tr key={rIdx}>
+                    {r.map((c, cIdx) => <td key={cIdx}>{c}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      tableBuffer = [];
+    };
+
+    rawLines.forEach((line, lIdx) => {
+      if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+        tableBuffer.push(line.trim());
+      } else {
+        if (tableBuffer.length > 0) {
+          flushTable(lIdx);
+        }
+        const parts = line.split(/(\*\*.*?\*\*)/g);
+        result.push(
+          <div key={`${keyPrefix}-line-${lIdx}`} className="jarvis-msg-line">
+            {parts.map((part, pIdx) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={pIdx} className="jarvis-bold">{part.slice(2, -2)}</strong>;
+              }
+              if (part.startsWith('`') && part.endsWith('`')) {
+                return <code key={pIdx} className="jarvis-code">{part.slice(1, -1)}</code>;
+              }
+              return part;
+            })}
+          </div>
+        );
+      }
     });
+
+    if (tableBuffer.length > 0) {
+      flushTable(rawLines.length);
+    }
+
+    return result;
   };
 
   if (!isOpen) return null;
@@ -504,6 +580,13 @@ export const JarvisCommandCenter = ({
         {/* Content Body */}
         {activeTab === 'chat' ? (
           <div className="jarvis-chat-stream">
+            {messages.length === 0 && (
+              <div className="jarvis-chat-empty">
+                <Sparkles size={36} color="#06b6d4" />
+                <h4>How can I help your business today?</h4>
+                <p>Ask for sales reports, inventory audits, pending customer khata balances, or tap LIVE TALK to converse naturally.</p>
+              </div>
+            )}
             {messages.map((msg) => (
               <div 
                 key={msg.id} 

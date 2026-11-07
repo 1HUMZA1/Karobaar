@@ -1,0 +1,20 @@
+{
+  "currentVersion": "2.4.0",
+  "buildNumber": 240,
+  "latestVersion": "2.4.0",
+  "minSupportedVersion": "1.0.0",
+  "releaseDate": "November 2026",
+  "isMandatory": false,
+  "releaseNotes": [
+    "Production-ready responsive layout across Phone, Tablet, Desktop and Web",
+    "Completely revamped 11-category Settings Interface with cloud & local sync",
+    "Zero-overflow Jarvis AI 3.0 Copilot with full-screen mobile chat and pinned input",
+    "Unified Multi-Platform Update System (Google Play, Windows GitHub Releases, PWA)",
+    "Google Play Store readiness, target SDK compliance, and data safety compliance"
+  ],
+  "downloadUrls": {
+    "android": "https://play.google.com/store/apps/details?id=com.karobaar.app",
+    "windows": "https://github.com/1HUMZA1/Karobaar/releases/latest",
+    "web": "https://1humza1.github.io/Karobaar/"
+  }
+}

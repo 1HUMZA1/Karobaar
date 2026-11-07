@@ -31,8 +31,13 @@ import {
   Check,
   Upload,
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  HelpCircle,
+  Info,
+  Lock,
+  ExternalLink
 } from 'lucide-react';
+import { updateService, CURRENT_APP_VERSION, CURRENT_BUILD_NUMBER, RELEASE_DATE } from '../../services/updateService';
 import { db } from '../../services/databaseService';
 import { auth } from '../../services/firebase';
 import { signOut, updatePassword } from 'firebase/auth';
@@ -87,11 +92,18 @@ const Settings = () => {
 
   const activeBizId = currentBusiness?.id || currentUser?.activeBusinessId || 'demo-business-1';
 
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const normalizeTab = (t) => {
+    if (t === 'general' || t === 'invoices' || t === 'features' || t === 'team' || t === 'users') return 'business';
+    if (t === 'customize') return 'ai';
+    if (t === 'backup') return 'privacy';
+    return t || 'account';
+  };
+
+  const [activeTab, setActiveTab] = useState(() => normalizeTab(initialTab));
   
   useEffect(() => {
     const tab = new URLSearchParams(location.search).get('tab');
-    if (tab) setActiveTab(tab);
+    if (tab) setActiveTab(normalizeTab(tab));
   }, [location.search]);
 
   // Loading & Save Feedback States
@@ -141,6 +153,71 @@ const Settings = () => {
   const [aiDiagnosticsResult, setAiDiagnosticsResult] = useState(null);
   const [aiDiagnosticsLoading, setAiDiagnosticsLoading] = useState(false);
   const [aiMemoryNotice, setAiMemoryNotice] = useState('');
+
+
+
+  // 5. App Updates State
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateStatusMsg, setUpdateStatusMsg] = useState('');
+  const [snoozeMsg, setSnoozeMsg] = useState('');
+
+  // 6. Permissions & Privacy State
+  const [cameraPerm, setCameraPerm] = useState('prompt');
+  const [micPerm, setMicPerm] = useState('prompt');
+
+  // Update service listener
+  useEffect(() => {
+    updateService.checkForUpdates().then(info => setUpdateInfo(info));
+    const unsubscribe = updateService.subscribe(info => setUpdateInfo(info));
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+      navigator.permissions.query({ name: 'camera' }).then(res => setCameraPerm(res.state)).catch(() => {});
+      navigator.permissions.query({ name: 'microphone' }).then(res => setMicPerm(res.state)).catch(() => {});
+    }
+  }, []);
+
+  const handleCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    setUpdateStatusMsg('Checking verified update servers...');
+    const info = await updateService.checkForUpdates(true);
+    setCheckingUpdate(false);
+    setUpdateInfo(info);
+    if (info?.hasUpdate) {
+      setUpdateStatusMsg('New version ' + info.latestVersion + ' is ready for installation.');
+    } else {
+      setUpdateStatusMsg('Karobaar is up to date with the latest production release.');
+    }
+  };
+
+  const handleExecuteUpdate = async () => {
+    await updateService.executeUpdate();
+  };
+
+  const handleSnoozeReminder = () => {
+    if (updateInfo?.latestVersion) {
+      updateService.snoozeReminder(updateInfo.latestVersion);
+      setSnoozeMsg('Update reminder snoozed for 24 hours.');
+      setTimeout(() => setSnoozeMsg(''), 4000);
+    }
+  };
+
+
+
+  const handleClearCache = async () => {
+    try {
+      if (typeof window !== 'undefined' && 'caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      sessionStorage.clear();
+      setSaveBanner('Local offline cache cleared! Reloading fresh workspace...');
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (_) {}
+  };
 
   // UPI & QR Presentation State
   const [storeUpiId, setStoreUpiId] = useState('karobaar.pay@upi');
@@ -1021,44 +1098,47 @@ const Settings = () => {
       </div>
 
       <div className="settings-main-layout">
-        {/* Sidebar Navigation */}
+        {/* Sidebar Navigation: 11 Professional Enterprise Categories */}
         <div className="settings-nav-card">
-          <button className={`settings-nav-btn ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>
-            <Building size={16} /> Business Profile
+          <button className={`settings-nav-btn ${activeTab === 'account' ? 'active' : ''}`} onClick={() => setActiveTab('account')}>
+            <User size={16} /> 1. Account & Profile
+          </button>
+          <button className={`settings-nav-btn ${(activeTab === 'business' || activeTab === 'general' || activeTab === 'invoices' || activeTab === 'features' || activeTab === 'users' || activeTab === 'team') ? 'active' : ''}`} onClick={() => setActiveTab('business')}>
+            <Building size={16} /> 2. Business Information
+          </button>
+          <button className={`settings-nav-btn ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
+            <Key size={16} /> 3. Security & Password
           </button>
           <button className={`settings-nav-btn ${activeTab === 'appearance' ? 'active' : ''}`} onClick={() => setActiveTab('appearance')}>
-            <Palette size={16} /> Appearance & Mode
-          </button>
-          <button className={`settings-nav-btn ${activeTab === 'customize' ? 'active' : ''}`} onClick={() => setActiveTab('customize')}>
-            <Sparkles size={16} /> Customize (AI & Automations)
+            <Palette size={16} /> 4. Appearance & Theme
           </button>
           <button className={`settings-nav-btn ${activeTab === 'preferences' ? 'active' : ''}`} onClick={() => setActiveTab('preferences')}>
-            <Settings2 size={16} /> Preferences & Tax
-          </button>
-          <button className={`settings-nav-btn ${activeTab === 'invoices' ? 'active' : ''}`} onClick={() => setActiveTab('invoices')}>
-            <Settings2 size={16} /> Invoice Settings
-          </button>
-          <button className={`settings-nav-btn ${activeTab === 'features' ? 'active' : ''}`} onClick={() => setActiveTab('features')}>
-            <LayoutGrid size={16} /> Features & Modules
-          </button>
-          <button className={`settings-nav-btn ${activeTab === 'users' || activeTab === 'team' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-            <Users size={16} /> Team & Permissions
+            <Settings2 size={16} /> 5. Language & Preferences
           </button>
           <button className={`settings-nav-btn ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
-            <BellRing size={16} /> Notifications
+            <BellRing size={16} /> 6. Notifications
           </button>
-          <button className={`settings-nav-btn ${activeTab === 'backup' ? 'active' : ''}`} onClick={() => setActiveTab('backup')}>
-            <Database size={16} /> Data Backup
+          <button className={`settings-nav-btn ${(activeTab === 'ai' || activeTab === 'customize') ? 'active' : ''}`} onClick={() => setActiveTab('ai')}>
+            <Sparkles size={16} /> 7. AI Assistant Preferences
           </button>
-          <button className={`settings-nav-btn ${activeTab === 'account' ? 'active' : ''}`} onClick={() => setActiveTab('account')}>
-            <User size={16} /> Account & Security
+          <button className={`settings-nav-btn ${activeTab === 'updates' ? 'active' : ''}`} onClick={() => setActiveTab('updates')}>
+            <RefreshCw size={16} /> 8. App Updates
+          </button>
+          <button className={`settings-nav-btn ${(activeTab === 'privacy' || activeTab === 'backup') ? 'active' : ''}`} onClick={() => setActiveTab('privacy')}>
+            <Shield size={16} /> 9. Privacy & Permissions
+          </button>
+          <button className={`settings-nav-btn ${activeTab === 'help' ? 'active' : ''}`} onClick={() => setActiveTab('help')}>
+            <HelpCircle size={16} /> 10. Help & Support
+          </button>
+          <button className={`settings-nav-btn ${activeTab === 'about' ? 'active' : ''}`} onClick={() => setActiveTab('about')}>
+            <Info size={16} /> 11. About KAROBAAR
           </button>
         </div>
 
         {/* Settings Content Pane */}
         <div>
           {/* TAB 1: Business Profile */}
-          {activeTab === 'general' && (
+          {(activeTab === 'general' || activeTab === 'business') && (
             <div className="settings-content-card">
               <div className="settings-card-header">
                 <div>
@@ -1240,7 +1320,7 @@ const Settings = () => {
           )}
 
           {/* TAB 3: Customize (AI & Automations) */}
-          {activeTab === 'customize' && (
+          {(activeTab === 'customize' || activeTab === 'ai') && (
             <div className="settings-content-card">
               <div className="settings-card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -1974,7 +2054,7 @@ const Settings = () => {
           )}
 
           {/* TAB 9: Data Backup */}
-          {activeTab === 'backup' && (
+          {(activeTab === 'backup' || activeTab === 'privacy') && (
             <div className="settings-content-card">
               <div className="settings-card-header">
                 <div>
@@ -2282,6 +2362,537 @@ const Settings = () => {
 
             </div>
           )}
+
+          {/* TAB 3: Security & Password */}
+          {activeTab === 'security' && (
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Security & Password</h2>
+                  <p className="settings-card-subtitle">Manage login authentication, change password, and monitor active sessions</p>
+                </div>
+              </div>
+
+              {passwordBanner && (
+                <div className="p-3.5 mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 size={16} />
+                  <span>{passwordBanner}</span>
+                </div>
+              )}
+
+              {passwordError && (
+                <div className="p-3.5 mb-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle size={16} />
+                  <span>{passwordError}</span>
+                </div>
+              )}
+
+              {/* Section 1: Change Password */}
+              <form onSubmit={handleUpdatePassword} className="settings-section-block">
+                <h3 className="settings-section-heading">Change Password</h3>
+                <p className="text-xs text-text-secondary mb-3">Ensure your account uses a secure password with at least 6 characters.</p>
+
+                <div className="settings-grid-2">
+                  <div className="settings-input-group">
+                    <label>New Password</label>
+                    <input 
+                      type="password" 
+                      className="settings-input-field" 
+                      placeholder="At least 6 characters"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="settings-input-group">
+                    <label>Confirm New Password</label>
+                    <input 
+                      type="password" 
+                      className="settings-input-field" 
+                      placeholder="Re-enter new password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                  <button 
+                    type="submit" 
+                    className="settings-btn-primary" 
+                    disabled={!newPassword}
+                  >
+                    <Key size={15} />
+                    <span>'Update Password'</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Section 2: Two-Factor Authentication Status */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Authentication Shield</h3>
+                <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)] flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                      <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                      <span className="font-bold text-sm block text-text-main">Encrypted Cloud Session Protection</span>
+                      <span className="text-xs text-text-secondary">All database mutations are signed and protected via Firebase Cloud Auth.</span>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 whitespace-nowrap">
+                    ACTIVE
+                  </span>
+                </div>
+              </div>
+
+              {/* Section 3: Active Device Sessions */}
+              <div className="settings-section-block">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="settings-section-heading">Active Logged-In Devices</h3>
+                    <p className="text-xs text-text-secondary">Devices currently authorized to access this store workspace</p>
+                  </div>
+                  <button 
+                    type="button"
+                    className="settings-btn-secondary"
+                    onClick={() => {
+                      deviceList.forEach(d => !d.isCurrent && handleRevokeDevice(d.id));
+                    }}
+                  >
+                    Sign Out Other Devices
+                  </button>
+                </div>
+
+                <div className="space-y-2.5">
+                  {deviceList.map(device => (
+                    <div 
+                      key={device.id} 
+                      className="p-3.5 border rounded-xl flex items-center justify-between gap-3 border-[var(--border-color)] bg-[var(--bg-card)]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-[var(--bg-hover)] text-text-main flex items-center justify-center shrink-0 border border-[var(--border-color)]">
+                          {device.type === 'phone' ? <Smartphone size={17} /> : <Laptop size={17} />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-text-main">{device.deviceName || 'Karobaar Terminal'}</span>
+                            {device.isCurrent && (
+                              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black">
+                                THIS DEVICE
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-text-secondary">{device.platform || 'Windows / Web'} • {device.browser || 'App'}</span>
+                        </div>
+                      </div>
+
+                      {!device.isCurrent && (
+                        <button
+                          type="button"
+                          className="settings-btn-secondary text-xs h-7 px-2.5"
+                          onClick={() => handleRevokeDevice(device.id)}
+                        >
+                          Revoke
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 8: App Updates */}
+          {activeTab === 'updates' && (
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">App Updates & Version Management</h2>
+                  <p className="settings-card-subtitle">Check verified release channels, install official updates, and view changelogs</p>
+                </div>
+              </div>
+
+              {snoozeMsg && (
+                <div className="p-3.5 mb-4 rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-500 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 size={16} />
+                  <span>{snoozeMsg}</span>
+                </div>
+              )}
+
+              {/* Version Hero Card */}
+              <div className="settings-update-hero">
+                <div className="settings-update-status-row">
+                  <div>
+                    <span className="text-xs uppercase font-extrabold tracking-wider text-text-secondary block mb-1">
+                      Installed Application
+                    </span>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="text-2xl font-black tracking-tight text-text-main">
+                        KAROBAAR v{CURRENT_APP_VERSION}
+                      </span>
+                      <span className="settings-version-tag">
+                        Build {CURRENT_BUILD_NUMBER}
+                      </span>
+                      <span className="settings-version-tag">
+                        {RELEASE_DATE}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                      updateInfo?.hasUpdate 
+                        ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+                        : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                    }`}>
+                      {updateInfo?.hasUpdate ? '● Update Available' : '● Up to Date'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between gap-3 flex-wrap">
+                  <div className="text-xs text-text-secondary">
+                    <span className="font-semibold text-text-main">Distribution Channel: </span>
+                    <span className="uppercase font-bold">{updateInfo?.platform || 'Cross-Platform'} Edition</span>
+                    {updateInfo?.lastChecked && (
+                      <span className="ml-2 text-[11px] text-text-secondary">
+                        (Last checked: {new Date(updateInfo.lastChecked).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button" 
+                      className="settings-btn-secondary"
+                      onClick={handleCheckUpdate}
+                      disabled={checkingUpdate}
+                    >
+                      <RefreshCw size={14} className={checkingUpdate ? 'animate-spin' : ''} />
+                      <span>{checkingUpdate ? 'Checking...' : 'Check for Updates'}</span>
+                    </button>
+
+                    {updateInfo?.hasUpdate && (
+                      <>
+                        <button 
+                          type="button" 
+                          className="settings-btn-primary"
+                          onClick={handleExecuteUpdate}
+                        >
+                          <Download size={15} />
+                          <span>Update Now (v{updateInfo.latestVersion})</span>
+                        </button>
+
+                        <button 
+                          type="button" 
+                          className="settings-btn-secondary"
+                          onClick={handleSnoozeReminder}
+                        >
+                          Remind Me Later
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {updateStatusMsg && (
+                  <p className="text-xs font-medium text-text-main m-0">
+                    {updateStatusMsg}
+                  </p>
+                )}
+              </div>
+
+              {/* Release Notes */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Latest Release Highlights</h3>
+                <div className="settings-notes-card">
+                  <span className="font-bold text-xs uppercase text-text-main block">
+                    What's New in Karobaar 2.4.0:
+                  </span>
+                  <ul>
+                    <li><strong>Complete Responsive Redesign:</strong> Seamless experience on phones, tablets, laptops, and wide desktop screens.</li>
+                    <li><strong>Zero-Overflow Jarvis AI 3.0:</strong> Fixed chat viewport clipping with responsive mobile drawer and pinned bottom input bar.</li>
+                    <li><strong>Enterprise Settings Center:</strong> Cleanly structured 11-category configuration with instant cloud synchronization.</li>
+                    <li><strong>Multi-Platform Update Engine:</strong> Official Google Play In-App Updates, Windows GitHub releases, and PWA auto-refresh.</li>
+                    <li><strong>Google Play Store Compliance:</strong> Full target SDK 34 compatibility, explicit audio permissions, and data safety compliance.</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Official Store Links */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Verified Installation Channels</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)]">
+                    <span className="font-bold text-xs block text-text-main">Google Play Store</span>
+                    <span className="text-[11px] text-text-secondary block mt-0.5">Android Phones & Tablets</span>
+                    <button 
+                      type="button"
+                      className="mt-2 text-xs font-bold text-blue-500 hover:underline flex items-center gap-1"
+                      onClick={() => window.open('https://play.google.com/store/apps/details?id=com.karobaar.app', '_blank')}
+                    >
+                      View on Play Store <ExternalLink size={12} />
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)]">
+                    <span className="font-bold text-xs block text-text-main">Windows Desktop</span>
+                    <span className="text-[11px] text-text-secondary block mt-0.5">Edge WebView2 Standalone App</span>
+                    <button 
+                      type="button"
+                      className="mt-2 text-xs font-bold text-blue-500 hover:underline flex items-center gap-1"
+                      onClick={() => window.open('https://github.com/1HUMZA1/Karobaar/releases/latest', '_blank')}
+                    >
+                      GitHub Releases <ExternalLink size={12} />
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)]">
+                    <span className="font-bold text-xs block text-text-main">Web / PWA Portal</span>
+                    <span className="text-[11px] text-text-secondary block mt-0.5">Instant Offline-Capable Web App</span>
+                    <button 
+                      type="button"
+                      className="mt-2 text-xs font-bold text-blue-500 hover:underline flex items-center gap-1"
+                      onClick={() => window.location.reload()}
+                    >
+                      Refresh PWA Cache <RefreshCw size={12} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: Privacy & Permissions */}
+          {activeTab === 'privacy' && (
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Privacy & Permissions</h2>
+                  <p className="settings-card-subtitle">Device hardware access, offline storage cache, and data safety statements</p>
+                </div>
+              </div>
+
+              {/* Hardware Permissions List */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Device Permissions</h3>
+                <div className="space-y-3">
+                  <div className="settings-permission-item">
+                    <div className="settings-perm-meta">
+                      <span className="settings-perm-title">Camera Permission</span>
+                      <span className="settings-perm-desc">Used for barcode scanning and QR code invoice payments</span>
+                    </div>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                      cameraPerm === 'granted' 
+                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                        : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                    }`}>
+                      {cameraPerm === 'granted' ? 'GRANTED' : 'AVAILABLE'}
+                    </span>
+                  </div>
+
+                  <div className="settings-permission-item">
+                    <div className="settings-perm-meta">
+                      <span className="settings-perm-title">Microphone Permission</span>
+                      <span className="settings-perm-desc">Required for Jarvis AI Live Voice and continuous two-way hands-free talk</span>
+                    </div>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                      micPerm === 'granted' 
+                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                        : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                    }`}>
+                      {micPerm === 'granted' ? 'GRANTED' : 'AVAILABLE'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Offline Cache & Storage Management */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Offline Storage Cache</h3>
+                <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <span className="font-bold text-xs block text-text-main">Local Offline IndexedDB & Cache</span>
+                    <span className="text-[11px] text-text-secondary">Stores cafeteria inventory, offline receipts, and fast local database cache.</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="settings-btn-secondary"
+                    onClick={handleClearCache}
+                  >
+                    Clear Cache & Re-sync
+                  </button>
+                </div>
+              </div>
+
+              {/* Data Portability & Backup */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Data Portability</h3>
+                <p className="text-xs text-text-secondary mb-3">Download a raw, complete JSON snapshot of all your business records.</p>
+                <div className="flex gap-3 flex-wrap">
+                  <button type="button" className="settings-btn-primary" onClick={handleExportData}>
+                    <Download size={15} />
+                    <span>Export Full Data Backup (.json)</span>
+                  </button>
+                  <button type="button" className="settings-btn-secondary" onClick={handleResetData}>
+                    <RotateCcw size={14} />
+                    <span>Reset to Default Demo State</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 10: Help & Support */}
+          {activeTab === 'help' && (
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">Help & Support</h2>
+                  <p className="settings-card-subtitle">Quick start guides, keyboard shortcuts, and customer support channels</p>
+                </div>
+              </div>
+
+              {/* Interactive Guided Tour */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Guided App Walkthrough</h3>
+                <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <span className="font-bold text-xs block text-text-main">Interactive Feature Spotlight Tour</span>
+                    <span className="text-[11px] text-text-secondary">Highlight key screen controls, POS billing shortcuts, and Jarvis AI copilot buttons.</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="settings-btn-primary"
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('karobaar_start_spotlight_tour', { detail: { stepIndex: 0 } }));
+                    }}
+                  >
+                    <Target size={15} />
+                    <span>Start Guided Tour</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Keyboard Shortcuts Cheatsheet */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Global Keyboard Shortcuts</h3>
+                <div className="settings-shortcuts-grid">
+                  <div className="settings-shortcut-card">
+                    <span className="text-xs font-semibold text-text-main">POS / New Sale Register</span>
+                    <span className="settings-shortcut-key">F2</span>
+                  </div>
+                  <div className="settings-shortcut-card">
+                    <span className="text-xs font-semibold text-text-main">Main Executive Dashboard</span>
+                    <span className="settings-shortcut-key">F1</span>
+                  </div>
+                  <div className="settings-shortcut-card">
+                    <span className="text-xs font-semibold text-text-main">Wake Jarvis Voice AI</span>
+                    <span className="settings-shortcut-key">Hey Jarvis</span>
+                  </div>
+                  <div className="settings-shortcut-card">
+                    <span className="text-xs font-semibold text-text-main">Global Search Navigation</span>
+                    <span className="settings-shortcut-key">Ctrl + K</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Support Hotline */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Customer Assistance</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+                    <span className="font-bold text-xs block text-text-main">Official Support Email</span>
+                    <span className="text-xs text-text-secondary block mt-1">support@karobaar.app</span>
+                    <span className="text-[11px] text-text-secondary mt-2 block">Direct technical response within 24 hours.</span>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+                    <span className="font-bold text-xs block text-text-main">Documentation & Release Guides</span>
+                    <span className="text-xs text-text-secondary block mt-1">Complete user guide and knowledge base.</span>
+                    <a 
+                      href="https://1humza1.github.io/Karobaar/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="mt-2 text-xs font-bold text-blue-500 hover:underline inline-flex items-center gap-1"
+                    >
+                      Open Documentation <ExternalLink size={12} />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 11: About KAROBAAR */}
+          {activeTab === 'about' && (
+            <div className="settings-content-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2 className="settings-card-title">About KAROBAAR</h2>
+                  <p className="settings-card-subtitle">Platform architecture, release metadata, and legal agreements</p>
+                </div>
+              </div>
+
+              {/* Pitch Black Hero Card */}
+              <div className="p-6 rounded-2xl bg-black text-white flex flex-col items-center text-center gap-3">
+                <div className="w-14 h-14 rounded-2xl border-2 border-white/80 bg-zinc-950 flex items-center justify-center font-black text-2xl text-white">
+                  K
+                </div>
+                <h3 className="text-xl font-black tracking-tight text-white m-0">KAROBAAR OS</h3>
+                <p className="text-xs text-zinc-400 max-w-sm m-0">
+                  Autonomous Business Operating System & POS built for retail, wholesale, and cafeteria enterprises.
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-white/10 text-white border border-white/20">
+                    Version {CURRENT_APP_VERSION}
+                  </span>
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-white/10 text-white border border-white/20">
+                    Build {CURRENT_BUILD_NUMBER}
+                  </span>
+                </div>
+              </div>
+
+              {/* System Architecture Metadata */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Platform Telemetry</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                  <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)]">
+                    <span className="text-[10px] font-bold uppercase text-text-secondary block">Frontend</span>
+                    <span className="text-xs font-bold text-text-main mt-0.5 block">React 18 + Vite</span>
+                  </div>
+                  <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)]">
+                    <span className="text-[10px] font-bold uppercase text-text-secondary block">Native Shell</span>
+                    <span className="text-xs font-bold text-text-main mt-0.5 block">Flutter 3.x</span>
+                  </div>
+                  <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)]">
+                    <span className="text-[10px] font-bold uppercase text-text-secondary block">AI Engine</span>
+                    <span className="text-xs font-bold text-text-main mt-0.5 block">Jarvis AI 3.0</span>
+                  </div>
+                  <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-hover)]">
+                    <span className="text-[10px] font-bold uppercase text-text-secondary block">Cloud DB</span>
+                    <span className="text-xs font-bold text-text-main mt-0.5 block">Firebase + LocalDB</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Legal and Compliance */}
+              <div className="settings-section-block">
+                <h3 className="settings-section-heading">Compliance & Policies</h3>
+                <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-xs text-text-secondary leading-relaxed space-y-2">
+                  <p className="m-0">
+                    KAROBAAR respects customer privacy. All sales records, khata balances, and business financial audits are encrypted and belong strictly to your enterprise.
+                  </p>
+                  <p className="m-0">
+                    Google Play Target SDK 34 Compliant • ISO-Ready Offline Continuity • Real-Time Voice Processing
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 

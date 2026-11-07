@@ -907,3 +907,157 @@ select.settings-input-field {
   justify-content: space-between;
   gap: 10px;
 }
+
+/* ==============================================================
+   RESPONSIVE ADAPTATION: SETTINGS TABS ON MOBILE & TABLET
+   ============================================================== */
+@media (max-width: 899px) {
+  .settings-main-layout {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .settings-nav-card {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0.65rem;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    border-radius: 14px;
+    background-color: var(--bg-card, #ffffff);
+  }
+  .settings-nav-card::-webkit-scrollbar {
+    display: none;
+  }
+  .settings-nav-btn {
+    white-space: nowrap;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    flex-shrink: 0;
+    border-radius: 8px;
+  }
+}
+
+/* Update Management Styles */
+.settings-update-hero {
+  padding: 24px;
+  border-radius: 18px;
+  background: var(--bg-elevated, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+[data-theme="dark"] .settings-update-hero {
+  background: #141417;
+  border-color: #27272a;
+}
+
+.settings-update-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.settings-version-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: var(--bg-body, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.settings-notes-card {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+[data-theme="dark"] .settings-notes-card {
+  background: #18181c;
+  border-color: #27272a;
+}
+
+.settings-notes-card ul {
+  margin: 8px 0 0 16px;
+  padding: 0;
+}
+
+.settings-notes-card li {
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+
+/* Permissions and Safety List */
+.settings-permission-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  gap: 12px;
+}
+
+.settings-perm-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-perm-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.settings-perm-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Shortcuts Cheat Grid */
+.settings-shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.settings-shortcut-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-shortcut-key {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  font-family: monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
